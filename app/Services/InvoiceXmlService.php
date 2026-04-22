@@ -287,7 +287,7 @@ class InvoiceXmlService
 
             // Bank details for wire transfer methods
             if ($invoice->bank_iban) {
-                $paymentDetails->setIban($invoice->bank_iban);
+                $paymentDetails->setIban(str_replace(' ', '', $invoice->bank_iban));
             }
             if ($invoice->bank_name) {
                 $paymentDetails->setBankName($invoice->bank_name);

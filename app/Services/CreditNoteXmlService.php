@@ -229,7 +229,7 @@ class CreditNoteXmlService
             }
 
             if ($creditNote->bank_iban) {
-                $paymentDetails->setIban($creditNote->bank_iban);
+                $paymentDetails->setIban(str_replace(' ', '', $creditNote->bank_iban));
             }
             if ($creditNote->bank_name) {
                 $paymentDetails->setBankName($creditNote->bank_name);
