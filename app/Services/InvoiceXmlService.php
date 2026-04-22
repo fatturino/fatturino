@@ -138,7 +138,7 @@ class InvoiceXmlService
             $documentTotal += $invoice->stamp_duty_amount / 100;
         }
         $instance->setDocumentTotal($documentTotal);
-        $instance->addDescription($invoice->notes ?? 'Fattura n. '.$invoice->number);
+        $instance->addDescription($invoice->notes ?? 'n. '.$invoice->number);
 
         // Virtual stamp duty (DatiBollo)
         if ($invoice->stamp_duty_applied) {
