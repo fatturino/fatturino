@@ -38,15 +38,15 @@ enum SdiStatus: string
     public function color(): string
     {
         return match ($this) {
-            self::Sent        => 'badge-outline badge-info',
-            self::Rejected    => 'badge-outline badge-error',
-            self::Delivered   => 'badge-outline badge-success',
-            self::NotDelivered => 'badge-outline badge-warning',
-            self::Expired     => 'badge-outline badge-success',
-            self::Accepted    => 'badge-outline badge-success',
-            self::Refused     => 'badge-outline badge-error',
-            self::Error       => 'badge-outline badge-error',
-            self::Received    => 'badge-outline badge-accent',
+            self::Sent        => 'badge-soft badge-info',
+            self::Rejected    => 'badge-soft badge-error',
+            self::Delivered   => 'badge-soft badge-success',
+            self::NotDelivered => 'badge-soft badge-warning',
+            self::Expired     => 'badge-soft badge-success',
+            self::Accepted    => 'badge-soft badge-success',
+            self::Refused     => 'badge-soft badge-error',
+            self::Error       => 'badge-soft badge-error',
+            self::Received    => 'badge-soft badge-accent',
         };
     }
 

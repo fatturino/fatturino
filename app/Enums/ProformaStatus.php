@@ -28,10 +28,10 @@ enum ProformaStatus: string
     public function color(): string
     {
         return match ($this) {
-            self::Draft     => 'badge-outline badge-warning',
-            self::Sent      => 'badge-outline badge-info',
-            self::Converted => 'badge-outline badge-success',
-            self::Cancelled => 'badge-ghost',
+            self::Draft     => 'badge-soft badge-warning',
+            self::Sent      => 'badge-soft badge-info',
+            self::Converted => 'badge-soft badge-success',
+            self::Cancelled => 'badge-soft badge-neutral',
         };
     }
 

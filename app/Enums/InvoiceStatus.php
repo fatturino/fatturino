@@ -28,10 +28,10 @@ enum InvoiceStatus: string
     public function color(): string
     {
         return match ($this) {
-            self::Draft        => 'badge-outline badge-warning',
-            self::Generated    => 'badge-outline badge-info',
-            self::XmlValidated => 'badge-outline badge-accent',
-            self::Sent         => 'badge-outline badge-success',
+            self::Draft        => 'badge-soft badge-warning',
+            self::Generated    => 'badge-soft badge-info',
+            self::XmlValidated => 'badge-soft badge-accent',
+            self::Sent         => 'badge-soft badge-success',
         };
     }
 

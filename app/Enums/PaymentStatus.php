@@ -28,10 +28,10 @@ enum PaymentStatus: string
     public function color(): string
     {
         return match ($this) {
-            self::Unpaid  => 'badge-outline badge-warning',
-            self::Partial => 'badge-outline badge-info',
-            self::Paid    => 'badge-outline badge-success',
-            self::Overdue => 'badge-outline badge-error',
+            self::Unpaid  => 'badge-soft badge-warning',
+            self::Partial => 'badge-soft badge-info',
+            self::Paid    => 'badge-soft badge-success',
+            self::Overdue => 'badge-soft badge-error',
         };
     }
 
