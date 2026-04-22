@@ -58,7 +58,8 @@ trait CalculatesInvoiceTotals
             $vatRate = VatRate::tryFrom($line['vat_rate'] ?? '');
             if ($vatRate) {
                 $lineTotal = $this->lineDiscountedTotal($line);
-                $total += $lineTotal * ($vatRate->percent() / 100);
+                // Round per line to match cent-level rounding in Invoice::calculateTotals()
+                $total += round($lineTotal * ($vatRate->percent() / 100), 2);
             }
         }
 
@@ -77,7 +78,7 @@ trait CalculatesInvoiceTotals
             return 0.0;
         }
 
-        return $this->totalNet * ((float) $this->fund_percent / 100);
+        return round($this->totalNet * ((float) $this->fund_percent / 100), 2);
     }
 
     /**
@@ -91,7 +92,7 @@ trait CalculatesInvoiceTotals
 
         $vatRate = VatRate::tryFrom($this->fund_vat_rate);
 
-        return $vatRate ? $this->fundAmount * ($vatRate->percent() / 100) : 0.0;
+        return $vatRate ? round($this->fundAmount * ($vatRate->percent() / 100), 2) : 0.0;
     }
 
     public function getTotalGrossProperty(): float
@@ -122,7 +123,7 @@ trait CalculatesInvoiceTotals
             return 0.0;
         }
 
-        return $this->totalNet * ((float) $this->withholding_tax_percent / 100);
+        return round($this->totalNet * ((float) $this->withholding_tax_percent / 100), 2);
     }
 
     /**
