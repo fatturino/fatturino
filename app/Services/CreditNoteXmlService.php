@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CreditNote;
+use App\Services\Concerns\GeneratesSdiFilename;
 use App\Settings\CompanySettings;
 use FatturaElettronicaPhp\FatturaElettronica\Address;
 use FatturaElettronicaPhp\FatturaElettronica\Customer;
@@ -26,6 +27,7 @@ use FatturaElettronicaPhp\FatturaElettronica\Total;
 
 class CreditNoteXmlService
 {
+    use GeneratesSdiFilename;
     public function __construct(
         protected CompanySettings $companySettings
     ) {
@@ -36,11 +38,7 @@ class CreditNoteXmlService
      */
     public function generateFileName(CreditNote $creditNote): string
     {
-        $countryCode = $this->companySettings->company_country;
-        $vatNumber = str_replace('IT', '', $this->companySettings->company_vat_number);
-        $progressivo = str_pad($creditNote->id, 5, '0', STR_PAD_LEFT);
-
-        return $countryCode . $vatNumber . '_' . $progressivo . '.xml';
+        return $this->buildSdiFilename($this->companySettings, $creditNote->id);
     }
 
     public function generate(CreditNote $creditNote): string

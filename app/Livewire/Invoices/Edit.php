@@ -221,7 +221,7 @@ class Edit extends Component
     {
         try {
             $xml = $xmlService->generate($this->invoice);
-            $filename = 'fattura-'.$this->invoice->number.'.xml';
+            $filename = $xmlService->generateFileName($this->invoice);
 
             return response()->streamDownload(
                 fn () => print ($xml),

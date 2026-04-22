@@ -175,7 +175,7 @@ class Edit extends Component
     {
         try {
             $xml = $xmlService->generate($this->selfInvoice);
-            $filename = 'autofattura-' . $this->selfInvoice->number . '.xml';
+            $filename = $xmlService->generateFileName($this->selfInvoice);
 
             return response()->streamDownload(
                 fn () => print($xml),

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SelfInvoice;
+use App\Services\Concerns\GeneratesSdiFilename;
 use App\Settings\CompanySettings;
 use FatturaElettronicaPhp\FatturaElettronica\Address;
 use FatturaElettronicaPhp\FatturaElettronica\Customer;
@@ -21,6 +22,7 @@ use FatturaElettronicaPhp\FatturaElettronica\Total;
 
 class SelfInvoiceXmlService
 {
+    use GeneratesSdiFilename;
     // Supported self-invoice document types
     public const DOCUMENT_TYPES = [
         'TD17' => 'TD17 — Servizi dall\'estero (integrazione/autofattura)',
@@ -40,11 +42,7 @@ class SelfInvoiceXmlService
      */
     public function generateFileName(SelfInvoice $invoice): string
     {
-        $countryCode = $this->companySettings->company_country;
-        $vatNumber = str_replace('IT', '', $this->companySettings->company_vat_number);
-        $progressivo = str_pad($invoice->id, 5, '0', STR_PAD_LEFT);
-
-        return $countryCode . $vatNumber . '_' . $progressivo . '.xml';
+        return $this->buildSdiFilename($this->companySettings, $invoice->id);
     }
 
     public function generate(SelfInvoice $invoice): string

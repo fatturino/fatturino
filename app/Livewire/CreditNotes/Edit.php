@@ -177,7 +177,7 @@ class Edit extends Component
     {
         try {
             $xml = $xmlService->generate($this->creditNote);
-            $filename = 'nota-di-credito-' . $this->creditNote->number . '.xml';
+            $filename = $xmlService->generateFileName($this->creditNote);
 
             return response()->streamDownload(
                 fn () => print($xml),
