@@ -22,6 +22,7 @@
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
         "fatturaelettronicaphp/fattura-elettronica": "^2.8",
+        "fatturino/plugin-fe-openapi": "dev-main",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "league/flysystem-aws-s3-v3": "^3.32",
@@ -106,5 +107,10 @@
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
-    "repositories": []
+    "repositories": [
+        {
+            "type": "vcs",
+            "url":  "ssh://git@codeberg.org/fatturino/plugin-fe-openapi.git"
+        }
+    ]
 }
