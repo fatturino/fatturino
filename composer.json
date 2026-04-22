@@ -110,7 +110,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url":  "ssh://git@codeberg.org/fatturino/plugin-fe-openapi.git"
+            "url":  "https://codeberg.org/fatturino/plugin-fe-openapi.git"
         }
     ]
 }
