@@ -272,7 +272,7 @@ class InvoiceXmlService
             $paymentInfo->setTerms($paymentTermsValue);
 
             $paymentDetails = new PaymentDetails;
-            $paymentDetails->setMethod($invoice->payment_method);
+            $paymentDetails->setMethod($invoice->payment_method->value);
 
             // Split payment: customer pays net + fund only (VAT goes directly to tax authority)
             $paymentAmount = $invoice->split_payment

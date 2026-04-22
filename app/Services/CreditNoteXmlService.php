@@ -221,7 +221,7 @@ class CreditNoteXmlService
             $paymentInfo->setTerms($paymentTermsValue);
 
             $paymentDetails = new PaymentDetails;
-            $paymentDetails->setMethod($creditNote->payment_method);
+            $paymentDetails->setMethod($creditNote->payment_method->value);
             $paymentDetails->setAmount($documentTotal);
 
             if ($creditNote->due_date) {
