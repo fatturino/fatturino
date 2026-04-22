@@ -354,6 +354,7 @@ return [
         'reverse_calc_hint' => 'Calcola l\'imponibile partendo dal netto che vuoi incassare',
         'reverse_calc_apply' => 'Applica',
         'reverse_calc_no_lines' => 'Aggiungi almeno una riga prima di usare lo scorporo.',
+        'reverse_calc_rounding_notice' => 'Il netto effettivo differisce di 1 centesimo per via degli arrotondamenti fiscali.',
 
         // Document type
         'document_type' => 'Tipo Documento',
@@ -488,6 +489,7 @@ return [
         'reverse_calc_hint' => 'Calcola l\'imponibile partendo dal netto che vuoi incassare',
         'reverse_calc_apply' => 'Applica',
         'reverse_calc_no_lines' => 'Aggiungi almeno una riga prima di usare lo scorporo.',
+        'reverse_calc_rounding_notice' => 'Il netto effettivo differisce di 1 centesimo per via degli arrotondamenti fiscali.',
     ],
 
     'self_invoices' => [

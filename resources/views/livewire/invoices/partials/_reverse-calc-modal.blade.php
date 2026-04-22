@@ -49,6 +49,18 @@
                     $previewFundVat = ($previewFundAmount > 0 && $fund_vat_rate) ? $previewFundAmount * ((\App\Enums\VatRate::tryFrom($fund_vat_rate)?->percent() ?? 0) / 100) : 0;
                     $previewLineVat = $this->reverseCalcNet * $previewVatPercent / 100;
                     $previewTotalVat = $previewLineVat + $previewFundVat;
+
+                    // Simulate cent-level rounding to show the actual net due after save
+                    $previewNetCents       = (int) round($this->reverseCalcNet * 100);
+                    $previewVatCents       = (int) round($previewNetCents * $previewVatPercent / 100);
+                    $previewFundCents      = ($fund_enabled && $fund_percent) ? (int) round($previewNetCents * (float) $fund_percent / 100) : 0;
+                    $previewGrossCents     = $previewNetCents + $previewVatCents + $previewFundCents;
+                    $previewStampCents     = $stamp_duty_applied ? 200 : 0;
+                    $previewWithholdCents  = ($withholding_tax_enabled && $withholding_tax_percent)
+                        ? (int) round($previewNetCents * (float) $withholding_tax_percent / 100)
+                        : 0;
+                    $previewActualNetDue   = ($previewGrossCents + $previewStampCents - $previewWithholdCents) / 100;
+                    $previewHasRoundingGap = abs($previewActualNetDue - (float) $reverseCalcDesiredNet) >= 0.005;
                 @endphp
                 <div class="flex justify-between text-base-content/70">
                     <span>{{ __('app.invoices.vat_total') }}</span>
@@ -69,8 +81,15 @@
                 <hr />
                 <div class="flex justify-between font-bold">
                     <span>{{ __('app.invoices.net_due') }}</span>
-                    <span>€ {{ number_format((float) $reverseCalcDesiredNet, 2, ',', '.') }}</span>
+                    <span class="{{ $previewHasRoundingGap ? 'text-warning' : '' }}">
+                        € {{ number_format($previewActualNetDue, 2, ',', '.') }}
+                    </span>
                 </div>
+                @if($previewHasRoundingGap)
+                    <div class="text-xs text-warning/80 mt-1">
+                        {{ __('app.invoices.reverse_calc_rounding_notice') }}
+                    </div>
+                @endif
             </div>
         @endif
     </div>

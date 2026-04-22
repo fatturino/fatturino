@@ -447,6 +447,7 @@ return [
         'reverse_calc_hint' => 'Calculate the net total from the desired net due',
         'reverse_calc_apply' => 'Apply',
         'reverse_calc_no_lines' => 'Add at least one line before using reverse calculation.',
+        'reverse_calc_rounding_notice' => 'The actual net due differs by 1 cent due to fiscal rounding.',
 
         // Document type
         'document_type' => 'Document Type',
