@@ -59,6 +59,7 @@ class SelfInvoiceXmlService
         $doc->setSenderVatId(str_replace('IT', '', $companyVat));
         $doc->setSendingId(str_pad($invoice->id, 5, '0', STR_PAD_LEFT));
         $doc->setTransmissionFormat(TransmissionFormat::FPR12());
+        $doc->setEmittingSystem('Fatturino');
 
         // For self-invoices, the destination is my own SDI code (sending to myself)
         $mySdiCode = $this->companySettings->company_sdi_code ?: '0000000';

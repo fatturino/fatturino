@@ -56,6 +56,7 @@ class InvoiceXmlService
         $doc->setSenderVatId(str_replace('IT', '', $vatNumber));
         $doc->setSendingId(str_pad($invoice->id, 5, '0', STR_PAD_LEFT)); // Simple progressive
         $doc->setTransmissionFormat(TransmissionFormat::FPR12());
+        $doc->setEmittingSystem('Fatturino');
 
         // SDI code: use helper method to get correct value based on customer country
         $doc->setCustomerSdiCode($invoice->contact->getSdiCodeForXml());

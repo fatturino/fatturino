@@ -55,6 +55,7 @@ class CreditNoteXmlService
         $doc->setSenderVatId(str_replace('IT', '', $vatNumber));
         $doc->setSendingId(str_pad($creditNote->id, 5, '0', STR_PAD_LEFT));
         $doc->setTransmissionFormat(TransmissionFormat::FPR12());
+        $doc->setEmittingSystem('Fatturino');
         $doc->setCustomerSdiCode($creditNote->contact->getSdiCodeForXml());
 
         // PEC: only for Italian customers
