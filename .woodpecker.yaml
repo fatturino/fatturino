@@ -1,0 +1,43 @@
+steps:
+  build-main:
+    image: woodpeckerci/plugin-docker-buildx
+    settings:
+      registry: codeberg.org
+      repo: codeberg.org/fatturino/fatturino
+      tags:
+        - latest
+        - "sha-${CI_COMMIT_SHA:0:8}"
+      username:
+        from_secret: codeberg_user
+      password:
+        from_secret: codeberg_token
+      buildkit_inline_cache: true
+      cache_from: codeberg.org/fatturino/fatturino:latest
+      build_args:
+        - APP_VERSION=${CI_COMMIT_SHA:0:8}
+    when:
+      branch: main
+      event: [push, manual]
+
+  build-release:
+    image: woodpeckerci/plugin-docker-buildx
+    settings:
+      registry: codeberg.org
+      repo: codeberg.org/fatturino/fatturino
+      # CI_COMMIT_TAG is "v0.0.1"; we also publish without the "v" prefix
+      # so image tag aligns with SemVer (e.g., codeberg.org/fatturino/fatturino:0.0.1).
+      tags:
+        - "${CI_COMMIT_TAG}"
+        - "${CI_COMMIT_TAG##v}"
+        - latest-stable
+      username:
+        from_secret: codeberg_user
+      password:
+        from_secret: codeberg_token
+      buildkit_inline_cache: true
+      cache_from: codeberg.org/fatturino/fatturino:latest
+      build_args:
+        - APP_VERSION=${CI_COMMIT_TAG##v}
+    when:
+      event: tag
+      ref: refs/tags/v*

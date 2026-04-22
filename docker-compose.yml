@@ -1,0 +1,34 @@
+services:
+  fatturino:
+    build:
+      context: .
+      args:
+        APP_VERSION: ${APP_VERSION:-0.0.0}
+    container_name: fatturino
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - fatturino-data:/data
+    environment:
+      APP_NAME: "${APP_NAME:-Fatturino}"
+      APP_ENV: "${APP_ENV:-production}"
+      APP_KEY: "${APP_KEY}"
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /data/database.sqlite
+      LOG_CHANNEL: stderr
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      AUTORUN_ENABLED: "true"
+      AUTORUN_LARAVEL_MIGRATION: "true"
+      AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
+      AUTORUN_LARAVEL_STORAGE_LINK: "true"
+      AUTORUN_LARAVEL_OPTIMIZE: "true"
+      PHP_OPCACHE_ENABLE: "1"
+      PHP_DATE_TIMEZONE: "Europe/Rome"
+      SSL_MODE: "off"
+    restart: unless-stopped
+
+volumes:
+  fatturino-data:

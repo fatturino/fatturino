@@ -1,0 +1,233 @@
+@import 'tailwindcss';
+
+/* Outfit font via Bunny Fonts */
+@theme {
+    --font-sans: 'Outfit', sans-serif;
+}
+
+/* ─── daisyUI base ─── */
+@plugin "daisyui";
+
+/* ─── Custom light theme: Fatturino (colors only) ─── */
+@plugin "daisyui/theme" {
+    name: "fatturino";
+    default: true;
+    color-scheme: light;
+
+    --color-base-100: oklch(100% 0 0);
+    --color-base-200: oklch(97.18% 0.015 294.31);
+    --color-base-300: oklch(94.75% 0.027 290.40);
+    --color-base-content: oklch(25.73% 0.086 281.29);
+
+    --color-primary: oklch(38.81% 0.139 282.45);
+    --color-primary-content: oklch(100% 0 0);
+
+    --color-secondary: oklch(62.81% 0.172 279.49);
+    --color-secondary-content: oklch(100% 0 0);
+
+    --color-accent: oklch(81.85% 0.168 83.59);
+    --color-accent-content: oklch(25.73% 0.086 281.29);
+
+    --color-neutral: oklch(32.06% 0.105 282.33);
+    --color-neutral-content: oklch(88.27% 0.033 291.39);
+
+    --color-info: oklch(62.81% 0.172 279.49);
+    --color-info-content: oklch(100% 0 0);
+    --color-success: oklch(76% 0.177 163.223);
+    --color-success-content: oklch(100% 0 0);
+    --color-warning: oklch(81.85% 0.168 83.59);
+    --color-warning-content: oklch(25.73% 0.086 281.29);
+    --color-error: oklch(66.37% 0.201 41.43);
+    --color-error-content: oklch(100% 0 0);
+
+    --radius-badge: 0.375rem;
+}
+
+/* ─── maryUI ─── */
+@source "../../vendor/robsontenorio/mary/src/View/Components/**/*.php";
+@source "../../vendor/fatturino/*/resources/views/**/*.blade.php";
+
+/* ─── Plugins (symlinks not followed by Tailwind v4) ─── */
+@source "../../../plugin-demo-mode/resources/views/**/*.blade.php";
+
+/* ─── Sidebar: indigo background with light text ─── */
+
+.fatturino-sidebar {
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+}
+
+/* All menu items: white text */
+.fatturino-sidebar .menu li > a,
+.fatturino-sidebar .menu li > details > summary {
+    color: rgba(255 255 255 / 0.75);
+}
+
+/* Hover: subtle white overlay */
+.fatturino-sidebar .menu li > a:hover,
+.fatturino-sidebar .menu li > details > summary:hover {
+    background: rgba(255 255 255 / 0.1);
+    color: white;
+}
+
+/* Active menu item */
+.fatturino-sidebar .mary-active-menu {
+    background: rgba(255 255 255 / 0.15) !important;
+    color: white !important;
+    font-weight: 600;
+}
+
+/* Submenu items inside open details */
+.fatturino-sidebar .menu li > details > ul > li > a {
+    color: rgba(255 255 255 / 0.7);
+}
+
+.fatturino-sidebar .menu li > details > ul > li > a:hover {
+    background: rgba(255 255 255 / 0.1);
+    color: white;
+}
+
+/* Separators */
+.fatturino-sidebar hr {
+    border-color: rgba(255 255 255 / 0.12);
+}
+
+/* User info text */
+.fatturino-sidebar .list-item-value,
+.fatturino-sidebar .list-item-sub-value {
+    color: rgba(255 255 255 / 0.85);
+}
+
+/* Icons */
+.fatturino-sidebar .menu li > a svg,
+.fatturino-sidebar .menu li > details > summary svg {
+    color: rgba(255 255 255 / 0.6);
+}
+
+.fatturino-sidebar .menu li > a:hover svg,
+.fatturino-sidebar .mary-active-menu svg {
+    color: white;
+}
+
+/* Select / input inside sidebar (fiscal year selector) */
+.fatturino-sidebar select,
+.fatturino-sidebar input {
+    background: rgba(255 255 255 / 0.1);
+    border-color: rgba(255 255 255 / 0.15);
+    color: white;
+}
+
+/* All icons and muted text inside sidebar */
+.fatturino-sidebar svg {
+    color: rgba(255 255 255 / 0.6);
+}
+
+.fatturino-sidebar .text-base-content\/50,
+.fatturino-sidebar .text-base-content\/60,
+.fatturino-sidebar .text-base-content\/70 {
+    color: rgba(255 255 255 / 0.6) !important;
+}
+
+/* Logout button */
+.fatturino-sidebar .btn-ghost {
+    color: rgba(255 255 255 / 0.6);
+}
+
+.fatturino-sidebar .btn-ghost:hover {
+    background: rgba(255 255 255 / 0.1);
+    color: white;
+}
+
+/* ─── Guest screens: auth & setup wizard ─── */
+
+/* Animated gradient for left panel */
+@keyframes guest-gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.guest-panel-bg {
+    background: linear-gradient(
+        135deg,
+        oklch(38.81% 0.139 282.45),
+        oklch(32.06% 0.105 282.33),
+        oklch(42% 0.16 270),
+        oklch(38.81% 0.139 282.45)
+    );
+    background-size: 300% 300%;
+    animation: guest-gradient 8s ease infinite;
+}
+
+/* Floating decorative orbs */
+@keyframes float-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes float-slower {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(16px); }
+}
+
+.guest-orb {
+    position: absolute;
+    border-radius: 9999px;
+    pointer-events: none;
+}
+
+.guest-orb-1 {
+    width: 300px;
+    height: 300px;
+    top: -60px;
+    right: -80px;
+    background: rgba(247 184 1 / 0.08);
+    animation: float-slow 6s ease-in-out infinite;
+}
+
+.guest-orb-2 {
+    width: 200px;
+    height: 200px;
+    bottom: 80px;
+    left: -40px;
+    background: rgba(255 255 255 / 0.06);
+    animation: float-slower 9s ease-in-out infinite;
+}
+
+.guest-orb-3 {
+    width: 120px;
+    height: 120px;
+    top: 45%;
+    right: 15%;
+    background: rgba(247 184 1 / 0.05);
+    animation: float-slow 7s ease-in-out infinite 1s;
+}
+
+/* Glass card for form containers */
+.glass-card {
+    backdrop-filter: blur(12px);
+    background: rgba(255 255 255 / 0.7);
+    border: 1px solid rgba(255 255 255 / 0.3);
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 32px rgba(61 52 139 / 0.08);
+}
+
+/* Fade-in entrance animation */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.guest-fade-in {
+    animation: fade-in-up 0.4s ease-out both;
+}
+
+/* Wizard step connector — solid primary color */
+.wizard-connector-fill {
+    background: oklch(38.81% 0.139 282.45);
+}
