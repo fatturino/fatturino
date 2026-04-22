@@ -83,7 +83,7 @@ class Index extends Component
         }
 
         try {
-            $service = new InvoiceXmlImportService;
+            $service = app(InvoiceXmlImportService::class);
             $filePath = $this->xmlFile->getRealPath();
             $extension = strtolower($this->xmlFile->getClientOriginalExtension());
 
