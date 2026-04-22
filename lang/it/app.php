@@ -732,6 +732,7 @@ return [
             'ateco_no_results' => 'Nessun codice trovato.',
 
             'electronic_invoicing' => 'Fatturazione Elettronica',
+            'fiscal_regime' => 'Regime Fiscale',
             'pec' => 'PEC',
             'sdi_code' => 'Codice SDI',
 

@@ -41,6 +41,15 @@
             {{-- Electronic Invoicing --}}
             <x-card :title="__('app.settings.company.electronic_invoicing')" separator>
                 <div class="grid gap-3">
+                    <x-select
+                        :label="__('app.settings.company.fiscal_regime')"
+                        wire:model="company_fiscal_regime"
+                        :options="$fiscalRegimes"
+                        option-value="id"
+                        option-label="name"
+                        icon="o-scale"
+                        :disabled="$readonly"
+                    />
                     <x-input :label="__('app.settings.company.pec')" wire:model="company_pec" :disabled="$readonly" />
                     <x-input :label="__('app.settings.company.sdi_code')" wire:model="company_sdi_code" :disabled="$readonly" />
                 </div>

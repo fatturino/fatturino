@@ -41,6 +41,9 @@ class Company extends Component
 
     public ?string $company_sdi_code = null;
 
+    #[Validate('required|in:RF01,RF19')]
+    public string $company_fiscal_regime = 'RF01';
+
     // Logo upload (temporary Livewire file object during upload)
     #[Validate(['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:1024', 'dimensions:max_width=4000,max_height=4000'])]
     public $company_logo = null;
@@ -70,6 +73,7 @@ class Company extends Component
         $this->company_country = $settings->company_country;
         $this->company_pec = $settings->company_pec;
         $this->company_sdi_code = $settings->company_sdi_code;
+        $this->company_fiscal_regime = $settings->company_fiscal_regime ?: 'RF01';
         $this->company_logo_path = $settings->company_logo_path;
         $this->company_ateco_codes = $settings->company_ateco_codes ?? [];
     }
@@ -136,6 +140,7 @@ class Company extends Component
         $settings->company_country = $this->company_country;
         $settings->company_pec = $this->company_pec ?? '';
         $settings->company_sdi_code = $this->company_sdi_code ?? '';
+        $settings->company_fiscal_regime = $this->company_fiscal_regime;
         $settings->company_ateco_codes = empty($this->company_ateco_codes) ? null : $this->company_ateco_codes;
 
         // Store the new logo if one was uploaded
@@ -177,8 +182,18 @@ class Company extends Component
         $this->success(__('app.settings.company.logo_removed'));
     }
 
+    public function fiscalRegimes(): array
+    {
+        return [
+            ['id' => 'RF01', 'name' => 'RF01 — Regime Ordinario'],
+            ['id' => 'RF19', 'name' => 'RF19 — Regime Forfettario'],
+        ];
+    }
+
     public function render()
     {
-        return view('livewire.settings.company');
+        return view('livewire.settings.company', [
+            'fiscalRegimes' => $this->fiscalRegimes(),
+        ]);
     }
 }
