@@ -68,6 +68,11 @@ class CreditNoteXmlService
         $supplier->setVatNumber(str_replace('IT', '', $vatNumber));
         $supplier->setFiscalCode($this->companySettings->company_tax_code);
         $supplier->setOrganization($this->companySettings->company_name);
+
+        if ($this->companySettings->company_email) {
+            $supplier->setEmail($this->companySettings->company_email);
+        }
+
         $supplier->setTaxRegime(new TaxRegime($this->companySettings->company_fiscal_regime));
 
         $supplierAddress = new Address;

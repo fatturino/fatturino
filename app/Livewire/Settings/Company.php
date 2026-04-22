@@ -37,6 +37,8 @@ class Company extends Component
 
     public string $company_country = 'IT';
 
+    public ?string $company_email = null;
+
     public ?string $company_pec = null;
 
     public ?string $company_sdi_code = null;
@@ -71,6 +73,7 @@ class Company extends Component
         $this->company_postal_code = $settings->company_postal_code;
         $this->company_province = $settings->company_province;
         $this->company_country = $settings->company_country;
+        $this->company_email = $settings->company_email;
         $this->company_pec = $settings->company_pec;
         $this->company_sdi_code = $settings->company_sdi_code;
         $this->company_fiscal_regime = $settings->company_fiscal_regime ?: 'RF01';
@@ -138,6 +141,7 @@ class Company extends Component
         $settings->company_postal_code = $this->company_postal_code ?? '';
         $settings->company_province = $this->company_province ?? '';
         $settings->company_country = $this->company_country;
+        $settings->company_email = $this->company_email ?? '';
         $settings->company_pec = $this->company_pec ?? '';
         $settings->company_sdi_code = $this->company_sdi_code ?? '';
         $settings->company_fiscal_regime = $this->company_fiscal_regime;

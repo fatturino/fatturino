@@ -25,6 +25,8 @@ class CompanySettings extends Settings
     public string $company_country;
 
     // Electronic invoicing
+    public string $company_email;
+
     public string $company_pec;
 
     public string $company_sdi_code;

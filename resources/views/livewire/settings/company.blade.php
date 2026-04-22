@@ -50,6 +50,7 @@
                         icon="o-scale"
                         :disabled="$readonly"
                     />
+                    <x-input :label="__('app.settings.company.email')" wire:model="company_email" type="email" icon="o-envelope" :disabled="$readonly" />
                     <x-input :label="__('app.settings.company.pec')" wire:model="company_pec" :disabled="$readonly" />
                     <x-input :label="__('app.settings.company.sdi_code')" wire:model="company_sdi_code" :disabled="$readonly" />
                 </div>

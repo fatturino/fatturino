@@ -733,6 +733,7 @@ return [
 
             'electronic_invoicing' => 'Fatturazione Elettronica',
             'fiscal_regime' => 'Regime Fiscale',
+            'email' => 'Email Aziendale',
             'pec' => 'PEC',
             'sdi_code' => 'Codice SDI',
 
