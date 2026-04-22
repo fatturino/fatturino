@@ -1229,7 +1229,7 @@
             "version": "dev-main",
             "source": {
                 "type": "git",
-                "url": "ssh://git@codeberg.org/fatturino/plugin-fe-openapi.git",
+                "url": "https://codeberg.org/fatturino/plugin-fe-openapi.git",
                 "reference": "d3e8c7fc71c75a207c5dfba1027587a0f212ac67"
             },
             "require-dev": {
