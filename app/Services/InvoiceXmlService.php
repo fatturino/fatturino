@@ -305,6 +305,6 @@ class InvoiceXmlService
         $doc->addDigitalDocumentInstance($instance);
 
         // Generate XML
-        return $doc->serialize()->asXML();
+        return trim($doc->serialize()->asXML());
     }
 }

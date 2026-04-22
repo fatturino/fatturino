@@ -247,6 +247,6 @@ class CreditNoteXmlService
 
         $doc->addDigitalDocumentInstance($instance);
 
-        return $doc->serialize()->asXML();
+        return trim($doc->serialize()->asXML());
     }
 }
