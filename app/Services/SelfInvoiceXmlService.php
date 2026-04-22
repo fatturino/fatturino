@@ -27,6 +27,7 @@ class SelfInvoiceXmlService
         'TD18' => 'TD18 — Acquisto beni intracomunitari',
         'TD19' => 'TD19 — Acquisto beni ex art.17 c.2 DPR 633/72',
         'TD28' => 'TD28 — Acquisti da San Marino con IVA',
+        'TD29' => 'TD29 — Comunicazione per omessa o irregolare fatturazione',
     ];
 
     public function __construct(
@@ -209,6 +210,7 @@ class SelfInvoiceXmlService
             'TD18' => DocumentType::TD18(),
             'TD19' => DocumentType::TD19(),
             'TD28' => DocumentType::TD28(),
+            'TD29' => DocumentType::TD29(),
             default => DocumentType::TD17(),
         };
     }

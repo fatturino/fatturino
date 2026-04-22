@@ -42,7 +42,7 @@ class Edit extends Component
     public ?int $sequence_id = null;
 
     // Self-invoice specific fields
-    #[Validate('required|in:TD17,TD18,TD19,TD28')]
+    #[Validate('required|in:TD17,TD18,TD19,TD28,TD29')]
     public string $document_type = 'TD17';
 
     #[Validate('required')]
