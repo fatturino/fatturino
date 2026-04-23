@@ -120,4 +120,53 @@ class InvoiceEmailTest extends TestCase
             ->get(route('sell-invoices.edit', $invoice))
             ->assertDontSee('openEmailModal');
     }
+
+    public function test_send_email_queues_document_mail()
+    {
+        Mail::fake();
+        $user = User::factory()->create();
+        $this->seedEmailSettings();
+        $invoice = $this->createInvoice();
+
+        Livewire::actingAs($user)
+            ->test(Edit::class, ['invoice' => $invoice])
+            ->set('emailModal', true)
+            ->set('emailRecipient', 'mario@example.com')
+            ->set('emailSubject', 'Test Subject')
+            ->set('emailBody', 'Test Body')
+            ->call('sendEmail');
+
+        Mail::assertQueued(\App\Mail\DocumentMail::class, fn ($mail) => $mail->hasTo('mario@example.com'));
+    }
+
+    public function test_send_email_validates_empty_subject()
+    {
+        $user = User::factory()->create();
+        $this->seedEmailSettings();
+        $invoice = $this->createInvoice();
+
+        Livewire::actingAs($user)
+            ->test(Edit::class, ['invoice' => $invoice])
+            ->set('emailRecipient', 'mario@example.com')
+            ->set('emailSubject', '')
+            ->set('emailBody', 'Test Body')
+            ->call('sendEmail')
+            ->assertHasErrors(['emailSubject']);
+    }
+
+    public function test_send_email_validates_empty_body()
+    {
+        $user = User::factory()->create();
+        $this->seedEmailSettings();
+        $invoice = $this->createInvoice();
+
+        Livewire::actingAs($user)
+            ->test(Edit::class, ['invoice' => $invoice])
+            ->set('emailRecipient', 'mario@example.com')
+            ->set('emailSubject', 'Test Subject')
+            ->set('emailBody', '')
+            ->call('sendEmail')
+            ->assertHasErrors(['emailBody']);
+    }
+
 }

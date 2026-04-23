@@ -15,6 +15,7 @@ use App\Support\InvoiceAuditDispatcher;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Mary\Traits\Toast;
+use Throwable;
 
 class Index extends Component
 {
@@ -247,12 +248,11 @@ class Index extends Component
             return;
         }
 
-        $log = $mailer->send($invoice, $recipientEmail);
-
-        if ($log->status->value === 'sent' || $log->status->value === 'queued') {
+        try {
+            $mailer->send($invoice, $recipientEmail);
             $this->success(__('app.email.sent_success'));
-        } else {
-            $this->error(__('app.email.send_error', ['error' => $log->error_message]));
+        } catch (Throwable $e) {
+            $this->error(__('app.email.send_error', ['error' => $e->getMessage()]));
         }
     }
 
