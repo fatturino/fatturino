@@ -991,6 +991,7 @@ return [
         // Toast messages
         'sent_success' => 'Email sent successfully.',
         'send_error' => 'Email send error: :error',
+        'send_not_allowed' => 'Email sending is not available in demo mode.',
         'no_recipient' => 'No email address available for this contact.',
         'test_connection' => 'Test Connection',
         'test_success' => 'Test email sent successfully.',

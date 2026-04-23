@@ -1026,6 +1026,7 @@ return [
         // Toast messages
         'sent_success' => 'Email inviata con successo.',
         'send_error' => 'Errore invio email: :error',
+        'send_not_allowed' => 'Invio email non disponibile in modalita demo.',
         'no_recipient' => 'Nessun indirizzo email disponibile per questo contatto.',
         'test_connection' => 'Testa Connessione',
         'test_success' => 'Email di test inviata con successo.',

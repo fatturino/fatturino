@@ -113,15 +113,17 @@
 
                         <x-button :label="__('app.common.cancel')" link="{{ route('proforma.index') }}" icon="o-x-mark" class="btn-ghost w-full" />
 
-                        {{-- Email send button (shown when contact has email) --}}
+                        {{-- Email send button (shown when contact has email and email sending is allowed) --}}
                         @if($proformaInvoice->contact?->email)
-                            <x-button
-                                :label="__('app.email.send_email')"
-                                wire:click="openEmailModal"
-                                icon="o-envelope"
-                                class="btn-outline w-full"
-                                spinner="openEmailModal"
-                            />
+                            @allowed('send-document-email')
+                                <x-button
+                                    :label="__('app.email.send_email')"
+                                    wire:click="openEmailModal"
+                                    icon="o-envelope"
+                                    class="btn-outline w-full"
+                                    spinner="openEmailModal"
+                                />
+                            @endallowed
                         @endif
                     </div>
 

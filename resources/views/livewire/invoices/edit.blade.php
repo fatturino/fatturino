@@ -99,7 +99,9 @@
                             <x-button :label="__('app.invoices.download_pdf')" wire:click="downloadPdf" icon="o-document-text" class="btn-ghost btn-sm" spinner="downloadPdf" />
                             <x-button :label="__('app.invoices.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" class="btn-ghost btn-sm" spinner="downloadXml" />
                             @if($invoice->contact?->email)
-                                <x-button :label="__('app.email.send_email')" wire:click="openEmailModal" icon="o-envelope" class="btn-ghost btn-sm" spinner="openEmailModal" />
+                                @allowed('send-document-email')
+                                    <x-button :label="__('app.email.send_email')" wire:click="openEmailModal" icon="o-envelope" class="btn-ghost btn-sm" spinner="openEmailModal" />
+                                @endallowed
                             @endif
                             <x-button :label="__('app.common.cancel')" link="{{ route('sell-invoices.index') }}" icon="o-x-mark" class="btn-ghost btn-sm" />
                         </div>

@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Traits;
 
+use App\Contracts\EnvironmentCapabilities;
+use App\Enums\Capability;
 use App\Services\DocumentMailer;
 use App\Settings\EmailSettings;
 use App\Support\InvoiceAuditDispatcher;
@@ -55,6 +57,12 @@ trait HasEmailSending
      */
     public function sendEmail(): void
     {
+        if (app(EnvironmentCapabilities::class)->cannot(Capability::SendDocumentEmail)) {
+            $this->error(__('app.email.send_not_allowed'));
+
+            return;
+        }
+
         $this->validate([
             'emailRecipient' => 'required|email',
             'emailCc' => 'nullable|email',
@@ -92,6 +100,10 @@ trait HasEmailSending
      */
     protected function triggerAutoSend(string $settingKey): void
     {
+        if (app(EnvironmentCapabilities::class)->cannot(Capability::SendDocumentEmail)) {
+            return;
+        }
+
         $settings = app(EmailSettings::class);
 
         if (! $settings->{$settingKey}) {
