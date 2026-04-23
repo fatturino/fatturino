@@ -18,9 +18,6 @@ pest()->extend(Tests\TestCase::class)
 pest()->extend(Tests\TestCase::class)
     ->in('Unit');
 
-// Shared helpers for Invoicetronic plugin tests
-require_once __DIR__ . '/Unit/Plugins/Invoicetronic/helpers.php';
-
 /*
 |--------------------------------------------------------------------------
 | Expectations
