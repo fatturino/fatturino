@@ -165,6 +165,7 @@
     <x-modal wire:model="emailModal" :title="__('app.email.send_email')">
         <div class="space-y-4">
             <x-input :label="__('app.email.recipient')" wire:model="emailRecipient" type="email" />
+            <x-input :label="__('app.email.cc')" wire:model="emailCc" type="email" />
             <x-input :label="__('app.email.subject')" wire:model="emailSubject" />
             <x-textarea :label="__('app.email.body')" wire:model="emailBody" rows="8" />
             <p class="text-xs text-base-content/40">{{ __('app.email.placeholders_hint') }}</p>

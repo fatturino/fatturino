@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendDocumentMailJob;
 use App\Mail\DocumentMail;
 use App\Settings\CompanySettings;
 use App\Settings\EmailSettings;
@@ -27,16 +28,16 @@ class DocumentMailer
         $subject = $this->renderSubject($type, $document);
         $body = $this->renderBody($type, $document);
 
-        $this->deliver($document, $recipientEmail, $subject, $body);
+        SendDocumentMailJob::dispatch($recipientEmail, $subject, $body, $document);
     }
 
     /**
      * Send document email with caller-supplied subject and body (used from the modal).
      * Throws on delivery failure.
      */
-    public function sendWithOverrides(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true): void
+    public function sendWithOverrides(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = ''): void
     {
-        $this->deliver($document, $recipientEmail, $subject, $body, $attachPdf);
+        SendDocumentMailJob::dispatch($recipientEmail, $subject, $body, $document, $attachPdf, $cc);
     }
 
     /**
@@ -125,15 +126,16 @@ class DocumentMailer
     }
 
     /**
-     * Perform the actual send. Throws on failure: callers audit/log the outcome.
+     * Apply SMTP overrides and send synchronously. Called from SendDocumentMailJob
+     * so it runs inside the queue worker process — where Config::set() actually takes effect.
      */
-    private function deliver(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true): void
+    public function deliver(string $recipientEmail, string $subject, string $body, ?Model $document = null, bool $attachPdf = true, string $cc = ''): void
     {
         $this->applySmtpOverrides();
 
         $attachedDocument = $attachPdf ? $document : null;
 
-        Mail::to($recipientEmail)->send(new DocumentMail($subject, $body, $attachedDocument));
+        Mail::to($recipientEmail)->send(new DocumentMail($subject, $body, $attachedDocument, $cc));
     }
 
     /**

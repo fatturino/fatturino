@@ -22,6 +22,8 @@ trait HasEmailSending
 
     public string $emailRecipient = '';
 
+    public string $emailCc = '';
+
     public string $emailSubject = '';
 
     public string $emailBody = '';
@@ -38,6 +40,7 @@ trait HasEmailSending
         $type = $this->getEmailDocumentType();
 
         $this->emailRecipient = $contact?->email ?? '';
+        $this->emailCc = '';
         $this->emailAttachPdf = true;
 
         $mailer = app(DocumentMailer::class);
@@ -54,6 +57,7 @@ trait HasEmailSending
     {
         $this->validate([
             'emailRecipient' => 'required|email',
+            'emailCc' => 'nullable|email',
             'emailSubject' => 'required|string|max:255',
             'emailBody' => 'required|string',
         ]);
@@ -68,6 +72,7 @@ trait HasEmailSending
                 $this->emailSubject,
                 $this->emailBody,
                 $this->emailAttachPdf,
+                $this->emailCc,
             );
 
             InvoiceAuditDispatcher::dispatch($document, 'email_sent');

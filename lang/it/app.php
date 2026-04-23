@@ -1012,6 +1012,7 @@ return [
         'send_email' => 'Invia Email',
         'send' => 'Invia',
         'recipient' => 'Destinatario',
+        'cc' => 'Copia (CC)',
         'subject' => 'Oggetto',
         'body' => 'Messaggio',
         'confirm_send' => 'Inviare l\'email al cliente?',

@@ -196,6 +196,24 @@ test('testConnection returns null on successful send', function () {
     expect($result)->toBeNull();
 });
 
+test('sendWithOverrides with CC includes CC address in envelope', function () {
+    Mail::fake();
+
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = Invoice::factory()->create(['contact_id' => $contact->id]);
+
+    app(DocumentMailer::class)->sendWithOverrides(
+        $invoice,
+        'mario@example.com',
+        'Oggetto',
+        'Corpo',
+        attachPdf: true,
+        cc: 'contabilita@example.com',
+    );
+
+    Mail::assertQueued(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasCc('contabilita@example.com'));
+});
+
 test('testConnection returns error string when no from address configured', function () {
     // Ensure both DB setting and env fallback are empty
     $settings = app(EmailSettings::class);

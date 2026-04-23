@@ -6,29 +6,28 @@ use App\Models\CreditNote;
 use App\Models\Invoice;
 use App\Models\ProformaInvoice;
 use App\Services\CourtesyPdfService;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Queue\SerializesModels;
 
-class DocumentMail extends Mailable implements ShouldQueue
+class DocumentMail extends Mailable
 {
-    use Queueable, SerializesModels;
-
     public function __construct(
         public readonly string $emailSubject,
         public readonly string $emailBody,
-        // Stored as a model so SerializesModels handles it safely (no binary in queue payload)
         public readonly ?Model $document = null,
+        public readonly string $emailCc = '',
     ) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->emailSubject);
+        return new Envelope(
+            subject: $this->emailSubject,
+            cc: $this->emailCc !== '' ? [new Address($this->emailCc)] : [],
+        );
     }
 
     public function content(): Content

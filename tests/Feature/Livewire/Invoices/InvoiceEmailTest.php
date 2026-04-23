@@ -169,4 +169,51 @@ class InvoiceEmailTest extends TestCase
             ->assertHasErrors(['emailBody']);
     }
 
+    public function test_send_email_with_cc_queues_mail_with_cc_address()
+    {
+        Mail::fake();
+        $user = User::factory()->create();
+        $this->seedEmailSettings();
+        $invoice = $this->createInvoice();
+
+        Livewire::actingAs($user)
+            ->test(Edit::class, ['invoice' => $invoice])
+            ->set('emailModal', true)
+            ->set('emailRecipient', 'mario@example.com')
+            ->set('emailCc', 'contabilita@example.com')
+            ->set('emailSubject', 'Test')
+            ->set('emailBody', 'Test')
+            ->call('sendEmail');
+
+        Mail::assertQueued(\App\Mail\DocumentMail::class, fn ($mail) => $mail->hasCc('contabilita@example.com'));
+    }
+
+    public function test_send_email_validates_invalid_cc_email()
+    {
+        $user = User::factory()->create();
+        $this->seedEmailSettings();
+        $invoice = $this->createInvoice();
+
+        Livewire::actingAs($user)
+            ->test(Edit::class, ['invoice' => $invoice])
+            ->set('emailRecipient', 'mario@example.com')
+            ->set('emailCc', 'not-an-email')
+            ->set('emailSubject', 'Test')
+            ->set('emailBody', 'Test')
+            ->call('sendEmail')
+            ->assertHasErrors(['emailCc']);
+    }
+
+    public function test_open_email_modal_resets_cc_to_empty()
+    {
+        $user = User::factory()->create();
+        $this->seedEmailSettings();
+        $invoice = $this->createInvoice();
+
+        Livewire::actingAs($user)
+            ->test(Edit::class, ['invoice' => $invoice])
+            ->set('emailCc', 'old@example.com')
+            ->call('openEmailModal')
+            ->assertSet('emailCc', '');
+    }
 }

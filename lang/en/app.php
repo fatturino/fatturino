@@ -977,6 +977,7 @@ return [
         'send_email' => 'Send Email',
         'send' => 'Send',
         'recipient' => 'Recipient',
+        'cc' => 'CC (Copy)',
         'subject' => 'Subject',
         'body' => 'Message',
         'confirm_send' => 'Send email to the customer?',
