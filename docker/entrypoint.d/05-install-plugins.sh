@@ -20,6 +20,12 @@
 
 WORKDIR="/var/www/html"
 
+# Force git to use HTTPS instead of SSH for Codeberg.
+# Composer's Gitea VCS driver resolves the SSH clone URL from the API response
+# even when the configured repository URL is HTTPS — this rewrite prevents
+# "cannot run ssh: No such file or directory" failures in containers without openssh.
+git config --global url."https://codeberg.org/".insteadOf "git@codeberg.org:"
+
 echo "[fatturino] Installing plugins: $FATTURINO_PLUGINS"
 cd "$WORKDIR"
 
