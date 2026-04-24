@@ -20,12 +20,6 @@
 
 WORKDIR="/var/www/html"
 
-# Force git to use HTTPS instead of SSH for Codeberg.
-# Composer's Gitea VCS driver resolves the SSH clone URL from the API response
-# even when the configured repository URL is HTTPS — this rewrite prevents
-# "cannot run ssh: No such file or directory" failures in containers without openssh.
-git config --global url."https://codeberg.org/".insteadOf "git@codeberg.org:"
-
 echo "[fatturino] Installing plugins: $FATTURINO_PLUGINS"
 cd "$WORKDIR"
 
@@ -33,7 +27,11 @@ for plugin in $FATTURINO_PLUGINS; do
     repo="https://codeberg.org/fatturino/${plugin}.git"
     package="fatturino/${plugin}"
 
-    composer config "repositories.${plugin}" vcs "$repo" --quiet
+    # Use type "git" (not "vcs") to bypass Composer's Gitea API driver.
+    # The Gitea driver fetches the API and uses ssh_url from the response,
+    # causing "cannot run ssh: No such file or directory" in containers without openssh.
+    # type "git" forces Composer to clone directly from the given HTTPS URL.
+    composer config "repositories.${plugin}" '{"type":"git","url":"'"$repo"'"}' --quiet
     echo "[fatturino] Installing $package..."
     # --no-scripts: skip package:discover during each install, run once at the end
     composer require "${package}:dev-main" --no-interaction --no-scripts
