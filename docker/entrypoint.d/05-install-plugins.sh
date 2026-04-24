@@ -20,6 +20,28 @@
 
 WORKDIR="/var/www/html"
 
+# Extract Codeberg credentials from COMPOSER_AUTH and store them in git's credential store.
+# Composer does not automatically forward http-basic auth to git subprocesses for type:git repos,
+# so we configure git credentials explicitly here to allow private repo cloning via HTTPS.
+if [ -n "$COMPOSER_AUTH" ]; then
+    _cb_user=$(echo "$COMPOSER_AUTH" | php -r "
+        \$a = json_decode(file_get_contents('php://stdin'), true);
+        echo \$a['http-basic']['codeberg.org']['username'] ?? '';
+    ")
+    _cb_token=$(echo "$COMPOSER_AUTH" | php -r "
+        \$a = json_decode(file_get_contents('php://stdin'), true);
+        echo \$a['http-basic']['codeberg.org']['password'] ?? '';
+    ")
+
+    if [ -n "$_cb_user" ] && [ -n "$_cb_token" ]; then
+        git config --global credential.helper store
+        echo "https://${_cb_user}:${_cb_token}@codeberg.org" > ~/.git-credentials
+        chmod 600 ~/.git-credentials
+    fi
+
+    unset _cb_user _cb_token
+fi
+
 echo "[fatturino] Installing plugins: $FATTURINO_PLUGINS"
 cd "$WORKDIR"
 
