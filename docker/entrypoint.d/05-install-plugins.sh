@@ -20,9 +20,10 @@
 
 WORKDIR="/var/www/html"
 
-# Extract Codeberg credentials from COMPOSER_AUTH and store them in git's credential store.
-# Composer does not automatically forward http-basic auth to git subprocesses for type:git repos,
-# so we configure git credentials explicitly here to allow private repo cloning via HTTPS.
+# Extract Codeberg credentials from COMPOSER_AUTH to embed them in the clone URL.
+# Composer does not forward http-basic auth to git subprocesses for type:git repos,
+# so we embed credentials directly in the HTTPS URL to avoid interactive prompts.
+_codeberg_prefix="https://codeberg.org"
 if [ -n "$COMPOSER_AUTH" ]; then
     _cb_user=$(echo "$COMPOSER_AUTH" | php -r "
         \$a = json_decode(file_get_contents('php://stdin'), true);
@@ -34,9 +35,7 @@ if [ -n "$COMPOSER_AUTH" ]; then
     ")
 
     if [ -n "$_cb_user" ] && [ -n "$_cb_token" ]; then
-        git config --global credential.helper store
-        echo "https://${_cb_user}:${_cb_token}@codeberg.org" > ~/.git-credentials
-        chmod 600 ~/.git-credentials
+        _codeberg_prefix="https://${_cb_user}:${_cb_token}@codeberg.org"
     fi
 
     unset _cb_user _cb_token
@@ -46,7 +45,7 @@ echo "[fatturino] Installing plugins: $FATTURINO_PLUGINS"
 cd "$WORKDIR"
 
 for plugin in $FATTURINO_PLUGINS; do
-    repo="https://codeberg.org/fatturino/${plugin}.git"
+    repo="${_codeberg_prefix}/fatturino/${plugin}.git"
     package="fatturino/${plugin}"
 
     # Use type "git" (not "vcs") to bypass Composer's Gitea API driver.
