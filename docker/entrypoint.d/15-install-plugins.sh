@@ -9,7 +9,12 @@
 # Private repos require COMPOSER_AUTH:
 #   {"http-basic":{"codeberg.org":{"username":"user","password":"api-token"}}}
 
-[ -z "$FATTURINO_PLUGINS" ] && exit 0
+echo "[fatturino][15-install-plugins] start"
+
+if [ -z "$FATTURINO_PLUGINS" ]; then
+    echo "[fatturino][15-install-plugins] FATTURINO_PLUGINS empty, skipping"
+    exit 0
+fi
 
 cd /var/www/html
 
@@ -37,8 +42,9 @@ unset _codeberg_prefix
 composer dump-autoload --optimize
 php artisan package:discover --ansi
 
-# Rebuild frontend assets so Tailwind scans plugin Blade views
+# Rebuild frontend assets so Tailwind scans plugin Blade views.
+# Laravel cache invalidation is handled later by AUTORUN_LARAVEL_OPTIMIZE once
+# migrations have created the cache table — do NOT call optimize:clear here.
 bun run build
-php artisan optimize:clear
 
-echo "[fatturino] Plugins installed"
+echo "[fatturino][15-install-plugins] done"

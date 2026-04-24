@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "[fatturino][20-seed-database] start"
+
 # Run migrations on every boot (idempotent — Laravel tracks which have already run)
 echo "[fatturino] Running database migrations..."
 php /var/www/html/artisan migrate --force --no-interaction
@@ -19,3 +21,5 @@ if [ ! -f /data/.seeded ]; then
     touch /data/.seeded
     echo "[fatturino] Initial seeding complete"
 fi
+
+echo "[fatturino][20-seed-database] done"

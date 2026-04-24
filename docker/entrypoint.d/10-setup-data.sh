@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "[fatturino][10-setup-data] start"
+
 # Create persistent data directory structure on first boot
 mkdir -p /data/storage/app/private/imports
 mkdir -p /data/storage/app/private/documents/xml/sales
@@ -34,3 +36,5 @@ fi
 
 # Ensure www-data owns the persistent volume
 chown -R www-data:www-data /data
+
+echo "[fatturino][10-setup-data] done"
