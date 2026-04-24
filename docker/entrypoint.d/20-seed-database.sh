@@ -11,7 +11,7 @@ if [ ! -f /data/.seeded ]; then
     # Use DemoSeeder when demo-mode plugin is installed
     if composer show fatturino/plugin-demo-mode > /dev/null 2>&1; then
         echo "[fatturino] Demo mode plugin detected, using DemoSeeder..."
-        php /var/www/html/artisan db:seed --seeder='Fatturino\DemoMode\Database\Seeders\DemoSeeder' --force --no-interaction
+        php /var/www/html/artisan db:seed --class='Fatturino\DemoMode\Database\Seeders\DemoSeeder' --force --no-interaction
     else
         php /var/www/html/artisan db:seed --force --no-interaction
     fi
