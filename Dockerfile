@@ -50,7 +50,7 @@ USER root
 
 # Install required PHP extensions and sqlite3 CLI (for WAL mode in entrypoint)
 RUN install-php-extensions bcmath intl gd \
-    && apt-get update && apt-get install -y --no-install-recommends sqlite3 git \
+    && apt-get update && apt-get install -y --no-install-recommends sqlite3 git nano \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create persistent data directory with correct ownership
