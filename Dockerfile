@@ -37,7 +37,7 @@ COPY --from=composer /app/vendor/robsontenorio/mary/ vendor/robsontenorio/mary/
 RUN bun run build
 
 # ==============================================================================
-# Stage 2: Production image
+# Stage 3: Production image
 # ==============================================================================
 FROM serversideup/php:8.4-fpm-nginx AS production
 
