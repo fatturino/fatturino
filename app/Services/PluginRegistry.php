@@ -30,6 +30,14 @@ class PluginRegistry
     private ?array $dbState = null;
 
     /**
+     * Runtime lock that supersedes the per-plugin DB flag. Set by environments
+     * that manage plugins centrally (e.g., plugin-cloud) so the UI cannot
+     * activate or deactivate any plugin. Not persisted: clears when the env
+     * stops calling lockAll().
+     */
+    private bool $forceLockAll = false;
+
+    /**
      * Register a plugin. Called by plugin ServiceProviders during boot().
      *
      * Returns true if the plugin is active and should continue booting.
@@ -46,7 +54,7 @@ class PluginRegistry
             'version' => $version,
             'author' => $author,
             'active' => $state['active'],
-            'locked' => $state['locked'],
+            'locked' => $state['locked'] || $this->forceLockAll,
         ];
 
         return $state['active'];
@@ -108,10 +116,14 @@ class PluginRegistry
     }
 
     /**
-     * Activate a plugin by ID.
+     * Activate a plugin by ID. Locked plugins cannot be activated from the UI.
      */
     public function activate(string $id): void
     {
+        if ($this->isLocked($id)) {
+            return;
+        }
+
         DB::table('plugins')->updateOrInsert(
             ['id' => $id],
             ['active' => true, 'updated_at' => now()],
@@ -129,7 +141,7 @@ class PluginRegistry
      */
     public function deactivate(string $id): void
     {
-        if (isset($this->plugins[$id]) && $this->plugins[$id]['locked']) {
+        if ($this->isLocked($id)) {
             return;
         }
 
@@ -143,6 +155,34 @@ class PluginRegistry
         }
 
         $this->dbState = null;
+    }
+
+    /**
+     * Whether the given plugin is locked (UI cannot toggle it).
+     * True if the per-plugin DB flag is set OR the runtime lockAll() override is on.
+     */
+    public function isLocked(string $id): bool
+    {
+        if ($this->forceLockAll) {
+            return true;
+        }
+
+        return $this->plugins[$id]['locked'] ?? false;
+    }
+
+    /**
+     * Force every registered plugin to appear locked for the rest of the request.
+     * Used by plugin-cloud to centralize plugin management in the cloud layer.
+     * Does not persist to the DB; the lock disappears once the calling code
+     * stops invoking this method (e.g., when plugin-cloud is deactivated).
+     */
+    public function lockAll(): void
+    {
+        $this->forceLockAll = true;
+
+        foreach (array_keys($this->plugins) as $id) {
+            $this->plugins[$id]['locked'] = true;
+        }
     }
 
     /**

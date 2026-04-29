@@ -111,6 +111,65 @@ test('count returns only active plugins', function () {
     expect($registry->count())->toBe(1);
 });
 
+test('lockAll forces every registered plugin to appear locked', function () {
+    $registry = new PluginRegistry;
+    $registry->register('plugin-a', 'Plugin A');
+    $registry->register('plugin-b', 'Plugin B');
+
+    $registry->lockAll();
+
+    expect($registry->all()['plugin-a']['locked'])->toBeTrue();
+    expect($registry->all()['plugin-b']['locked'])->toBeTrue();
+});
+
+test('lockAll applies to plugins registered after the call', function () {
+    $registry = new PluginRegistry;
+    $registry->lockAll();
+    $registry->register('plugin-late', 'Late Plugin');
+
+    expect($registry->all()['plugin-late']['locked'])->toBeTrue();
+});
+
+test('activate is a no-op when lockAll is active', function () {
+    $registry = new PluginRegistry;
+    $registry->register('plugin-a', 'Plugin A');
+    $registry->deactivate('plugin-a');
+    $registry->lockAll();
+    $registry->activate('plugin-a');
+
+    expect($registry->has('plugin-a'))->toBeFalse();
+});
+
+test('deactivate is a no-op when lockAll is active', function () {
+    $registry = new PluginRegistry;
+    $registry->register('plugin-a', 'Plugin A');
+    $registry->lockAll();
+    $registry->deactivate('plugin-a');
+
+    expect($registry->has('plugin-a'))->toBeTrue();
+});
+
+test('isLocked respects per-plugin DB flag and lockAll override', function () {
+    DB::table('plugins')->insert([
+        'id' => 'db-locked',
+        'active' => true,
+        'locked' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $registry = new PluginRegistry;
+    $registry->register('db-locked', 'DB Locked');
+    $registry->register('unlocked', 'Unlocked');
+
+    expect($registry->isLocked('db-locked'))->toBeTrue();
+    expect($registry->isLocked('unlocked'))->toBeFalse();
+
+    $registry->lockAll();
+
+    expect($registry->isLocked('unlocked'))->toBeTrue();
+});
+
 test('inject and injections manage blade view slots', function () {
     $registry = new PluginRegistry;
     $registry->inject('head-scripts', 'myplugin::head');
