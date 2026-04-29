@@ -3,7 +3,9 @@
 namespace App\Livewire\Settings;
 
 use App\Contracts\SdiProvider;
+use App\Settings\CompanySettings;
 use Livewire\Component;
+use Mary\Traits\Toast;
 
 /**
  * Fallback SDI settings page shown when no provider plugin is installed.
@@ -12,11 +14,25 @@ use Livewire\Component;
  */
 class SdiSettings extends Component
 {
+    use Toast;
+
     public string $providerName = '';
 
-    public function mount(SdiProvider $provider): void
+    public bool $conservationAcknowledged = false;
+
+    public function mount(SdiProvider $provider, CompanySettings $companySettings): void
     {
         $this->providerName = $provider->name();
+        $this->conservationAcknowledged = $companySettings->conservation_acknowledged ?? false;
+    }
+
+    public function acknowledgeConservation(CompanySettings $companySettings): void
+    {
+        $companySettings->conservation_acknowledged = true;
+        $companySettings->save();
+
+        $this->conservationAcknowledged = true;
+        $this->success(__('app.conservation.acknowledged_toast'));
     }
 
     public function render()

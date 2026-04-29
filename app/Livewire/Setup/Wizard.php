@@ -56,6 +56,9 @@ class Wizard extends Component
 
     public string $company_sdi_code = '0000000';
 
+    // Step 3 — Legal storage acknowledgment (AdE conservazione service)
+    public bool $conservation_acknowledged = false;
+
     public function mount(CompanySettings $settings): void
     {
         // If at least one user exists, setup is already done
@@ -77,6 +80,7 @@ class Wizard extends Component
         $this->company_country = $settings->company_country ?: 'IT';
         $this->company_pec = $settings->company_pec;
         $this->company_sdi_code = $settings->company_sdi_code ?: '0000000';
+        $this->conservation_acknowledged = $settings->conservation_acknowledged ?? false;
     }
 
     public function updatedName(string $value): void
@@ -131,6 +135,7 @@ class Wizard extends Component
         $companySettings->company_country = $this->company_country;
         $companySettings->company_pec = $this->company_pec;
         $companySettings->company_sdi_code = $this->company_sdi_code;
+        $companySettings->conservation_acknowledged = $this->conservation_acknowledged;
         $companySettings->save();
 
         // Persist invoice defaults (stamp duty & withholding tax)
@@ -181,6 +186,7 @@ class Wizard extends Component
                 'company_country' => 'required|size:2',
                 'company_pec' => 'required|email',
                 'company_sdi_code' => 'required|size:7',
+                'conservation_acknowledged' => 'accepted',
             ],
             default => [],
         };

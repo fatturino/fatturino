@@ -1,6 +1,8 @@
 <div>
     <x-header :title="__('app.settings.sdi.no_provider_title')" separator />
 
+    @include('partials.conservation-banner')
+
     <div class="p-8 bg-base-200 rounded-lg text-center">
         <x-icon name="o-puzzle-piece" class="w-16 h-16 mx-auto mb-4 opacity-40" />
         <h2 class="text-xl font-bold mb-2">{{ __('app.settings.sdi.no_provider_title') }}</h2>

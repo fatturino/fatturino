@@ -148,6 +148,51 @@ docker cp fatturino:/data/backup.sqlite ./fatturino-db-$(date +%Y%m%d).sqlite
 docker exec fatturino rm /data/backup.sqlite
 ```
 
+### Backup automatico su S3 (Spatie)
+
+Fatturino integra `spatie/laravel-backup` per backup pianificati su S3 (o compatibili: MinIO, Cloudflare R2, Wasabi, Backblaze B2). La configurazione e' gestita dalla UI in **Configurazione, Servizi**:
+
+1. Abilita il backup automatico, scegli frequenza (giornaliera, settimanale, mensile) e orario.
+2. Inserisci le credenziali S3 (Access Key, Secret, bucket, regione, endpoint opzionale).
+3. Salva. Lo scheduler interno esegue `backup:run` secondo la pianificazione e `backup:clean` ogni notte alle 03:30.
+
+Il backup contiene:
+- `db-dumps/database.sql.gz` (dump SQLite compresso)
+- `storage/app/private/documents/` (XML e PDF fatture)
+- `storage/app/public/` (logo, asset utente)
+
+Esecuzione manuale:
+
+```bash
+docker exec fatturino php artisan backup:run --disable-notifications
+```
+
+#### Restore da archivio S3
+
+```bash
+# 1. Scarica l'archivio dal bucket S3
+aws s3 cp s3://il-tuo-bucket/Fatturino/2026-04-29-03-00-00.zip ./backup.zip
+
+# 2. Estrai in una cartella temporanea
+unzip backup.zip -d ./restore
+
+# 3. Ferma il container per evitare scritture concorrenti
+docker compose down
+
+# 4. Ripristina il database
+docker run --rm -v fatturino-data:/data -v $(pwd)/restore:/restore alpine \
+  sh -c "gunzip -c /restore/db-dumps/database.sql.gz | sqlite3 /data/database.sqlite"
+
+# 5. Ripristina i file (documenti e public)
+docker run --rm -v fatturino-data:/data -v $(pwd)/restore:/restore alpine \
+  sh -c "cp -a /restore/storage/. /data/storage/"
+
+# 6. Riavvia
+docker compose up -d
+```
+
+> Verifica sempre l'integrita' del backup ripristinandolo periodicamente su un'istanza di staging prima di affidarti al recupero in emergenza.
+
 ## Build da sorgente
 
 ```bash

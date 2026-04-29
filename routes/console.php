@@ -9,6 +9,9 @@ Artisan::command("inspire", function () {
     $this->comment(Inspiring::quote());
 })->purpose("Display an inspiring quote");
 
+// Daily check for gaps in invoice numbering sequences. Reports to Sentry when gaps found.
+Schedule::command('invoices:check-sequences')->dailyAt('04:00');
+
 // Register backup schedule only when: not managed by env (self-hosted) and enabled in settings.
 // Guard with try/catch so the console still works during first-run migrations.
 try {

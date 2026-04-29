@@ -202,6 +202,30 @@
                         icon="o-cpu-chip"
                         placeholder="0000000"
                     />
+
+                    <div class="divider text-sm text-accent font-medium">{{ __('app.conservation.section_title') }}</div>
+
+                    <x-alert
+                        :description="__('app.conservation.setup_description')"
+                        icon="o-information-circle"
+                        class="alert-info"
+                    >
+                        <x-slot:actions>
+                            <x-button
+                                :label="__('app.conservation.link_label')"
+                                icon-right="o-arrow-top-right-on-square"
+                                link="https://ivaservizi.agenziaentrate.gov.it"
+                                external
+                                class="btn-sm btn-outline"
+                            />
+                        </x-slot:actions>
+                    </x-alert>
+
+                    <x-checkbox
+                        wire:model="conservation_acknowledged"
+                        :label="__('app.conservation.setup_acknowledge_label')"
+                        :hint="__('app.conservation.setup_acknowledge_hint')"
+                    />
                 </div>
 
                 <x-slot:actions>

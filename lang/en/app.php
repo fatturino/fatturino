@@ -1093,4 +1093,23 @@ return [
         'friday' => 'Friday',
         'saturday' => 'Saturday',
     ],
+
+    'conservation' => [
+        // Setup wizard section
+        'section_title' => 'Legal long-term storage',
+        'setup_description' => 'Fatturino does not provide legally compliant invoice archival. You must enrol (free of charge) in the Italian Revenue Agency storage service from your Fatture e Corrispettivi area.',
+        'setup_acknowledge_label' => 'I confirm I have enrolled (or will enrol shortly) in the free legal storage service offered by the Italian Revenue Agency',
+        'setup_acknowledge_hint' => 'Without enrolment, transmitted invoices are not archived in a legally compliant way.',
+
+        // Banner on Electronic Invoicing page
+        'banner_title' => 'Legal storage not yet confirmed',
+        'banner_description' => 'Fatturino does not archive invoices in a legally compliant way. Enrol in the free service offered by the Italian Revenue Agency through Fatture e Corrispettivi, then confirm below.',
+        'link_label' => 'Open AdE service',
+        'acknowledge_button' => 'Confirm enrolment',
+
+        // Confirmation state
+        'acknowledged_title' => 'Legal storage: enrolment confirmed',
+        'acknowledged_description' => 'You have declared enrolment in the Italian Revenue Agency storage service. Long-term storage is fully handled by AdE.',
+        'acknowledged_toast' => 'AdE legal storage enrolment recorded.',
+    ],
 ];

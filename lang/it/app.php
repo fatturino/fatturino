@@ -1128,4 +1128,23 @@ return [
         'friday' => 'Venerdi',
         'saturday' => 'Sabato',
     ],
+
+    'conservation' => [
+        // Setup wizard section
+        'section_title' => 'Conservazione a norma',
+        'setup_description' => 'Fatturino non gestisce la conservazione a norma di legge delle fatture elettroniche. Devi aderire gratuitamente al servizio di conservazione dell\'Agenzia delle Entrate dalla tua area Fatture e Corrispettivi.',
+        'setup_acknowledge_label' => 'Confermo di aver attivato (o di attivare a breve) il servizio di conservazione gratuito dell\'Agenzia delle Entrate',
+        'setup_acknowledge_hint' => 'Senza adesione le fatture trasmesse non vengono conservate a norma.',
+
+        // Banner on Fatturazione Elettronica page
+        'banner_title' => 'Conservazione a norma non confermata',
+        'banner_description' => 'Fatturino non conserva le fatture a norma di legge. Aderisci al servizio gratuito dell\'Agenzia delle Entrate da Fatture e Corrispettivi e poi conferma qui sotto.',
+        'link_label' => 'Vai al servizio AdE',
+        'acknowledge_button' => 'Conferma adesione',
+
+        // Confirmation state
+        'acknowledged_title' => 'Conservazione a norma: adesione confermata',
+        'acknowledged_description' => 'Hai dichiarato di aver aderito al servizio di conservazione dell\'Agenzia delle Entrate. La conservazione delle fatture e\' gestita interamente da AdE.',
+        'acknowledged_toast' => 'Adesione alla conservazione AdE registrata.',
+    ],
 ];

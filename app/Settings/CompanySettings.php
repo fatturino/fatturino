@@ -44,6 +44,10 @@ class CompanySettings extends Settings
     // ATECO 2007 division codes associated with the company (stored as array of string values)
     public ?array $company_ateco_codes;
 
+    // User confirmed enrollment in the Italian Tax Agency (AdE) free legal storage service.
+    // Fatturino does not handle conservazione, this flag tracks the user's acknowledgment.
+    public bool $conservation_acknowledged;
+
     /**
      * Define the settings group name
      */
