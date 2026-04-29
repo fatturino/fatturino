@@ -106,5 +106,13 @@
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
-    "repositories": []
+    "repositories": [
+        {
+            "type": "path",
+            "url": "plugins/*",
+            "options": {
+                "symlink": false
+            }
+        }
+    ]
 }

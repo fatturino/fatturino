@@ -11,8 +11,12 @@ use Illuminate\Support\Facades\Schema;
  * Plugins call register() in their ServiceProvider boot() to declare themselves.
  * The return value tells the plugin whether it should continue booting.
  *
- * Activation state is persisted in the `plugins` DB table. A plugin that has
- * never been seen defaults to active (opt-out model).
+ * Activation and lock state are persisted in the `plugins` DB table:
+ * - `active`  controls whether the plugin should boot
+ * - `locked`  controls whether the UI can deactivate it
+ *
+ * The lock flag is set at install time (e.g. via `plugin:install --locked`),
+ * not declared by the plugin itself.
  */
 class PluginRegistry
 {
@@ -22,38 +26,30 @@ class PluginRegistry
     /** @var array<string, string[]> Blade view names keyed by injection slot */
     private array $injections = [];
 
-    /** @var array<string, bool>|null Cached DB state (null = not loaded yet) */
+    /** @var array<string, array{active: bool, locked: bool}>|null Cached DB state (null = not loaded yet) */
     private ?array $dbState = null;
 
     /**
      * Register a plugin. Called by plugin ServiceProviders during boot().
      *
-     * Returns true if the plugin is active and should continue booting
-     * (register routes, menu items, etc.). Returns false if deactivated:
-     * the plugin should stop and not register any functionality.
-     */
-    /**
-     * Register a plugin. Called by plugin ServiceProviders during boot().
-     *
      * Returns true if the plugin is active and should continue booting.
-     * Returns false if deactivated: the plugin should stop.
-     *
-     * @param bool $locked If true, the plugin cannot be deactivated from the UI
+     * Returns false if deactivated: the plugin should stop and not register
+     * any functionality (routes, menu items, bindings, etc.).
      */
-    public function register(string $id, string $name, string $description = '', string $version = '1.0.0', string $author = '', bool $locked = false): bool
+    public function register(string $id, string $name, string $description = '', string $version = '1.0.0', string $author = ''): bool
     {
-        $active = $this->resolveActiveState($id);
+        $state = $this->resolvePluginState($id);
 
         $this->plugins[$id] = [
             'name' => $name,
             'description' => $description,
             'version' => $version,
             'author' => $author,
-            'active' => $active,
-            'locked' => $locked,
+            'active' => $state['active'],
+            'locked' => $state['locked'],
         ];
 
-        return $active;
+        return $state['active'];
     }
 
     /**
@@ -108,7 +104,7 @@ class PluginRegistry
      */
     public function isActive(string $id): bool
     {
-        return $this->resolveActiveState($id);
+        return $this->resolvePluginState($id)['active'];
     }
 
     /**
@@ -125,7 +121,6 @@ class PluginRegistry
             $this->plugins[$id]['active'] = true;
         }
 
-        // Invalidate cache so next request re-reads DB
         $this->dbState = null;
     }
 
@@ -151,28 +146,45 @@ class PluginRegistry
     }
 
     /**
-     * Resolve a plugin's active state from the DB.
-     * First-time plugins default to active and are inserted into the table.
+     * Set or clear the lock flag on a plugin. Used by the install command.
      */
-    private function resolveActiveState(string $id): bool
+    public function setLocked(string $id, bool $locked): void
+    {
+        DB::table('plugins')->updateOrInsert(
+            ['id' => $id],
+            ['locked' => $locked, 'updated_at' => now()],
+        );
+
+        if (isset($this->plugins[$id])) {
+            $this->plugins[$id]['locked'] = $locked;
+        }
+
+        $this->dbState = null;
+    }
+
+    /**
+     * Resolve a plugin's full state (active + locked) from the DB.
+     * First-time plugins default to active=true, locked=false and are inserted.
+     *
+     * @return array{active: bool, locked: bool}
+     */
+    private function resolvePluginState(string $id): array
     {
         $state = $this->loadDbState();
 
-        // Plugin already in DB: use stored state
         if (array_key_exists($id, $state)) {
             return $state[$id];
         }
 
-        // First time seeing this plugin: insert as active
         $this->persistNewPlugin($id);
 
-        return true;
+        return ['active' => true, 'locked' => false];
     }
 
     /**
      * Load all plugin states from DB (cached per request).
      *
-     * @return array<string, bool>
+     * @return array<string, array{active: bool, locked: bool}>
      */
     private function loadDbState(): array
     {
@@ -180,23 +192,33 @@ class PluginRegistry
             return $this->dbState;
         }
 
-        // During migrations or before the table exists, treat all plugins as active
+        // During migrations or before the table exists, treat all plugins as active and unlocked
         if (! $this->tableExists()) {
             $this->dbState = [];
 
             return $this->dbState;
         }
 
-        $this->dbState = DB::table('plugins')
-            ->pluck('active', 'id')
-            ->map(fn ($active) => (bool) $active)
-            ->toArray();
+        // The `locked` column was added in a later migration; gracefully degrade
+        // when the boot path runs before that migration has been applied.
+        $hasLockedColumn = Schema::hasColumn('plugins', 'locked');
+
+        $columns = $hasLockedColumn ? ['id', 'active', 'locked'] : ['id', 'active'];
+        $rows = DB::table('plugins')->get($columns);
+
+        $this->dbState = [];
+        foreach ($rows as $row) {
+            $this->dbState[$row->id] = [
+                'active' => (bool) $row->active,
+                'locked' => $hasLockedColumn ? (bool) $row->locked : false,
+            ];
+        }
 
         return $this->dbState;
     }
 
     /**
-     * Insert a new plugin as active in the DB.
+     * Insert a new plugin as active and unlocked in the DB.
      */
     private function persistNewPlugin(string $id): void
     {
@@ -206,16 +228,21 @@ class PluginRegistry
 
         $now = now();
 
-        DB::table('plugins')->insertOrIgnore([
+        $payload = [
             'id' => $id,
             'active' => true,
             'created_at' => $now,
             'updated_at' => $now,
-        ]);
+        ];
 
-        // Update cache
+        if (Schema::hasColumn('plugins', 'locked')) {
+            $payload['locked'] = false;
+        }
+
+        DB::table('plugins')->insertOrIgnore($payload);
+
         if ($this->dbState !== null) {
-            $this->dbState[$id] = true;
+            $this->dbState[$id] = ['active' => true, 'locked' => false];
         }
     }
 

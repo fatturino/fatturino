@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\PluginRegistry;
+use Illuminate\Support\Facades\DB;
 
 test('register returns true for a new plugin and defaults to active', function () {
     $registry = new PluginRegistry;
@@ -53,12 +54,43 @@ test('activate re-enables a deactivated plugin', function () {
 });
 
 test('deactivate is a no-op for locked plugins', function () {
+    // The lock flag is now persisted in the DB at install time, not passed by the plugin
+    DB::table('plugins')->insert([
+        'id' => 'locked-plugin',
+        'active' => true,
+        'locked' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
     $registry = new PluginRegistry;
-    $registry->register('locked-plugin', 'Locked Plugin', '', '1.0.0', '', locked: true);
+    $registry->register('locked-plugin', 'Locked Plugin');
     $registry->deactivate('locked-plugin');
 
-    // Should still be active because it's locked
     expect($registry->has('locked-plugin'))->toBeTrue();
+});
+
+test('register reads the locked flag from the DB', function () {
+    DB::table('plugins')->insert([
+        'id' => 'locked-plugin',
+        'active' => true,
+        'locked' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $registry = new PluginRegistry;
+    $registry->register('locked-plugin', 'Locked Plugin');
+
+    expect($registry->all()['locked-plugin']['locked'])->toBeTrue();
+});
+
+test('setLocked persists the lock flag', function () {
+    $registry = new PluginRegistry;
+    $registry->register('test-plugin', 'Test Plugin');
+    $registry->setLocked('test-plugin', true);
+
+    expect(DB::table('plugins')->where('id', 'test-plugin')->value('locked'))->toBe(1);
 });
 
 test('all returns all registered plugins including inactive', function () {
