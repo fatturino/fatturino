@@ -25,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->bootPlugins();
+
         // Defaults — singletonIf so plugin providers (registered before app providers) win
         $this->app->singletonIf(EnvironmentCapabilities::class, UnrestrictedCapabilities::class);
         $this->app->singletonIf(LoginCustomizer::class, NullLoginCustomizer::class);
@@ -119,6 +121,37 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register core menu items. Plugins can add items relative to these IDs.
      */
+    /**
+     * Dynamically load plugins found in the plugins/ directory.
+     *
+     * Reads each plugin's composer.json to register PSR-4 autoloading and
+     * service providers at boot time — no modifications to the root composer.json
+     * or bootstrap/providers.php are needed when installing plugins.
+     */
+    private function bootPlugins(): void
+    {
+        $manifests = glob(base_path('plugins/*/composer.json')) ?: [];
+        if (empty($manifests)) {
+            return;
+        }
+
+        /** @var \Composer\Autoload\ClassLoader $loader */
+        $loader = require base_path('vendor/autoload.php');
+
+        foreach ($manifests as $manifestPath) {
+            $pluginDir = dirname($manifestPath);
+            $manifest = json_decode(file_get_contents($manifestPath), true);
+
+            foreach ($manifest['autoload']['psr-4'] ?? [] as $namespace => $path) {
+                $loader->addPsr4($namespace, $pluginDir.'/'.$path);
+            }
+
+            foreach ($manifest['extra']['laravel']['providers'] ?? [] as $provider) {
+                $this->app->register($provider);
+            }
+        }
+    }
+
     private function registerCoreMenu(): void
     {
         $menu = app(MenuRegistry::class);

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f474cbe0571bacfd362ce3b4e834dfcf",
+    "content-hash": "a0f092f9b3384335771aaa0415ccc400",
     "packages": [
         {
             "name": "alcohol/iso4217",
@@ -1223,53 +1223,6 @@
                 "source": "https://github.com/fatturaelettronicaphp/FatturaElettronica/tree/2.8.0"
             },
             "time": "2025-05-08T07:43:28+00:00"
-        },
-        {
-            "name": "fatturino/plugin-fe-openapi",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "plugins/plugin-fe-openapi",
-                "reference": "423a1001ff08c8f3d763012af14c7fe7508ee00b"
-            },
-            "require-dev": {
-                "mockery/mockery": "^1.6",
-                "orchestra/testbench": "^10.0",
-                "pestphp/pest": "^4.3",
-                "pestphp/pest-plugin-laravel": "^4.0",
-                "spatie/laravel-settings": "^3.7"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Fatturino\\FeOpenApi\\OpenApiServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Fatturino\\FeOpenApi\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Fatturino\\FeOpenApi\\Tests\\": "tests/"
-                }
-            },
-            "scripts": {
-                "test": [
-                    "./vendor/bin/pest"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "OpenAPI SDI provider plugin for Fatturino electronic invoicing",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
         },
         {
             "name": "fruitcake/php-cors",
@@ -11945,9 +11898,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "fatturino/plugin-fe-openapi": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

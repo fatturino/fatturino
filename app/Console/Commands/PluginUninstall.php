@@ -13,11 +13,12 @@ class PluginUninstall extends Command
      *
      * Order of operations:
      *   1. Run the plugin's own `{name}:uninstall` hook (if defined) while its
-     *      code is still accessible — lets the plugin clean up settings, data, etc.
-     *   2. `composer remove` the package.
-     *   3. Delete the `plugins/<name>/` folder (skipped with --keep-files).
-     *   4. Remove the row from the `plugins` DB table.
-     *   5. Refresh package discovery.
+     *      code is still loaded in the current process.
+     *   2. Delete the plugins/<name>/ folder (skipped with --keep-files).
+     *   3. Remove the row from the plugins DB table.
+     *
+     * Autoloading and provider registration are handled dynamically at boot by
+     * AppServiceProvider — removing the folder is enough to stop loading the plugin.
      */
     protected $signature = 'plugin:uninstall
                             {name : The plugin short name (e.g. plugin-cloud)}
@@ -29,33 +30,21 @@ class PluginUninstall extends Command
     public function handle(): int
     {
         $name = (string) $this->argument('name');
-        $packageName = "fatturino/{$name}";
         $pluginPath = base_path("plugins/{$name}");
 
-        if (! $this->option('force') && ! $this->confirm("Uninstall {$packageName}?")) {
+        if (! $this->option('force') && ! $this->confirm("Uninstall fatturino/{$name}?")) {
             $this->info('Aborted.');
 
             return self::SUCCESS;
         }
 
-        $this->info("Uninstalling plugin: {$packageName}");
+        $this->info("Uninstalling plugin: fatturino/{$name}");
 
-        // Run the plugin's own uninstall hook before removing its code.
+        // Run the plugin's own uninstall hook while its code is still loaded.
         $uninstallCommand = "{$name}:uninstall";
         if ($this->getApplication()->has($uninstallCommand)) {
             $this->info("Running {$uninstallCommand}...");
             $this->call($uninstallCommand);
-        }
-
-        $this->info("Running composer remove {$packageName}...");
-
-        $remove = Process::path(base_path())
-            ->run(['composer', 'remove', $packageName, '--no-interaction']);
-
-        if ($remove->failed()) {
-            $this->error("composer remove failed:\n".$remove->errorOutput());
-
-            return self::FAILURE;
         }
 
         if (! $this->option('keep-files') && is_dir($pluginPath)) {
@@ -65,9 +54,7 @@ class PluginUninstall extends Command
 
         DB::table('plugins')->where('id', $name)->delete();
 
-        $this->call('package:discover');
-
-        $this->info("Plugin {$packageName} uninstalled.");
+        $this->info("Plugin fatturino/{$name} uninstalled.");
 
         return self::SUCCESS;
     }
