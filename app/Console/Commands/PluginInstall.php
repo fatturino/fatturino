@@ -35,21 +35,15 @@ class PluginInstall extends Command
         $this->info("Installing plugin: fatturino/{$name}");
 
         if (! is_dir($pluginPath)) {
-            // Use SSH in local dev (no token), HTTPS in CI/Docker (token present).
-            $hasToken = $this->configureCodebergAuth();
-            $defaultRepo = $hasToken
-                ? "https://codeberg.org/fatturino/{$name}.git"
-                : "git@codeberg.org:fatturino/{$name}.git";
+            $this->configureCodebergAuth();
+            $defaultRepo = "https://codeberg.org/fatturino/{$name}.git";
             $repoUrl = (string) ($this->option('repo') ?: $defaultRepo);
 
             $this->info("Cloning {$repoUrl} into plugins/{$name}/...");
 
-            $process = Process::path(base_path());
-            if ($hasToken) {
-                $process = $process->env(['GIT_TERMINAL_PROMPT' => '0']);
-            }
-
-            $clone = $process->run(['git', 'clone', '--depth', '1', $repoUrl, "plugins/{$name}"]);
+            $clone = Process::path(base_path())
+                ->env(['GIT_TERMINAL_PROMPT' => '0'])
+                ->run(['git', 'clone', '--depth', '1', $repoUrl, "plugins/{$name}"]);
 
             if ($clone->failed()) {
                 $this->error("git clone failed:\n".$clone->errorOutput());
@@ -106,8 +100,8 @@ class PluginInstall extends Command
     }
 
     /**
-     * Configure Composer + git credentials for Codeberg when CODEBERG_TOKEN is set.
-     * Returns true if a token was found and credentials were configured.
+     * Configure git + Composer HTTPS credentials for Codeberg when CODEBERG_TOKEN is set.
+     * Required for private plugin repositories.
      */
     private function configureCodebergAuth(): bool
     {
