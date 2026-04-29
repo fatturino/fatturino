@@ -110,9 +110,7 @@ Route::middleware('auth')->group(function () {
         'settings.invoice',
     );
     Route::get('/imports', ImportsIndex::class)->name('imports.index');
-    Route::get('/electronic-invoice-settings', SdiSettings::class)->name(
-        'settings.openapi',
-    );
+    Route::get('/electronic-invoice-settings', app()->bound('route.settings.openapi') ? app('route.settings.openapi') : SdiSettings::class)->name('settings.openapi');
     Route::get('/email-settings', EmailSettings::class)->name('settings.email');
     Route::get('/services', ServicesSettings::class)->name('settings.services');
     Route::get('/plugins', PluginsSettings::class)->name('settings.plugins');
