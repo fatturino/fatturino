@@ -14,7 +14,7 @@ steps:
       buildkit_inline_cache: true
       cache_from: codeberg.org/fatturino/fatturino:latest
       build_args:
-        - APP_VERSION=${CI_COMMIT_SHA:0:8}
+        - APP_VERSION=${CI_COMMIT_SHA}
     when:
       branch: main
       event: [push, manual]
@@ -37,7 +37,26 @@ steps:
       buildkit_inline_cache: true
       cache_from: codeberg.org/fatturino/fatturino:latest
       build_args:
-        - APP_VERSION=${CI_COMMIT_TAG##v}
+        - APP_VERSION=${CI_COMMIT_TAG}
     when:
       event: tag
       ref: refs/tags/v*
+
+  notify_telegram:
+    image: appleboy/drone-telegram
+    settings:
+      token:
+        from_secret: telegram_token
+      to:
+        from_secret: telegram_chat_id
+      message: |
+        Build {{#success build.status}}✅ SUCCESS{{else}}❌ FAILED{{/success}}
+
+        Repo: {{repo.name}}
+        Branch: {{commit.branch}}
+        Build: #{{build.number}}
+        Autore: {{commit.author}}
+        Commit: {{commit.sha}}
+        Link: {{build.link}}
+    when:
+      - status: [success, failure]
