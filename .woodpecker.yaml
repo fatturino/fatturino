@@ -65,4 +65,5 @@ steps:
         Commit: {{commit.sha}}
         Link: {{build.link}}
     when:
-      - status: [success, failure]
+      - event: [push, tag, manual]
+        status: [success, failure]
