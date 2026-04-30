@@ -48,6 +48,9 @@ LABEL org.opencontainers.image.description="Fatturino - Open Source Italian Elec
 # Switch to root to install extensions and system packages
 USER root
 
+# Update to latest installer which supports pre-built arm64 binaries
+ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+
 # Install required PHP extensions and sqlite3 CLI (for WAL mode in entrypoint)
 RUN install-php-extensions bcmath intl gd \
     && apt-get update && apt-get install -y --no-install-recommends sqlite3 git nano \
