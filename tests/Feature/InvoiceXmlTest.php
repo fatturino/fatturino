@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PaymentMethod;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\Invoice;
@@ -288,5 +289,96 @@ class InvoiceXmlTest extends TestCase
         // No DatiCassaPrevidenziale node
         $this->assertStringNotContainsString('DatiCassaPrevidenziale', $xml);
         $this->assertStringNotContainsString('TipoCassa', $xml);
+    }
+
+    public function test_payment_amount_subtracts_withholding_tax()
+    {
+        // net 1000.00, VAT 22% = 220.00, gross = 1220.00
+        // withholding 20% on net = 200.00
+        // ImportoPagamento must be 1220.00 - 200.00 = 1020.00
+        $contact = Contact::create([
+            'name' => 'Cliente Ritenuta Pagamento',
+            'vat_number' => 'IT12345678903',
+            'address' => 'Via Test 1',
+            'city' => 'Roma',
+            'postal_code' => '00100',
+            'province' => 'RM',
+            'country' => 'IT',
+            'sdi_code' => '1111111',
+        ]);
+
+        $invoice = Invoice::create([
+            'number' => '7/2023',
+            'date' => now(),
+            'contact_id' => $contact->id,
+            'total_net' => 100000,
+            'total_vat' => 22000,
+            'total_gross' => 122000,
+            'withholding_tax_enabled' => true,
+            'withholding_tax_percent' => 20,
+            'withholding_tax_amount' => 20000,
+            'payment_method' => PaymentMethod::MP05,
+        ]);
+
+        InvoiceLine::create([
+            'invoice_id' => $invoice->id,
+            'description' => 'Consulenza',
+            'quantity' => 1,
+            'unit_price' => 100000,
+            'vat_rate' => VatRate::R22->value,
+            'total' => 100000,
+        ]);
+
+        $service = app(InvoiceXmlService::class);
+        $xml = $service->generate($invoice);
+
+        $this->assertStringContainsString('ImportoPagamento', $xml);
+        // Must NOT be the gross total (1220.00)
+        $this->assertStringNotContainsString('<ImportoPagamento>1220.00</ImportoPagamento>', $xml);
+        // Must be gross minus withholding (1020.00)
+        $this->assertStringContainsString('<ImportoPagamento>1020.00</ImportoPagamento>', $xml);
+    }
+
+    public function test_payment_amount_includes_stamp_duty()
+    {
+        // net 1000.00, VAT 22% = 220.00, gross = 1220.00, bollo = 2.00
+        // ImportoPagamento must be 1220.00 + 2.00 = 1222.00
+        $contact = Contact::create([
+            'name' => 'Cliente Bollo Pagamento',
+            'vat_number' => 'IT12345678903',
+            'address' => 'Via Test 1',
+            'city' => 'Roma',
+            'postal_code' => '00100',
+            'province' => 'RM',
+            'country' => 'IT',
+            'sdi_code' => '1111111',
+        ]);
+
+        $invoice = Invoice::create([
+            'number' => '8/2023',
+            'date' => now(),
+            'contact_id' => $contact->id,
+            'total_net' => 100000,
+            'total_vat' => 22000,
+            'total_gross' => 122000,
+            'stamp_duty_applied' => true,
+            'stamp_duty_amount' => 200,
+            'payment_method' => PaymentMethod::MP05,
+        ]);
+
+        InvoiceLine::create([
+            'invoice_id' => $invoice->id,
+            'description' => 'Servizio Esente',
+            'quantity' => 1,
+            'unit_price' => 100000,
+            'vat_rate' => VatRate::R22->value,
+            'total' => 100000,
+        ]);
+
+        $service = app(InvoiceXmlService::class);
+        $xml = $service->generate($invoice);
+
+        $this->assertStringContainsString('ImportoPagamento', $xml);
+        $this->assertStringContainsString('<ImportoPagamento>1222.00</ImportoPagamento>', $xml);
     }
 }

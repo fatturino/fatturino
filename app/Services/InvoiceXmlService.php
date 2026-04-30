@@ -277,10 +277,13 @@ class InvoiceXmlService
             $paymentDetails = new PaymentDetails;
             $paymentDetails->setMethod($invoice->payment_method->value);
 
+            // Withholding tax reduces the amount actually paid by the customer
+            $withholdingTax = $invoice->withholding_tax_enabled ? $invoice->withholding_tax_amount / 100 : 0.0;
+
             // Split payment: customer pays net + fund only (VAT goes directly to tax authority)
             $paymentAmount = $invoice->split_payment
-                ? $documentTotal - ($invoice->total_vat / 100)
-                : $documentTotal;
+                ? $documentTotal - ($invoice->total_vat / 100) - $withholdingTax
+                : $documentTotal - $withholdingTax;
             $paymentDetails->setAmount($paymentAmount);
 
             // Due date from tracking field, if set
