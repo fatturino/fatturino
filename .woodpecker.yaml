@@ -11,6 +11,9 @@ steps:
         from_secret: codeberg_user
       password:
         from_secret: codeberg_token
+      platforms:
+        - linux/amd64
+        - linux/arm64
       buildkit_inline_cache: true
       cache_from: codeberg.org/fatturino/fatturino:latest
       build_args:
@@ -34,6 +37,9 @@ steps:
         from_secret: codeberg_user
       password:
         from_secret: codeberg_token
+      platforms:
+        - linux/amd64
+        - linux/arm64
       buildkit_inline_cache: true
       cache_from: codeberg.org/fatturino/fatturino:latest
       build_args:
