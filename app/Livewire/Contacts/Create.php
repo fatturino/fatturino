@@ -19,7 +19,6 @@ class Create extends Component
     #[Validate('nullable|email')]
     public ?string $email = null;
 
-    #[Validate(['nullable', new ItalianVatNumber])]
     public ?string $vat_number = null;
 
     #[Validate(['nullable', new ItalianTaxCode])]
@@ -35,6 +34,10 @@ class Create extends Component
     public function save()
     {
         $this->validate();
+
+        if ($this->country === 'IT') {
+            $this->validate(['vat_number' => ['nullable', new ItalianVatNumber]]);
+        }
 
         Contact::create([
             'name' => $this->name,
