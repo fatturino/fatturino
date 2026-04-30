@@ -27,4 +27,9 @@ done
 # Rebuild frontend assets so Tailwind scans plugin Blade views.
 bun run build
 
+# Run migrations again now that plugins are installed — plugin migrations live
+# inside plugins/ which doesn't exist when 15-migrate.sh runs.
+echo "[fatturino][17-install-plugins] running plugin migrations..."
+php /var/www/html/artisan migrate --force --no-interaction
+
 echo "[fatturino][17-install-plugins] done"
