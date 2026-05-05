@@ -170,7 +170,11 @@
                             <div class="text-2xl font-bold">{{ $importResult['stats']['contacts_created'] }}</div>
                             <div class="text-xs text-base-content/60 mt-1">{{ __('app.imports.stat_contacts_created') }}</div>
                         </div>
-                        <div class="bg-base-200 rounded-box p-4 text-center col-span-2">
+                        <div class="bg-base-200 rounded-box p-4 text-center">
+                            <div class="text-2xl font-bold">{{ $importResult['stats']['skipped'] }}</div>
+                            <div class="text-xs text-base-content/60 mt-1">{{ __('app.imports.stat_skipped') }}</div>
+                        </div>
+                        <div class="bg-base-200 rounded-box p-4 text-center">
                             <div class="text-2xl font-bold {{ $importResult['stats']['errors'] > 0 ? 'text-error' : '' }}">
                                 {{ $importResult['stats']['errors'] }}
                             </div>

@@ -25,6 +25,7 @@ class InvoiceXmlImportService
         'total' => 0,
         'invoices_imported' => 0,
         'contacts_created' => 0,
+        'skipped' => 0,
         'errors' => 0,
     ];
 
@@ -70,6 +71,23 @@ class InvoiceXmlImportService
                     'self_invoice' => [SelfInvoice::class, InvoiceStatus::Sent, SdiStatus::Delivered],
                     default       => [Invoice::class, InvoiceStatus::Sent, SdiStatus::Delivered],
                 };
+
+                // Check for duplicate before creating
+                $datiGeneraliDoc = $body->DatiGenerali->DatiGeneraliDocumento;
+                $number = $this->extractText($datiGeneraliDoc->Numero);
+                $invoiceDate = $this->extractText($datiGeneraliDoc->Data);
+                $year = $invoiceDate ? (int) substr($invoiceDate, 0, 4) : now()->year;
+
+                $alreadyExists = $modelClass::where('number', $number)
+                    ->where('contact_id', $contact->id)
+                    ->where('fiscal_year', $year)
+                    ->exists();
+
+                if ($alreadyExists) {
+                    $this->stats['skipped']++;
+
+                    return;
+                }
 
                 $invoice = $this->createInvoice($body, $contact, $sequenceId, $status, $sdiStatus, $modelClass);
 
@@ -422,6 +440,7 @@ class InvoiceXmlImportService
             'total' => 0,
             'invoices_imported' => 0,
             'contacts_created' => 0,
+            'skipped' => 0,
             'errors' => 0,
         ];
         $this->errors = [];
