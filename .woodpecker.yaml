@@ -1,4 +1,40 @@
 steps:
+  # ============================================================================
+  # PHP BASE IMAGE
+  # Pre-compila estensioni PHP pesanti (intl, bcmath, gd) per entrambe le
+  # architetture. L'immagine viene pushata nel registry e usata come base
+  # da build-main e build-release.
+  #
+  # Si attiva automaticamente quando docker/php-base.Dockerfile cambia,
+  # oppure manualmente dalla UI di Woodpecker.
+  # ============================================================================
+  build-php-base:
+    image: woodpeckerci/plugin-docker-buildx
+    settings:
+      registry: codeberg.org
+      repo: codeberg.org/fatturino/fatturino
+      dockerfile: docker/php-base.Dockerfile
+      tags:
+        - php-base
+      username:
+        from_secret: codeberg_user
+      password:
+        from_secret: codeberg_token
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    when:
+      - event: manual
+      - event: push
+        path:
+          - docker/php-base.Dockerfile
+
+  # ============================================================================
+  # BUILD MAIN (push su main)
+  # Build multi-arch (AMD64 + ARM64) ad ogni push sul branch main.
+  # Usa php-base pre-buildato dal registry, quindi la compilazione di intl
+  # non viene ripetuta. Il cache registry evita di rifare gli step invariati.
+  # ============================================================================
   build-main:
     image: woodpeckerci/plugin-docker-buildx
     settings:
@@ -14,7 +50,6 @@ steps:
       platforms:
         - linux/amd64
         - linux/arm64
-      # List syntax avoids comma-splitting by the plugin; each item passed verbatim to --cache-from
       cache_from: codeberg.org/fatturino/fatturino:buildcache
       cache_to: "type=registry,ref=codeberg.org/fatturino/fatturino:buildcache,mode=max"
       build_args:
@@ -23,13 +58,16 @@ steps:
       branch: main
       event: [push, manual]
 
+  # ============================================================================
+  # BUILD RELEASE (tag v*)
+  # Build multi-arch ad ogni tag versionato. Pubblica tag SemVer con e senza
+  # prefisso "v" (es. v1.2.3 -> :1.2.3 e :v1.2.3), più :latest-stable.
+  # ============================================================================
   build-release:
     image: woodpeckerci/plugin-docker-buildx
     settings:
       registry: codeberg.org
       repo: codeberg.org/fatturino/fatturino
-      # CI_COMMIT_TAG is "v0.0.1"; we also publish without the "v" prefix
-      # so image tag aligns with SemVer (e.g., codeberg.org/fatturino/fatturino:0.0.1).
       tags:
         - "${CI_COMMIT_TAG}"
         - "${CI_COMMIT_TAG##v}"
@@ -49,6 +87,9 @@ steps:
       event: tag
       ref: refs/tags/v*
 
+  # ============================================================================
+  # NOTIFY TELEGRAM
+  # ============================================================================
   notify_telegram:
     image: appleboy/drone-telegram
     settings:

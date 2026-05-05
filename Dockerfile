@@ -38,26 +38,17 @@ RUN bun run build
 
 # ==============================================================================
 # Stage 3: Production image
+# Built on php-base which has extensions pre-compiled (avoids slow QEMU builds).
+# php-base viene rebuildato automaticamente quando docker/php-base.Dockerfile
+# cambia, oppure manualmente dalla pipeline Woodpecker.
+# L'immagine php-base è multi-arch (AMD64 + ARM64), quindi buildx risolve
+# automaticamente l'architettura corretta.
 # ==============================================================================
-FROM serversideup/php:8.4-fpm-nginx AS production
+FROM codeberg.org/fatturino/fatturino:php-base AS production
 
 LABEL maintainer="Fatturino <info@fatturino.com>"
 LABEL org.opencontainers.image.source="https://codeberg.org/fatturino/fatturino"
 LABEL org.opencontainers.image.description="Fatturino - Open Source Italian Electronic Invoicing"
-
-# Switch to root to install extensions and system packages
-USER root
-
-# Update to latest installer which supports pre-built arm64 binaries
-ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
-
-# Install required PHP extensions and sqlite3 CLI (for WAL mode in entrypoint)
-RUN install-php-extensions bcmath intl gd \
-    && apt-get update && apt-get install -y --no-install-recommends sqlite3 git nano \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Create persistent data directory with correct ownership
-RUN mkdir -p /data && chown www-data:www-data /data
 
 # Switch back to www-data for application setup
 USER www-data
