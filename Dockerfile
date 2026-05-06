@@ -45,7 +45,7 @@ USER root
 ENV IPE_PROCESSOR_COUNT=3
 
 RUN install-php-extensions bcmath intl gd \
-    && apt-get update && apt-get install -y --no-install-recommends sqlite3 git nano 
+    && apt-get update && apt-get install -y --no-install-recommends sqlite3 git nano \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Replace s6-overlay v3 user bundle (uses suexec which fails under Dokku)
