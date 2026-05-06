@@ -153,10 +153,10 @@ class SelfInvoiceXmlService
             $lineItem->setUnitPrice($line->unit_price / 100);
             $lineItem->setTotal($line->total / 100);
 
-            if ($line->vatRate) {
-                $lineItem->setTaxPercentage((float) $line->vatRate->percent());
-                if ($line->vatRate->nature()) {
-                    $lineItem->setVatNature(new VatNature($line->vatRate->nature()));
+            if ($line->vat_rate) {
+                $lineItem->setTaxPercentage((float) $line->vat_rate->percent());
+                if ($line->vat_rate->nature()) {
+                    $lineItem->setVatNature(new VatNature($line->vat_rate->nature()));
                 }
             } else {
                 $lineItem->setTaxPercentage(0.00);
@@ -168,8 +168,8 @@ class SelfInvoiceXmlService
         // Totals (DatiRiepilogo) — grouped by VAT rate and nature
         $summary = [];
         foreach ($invoice->lines as $line) {
-            $rate = $line->vatRate?->percent() ?? 0;
-            $nature = $line->vatRate?->nature() ?? '';
+            $rate = $line->vat_rate?->percent() ?? 0;
+            $nature = $line->vat_rate?->nature() ?? '';
             $key = $rate . '_' . $nature;
             if (! isset($summary[$key])) {
                 $summary[$key] = [
