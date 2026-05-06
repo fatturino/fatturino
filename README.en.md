@@ -16,9 +16,6 @@
 > [!WARNING]
 > **Active development, not production-ready.** Fatturino is still under active development. APIs, database schema, and features may change without notice. Use for testing and development purposes only.
 
-> [!NOTE]
-> **Primary Repository**: The official Fatturino repository is hosted on [Codeberg](https://codeberg.org/fatturino/fatturino). This GitHub repository is an automatically synchronized mirror. For contributing and reporting issues, please use the Codeberg repository.
-
 Fatturino is an open source web application for managing Italian electronic invoicing, fully compliant with the XML standard of the Sistema di Interscambio (SDI). Available as self-hosted or managed Cloud.
 
 > **Italiano?** Leggi il [README in italiano](README.md).

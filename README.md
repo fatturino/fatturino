@@ -16,9 +16,6 @@
 > [!WARNING]
 > **Progetto in fase di sviluppo attivo.** Fatturino non è ancora pronto per l'uso in produzione. API, struttura del database e funzionalità possono cambiare senza preavviso. Usalo solo a scopo di test e sviluppo.
 
-> [!NOTE]
-> **Repository principale**: il repository ufficiale di Fatturino è su [Codeberg](https://codeberg.org/fatturino/fatturino). Questo repository su GitHub è un mirror sincronizzato automaticamente. Per contribuire e segnalare issue, usa il repository su Codeberg.
-
 Fatturino è un'applicazione web open source per la gestione della fatturazione elettronica italiana, conforme allo standard XML del Sistema di Interscambio (SDI). Disponibile in versione self-hosted o Cloud gestito.
 
 > **English?** Read the [English README](README.en.md).
