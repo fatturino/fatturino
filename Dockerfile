@@ -48,22 +48,6 @@ RUN install-php-extensions bcmath intl gd \
     && apt-get update && apt-get install -y --no-install-recommends sqlite3 git nano \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Replace s6-overlay v3 user bundle (uses suexec which fails under Dokku)
-# with services that use setpriv for privilege dropping.
-RUN rm -rf /etc/s6-overlay/s6-rc.d/user \
-    && rm -rf /etc/s6-overlay/s6-rc.d/nginx \
-    && rm -rf /etc/s6-overlay/s6-rc.d/php-fpm \
-    && mkdir -p /etc/s6-overlay/s6-rc.d/nginx /etc/s6-overlay/s6-rc.d/php-fpm \
-    && echo longrun > /etc/s6-overlay/s6-rc.d/nginx/type \
-    && printf '#!/command/execlineb -P\nfdmove -c 2 1\nsetpriv --reuid=www-data --regid=www-data --clear-groups /usr/sbin/nginx -g "daemon off;"\n' > /etc/s6-overlay/s6-rc.d/nginx/run \
-    && chmod +x /etc/s6-overlay/s6-rc.d/nginx/run \
-    && echo longrun > /etc/s6-overlay/s6-rc.d/php-fpm/type \
-    && printf '#!/command/execlineb -P\nfdmove -c 2 1\nsetpriv --reuid=www-data --regid=www-data --clear-groups /usr/sbin/php-fpm8.4 --nodaemonize --fpm-config /etc/php/8.4/fpm/php-fpm.conf\n' > /etc/s6-overlay/s6-rc.d/php-fpm/run \
-    && chmod +x /etc/s6-overlay/s6-rc.d/php-fpm/run \
-    && mkdir -p /etc/s6-overlay/s6-rc.d/default/contents.d \
-    && echo nginx > /etc/s6-overlay/s6-rc.d/default/contents.d/nginx \
-    && echo php-fpm > /etc/s6-overlay/s6-rc.d/default/contents.d/php-fpm
-
 RUN mkdir -p /data && chown www-data:www-data /data
 
 USER www-data
