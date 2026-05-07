@@ -3,11 +3,12 @@
 use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\Sequence;
+use Database\Seeders\SequenceSeeder;
 
 test('sequence can be created with a pattern', function () {
     $sequence = Sequence::create([
-        'name'    => 'Test Sequence',
-        'type'    => 'electronic_invoice',
+        'name' => 'Test Sequence',
+        'type' => 'electronic_invoice',
         'pattern' => 'FE-{SEQ}',
     ]);
 
@@ -76,7 +77,7 @@ test('pattern with suffix pads {SEQ} to 4 digits', function () {
 test('{ANNO} token is replaced with the current year', function () {
     $sequence = Sequence::create(['name' => 'Anno', 'type' => 'electronic_invoice', 'pattern' => 'FE-{SEQ}-{ANNO}']);
 
-    expect($sequence->getFormattedNumber())->toBe('FE-0001-' . now()->year);
+    expect($sequence->getFormattedNumber())->toBe('FE-0001-'.now()->year);
 });
 
 test('arbitrary pattern text is preserved', function () {
@@ -235,9 +236,9 @@ test('system sequence type cannot be changed', function () {
 
 test('system sequence name and pattern can be updated', function () {
     $sequence = Sequence::create([
-        'name'      => 'Old Name',
-        'type'      => 'electronic_invoice',
-        'pattern'   => '{SEQ}',
+        'name' => 'Old Name',
+        'type' => 'electronic_invoice',
+        'pattern' => '{SEQ}',
         'is_system' => true,
     ]);
 
@@ -253,7 +254,7 @@ test('system sequence name and pattern can be updated', function () {
 // --- Seeder ---
 
 test('seeder creates the six standard sequences', function () {
-    $this->seed(\Database\Seeders\SequenceSeeder::class);
+    $this->seed(SequenceSeeder::class);
 
     expect(Sequence::where('is_system', true)->count())->toBe(6);
 
@@ -265,7 +266,7 @@ test('seeder creates the six standard sequences', function () {
 });
 
 test('seeder covers all six sequence types', function () {
-    $this->seed(\Database\Seeders\SequenceSeeder::class);
+    $this->seed(SequenceSeeder::class);
 
     foreach (['electronic_invoice', 'purchase', 'self_invoice', 'proforma', 'credit_note', 'quote'] as $type) {
         expect(Sequence::where('type', $type)->exists())->toBeTrue();

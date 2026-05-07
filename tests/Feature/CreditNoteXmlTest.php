@@ -17,43 +17,43 @@ class CreditNoteXmlTest extends TestCase
     private function makeCreditNoteWithLine(float $vatPercent = 22.0): CreditNote
     {
         $contact = Contact::create([
-            'name'       => 'Cliente SpA',
+            'name' => 'Cliente SpA',
             'vat_number' => 'IT01234567890',
-            'address'    => 'Via Roma 1',
-            'city'       => 'Milano',
+            'address' => 'Via Roma 1',
+            'city' => 'Milano',
             'postal_code' => '20100',
-            'province'   => 'MI',
-            'country'    => 'IT',
-            'sdi_code'   => 'ABCDEFG',
+            'province' => 'MI',
+            'country' => 'IT',
+            'sdi_code' => 'ABCDEFG',
         ]);
 
         // Map the percent value to the matching enum case
         $vatRateEnum = match ($vatPercent) {
             22.0 => VatRate::R22,
             10.0 => VatRate::R10,
-            5.0  => VatRate::R5,
-            4.0  => VatRate::R4,
+            5.0 => VatRate::R5,
+            4.0 => VatRate::R4,
             default => VatRate::R22,
         };
 
         $creditNote = CreditNote::create([
-            'number'                 => 'NC-001',
-            'date'                   => now(),
-            'contact_id'             => $contact->id,
+            'number' => 'NC-001',
+            'date' => now(),
+            'contact_id' => $contact->id,
             'related_invoice_number' => 'FT-2026-001',
-            'related_invoice_date'   => now()->subMonth(),
-            'total_net'              => 10000,
-            'total_vat'              => (int) round(10000 * $vatPercent / 100),
-            'total_gross'            => 10000 + (int) round(10000 * $vatPercent / 100),
+            'related_invoice_date' => now()->subMonth(),
+            'total_net' => 10000,
+            'total_vat' => (int) round(10000 * $vatPercent / 100),
+            'total_gross' => 10000 + (int) round(10000 * $vatPercent / 100),
         ]);
 
         InvoiceLine::create([
-            'invoice_id'  => $creditNote->id,
+            'invoice_id' => $creditNote->id,
             'description' => 'Reso merce',
-            'quantity'    => 1,
-            'unit_price'  => 10000,
-            'total'       => 10000,
-            'vat_rate'    => $vatRateEnum->value,
+            'quantity' => 1,
+            'unit_price' => 10000,
+            'total' => 10000,
+            'vat_rate' => $vatRateEnum->value,
         ]);
 
         return $creditNote;
@@ -85,32 +85,32 @@ class CreditNoteXmlTest extends TestCase
     public function test_xml_does_not_include_dati_fatture_collegate_when_not_set()
     {
         $contact = Contact::create([
-            'name'       => 'Cliente SpA',
+            'name' => 'Cliente SpA',
             'vat_number' => 'IT01234567890',
-            'address'    => 'Via Roma 1',
-            'city'       => 'Milano',
+            'address' => 'Via Roma 1',
+            'city' => 'Milano',
             'postal_code' => '20100',
-            'province'   => 'MI',
-            'country'    => 'IT',
-            'sdi_code'   => 'ABCDEFG',
+            'province' => 'MI',
+            'country' => 'IT',
+            'sdi_code' => 'ABCDEFG',
         ]);
 
         $creditNote = CreditNote::create([
-            'number'     => 'NC-002',
-            'date'       => now(),
+            'number' => 'NC-002',
+            'date' => now(),
             'contact_id' => $contact->id,
-            'total_net'  => 5000,
-            'total_vat'  => 1100,
+            'total_net' => 5000,
+            'total_vat' => 1100,
             'total_gross' => 6100,
         ]);
 
         InvoiceLine::create([
-            'invoice_id'  => $creditNote->id,
+            'invoice_id' => $creditNote->id,
             'description' => 'Nota senza riferimento',
-            'quantity'    => 1,
-            'unit_price'  => 5000,
-            'total'       => 5000,
-            'vat_rate'    => VatRate::R22->value,
+            'quantity' => 1,
+            'unit_price' => 5000,
+            'total' => 5000,
+            'vat_rate' => VatRate::R22->value,
         ]);
 
         $service = app(CreditNoteXmlService::class);

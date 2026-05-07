@@ -15,8 +15,8 @@ enum ProformaStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Draft     => __('app.proforma.status_draft'),
-            self::Sent      => __('app.proforma.status_sent'),
+            self::Draft => __('app.proforma.status_draft'),
+            self::Sent => __('app.proforma.status_sent'),
             self::Converted => __('app.proforma.status_converted'),
             self::Cancelled => __('app.proforma.status_cancelled'),
         };
@@ -28,8 +28,8 @@ enum ProformaStatus: string
     public function color(): string
     {
         return match ($this) {
-            self::Draft     => 'badge-soft badge-warning',
-            self::Sent      => 'badge-soft badge-info',
+            self::Draft => 'badge-soft badge-warning',
+            self::Sent => 'badge-soft badge-info',
             self::Converted => 'badge-soft badge-success',
             self::Cancelled => 'badge-soft badge-neutral',
         };
@@ -41,8 +41,8 @@ enum ProformaStatus: string
     public function icon(): string
     {
         return match ($this) {
-            self::Draft     => 'o-pencil-square',
-            self::Sent      => 'o-paper-airplane',
+            self::Draft => 'o-pencil-square',
+            self::Sent => 'o-paper-airplane',
             self::Converted => 'o-document-check',
             self::Cancelled => 'o-x-circle',
         };

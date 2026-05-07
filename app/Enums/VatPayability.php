@@ -25,7 +25,7 @@ enum VatPayability: string
     public static function options(): array
     {
         return array_map(
-            fn (self $v) => ['id' => $v->value, 'name' => $v->value . ' - ' . $v->label()],
+            fn (self $v) => ['id' => $v->value, 'name' => $v->value.' - '.$v->label()],
             self::cases()
         );
     }

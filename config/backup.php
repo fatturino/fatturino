@@ -1,9 +1,16 @@
 <?php
 
-use Spatie\DbDumper\Compressors\GzipCompressor;
+use Spatie\Backup\Notifications\Notifiable;
+use Spatie\Backup\Notifications\Notifications\BackupHasFailedNotification;
+use Spatie\Backup\Notifications\Notifications\BackupWasSuccessfulNotification;
+use Spatie\Backup\Notifications\Notifications\CleanupHasFailedNotification;
+use Spatie\Backup\Notifications\Notifications\CleanupWasSuccessfulNotification;
+use Spatie\Backup\Notifications\Notifications\HealthyBackupWasFoundNotification;
+use Spatie\Backup\Notifications\Notifications\UnhealthyBackupWasFoundNotification;
 use Spatie\Backup\Tasks\Cleanup\Strategies\DefaultStrategy;
 use Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays;
 use Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes;
+use Spatie\DbDumper\Compressors\GzipCompressor;
 
 return [
 
@@ -67,15 +74,15 @@ return [
     // Notifications disabled: tenants have no mail configuration
     'notifications' => [
         'notifications' => [
-            \Spatie\Backup\Notifications\Notifications\BackupHasFailedNotification::class => [],
-            \Spatie\Backup\Notifications\Notifications\UnhealthyBackupWasFoundNotification::class => [],
-            \Spatie\Backup\Notifications\Notifications\CleanupHasFailedNotification::class => [],
-            \Spatie\Backup\Notifications\Notifications\BackupWasSuccessfulNotification::class => [],
-            \Spatie\Backup\Notifications\Notifications\HealthyBackupWasFoundNotification::class => [],
-            \Spatie\Backup\Notifications\Notifications\CleanupWasSuccessfulNotification::class => [],
+            BackupHasFailedNotification::class => [],
+            UnhealthyBackupWasFoundNotification::class => [],
+            CleanupHasFailedNotification::class => [],
+            BackupWasSuccessfulNotification::class => [],
+            HealthyBackupWasFoundNotification::class => [],
+            CleanupWasSuccessfulNotification::class => [],
         ],
 
-        'notifiable' => \Spatie\Backup\Notifications\Notifiable::class,
+        'notifiable' => Notifiable::class,
 
         'mail' => [
             'to' => env('BACKUP_MAIL_TO_ADDRESS', 'noreply@fatturino.it'),

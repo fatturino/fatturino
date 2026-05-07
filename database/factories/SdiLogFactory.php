@@ -4,10 +4,11 @@ namespace Database\Factories;
 
 use App\Enums\SdiStatus;
 use App\Models\Invoice;
+use App\Models\SdiLog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\SdiLog>
+ * @extends Factory<SdiLog>
  */
 class SdiLogFactory extends Factory
 {

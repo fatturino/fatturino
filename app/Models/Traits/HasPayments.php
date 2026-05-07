@@ -31,15 +31,15 @@ trait HasPayments
 
         $status = match (true) {
             $totalPaid >= $this->total_gross && $this->total_gross > 0 => PaymentStatus::Paid,
-            $totalPaid > 0 && $this->due_date?->isPast()               => PaymentStatus::Overdue,
-            $totalPaid > 0                                             => PaymentStatus::Partial,
-            $this->due_date?->isPast()                                 => PaymentStatus::Overdue,
-            default                                                    => PaymentStatus::Unpaid,
+            $totalPaid > 0 && $this->due_date?->isPast() => PaymentStatus::Overdue,
+            $totalPaid > 0 => PaymentStatus::Partial,
+            $this->due_date?->isPast() => PaymentStatus::Overdue,
+            default => PaymentStatus::Unpaid,
         };
 
         $this->update([
             'payment_status' => $status,
-            'total_paid'     => $totalPaid,
+            'total_paid' => $totalPaid,
         ]);
     }
 }

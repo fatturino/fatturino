@@ -45,10 +45,10 @@ class DocumentMail extends Mailable
             $pdfService = app(CourtesyPdfService::class);
 
             [$data, $filename] = match (true) {
-                $this->document instanceof Invoice        => [$pdfService->generate($this->document)->output(), $pdfService->generateFileName($this->document)],
+                $this->document instanceof Invoice => [$pdfService->generate($this->document)->output(), $pdfService->generateFileName($this->document)],
                 $this->document instanceof ProformaInvoice => [$pdfService->generateForProforma($this->document)->output(), $pdfService->generateProformaFileName($this->document)],
-                $this->document instanceof CreditNote     => [$pdfService->generateForCreditNote($this->document)->output(), 'nota-credito-'.$this->document->number.'.pdf'],
-                default                                   => [null, null],
+                $this->document instanceof CreditNote => [$pdfService->generateForCreditNote($this->document)->output(), 'nota-credito-'.$this->document->number.'.pdf'],
+                default => [null, null],
             };
 
             if ($data === null) {

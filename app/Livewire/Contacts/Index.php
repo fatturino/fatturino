@@ -9,8 +9,8 @@ use Mary\Traits\Toast;
 
 class Index extends Component
 {
-    use WithPagination;
     use Toast;
+    use WithPagination;
 
     public string $search = '';
 
@@ -54,7 +54,7 @@ class Index extends Component
     public function render()
     {
         $contacts = Contact::query()
-            ->when($this->search, fn($q) => $q->where('name', 'like', "%$this->search%")
+            ->when($this->search, fn ($q) => $q->where('name', 'like', "%$this->search%")
                 ->orWhere('vat_number', 'like', "%$this->search%")
                 ->orWhere('email', 'like', "%$this->search%"))
             ->orderBy(...array_values($this->sortBy))
@@ -62,7 +62,7 @@ class Index extends Component
 
         return view('livewire.contacts.index', [
             'contacts' => $contacts,
-            'headers' => $this->headers()
+            'headers' => $this->headers(),
         ]);
     }
 }

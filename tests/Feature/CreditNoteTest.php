@@ -1,16 +1,16 @@
 <?php
 
 use App\Enums\SdiStatus;
+use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\CreditNote;
-use App\Enums\VatRate;
 use App\Models\InvoiceLine;
 
 test('creating a CreditNote auto-sets type to credit_note', function () {
     $contact = Contact::factory()->create();
     $creditNote = CreditNote::create([
-        'number'     => 'NC-001',
-        'date'       => now(),
+        'number' => 'NC-001',
+        'date' => now(),
         'contact_id' => $contact->id,
     ]);
 
@@ -20,8 +20,8 @@ test('creating a CreditNote auto-sets type to credit_note', function () {
 test('creating a CreditNote auto-sets document_type to TD04', function () {
     $contact = Contact::factory()->create();
     $creditNote = CreditNote::create([
-        'number'     => 'NC-001',
-        'date'       => now(),
+        'number' => 'NC-001',
+        'date' => now(),
         'contact_id' => $contact->id,
     ]);
 
@@ -41,8 +41,8 @@ test('global scope filters only credit_note type', function () {
 test('fiscal_year is auto-set from date on creation', function () {
     $contact = Contact::factory()->create();
     $creditNote = CreditNote::create([
-        'number'     => 'NC-001',
-        'date'       => '2023-06-15',
+        'number' => 'NC-001',
+        'date' => '2023-06-15',
         'contact_id' => $contact->id,
     ]);
 
@@ -65,12 +65,12 @@ test('calculateTotals sums lines correctly', function () {
     $creditNote = CreditNote::factory()->create();
 
     InvoiceLine::create([
-        'invoice_id'  => $creditNote->id,
+        'invoice_id' => $creditNote->id,
         'description' => 'Reso merce',
-        'quantity'    => 1,
-        'unit_price'  => 10000, // 100.00 EUR
-        'total'       => 10000,
-        'vat_rate'    => VatRate::R22->value,
+        'quantity' => 1,
+        'unit_price' => 10000, // 100.00 EUR
+        'total' => 10000,
+        'vat_rate' => VatRate::R22->value,
     ]);
 
     $creditNote->refresh();
@@ -84,21 +84,21 @@ test('getVatSummary groups lines by VAT rate', function () {
     $creditNote = CreditNote::factory()->create();
 
     InvoiceLine::create([
-        'invoice_id'  => $creditNote->id,
+        'invoice_id' => $creditNote->id,
         'description' => 'Prodotto A',
-        'quantity'    => 1,
-        'unit_price'  => 10000,
-        'total'       => 10000,
-        'vat_rate'    => VatRate::R22->value,
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'total' => 10000,
+        'vat_rate' => VatRate::R22->value,
     ]);
 
     InvoiceLine::create([
-        'invoice_id'  => $creditNote->id,
+        'invoice_id' => $creditNote->id,
         'description' => 'Prodotto B',
-        'quantity'    => 1,
-        'unit_price'  => 5000,
-        'total'       => 5000,
-        'vat_rate'    => VatRate::R10->value,
+        'quantity' => 1,
+        'unit_price' => 5000,
+        'total' => 5000,
+        'vat_rate' => VatRate::R10->value,
     ]);
 
     $creditNote->refresh();
@@ -110,11 +110,11 @@ test('getVatSummary groups lines by VAT rate', function () {
 test('related_invoice fields are stored correctly', function () {
     $contact = Contact::factory()->create();
     $creditNote = CreditNote::create([
-        'number'                 => 'NC-001',
-        'date'                   => now(),
-        'contact_id'             => $contact->id,
+        'number' => 'NC-001',
+        'date' => now(),
+        'contact_id' => $contact->id,
         'related_invoice_number' => 'FT-2026-001',
-        'related_invoice_date'   => '2026-01-15',
+        'related_invoice_date' => '2026-01-15',
     ]);
 
     expect($creditNote->related_invoice_number)->toBe('FT-2026-001');

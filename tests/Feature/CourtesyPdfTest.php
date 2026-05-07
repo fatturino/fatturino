@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
-use App\Enums\VatRate;
 use App\Models\ProformaInvoice;
 use App\Services\CourtesyPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

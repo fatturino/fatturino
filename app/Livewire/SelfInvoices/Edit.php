@@ -2,14 +2,14 @@
 
 namespace App\Livewire\SelfInvoices;
 
+use App\Contracts\SdiProvider;
 use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
 use App\Enums\VatRate;
 use App\Livewire\Traits\HasPaymentTracking;
 use App\Models\Contact;
-use App\Models\Sequence;
 use App\Models\SelfInvoice;
-use App\Contracts\SdiProvider;
+use App\Models\Sequence;
 use App\Services\DocumentStorageService;
 use App\Services\SelfInvoiceXmlService;
 use Illuminate\Database\Eloquent\Model;
@@ -57,7 +57,7 @@ class Edit extends Component
     {
         $this->selfInvoice = $selfInvoice;
         $this->isSdiLocked = ! $selfInvoice->isSdiEditable();
-        $this->isReadOnly  = $selfInvoice->date->year < now()->year || $this->isSdiLocked;
+        $this->isReadOnly = $selfInvoice->date->year < now()->year || $this->isSdiLocked;
 
         $this->fill($selfInvoice->only([
             'number', 'date', 'contact_id', 'sequence_id',
@@ -69,13 +69,13 @@ class Edit extends Component
         // Load lines (convert from cents to euros for form display)
         foreach ($selfInvoice->lines as $line) {
             $this->lines[] = [
-                'id'              => $line->id,
-                'description'     => $line->description,
-                'quantity'        => $line->quantity,
+                'id' => $line->id,
+                'description' => $line->description,
+                'quantity' => $line->quantity,
                 'unit_of_measure' => $line->unit_of_measure ?? '',
-                'unit_price'      => $line->unit_price / 100,
-                'vat_rate'        => $line->vat_rate?->value,
-                'total'           => $line->total / 100,
+                'unit_price' => $line->unit_price / 100,
+                'vat_rate' => $line->vat_rate?->value,
+                'total' => $line->total / 100,
             ];
         }
     }
@@ -83,12 +83,12 @@ class Edit extends Component
     public function addLine(): void
     {
         $this->lines[] = [
-            'description'     => '',
-            'quantity'        => 1,
+            'description' => '',
+            'quantity' => 1,
             'unit_of_measure' => '',
-            'unit_price'      => 0,
-            'vat_rate'        => VatRate::R22->value,
-            'total'           => 0,
+            'unit_price' => 0,
+            'vat_rate' => VatRate::R22->value,
+            'total' => 0,
         ];
     }
 
@@ -105,6 +105,7 @@ class Edit extends Component
             // Cast to float: wire:model binds values as strings, which causes TypeError in PHP 8
             $total += (float) $line['quantity'] * (float) $line['unit_price'];
         }
+
         return $total;
     }
 
@@ -118,6 +119,7 @@ class Edit extends Component
                 $total += $lineTotal * ($vatRate->percent() / 100);
             }
         }
+
         return $total;
     }
 
@@ -135,19 +137,20 @@ class Edit extends Component
     {
         if ($this->isReadOnly) {
             $this->error(__('app.self_invoices.readonly_error'));
+
             return;
         }
 
         $this->validate();
 
         $this->selfInvoice->update([
-            'number'                 => $this->number,
-            'date'                   => $this->date,
-            'contact_id'             => $this->contact_id,
-            'sequence_id'            => $this->sequence_id,
-            'document_type'          => $this->document_type,
+            'number' => $this->number,
+            'date' => $this->date,
+            'contact_id' => $this->contact_id,
+            'sequence_id' => $this->sequence_id,
+            'document_type' => $this->document_type,
             'related_invoice_number' => $this->related_invoice_number,
-            'related_invoice_date'   => $this->related_invoice_date,
+            'related_invoice_date' => $this->related_invoice_date,
         ]);
 
         // Recreate lines (simple sync: delete old, create new)
@@ -157,12 +160,12 @@ class Edit extends Component
             $lineTotal = (float) $line['quantity'] * (float) $line['unit_price'];
 
             $this->selfInvoice->lines()->create([
-                'description'     => $line['description'],
-                'quantity'        => $line['quantity'],
+                'description' => $line['description'],
+                'quantity' => $line['quantity'],
                 'unit_of_measure' => $line['unit_of_measure'] ?: null,
-                'unit_price'      => (int) round($line['unit_price'] * 100),
-                'vat_rate'        => $line['vat_rate'],
-                'total'           => (int) round($lineTotal * 100),
+                'unit_price' => (int) round($line['unit_price'] * 100),
+                'vat_rate' => $line['vat_rate'],
+                'total' => (int) round($lineTotal * 100),
             ]);
         }
 
@@ -178,7 +181,7 @@ class Edit extends Component
             $filename = $xmlService->generateFileName($this->selfInvoice);
 
             return response()->streamDownload(
-                fn () => print($xml),
+                fn () => print ($xml),
                 $filename,
                 ['Content-Type' => 'application/xml']
             );
@@ -191,6 +194,7 @@ class Edit extends Component
     {
         if (! $sdiService->isConfigured()) {
             $this->error(__('app.invoices.openapi_not_configured'));
+
             return;
         }
 
@@ -201,6 +205,7 @@ class Edit extends Component
             $validation = $sdiService->validateXml($xml);
             if (! $validation['valid']) {
                 $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $validation['errors'])]));
+
                 return;
             }
 
@@ -217,18 +222,18 @@ class Edit extends Component
 
             if ($result['success']) {
                 $this->selfInvoice->update([
-                    'sdi_status'  => SdiStatus::Sent,
-                    'sdi_uuid'    => $result['uuid'] ?? null,
+                    'sdi_status' => SdiStatus::Sent,
+                    'sdi_uuid' => $result['uuid'] ?? null,
                     'sdi_message' => $result['message'] ?? 'Inviata',
                     'sdi_sent_at' => now(),
-                    'status'      => InvoiceStatus::Sent,
-                    'xml_path'    => $xmlPath,
+                    'status' => InvoiceStatus::Sent,
+                    'xml_path' => $xmlPath,
                 ]);
 
                 $this->success(__('app.invoices.sent_success'));
             } else {
                 $this->selfInvoice->update([
-                    'sdi_status'  => 'error',
+                    'sdi_status' => 'error',
                     'sdi_message' => $result['error_message'] ?? 'Errore invio',
                 ]);
 
@@ -250,12 +255,12 @@ class Edit extends Component
     public function render()
     {
         return view('livewire.self-invoices.edit', [
-            'contacts'            => Contact::orderBy('name')->get(),
-            'sequences'           => Sequence::where('type', 'self_invoice')->orderBy('name')->get(),
-            'vatRates'            => VatRate::options(),
+            'contacts' => Contact::orderBy('name')->get(),
+            'sequences' => Sequence::where('type', 'self_invoice')->orderBy('name')->get(),
+            'vatRates' => VatRate::options(),
             'documentTypeOptions' => $this->documentTypeOptions(),
-            'isReadOnly'          => $this->isReadOnly,
-            'sdiConfigured'       => app(SdiProvider::class)->isConfigured(),
+            'isReadOnly' => $this->isReadOnly,
+            'sdiConfigured' => app(SdiProvider::class)->isConfigured(),
         ]);
     }
 }

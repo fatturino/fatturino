@@ -18,7 +18,7 @@ class FiscalYearSelector extends Component
     public function mount(): void
     {
         $this->selectedYear = session('fiscal_year', now()->year);
-        $this->pageUrl      = url()->current();
+        $this->pageUrl = url()->current();
     }
 
     /**
@@ -54,7 +54,7 @@ class FiscalYearSelector extends Component
     {
         return view('livewire.fiscal-year-selector', [
             'availableYears' => $this->availableYears(),
-            'currentYear'    => now()->year,
+            'currentYear' => now()->year,
         ]);
     }
 }

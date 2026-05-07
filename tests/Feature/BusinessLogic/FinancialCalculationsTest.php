@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\VatRate;
-use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
 

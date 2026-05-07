@@ -16,7 +16,7 @@ class DocumentStorageService
      */
     public function storeXml(string $xmlContent, string $category, int $year, string $filename): string
     {
-        $path = self::BASE_PATH . "/xml/{$category}/{$year}/{$filename}";
+        $path = self::BASE_PATH."/xml/{$category}/{$year}/{$filename}";
 
         Storage::disk('local')->put($path, $xmlContent);
 
@@ -30,7 +30,7 @@ class DocumentStorageService
      */
     public function storePdf(string $pdfContent, string $category, int $year, string $filename): string
     {
-        $path = self::BASE_PATH . "/pdf/{$category}/{$year}/{$filename}";
+        $path = self::BASE_PATH."/pdf/{$category}/{$year}/{$filename}";
 
         Storage::disk('local')->put($path, $pdfContent);
 

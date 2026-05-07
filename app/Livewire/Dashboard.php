@@ -13,7 +13,7 @@ class Dashboard extends Component
         $stats = app(ReportService::class)->getDashboardStats($fiscalYear);
 
         return view('livewire.dashboard', array_merge($stats, [
-            'fiscalYear'    => $fiscalYear,
+            'fiscalYear' => $fiscalYear,
             'isCurrentYear' => $fiscalYear === now()->year,
         ]));
     }

@@ -10,10 +10,9 @@ use App\Livewire\Traits\HasPaymentTracking;
 use App\Models\Contact;
 use App\Models\CreditNote;
 use App\Models\Sequence;
-use App\Services\CreditNoteXmlService;
 use App\Services\CourtesyPdfService;
+use App\Services\CreditNoteXmlService;
 use App\Services\DocumentStorageService;
-use App\Services\DocumentMailer;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -57,7 +56,7 @@ class Edit extends Component
     {
         $this->creditNote = $creditNote;
         $this->isSdiLocked = ! $creditNote->isSdiEditable();
-        $this->isReadOnly  = $creditNote->date->year < now()->year || $this->isSdiLocked;
+        $this->isReadOnly = $creditNote->date->year < now()->year || $this->isSdiLocked;
 
         $this->fill($creditNote->only([
             'number', 'date', 'contact_id', 'sequence_id', 'notes',
@@ -69,13 +68,13 @@ class Edit extends Component
         // Load lines (convert from cents to euros for form display)
         foreach ($creditNote->lines as $line) {
             $this->lines[] = [
-                'id'              => $line->id,
-                'description'     => $line->description,
-                'quantity'        => $line->quantity,
+                'id' => $line->id,
+                'description' => $line->description,
+                'quantity' => $line->quantity,
                 'unit_of_measure' => $line->unit_of_measure ?? '',
-                'unit_price'      => $line->unit_price / 100,
-                'vat_rate'        => $line->vat_rate?->value,
-                'total'           => $line->total / 100,
+                'unit_price' => $line->unit_price / 100,
+                'vat_rate' => $line->vat_rate?->value,
+                'total' => $line->total / 100,
             ];
         }
     }
@@ -83,12 +82,12 @@ class Edit extends Component
     public function addLine(): void
     {
         $this->lines[] = [
-            'description'     => '',
-            'quantity'        => 1,
+            'description' => '',
+            'quantity' => 1,
             'unit_of_measure' => '',
-            'unit_price'      => 0,
-            'vat_rate'        => VatRate::R22->value,
-            'total'           => 0,
+            'unit_price' => 0,
+            'vat_rate' => VatRate::R22->value,
+            'total' => 0,
         ];
     }
 
@@ -143,13 +142,13 @@ class Edit extends Component
         $this->validate();
 
         $this->creditNote->update([
-            'number'                 => $this->number,
-            'date'                   => $this->date,
-            'contact_id'             => $this->contact_id,
-            'sequence_id'            => $this->sequence_id,
-            'notes'                  => $this->notes,
+            'number' => $this->number,
+            'date' => $this->date,
+            'contact_id' => $this->contact_id,
+            'sequence_id' => $this->sequence_id,
+            'notes' => $this->notes,
             'related_invoice_number' => $this->related_invoice_number ?: null,
-            'related_invoice_date'   => $this->related_invoice_date ?: null,
+            'related_invoice_date' => $this->related_invoice_date ?: null,
         ]);
 
         // Recreate lines (simple sync: delete old, create new)
@@ -159,12 +158,12 @@ class Edit extends Component
             $lineTotal = (float) $line['quantity'] * (float) $line['unit_price'];
 
             $this->creditNote->lines()->create([
-                'description'     => $line['description'],
-                'quantity'        => $line['quantity'],
+                'description' => $line['description'],
+                'quantity' => $line['quantity'],
                 'unit_of_measure' => $line['unit_of_measure'] ?: null,
-                'unit_price'      => (int) round($line['unit_price'] * 100),
-                'vat_rate'        => $line['vat_rate'],
-                'total'           => (int) round($lineTotal * 100),
+                'unit_price' => (int) round($line['unit_price'] * 100),
+                'vat_rate' => $line['vat_rate'],
+                'total' => (int) round($lineTotal * 100),
             ]);
         }
 
@@ -180,7 +179,7 @@ class Edit extends Component
             $filename = $xmlService->generateFileName($this->creditNote);
 
             return response()->streamDownload(
-                fn () => print($xml),
+                fn () => print ($xml),
                 $filename,
                 ['Content-Type' => 'application/xml']
             );
@@ -225,23 +224,23 @@ class Edit extends Component
                     $pdf->output(),
                     'credit-notes',
                     $this->creditNote->date->year,
-                    'nota-di-credito-' . $this->creditNote->number . '.pdf',
+                    'nota-di-credito-'.$this->creditNote->number.'.pdf',
                 );
 
                 $this->creditNote->update([
-                    'sdi_status'  => SdiStatus::Sent,
-                    'sdi_uuid'    => $result['uuid'] ?? null,
+                    'sdi_status' => SdiStatus::Sent,
+                    'sdi_uuid' => $result['uuid'] ?? null,
                     'sdi_message' => $result['message'] ?? 'Inviata',
                     'sdi_sent_at' => now(),
-                    'status'      => InvoiceStatus::Sent,
-                    'xml_path'    => $xmlPath,
-                    'pdf_path'    => $pdfPath,
+                    'status' => InvoiceStatus::Sent,
+                    'xml_path' => $xmlPath,
+                    'pdf_path' => $pdfPath,
                 ]);
 
                 $this->success(__('app.invoices.sent_success'));
             } else {
                 $this->creditNote->update([
-                    'sdi_status'  => 'error',
+                    'sdi_status' => 'error',
                     'sdi_message' => $result['error_message'] ?? 'Errore invio',
                 ]);
 
@@ -256,10 +255,10 @@ class Edit extends Component
     {
         try {
             $pdf = $pdfService->generateForCreditNote($this->creditNote);
-            $filename = 'nota-di-credito-' . $this->creditNote->number . '.pdf';
+            $filename = 'nota-di-credito-'.$this->creditNote->number.'.pdf';
 
             return response()->streamDownload(
-                fn () => print($pdf->output()),
+                fn () => print ($pdf->output()),
                 $filename,
                 ['Content-Type' => 'application/pdf']
             );
@@ -271,10 +270,10 @@ class Edit extends Component
     public function render()
     {
         return view('livewire.credit-notes.edit', [
-            'contacts'      => Contact::orderBy('name')->get(),
-            'sequences'     => Sequence::where('type', 'credit_note')->orderBy('name')->get(),
-            'vatRates'      => VatRate::options(),
-            'isReadOnly'    => $this->isReadOnly,
+            'contacts' => Contact::orderBy('name')->get(),
+            'sequences' => Sequence::where('type', 'credit_note')->orderBy('name')->get(),
+            'vatRates' => VatRate::options(),
+            'isReadOnly' => $this->isReadOnly,
             'sdiConfigured' => app(SdiProvider::class)->isConfigured(),
         ]);
     }

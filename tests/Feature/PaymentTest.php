@@ -14,17 +14,17 @@ function createInvoiceWithLine(int $totalGross = 10000): Invoice
     $contact = Contact::create(['name' => 'Test Client']);
 
     $invoice = Invoice::create([
-        'number'     => uniqid('INV-'),
-        'date'       => now(),
+        'number' => uniqid('INV-'),
+        'date' => now(),
         'contact_id' => $contact->id,
     ]);
 
     $invoice->lines()->create([
         'description' => 'Test line',
-        'quantity'    => 1,
-        'unit_price'  => $totalGross,
-        'vat_rate'    => VatRate::N4->value, // 0% exempt rate
-        'total'       => $totalGross,
+        'quantity' => 1,
+        'unit_price' => $totalGross,
+        'vat_rate' => VatRate::N4->value, // 0% exempt rate
+        'total' => $totalGross,
     ]);
 
     $invoice->refresh();
@@ -37,8 +37,8 @@ test('recording a payment updates total_paid and sets status to paid', function 
 
     Payment::create([
         'invoice_id' => $invoice->id,
-        'amount'     => 10000,
-        'paid_at'    => now()->format('Y-m-d'),
+        'amount' => 10000,
+        'paid_at' => now()->format('Y-m-d'),
     ]);
 
     $invoice->refresh();
@@ -54,8 +54,8 @@ test('a partial payment sets status to partial with remaining balance', function
 
     Payment::create([
         'invoice_id' => $invoice->id,
-        'amount'     => 4000,
-        'paid_at'    => now()->format('Y-m-d'),
+        'amount' => 4000,
+        'paid_at' => now()->format('Y-m-d'),
     ]);
 
     $invoice->refresh();
@@ -102,8 +102,8 @@ test('deleting a payment recalculates status back to unpaid', function () {
 
     $payment = Payment::create([
         'invoice_id' => $invoice->id,
-        'amount'     => 10000,
-        'paid_at'    => now()->format('Y-m-d'),
+        'amount' => 10000,
+        'paid_at' => now()->format('Y-m-d'),
     ]);
 
     $invoice->refresh();
@@ -122,10 +122,10 @@ test('unpaid invoice with past due date is set to overdue', function () {
     $contact = Contact::create(['name' => 'Test Client']);
 
     $invoice = Invoice::create([
-        'number'     => uniqid('INV-'),
-        'date'       => now()->subMonths(2),
+        'number' => uniqid('INV-'),
+        'date' => now()->subMonths(2),
         'contact_id' => $contact->id,
-        'due_date'   => now()->subMonth()->format('Y-m-d'),
+        'due_date' => now()->subMonth()->format('Y-m-d'),
         'total_gross' => 10000,
     ]);
 
@@ -154,8 +154,8 @@ test('payment is cascade deleted when the invoice is deleted', function () {
 
     Payment::create([
         'invoice_id' => $invoice->id,
-        'amount'     => 10000,
-        'paid_at'    => now()->format('Y-m-d'),
+        'amount' => 10000,
+        'paid_at' => now()->format('Y-m-d'),
     ]);
 
     expect(Payment::where('invoice_id', $invoice->id)->count())->toBe(1);

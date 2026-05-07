@@ -67,9 +67,9 @@ class InvoiceXmlImportService
 
                 // Resolve model class and default status per category
                 [$modelClass, $status, $sdiStatus] = match ($category) {
-                    'purchase'    => [PurchaseInvoice::class, InvoiceStatus::Generated, SdiStatus::Received],
+                    'purchase' => [PurchaseInvoice::class, InvoiceStatus::Generated, SdiStatus::Received],
                     'self_invoice' => [SelfInvoice::class, InvoiceStatus::Sent, SdiStatus::Delivered],
-                    default       => [Invoice::class, InvoiceStatus::Sent, SdiStatus::Delivered],
+                    default => [Invoice::class, InvoiceStatus::Sent, SdiStatus::Delivered],
                 };
 
                 // Check for duplicate before creating
@@ -100,14 +100,14 @@ class InvoiceXmlImportService
 
                 // Persist raw XML (including P7M signature if present) for disaster recovery
                 $storageCategory = match ($category) {
-                    'purchase'     => 'purchase',
+                    'purchase' => 'purchase',
                     'self_invoice' => 'self-invoices',
-                    default        => 'sales',
+                    default => 'sales',
                 };
 
                 $xmlFilename = $invoice->number
-                    ? preg_replace('/[^A-Za-z0-9_\-.]/', '_', $invoice->number) . '.xml'
-                    : 'invoice-' . $invoice->id . '.xml';
+                    ? preg_replace('/[^A-Za-z0-9_\-.]/', '_', $invoice->number).'.xml'
+                    : 'invoice-'.$invoice->id.'.xml';
 
                 $xmlPath = $this->documentStorage->storeXml(
                     $xmlContent,
@@ -196,7 +196,7 @@ class InvoiceXmlImportService
      */
     protected function extractXmlFromP7m(string $p7mContent): string
     {
-        $tmpInput  = tempnam(sys_get_temp_dir(), 'p7m_in_');
+        $tmpInput = tempnam(sys_get_temp_dir(), 'p7m_in_');
         $tmpOutput = tempnam(sys_get_temp_dir(), 'p7m_out_');
 
         try {
@@ -347,7 +347,7 @@ class InvoiceXmlImportService
             'fiscal_year' => $year,
             'date' => $invoiceDate,
             'contact_id' => $contact->id,
-            'status'     => $status,
+            'status' => $status,
             'sdi_status' => $sdiStatus,
             'payment_method' => $paymentMethod,
             'payment_terms' => $paymentTerms,

@@ -2,17 +2,18 @@
 
 namespace Database\Factories;
 
+use App\Models\Sequence;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Sequence>
+ * @extends Factory<Sequence>
  */
 class SequenceFactory extends Factory
 {
     public function definition(): array
     {
         return [
-            'name' => $this->faker->word() . ' ' . $this->faker->year(),
+            'name' => $this->faker->word().' '.$this->faker->year(),
             'type' => 'electronic_invoice',
             'pattern' => '{SEQ}',
             'is_system' => false,

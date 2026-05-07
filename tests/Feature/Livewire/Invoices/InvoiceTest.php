@@ -46,8 +46,8 @@ class InvoiceTest extends TestCase
                     'unit_of_measure' => '',
                     'unit_price' => 100, // €100.00
                     'vat_rate' => VatRate::R22->value,
-                    'total' => 0
-                ]
+                    'total' => 0,
+                ],
             ])
             ->call('save')
             ->assertRedirect('/sell-invoices');
@@ -92,8 +92,8 @@ class InvoiceTest extends TestCase
                     'unit_of_measure' => '',
                     'unit_price' => 50, // €50.00
                     'vat_rate' => VatRate::R22->value,
-                    'total' => 0
-                ]
+                    'total' => 0,
+                ],
             ])
             ->call('save')
             ->assertRedirect('/sell-invoices');

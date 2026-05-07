@@ -65,11 +65,11 @@ class CourtesyPdfService
         $creditNote->loadMissing(['contact', 'lines']);
 
         $data = [
-            'invoice'          => $creditNote,
-            'company'          => $this->companySettings,
-            'logo'             => $this->getLogoBase64(),
-            'vatSummary'       => $creditNote->getVatSummary(),
-            'documentTitle'    => __('app.pdf.credit_note_title'),
+            'invoice' => $creditNote,
+            'company' => $this->companySettings,
+            'logo' => $this->getLogoBase64(),
+            'vatSummary' => $creditNote->getVatSummary(),
+            'documentTitle' => __('app.pdf.credit_note_title'),
             'showSdiDisclaimer' => true,
         ];
 

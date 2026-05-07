@@ -23,6 +23,7 @@ use FatturaElettronicaPhp\FatturaElettronica\Total;
 class SelfInvoiceXmlService
 {
     use GeneratesSdiFilename;
+
     // Supported self-invoice document types
     public const DOCUMENT_TYPES = [
         'TD17' => 'TD17 — Servizi dall\'estero (integrazione/autofattura)',
@@ -34,8 +35,7 @@ class SelfInvoiceXmlService
 
     public function __construct(
         protected CompanySettings $companySettings
-    ) {
-    }
+    ) {}
 
     /**
      * Build SDI-compliant filename: CC + IdCodice + '_' + ProgressivoInvio + .xml
@@ -132,7 +132,7 @@ class SelfInvoiceXmlService
         $instance->setDocumentDate($invoice->date);
         $instance->setDocumentNumber($invoice->number);
         $instance->setDocumentTotal($invoice->total_gross / 100);
-        $instance->addDescription($invoice->notes ?? 'Autofattura n. ' . $invoice->number);
+        $instance->addDescription($invoice->notes ?? 'Autofattura n. '.$invoice->number);
 
         // DatiFattureCollegate — mandatory for self-invoices: reference to original foreign invoice
         if ($invoice->related_invoice_number && $invoice->related_invoice_date) {
@@ -170,13 +170,13 @@ class SelfInvoiceXmlService
         foreach ($invoice->lines as $line) {
             $rate = $line->vat_rate?->percent() ?? 0;
             $nature = $line->vat_rate?->nature() ?? '';
-            $key = $rate . '_' . $nature;
+            $key = $rate.'_'.$nature;
             if (! isset($summary[$key])) {
                 $summary[$key] = [
-                    'rate'    => $rate,
-                    'nature'  => $nature ?: null,
+                    'rate' => $rate,
+                    'nature' => $nature ?: null,
                     'taxable' => 0,
-                    'tax'     => 0,
+                    'tax' => 0,
                 ];
             }
 

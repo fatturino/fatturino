@@ -7,6 +7,7 @@ use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\PurchaseInvoice;
 use App\Models\Sequence;
+use Carbon\Carbon;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Mary\Traits\Toast;
@@ -42,6 +43,7 @@ class Create extends Component
         // Prevent creating purchases when a past fiscal year is selected
         if (session('fiscal_year', now()->year) < now()->year) {
             $this->redirectRoute('purchase-invoices.index', navigate: true);
+
             return;
         }
 
@@ -62,12 +64,12 @@ class Create extends Component
     public function addLine(): void
     {
         $this->lines[] = [
-            'description'     => '',
-            'quantity'        => 1,
+            'description' => '',
+            'quantity' => 1,
             'unit_of_measure' => '',
-            'unit_price'      => 0,
-            'vat_rate'        => VatRate::R22->value,
-            'total'           => 0,
+            'unit_price' => 0,
+            'vat_rate' => VatRate::R22->value,
+            'total' => 0,
         ];
     }
 
@@ -83,6 +85,7 @@ class Create extends Component
         foreach ($this->lines as $line) {
             $total += (float) $line['quantity'] * (float) $line['unit_price'];
         }
+
         return $total;
     }
 
@@ -96,6 +99,7 @@ class Create extends Component
                 $total += $lineTotal * ($vatRate->percent() / 100);
             }
         }
+
         return $total;
     }
 
@@ -110,29 +114,29 @@ class Create extends Component
 
         // Atomically reserve next number to prevent duplicates
         $sequence = Sequence::find($this->sequence_id);
-        $year = \Carbon\Carbon::parse($this->date)->year;
+        $year = Carbon::parse($this->date)->year;
         $reserved = $sequence->reserveNextNumber($year);
 
         $invoice = PurchaseInvoice::create([
-            'number'            => $reserved['formatted_number'],
+            'number' => $reserved['formatted_number'],
             'sequential_number' => $reserved['sequential_number'],
-            'date'              => $this->date,
-            'contact_id'        => $this->contact_id,
-            'sequence_id'       => $this->sequence_id,
-            'fiscal_year'       => $year,
-            'status'            => InvoiceStatus::Draft,
+            'date' => $this->date,
+            'contact_id' => $this->contact_id,
+            'sequence_id' => $this->sequence_id,
+            'fiscal_year' => $year,
+            'status' => InvoiceStatus::Draft,
         ]);
 
         foreach ($this->lines as $line) {
             $lineTotal = (float) $line['quantity'] * (float) $line['unit_price'];
 
             $invoice->lines()->create([
-                'description'     => $line['description'],
-                'quantity'        => $line['quantity'],
+                'description' => $line['description'],
+                'quantity' => $line['quantity'],
                 'unit_of_measure' => $line['unit_of_measure'] ?: null,
-                'unit_price'      => (int) round($line['unit_price'] * 100), // Convert to cents
-                'vat_rate'        => $line['vat_rate'],
-                'total'           => (int) round($lineTotal * 100), // Convert to cents
+                'unit_price' => (int) round($line['unit_price'] * 100), // Convert to cents
+                'vat_rate' => $line['vat_rate'],
+                'total' => (int) round($lineTotal * 100), // Convert to cents
             ]);
         }
 
@@ -144,9 +148,9 @@ class Create extends Component
     public function render()
     {
         return view('livewire.purchase-invoices.create', [
-            'contacts'  => Contact::orderBy('name')->get(),
+            'contacts' => Contact::orderBy('name')->get(),
             'sequences' => Sequence::where('type', 'purchase')->orderBy('name')->get(),
-            'vatRates'  => VatRate::options(),
+            'vatRates' => VatRate::options(),
         ]);
     }
 }

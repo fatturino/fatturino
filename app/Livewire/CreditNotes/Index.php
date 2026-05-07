@@ -10,8 +10,8 @@ use Mary\Traits\Toast;
 
 class Index extends Component
 {
-    use WithPagination;
     use Toast;
+    use WithPagination;
 
     public string $search = '';
 
@@ -107,9 +107,9 @@ class Index extends Component
 
         return view('livewire.credit-notes.index', [
             'creditNotes' => $creditNotes,
-            'headers'     => $this->headers(),
-            'fiscalYear'  => $this->fiscalYear,
-            'isReadOnly'  => $this->isReadOnly,
+            'headers' => $this->headers(),
+            'fiscalYear' => $this->fiscalYear,
+            'isReadOnly' => $this->isReadOnly,
         ]);
     }
 }

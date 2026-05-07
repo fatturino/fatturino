@@ -4,10 +4,11 @@ namespace Database\Factories;
 
 use App\Enums\VatRate;
 use App\Models\Invoice;
+use App\Models\InvoiceLine;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\InvoiceLine>
+ * @extends Factory<InvoiceLine>
  */
 class InvoiceLineFactory extends Factory
 {

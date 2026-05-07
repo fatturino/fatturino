@@ -2,10 +2,8 @@
 
 namespace Tests\Feature\Livewire;
 
-use App\Livewire\Dashboard;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase

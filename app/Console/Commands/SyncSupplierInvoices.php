@@ -36,7 +36,7 @@ class SyncSupplierInvoices extends Command
         $companyVat = $settings->company_vat_number;
 
         $filters = [
-            'per_page'  => $this->option('per-page'),
+            'per_page' => $this->option('per-page'),
             'recipient' => $companyVat,
         ];
 
@@ -153,16 +153,16 @@ class SyncSupplierInvoices extends Command
             : ['name' => $name ?: 'Unknown'];
 
         return Contact::firstOrCreate($uniqueKey, [
-            'name'         => $name ?: 'Unknown',
-            'vat_number'   => $vatNumber,
-            'tax_code'     => $taxCode,
-            'address'      => $address,
-            'city'         => $supplierAddress['comune'] ?? null,
-            'postal_code'  => $supplierAddress['cap'] ?? null,
-            'province'     => $supplierAddress['provincia'] ?? null,
-            'country'      => $supplierAddress['nazione'] ?? 'IT',
+            'name' => $name ?: 'Unknown',
+            'vat_number' => $vatNumber,
+            'tax_code' => $taxCode,
+            'address' => $address,
+            'city' => $supplierAddress['comune'] ?? null,
+            'postal_code' => $supplierAddress['cap'] ?? null,
+            'province' => $supplierAddress['provincia'] ?? null,
+            'country' => $supplierAddress['nazione'] ?? 'IT',
             'country_code' => $supplierAddress['nazione'] ?? 'IT',
-            'is_supplier'  => true,
+            'is_supplier' => true,
         ]);
     }
 }

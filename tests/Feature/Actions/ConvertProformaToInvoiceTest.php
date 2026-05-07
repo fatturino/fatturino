@@ -3,9 +3,9 @@
 use App\Actions\ConvertProformaToInvoice;
 use App\Enums\InvoiceStatus;
 use App\Enums\ProformaStatus;
+use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\Invoice;
-use App\Enums\VatRate;
 use App\Models\InvoiceLine;
 use App\Models\ProformaInvoice;
 use App\Models\Sequence;

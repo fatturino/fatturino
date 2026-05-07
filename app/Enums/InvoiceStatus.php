@@ -15,10 +15,10 @@ enum InvoiceStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Draft        => __('app.invoices.invoice_status_draft'),
-            self::Generated    => __('app.invoices.invoice_status_generated'),
+            self::Draft => __('app.invoices.invoice_status_draft'),
+            self::Generated => __('app.invoices.invoice_status_generated'),
             self::XmlValidated => __('app.invoices.invoice_status_xml_validated'),
-            self::Sent         => __('app.invoices.invoice_status_sent'),
+            self::Sent => __('app.invoices.invoice_status_sent'),
         };
     }
 
@@ -28,10 +28,10 @@ enum InvoiceStatus: string
     public function color(): string
     {
         return match ($this) {
-            self::Draft        => 'badge-soft badge-warning',
-            self::Generated    => 'badge-soft badge-info',
+            self::Draft => 'badge-soft badge-warning',
+            self::Generated => 'badge-soft badge-info',
             self::XmlValidated => 'badge-soft badge-accent',
-            self::Sent         => 'badge-soft badge-success',
+            self::Sent => 'badge-soft badge-success',
         };
     }
 
@@ -41,10 +41,10 @@ enum InvoiceStatus: string
     public function icon(): string
     {
         return match ($this) {
-            self::Draft        => 'o-pencil-square',
-            self::Generated    => 'o-document-check',
+            self::Draft => 'o-pencil-square',
+            self::Generated => 'o-document-check',
             self::XmlValidated => 'o-shield-check',
-            self::Sent         => 'o-paper-airplane',
+            self::Sent => 'o-paper-airplane',
         };
     }
 

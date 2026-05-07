@@ -13,6 +13,7 @@ use App\Services\PluginRegistry;
 use App\Services\UnrestrictedCapabilities;
 use App\Settings\BackupSettings;
 use App\Settings\MonitoringSettings;
+use Composer\Autoload\ClassLoader;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
@@ -135,7 +136,7 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        /** @var \Composer\Autoload\ClassLoader $loader */
+        /** @var ClassLoader $loader */
         $loader = require base_path('vendor/autoload.php');
 
         foreach ($manifests as $manifestPath) {

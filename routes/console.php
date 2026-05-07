@@ -5,9 +5,9 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
-Artisan::command("inspire", function () {
+Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
-})->purpose("Display an inspiring quote");
+})->purpose('Display an inspiring quote');
 
 // Daily check for gaps in invoice numbering sequences. Reports to Sentry when gaps found.
 Schedule::command('invoices:check-sequences')->dailyAt('04:00');
@@ -22,14 +22,14 @@ try {
             $backupSchedule = Schedule::command('backup:run --disable-notifications');
 
             match ($backup->frequency) {
-                'weekly'  => $backupSchedule->weeklyOn($backup->day_of_week, $backup->time),
+                'weekly' => $backupSchedule->weeklyOn($backup->day_of_week, $backup->time),
                 'monthly' => $backupSchedule->monthlyOn($backup->day_of_month, $backup->time),
-                default   => $backupSchedule->dailyAt($backup->time),
+                default => $backupSchedule->dailyAt($backup->time),
             };
 
             Schedule::command('backup:clean --disable-notifications')->dailyAt('03:30');
         }
     }
-} catch (\Throwable) {
+} catch (Throwable) {
     // Settings table not yet created (first migration run) — skip silently.
 }

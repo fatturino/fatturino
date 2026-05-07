@@ -3,6 +3,7 @@
 namespace Tests\Feature\Livewire;
 
 use App\Livewire\FiscalYearSelector;
+use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -58,7 +59,7 @@ class FiscalYearSelectorTest extends TestCase
     public function test_available_years_includes_years_from_existing_invoices()
     {
         $user = User::factory()->create();
-        $contact = \App\Models\Contact::factory()->create();
+        $contact = Contact::factory()->create();
 
         // Create an invoice from 3 years ago
         Invoice::create([

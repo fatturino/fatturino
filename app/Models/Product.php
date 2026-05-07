@@ -13,7 +13,7 @@ class Product extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'price'    => 'integer', // Stored in cents
+        'price' => 'integer', // Stored in cents
         'vat_rate' => VatRate::class,
     ];
 }

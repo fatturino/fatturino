@@ -2,9 +2,9 @@
 
 use App\Enums\MenuItem;
 use App\Services\MenuRegistry;
+use Tests\TestCase;
 
-/** @var Tests\TestCase $this */
-
+/** @var TestCase $this */
 beforeEach(function () {
     $this->menu = new MenuRegistry;
 });

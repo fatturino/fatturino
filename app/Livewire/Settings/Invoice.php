@@ -4,32 +4,49 @@ namespace App\Livewire\Settings;
 
 use App\Enums\FundType;
 use App\Enums\VatRate;
+use App\Models\Sequence;
 use App\Settings\InvoiceSettings;
 use Livewire\Component;
 use Mary\Traits\Toast;
-use Livewire\Attributes\Validate;
 
 class Invoice extends Component
 {
     use Toast;
 
     public ?int $default_sequence_sales = null;
+
     public ?string $default_vat_rate = null;
+
     public bool $withholding_tax_enabled = false;
+
     public string $withholding_tax_percent = '20.00';
+
     public bool $fund_enabled = false;
+
     public ?string $fund_type = null;
+
     public string $fund_percent = '4.00';
+
     public ?string $fund_vat_rate = null;
+
     public bool $fund_has_deduction = false;
+
     public bool $auto_stamp_duty = false;
+
     public string $stamp_duty_threshold = '77.47';
+
     public ?string $default_payment_method = null;
+
     public ?string $default_payment_terms = null;
+
     public ?string $default_bank_name = null;
+
     public ?string $default_bank_iban = null;
+
     public string $default_vat_payability = 'I';
+
     public bool $default_split_payment = false;
+
     public ?string $default_notes = null;
 
     public function mount(InvoiceSettings $settings)
@@ -94,7 +111,7 @@ class Invoice extends Component
     public function render()
     {
         return view('livewire.settings.invoice', [
-            'sequences' => \App\Models\Sequence::all(),
+            'sequences' => Sequence::all(),
             'vatRates' => VatRate::options(),
         ]);
     }

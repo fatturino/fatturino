@@ -15,14 +15,18 @@ class Index extends Component
     use WithPagination;
 
     public bool $modal = false;
+
     public bool $is_editing = false;
 
     // Form fields
     public ?int $sequence_id = null;
+
     #[Validate('required')]
     public string $name = '';
+
     #[Validate('required')]
     public string $type = 'electronic_invoice';
+
     #[Validate('required')]
     public string $pattern = '{SEQ}';
 
@@ -62,15 +66,15 @@ class Index extends Component
         if ($this->is_editing) {
             $sequence = Sequence::find($this->sequence_id);
             $sequence->update([
-                'name'    => $this->name,
-                'type'    => $this->type,
+                'name' => $this->name,
+                'type' => $this->type,
                 'pattern' => $this->pattern,
             ]);
             $this->success(__('app.sequences.updated'));
         } else {
             Sequence::create([
-                'name'    => $this->name,
-                'type'    => $this->type,
+                'name' => $this->name,
+                'type' => $this->type,
                 'pattern' => $this->pattern,
             ]);
             $this->success(__('app.sequences.created'));
@@ -92,7 +96,7 @@ class Index extends Component
     public function render()
     {
         return view('livewire.sequences.index', [
-            'sequences'   => Sequence::orderBy('name')->paginate(10),
+            'sequences' => Sequence::orderBy('name')->paginate(10),
             'typeOptions' => [
                 ['value' => 'electronic_invoice', 'label' => __('app.sequences.type_electronic_invoice')],
                 ['value' => 'purchase',           'label' => __('app.sequences.type_purchase')],

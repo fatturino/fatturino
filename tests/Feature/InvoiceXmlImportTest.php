@@ -26,9 +26,9 @@ class InvoiceXmlImportTest extends TestCase
 
         $this->importer = app(InvoiceXmlImportService::class);
         $this->sequence = Sequence::create([
-            'name'    => 'Fatture Vendita',
+            'name' => 'Fatture Vendita',
             'pattern' => 'FV-{SEQ}',
-            'type'    => 'electronic_invoice',
+            'type' => 'electronic_invoice',
         ]);
     }
 
@@ -174,9 +174,9 @@ class InvoiceXmlImportTest extends TestCase
     public function test_imports_purchase_invoice_from_xml()
     {
         $purchaseSequence = Sequence::create([
-            'name'    => 'Fatture Acquisto',
+            'name' => 'Fatture Acquisto',
             'pattern' => 'FA-{SEQ}',
-            'type'    => 'purchase',
+            'type' => 'purchase',
         ]);
 
         $xml = $this->buildSamplePurchaseXml();
@@ -199,9 +199,9 @@ class InvoiceXmlImportTest extends TestCase
     public function test_purchase_import_creates_supplier_contact()
     {
         $purchaseSequence = Sequence::create([
-            'name'    => 'Fatture Acquisto',
+            'name' => 'Fatture Acquisto',
             'pattern' => 'FA-{SEQ}',
-            'type'    => 'purchase',
+            'type' => 'purchase',
         ]);
 
         $xml = $this->buildSamplePurchaseXml();
@@ -219,9 +219,9 @@ class InvoiceXmlImportTest extends TestCase
     public function test_purchase_import_marks_existing_contact_as_supplier()
     {
         $purchaseSequence = Sequence::create([
-            'name'    => 'Fatture Acquisto',
+            'name' => 'Fatture Acquisto',
             'pattern' => 'FA-{SEQ}',
-            'type'    => 'purchase',
+            'type' => 'purchase',
         ]);
 
         $existing = Contact::create([
@@ -242,9 +242,9 @@ class InvoiceXmlImportTest extends TestCase
     public function test_purchase_import_creates_invoice_lines()
     {
         $purchaseSequence = Sequence::create([
-            'name'    => 'Fatture Acquisto',
+            'name' => 'Fatture Acquisto',
             'pattern' => 'FA-{SEQ}',
-            'type'    => 'purchase',
+            'type' => 'purchase',
         ]);
 
         $xml = $this->buildSamplePurchaseXml();
@@ -261,9 +261,9 @@ class InvoiceXmlImportTest extends TestCase
     public function test_purchase_invoices_are_not_visible_from_invoice_model()
     {
         $purchaseSequence = Sequence::create([
-            'name'    => 'Fatture Acquisto',
+            'name' => 'Fatture Acquisto',
             'pattern' => 'FA-{SEQ}',
-            'type'    => 'purchase',
+            'type' => 'purchase',
         ]);
 
         // Import one sales and one purchase invoice

@@ -20,13 +20,13 @@ trait GeneratesSdiFilename
         $countryCode = strtoupper($settings->company_country);
 
         // Strip country prefix case-insensitively, then keep only alphanumeric chars
-        $vatNumber = preg_replace('/^' . preg_quote($countryCode, '/') . '/i', '', $settings->company_vat_number);
+        $vatNumber = preg_replace('/^'.preg_quote($countryCode, '/').'/i', '', $settings->company_vat_number);
         $vatNumber = preg_replace('/[^A-Z0-9]/i', '', $vatNumber);
         $vatNumber = strtoupper($vatNumber);
 
         // Progressive: zero-padded, max 5 alphanumeric chars per SDI spec
         $progressivo = str_pad((string) ($documentId % 100000), 5, '0', STR_PAD_LEFT);
 
-        return $countryCode . $vatNumber . '_' . $progressivo . '.xml';
+        return $countryCode.$vatNumber.'_'.$progressivo.'.xml';
     }
 }

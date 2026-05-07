@@ -91,5 +91,5 @@ test('import throws InvalidArgumentException for non-existent file', function ()
     $importer = app(Fattura24ContactImporter::class);
 
     expect(fn () => $importer->import('/non/existent/file.csv'))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 });

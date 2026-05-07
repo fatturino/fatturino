@@ -33,7 +33,7 @@ enum SalesDocumentType: string
     public static function options(): array
     {
         return array_map(
-            fn (self $type) => ['id' => $type->value, 'name' => $type->value . ' - ' . $type->label()],
+            fn (self $type) => ['id' => $type->value, 'name' => $type->value.' - '.$type->label()],
             self::cases()
         );
     }

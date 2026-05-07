@@ -28,10 +28,10 @@ use FatturaElettronicaPhp\FatturaElettronica\Total;
 class InvoiceXmlService
 {
     use GeneratesSdiFilename;
+
     public function __construct(
         protected CompanySettings $companySettings
-    ) {
-    }
+    ) {}
 
     /**
      * Build SDI-compliant filename: CC + IdCodice + '_' + ProgressivoInvio + .xml

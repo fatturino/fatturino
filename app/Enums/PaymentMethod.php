@@ -65,7 +65,7 @@ enum PaymentMethod: string
     public static function options(): array
     {
         return array_map(
-            fn (self $method) => ['id' => $method->value, 'name' => $method->value . ' - ' . $method->label()],
+            fn (self $method) => ['id' => $method->value, 'name' => $method->value.' - '.$method->label()],
             self::cases()
         );
     }

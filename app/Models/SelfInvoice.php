@@ -20,27 +20,27 @@ class SelfInvoice extends Model
     protected $guarded = [];
 
     protected $attributes = [
-        'status'         => 'draft',
+        'status' => 'draft',
         'payment_status' => 'unpaid',
     ];
 
     protected $casts = [
-        'date'                    => 'date',
-        'related_invoice_date'    => 'date',
-        'due_date'                => 'date',
-        'status'                  => InvoiceStatus::class,
-        'payment_status'          => PaymentStatus::class,
-        'sdi_status'              => SdiStatus::class,
-        'total_net'               => 'integer',
-        'total_vat'               => 'integer',
-        'total_gross'             => 'integer',
-        'total_paid'              => 'integer',
+        'date' => 'date',
+        'related_invoice_date' => 'date',
+        'due_date' => 'date',
+        'status' => InvoiceStatus::class,
+        'payment_status' => PaymentStatus::class,
+        'sdi_status' => SdiStatus::class,
+        'total_net' => 'integer',
+        'total_vat' => 'integer',
+        'total_gross' => 'integer',
+        'total_paid' => 'integer',
         'withholding_tax_enabled' => 'boolean',
         'withholding_tax_percent' => 'decimal:2',
-        'withholding_tax_amount'  => 'integer',
-        'split_payment'           => 'boolean',
-        'stamp_duty_applied'      => 'boolean',
-        'stamp_duty_amount'       => 'integer',
+        'withholding_tax_amount' => 'integer',
+        'split_payment' => 'boolean',
+        'stamp_duty_applied' => 'boolean',
+        'stamp_duty_amount' => 'integer',
     ];
 
     protected static function booted(): void
@@ -119,9 +119,9 @@ class SelfInvoice extends Model
         }
 
         $this->update([
-            'total_net'              => $net,
-            'total_vat'              => $vat,
-            'total_gross'            => $net + $vat,
+            'total_net' => $net,
+            'total_vat' => $vat,
+            'total_gross' => $net + $vat,
             'withholding_tax_amount' => $withholdingTaxAmount,
         ]);
     }

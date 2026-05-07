@@ -50,9 +50,9 @@ test('invoice settings can be updated', function () {
 
     // Create a test sequence and VAT rate
     $sequence = Sequence::create([
-        'name'    => 'Test Sequence',
+        'name' => 'Test Sequence',
         'pattern' => 'TST-{SEQ}',
-        'type'    => 'electronic_invoice',
+        'type' => 'electronic_invoice',
     ]);
 
     // Update settings
@@ -119,11 +119,11 @@ test('invoice settings stamp duty threshold can be customized', function () {
 
 test('invoice settings can set all sequence defaults', function () {
     $sequences = [
-        'sales'        => Sequence::create(['name' => 'Sales',    'type' => 'electronic_invoice']),
-        'purchase'     => Sequence::create(['name' => 'Purchase', 'type' => 'purchase']),
-        'quote'        => Sequence::create(['name' => 'Quote',    'type' => 'quote']),
+        'sales' => Sequence::create(['name' => 'Sales',    'type' => 'electronic_invoice']),
+        'purchase' => Sequence::create(['name' => 'Purchase', 'type' => 'purchase']),
+        'quote' => Sequence::create(['name' => 'Quote',    'type' => 'quote']),
         'credit_notes' => Sequence::create(['name' => 'Credit',   'type' => 'electronic_invoice']),
-        'proforma'     => Sequence::create(['name' => 'Proforma', 'type' => 'proforma']),
+        'proforma' => Sequence::create(['name' => 'Proforma', 'type' => 'proforma']),
     ];
 
     $settings = app(InvoiceSettings::class);

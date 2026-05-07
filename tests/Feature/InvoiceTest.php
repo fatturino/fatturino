@@ -5,6 +5,7 @@ use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\User;
+use App\Settings\InvoiceSettings;
 
 test('invoice totals are calculated correctly', function () {
     // Create necessary data
@@ -85,7 +86,7 @@ test('invoice calculates withholding tax correctly', function () {
 
 test('invoice applies stamp duty automatically when total exceeds threshold', function () {
     // Enable auto stamp duty in settings
-    $settings = app(\App\Settings\InvoiceSettings::class);
+    $settings = app(InvoiceSettings::class);
     $settings->auto_stamp_duty = true;
     $settings->stamp_duty_threshold = '77.47';
     $settings->save();

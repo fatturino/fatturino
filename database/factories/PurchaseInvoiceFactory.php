@@ -3,17 +3,18 @@
 namespace Database\Factories;
 
 use App\Models\Contact;
+use App\Models\PurchaseInvoice;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PurchaseInvoice>
+ * @extends Factory<PurchaseInvoice>
  */
 class PurchaseInvoiceFactory extends Factory
 {
     public function definition(): array
     {
         return [
-            'number' => 'ACQ-' . $this->faker->unique()->numberBetween(1, 9999),
+            'number' => 'ACQ-'.$this->faker->unique()->numberBetween(1, 9999),
             'sequential_number' => $this->faker->numberBetween(1, 999),
             'date' => now(),
             'contact_id' => Contact::factory(),
@@ -46,7 +47,7 @@ class PurchaseInvoiceFactory extends Factory
     public function withDueDate(string $dueDate, string $paymentStatus = 'unpaid'): static
     {
         return $this->state([
-            'due_date'       => $dueDate,
+            'due_date' => $dueDate,
             'payment_status' => $paymentStatus,
         ]);
     }

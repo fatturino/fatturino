@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Livewire\Settings;
 
+use App\Contracts\EnvironmentCapabilities;
+use App\Enums\Capability;
 use App\Livewire\Settings\Email;
 use App\Models\User;
 use App\Settings\EmailSettings;
@@ -69,10 +71,18 @@ class EmailSettingsTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->app->bind(\App\Contracts\EnvironmentCapabilities::class, function () {
-            return new class implements \App\Contracts\EnvironmentCapabilities {
-                public function can(\App\Enums\Capability|string $capability): bool { return false; }
-                public function cannot(\App\Enums\Capability|string $capability): bool { return true; }
+        $this->app->bind(EnvironmentCapabilities::class, function () {
+            return new class implements EnvironmentCapabilities
+            {
+                public function can(Capability|string $capability): bool
+                {
+                    return false;
+                }
+
+                public function cannot(Capability|string $capability): bool
+                {
+                    return true;
+                }
             };
         });
 

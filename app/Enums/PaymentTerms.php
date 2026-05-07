@@ -25,7 +25,7 @@ enum PaymentTerms: string
     public static function options(): array
     {
         return array_map(
-            fn (self $term) => ['id' => $term->value, 'name' => $term->value . ' - ' . $term->label()],
+            fn (self $term) => ['id' => $term->value, 'name' => $term->value.' - '.$term->label()],
             self::cases()
         );
     }

@@ -272,11 +272,11 @@ function makePurchaseInvoice(string $date, int $totalVat, array $extra = []): Pu
     $contact = Contact::firstOrCreate(['name' => 'Supplier Test']);
 
     return PurchaseInvoice::create(array_merge([
-        'contact_id'  => $contact->id,
-        'number'      => 'ACQ-'.++$seq,
-        'date'        => $date,
-        'total_vat'   => $totalVat,
-        'total_net'   => $totalVat * 5,
+        'contact_id' => $contact->id,
+        'number' => 'ACQ-'.++$seq,
+        'date' => $date,
+        'total_vat' => $totalVat,
+        'total_net' => $totalVat * 5,
         'total_gross' => $totalVat * 6,
     ], $extra));
 }

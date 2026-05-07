@@ -29,8 +29,8 @@ class SelfInvoiceXmlTest extends TestCase
         $vatRateEnum = match ($vatPercent) {
             22.0 => VatRate::R22,
             10.0 => VatRate::R10,
-            5.0  => VatRate::R5,
-            4.0  => VatRate::R4,
+            5.0 => VatRate::R5,
+            4.0 => VatRate::R4,
             default => VatRate::R22,
         };
 

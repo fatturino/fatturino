@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\Livewire\CreditNotes;
 
+use App\Enums\VatRate;
 use App\Livewire\CreditNotes\Create;
 use App\Livewire\CreditNotes\Edit;
 use App\Livewire\CreditNotes\Index;
 use App\Models\Contact;
 use App\Models\CreditNote;
 use App\Models\Sequence;
-use App\Enums\VatRate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -76,19 +76,19 @@ class CreditNoteTest extends TestCase
             ->set('contact_id', $contact->id)
             ->set('sequence_id', $sequence->id)
             ->set('lines', [[
-                'description'     => 'Reso prodotto',
-                'quantity'        => 1,
+                'description' => 'Reso prodotto',
+                'quantity' => 1,
                 'unit_of_measure' => 'pz',
-                'unit_price'      => 100,
-                'vat_rate'        => VatRate::R22->value,
-                'total'           => 100,
+                'unit_price' => 100,
+                'vat_rate' => VatRate::R22->value,
+                'total' => 100,
             ]])
             ->call('save');
 
         $this->assertDatabaseHas('invoices', [
-            'type'          => 'credit_note',
+            'type' => 'credit_note',
             'document_type' => 'TD04',
-            'contact_id'    => $contact->id,
+            'contact_id' => $contact->id,
         ]);
     }
 
@@ -107,17 +107,17 @@ class CreditNoteTest extends TestCase
             ->set('related_invoice_number', 'FT-2026-001')
             ->set('related_invoice_date', '2026-01-15')
             ->set('lines', [[
-                'description'     => 'Reso prodotto',
-                'quantity'        => 1,
+                'description' => 'Reso prodotto',
+                'quantity' => 1,
                 'unit_of_measure' => 'pz',
-                'unit_price'      => 100,
-                'vat_rate'        => VatRate::R22->value,
-                'total'           => 100,
+                'unit_price' => 100,
+                'vat_rate' => VatRate::R22->value,
+                'total' => 100,
             ]])
             ->call('save');
 
         $this->assertDatabaseHas('invoices', [
-            'type'                   => 'credit_note',
+            'type' => 'credit_note',
             'related_invoice_number' => 'FT-2026-001',
         ]);
     }

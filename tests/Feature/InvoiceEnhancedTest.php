@@ -3,8 +3,6 @@
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\Invoice;
-use App\Models\InvoiceLine;
-use App\Models\Product;
 use App\Models\Sequence;
 
 // Test basic invoice creation

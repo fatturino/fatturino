@@ -4,9 +4,9 @@ namespace App\Enums;
 
 enum PaymentStatus: string
 {
-    case Unpaid  = 'unpaid';
+    case Unpaid = 'unpaid';
     case Partial = 'partial';
-    case Paid    = 'paid';
+    case Paid = 'paid';
     case Overdue = 'overdue';
 
     /**
@@ -15,9 +15,9 @@ enum PaymentStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Unpaid  => __('app.invoices.payment_status_unpaid'),
+            self::Unpaid => __('app.invoices.payment_status_unpaid'),
             self::Partial => __('app.invoices.payment_status_partial'),
-            self::Paid    => __('app.invoices.payment_status_paid'),
+            self::Paid => __('app.invoices.payment_status_paid'),
             self::Overdue => __('app.invoices.payment_status_overdue'),
         };
     }
@@ -28,9 +28,9 @@ enum PaymentStatus: string
     public function color(): string
     {
         return match ($this) {
-            self::Unpaid  => 'badge-soft badge-warning',
+            self::Unpaid => 'badge-soft badge-warning',
             self::Partial => 'badge-soft badge-info',
-            self::Paid    => 'badge-soft badge-success',
+            self::Paid => 'badge-soft badge-success',
             self::Overdue => 'badge-soft badge-error',
         };
     }
@@ -41,9 +41,9 @@ enum PaymentStatus: string
     public function icon(): string
     {
         return match ($this) {
-            self::Unpaid  => 'o-clock',
+            self::Unpaid => 'o-clock',
             self::Partial => 'o-arrows-right-left',
-            self::Paid    => 'o-check-circle',
+            self::Paid => 'o-check-circle',
             self::Overdue => 'o-exclamation-triangle',
         };
     }

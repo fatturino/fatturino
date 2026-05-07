@@ -3,17 +3,18 @@
 namespace Database\Factories;
 
 use App\Models\Contact;
+use App\Models\ProformaInvoice;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ProformaInvoice>
+ * @extends Factory<ProformaInvoice>
  */
 class ProformaInvoiceFactory extends Factory
 {
     public function definition(): array
     {
         return [
-            'number' => 'PRO-' . $this->faker->unique()->numberBetween(1, 9999),
+            'number' => 'PRO-'.$this->faker->unique()->numberBetween(1, 9999),
             'sequential_number' => $this->faker->numberBetween(1, 999),
             'date' => now(),
             'contact_id' => Contact::factory(),

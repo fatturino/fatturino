@@ -8,6 +8,7 @@ use App\Models\Contact;
 use App\Models\CreditNote;
 use App\Models\Sequence;
 use App\Settings\InvoiceSettings;
+use Carbon\Carbon;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Mary\Traits\Toast;
@@ -74,12 +75,12 @@ class Create extends Component
     public function addLine(): void
     {
         $this->lines[] = [
-            'description'     => '',
-            'quantity'        => 1,
+            'description' => '',
+            'quantity' => 1,
             'unit_of_measure' => '',
-            'unit_price'      => 0,
-            'vat_rate'        => VatRate::R22->value,
-            'total'           => 0,
+            'unit_price' => 0,
+            'vat_rate' => VatRate::R22->value,
+            'total' => 0,
         ];
     }
 
@@ -124,32 +125,32 @@ class Create extends Component
 
         // Atomically reserve next number to prevent duplicates
         $sequence = Sequence::find($this->sequence_id);
-        $year = \Carbon\Carbon::parse($this->date)->year;
+        $year = Carbon::parse($this->date)->year;
         $reserved = $sequence->reserveNextNumber($year);
 
         $creditNote = CreditNote::create([
-            'number'                 => $reserved['formatted_number'],
-            'sequential_number'      => $reserved['sequential_number'],
-            'date'                   => $this->date,
-            'contact_id'             => $this->contact_id,
-            'sequence_id'            => $this->sequence_id,
-            'fiscal_year'            => $year,
-            'notes'                  => $this->notes,
+            'number' => $reserved['formatted_number'],
+            'sequential_number' => $reserved['sequential_number'],
+            'date' => $this->date,
+            'contact_id' => $this->contact_id,
+            'sequence_id' => $this->sequence_id,
+            'fiscal_year' => $year,
+            'notes' => $this->notes,
             'related_invoice_number' => $this->related_invoice_number ?: null,
-            'related_invoice_date'   => $this->related_invoice_date ?: null,
-            'status'                 => InvoiceStatus::Draft,
+            'related_invoice_date' => $this->related_invoice_date ?: null,
+            'status' => InvoiceStatus::Draft,
         ]);
 
         foreach ($this->lines as $line) {
             $lineTotal = (float) $line['quantity'] * (float) $line['unit_price'];
 
             $creditNote->lines()->create([
-                'description'     => $line['description'],
-                'quantity'        => $line['quantity'],
+                'description' => $line['description'],
+                'quantity' => $line['quantity'],
                 'unit_of_measure' => $line['unit_of_measure'] ?: null,
-                'unit_price'      => (int) round($line['unit_price'] * 100),
-                'vat_rate'        => $line['vat_rate'],
-                'total'           => (int) round($lineTotal * 100),
+                'unit_price' => (int) round($line['unit_price'] * 100),
+                'vat_rate' => $line['vat_rate'],
+                'total' => (int) round($lineTotal * 100),
             ]);
         }
 
@@ -161,10 +162,10 @@ class Create extends Component
     public function render()
     {
         return view('livewire.credit-notes.create', [
-            'contacts'     => Contact::orderBy('name')->get(),
-            'sequences'    => Sequence::where('type', 'credit_note')->orderBy('name')->get(),
+            'contacts' => Contact::orderBy('name')->get(),
+            'sequences' => Sequence::where('type', 'credit_note')->orderBy('name')->get(),
             'sequenceName' => Sequence::find($this->sequence_id)?->name,
-            'vatRates'     => VatRate::options(),
+            'vatRates' => VatRate::options(),
         ]);
     }
 }

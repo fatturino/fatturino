@@ -11,8 +11,8 @@ use Mary\Traits\Toast;
 
 class Index extends Component
 {
-    use WithPagination;
     use Toast;
+    use WithPagination;
 
     public string $search = '';
 
@@ -70,9 +70,9 @@ class Index extends Component
         $overdueCount = (clone $base)->where('payment_status', PaymentStatus::Overdue)->count();
 
         return [
-            'total_count'   => $totalCount,
-            'total_gross'   => $totalGross,
-            'unpaid_count'  => $unpaidCount,
+            'total_count' => $totalCount,
+            'total_gross' => $totalGross,
+            'unpaid_count' => $unpaidCount,
             'unpaid_amount' => $unpaidAmount,
             'overdue_count' => $overdueCount,
         ];
@@ -137,8 +137,8 @@ class Index extends Component
             ->paginate(10);
 
         return view('livewire.purchase-invoices.index', [
-            'invoices'   => $invoices,
-            'headers'    => $this->headers(),
+            'invoices' => $invoices,
+            'headers' => $this->headers(),
             'fiscalYear' => $this->fiscalYear,
             'isReadOnly' => $this->isReadOnly,
         ]);

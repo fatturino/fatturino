@@ -20,15 +20,15 @@ enum SdiStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Sent        => __('app.invoices.sdi_sent'),
-            self::Rejected    => __('app.invoices.sdi_rejected'),
-            self::Delivered   => __('app.invoices.sdi_delivered'),
+            self::Sent => __('app.invoices.sdi_sent'),
+            self::Rejected => __('app.invoices.sdi_rejected'),
+            self::Delivered => __('app.invoices.sdi_delivered'),
             self::NotDelivered => __('app.invoices.sdi_not_delivered'),
-            self::Expired     => __('app.invoices.sdi_expired'),
-            self::Accepted    => __('app.invoices.sdi_accepted'),
-            self::Refused     => __('app.invoices.sdi_refused'),
-            self::Error       => __('app.invoices.sdi_error'),
-            self::Received    => __('app.invoices.sdi_received'),
+            self::Expired => __('app.invoices.sdi_expired'),
+            self::Accepted => __('app.invoices.sdi_accepted'),
+            self::Refused => __('app.invoices.sdi_refused'),
+            self::Error => __('app.invoices.sdi_error'),
+            self::Received => __('app.invoices.sdi_received'),
         };
     }
 
@@ -38,15 +38,15 @@ enum SdiStatus: string
     public function color(): string
     {
         return match ($this) {
-            self::Sent        => 'badge-soft badge-info',
-            self::Rejected    => 'badge-soft badge-error',
-            self::Delivered   => 'badge-soft badge-success',
+            self::Sent => 'badge-soft badge-info',
+            self::Rejected => 'badge-soft badge-error',
+            self::Delivered => 'badge-soft badge-success',
             self::NotDelivered => 'badge-soft badge-warning',
-            self::Expired     => 'badge-soft badge-success',
-            self::Accepted    => 'badge-soft badge-success',
-            self::Refused     => 'badge-soft badge-error',
-            self::Error       => 'badge-soft badge-error',
-            self::Received    => 'badge-soft badge-accent',
+            self::Expired => 'badge-soft badge-success',
+            self::Accepted => 'badge-soft badge-success',
+            self::Refused => 'badge-soft badge-error',
+            self::Error => 'badge-soft badge-error',
+            self::Received => 'badge-soft badge-accent',
         };
     }
 
@@ -56,15 +56,15 @@ enum SdiStatus: string
     public function icon(): string
     {
         return match ($this) {
-            self::Sent        => 'o-clock',
-            self::Rejected    => 'o-x-circle',
-            self::Delivered   => 'o-check-circle',
+            self::Sent => 'o-clock',
+            self::Rejected => 'o-x-circle',
+            self::Delivered => 'o-check-circle',
             self::NotDelivered => 'o-exclamation-triangle',
-            self::Expired     => 'o-check-circle',
-            self::Accepted    => 'o-check-circle',
-            self::Refused     => 'o-x-circle',
-            self::Error       => 'o-exclamation-circle',
-            self::Received    => 'o-inbox-arrow-down',
+            self::Expired => 'o-check-circle',
+            self::Accepted => 'o-check-circle',
+            self::Refused => 'o-x-circle',
+            self::Error => 'o-exclamation-circle',
+            self::Received => 'o-inbox-arrow-down',
         };
     }
 
@@ -74,11 +74,11 @@ enum SdiStatus: string
     public function iconColorClass(): string
     {
         return match ($this) {
-            self::Sent                                     => 'text-info',
-            self::Rejected, self::Refused, self::Error     => 'text-error',
+            self::Sent => 'text-info',
+            self::Rejected, self::Refused, self::Error => 'text-error',
             self::Delivered, self::Accepted, self::Expired => 'text-success',
-            self::NotDelivered                             => 'text-warning',
-            self::Received                                 => 'text-accent',
+            self::NotDelivered => 'text-warning',
+            self::Received => 'text-accent',
         };
     }
 
@@ -88,11 +88,11 @@ enum SdiStatus: string
     public function iconBgClass(): string
     {
         return match ($this) {
-            self::Sent                                     => 'bg-info/15',
-            self::Rejected, self::Refused, self::Error     => 'bg-error/15',
+            self::Sent => 'bg-info/15',
+            self::Rejected, self::Refused, self::Error => 'bg-error/15',
             self::Delivered, self::Accepted, self::Expired => 'bg-success/15',
-            self::NotDelivered                             => 'bg-warning/15',
-            self::Received                                 => 'bg-accent/15',
+            self::NotDelivered => 'bg-warning/15',
+            self::Received => 'bg-accent/15',
         };
     }
 
@@ -102,11 +102,11 @@ enum SdiStatus: string
     public function timelineColor(): string
     {
         return match ($this) {
-            self::Sent                                => 'bg-info',
+            self::Sent => 'bg-info',
             self::Rejected, self::Refused, self::Error => 'bg-error',
             self::Delivered, self::Accepted, self::Expired => 'bg-success',
-            self::NotDelivered                        => 'bg-warning',
-            self::Received                            => 'bg-accent',
+            self::NotDelivered => 'bg-warning',
+            self::Received => 'bg-accent',
         };
     }
 
@@ -118,7 +118,7 @@ enum SdiStatus: string
     {
         return match ($this) {
             self::Rejected, self::Error => true,
-            default                     => false,
+            default => false,
         };
     }
 

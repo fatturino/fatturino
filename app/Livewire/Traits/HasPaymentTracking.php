@@ -39,10 +39,10 @@ trait HasPaymentTracking
             ? number_format($remaining / 100, 2, '.', '')
             : '';
 
-        $this->newPaymentDate    = now()->format('Y-m-d');
-        $this->newPaymentMethod  = $invoice->payment_method?->value;
+        $this->newPaymentDate = now()->format('Y-m-d');
+        $this->newPaymentMethod = $invoice->payment_method?->value;
         $this->newPaymentReference = null;
-        $this->newPaymentNotes   = null;
+        $this->newPaymentNotes = null;
 
         $this->paymentModal = true;
     }
@@ -54,19 +54,19 @@ trait HasPaymentTracking
     {
         $this->validate([
             'newPaymentAmount' => 'required|numeric|min:0.01',
-            'newPaymentDate'   => 'required|date',
+            'newPaymentDate' => 'required|date',
         ]);
 
         $invoice = $this->getPayableInvoice();
         $amountCents = (int) round((float) $this->newPaymentAmount * 100);
 
         Payment::create([
-            'invoice_id'     => $invoice->id,
-            'amount'         => $amountCents,
-            'paid_at'        => $this->newPaymentDate,
+            'invoice_id' => $invoice->id,
+            'amount' => $amountCents,
+            'paid_at' => $this->newPaymentDate,
             'payment_method' => $this->newPaymentMethod ?: null,
-            'reference'      => $this->newPaymentReference ?: null,
-            'notes'          => $this->newPaymentNotes ?: null,
+            'reference' => $this->newPaymentReference ?: null,
+            'notes' => $this->newPaymentNotes ?: null,
         ]);
 
         // Refresh model to get updated total_gross before recalculating
@@ -74,11 +74,11 @@ trait HasPaymentTracking
         $invoice->recalculatePaymentStatus();
 
         // Reset form fields
-        $this->newPaymentAmount    = '';
-        $this->newPaymentDate      = '';
-        $this->newPaymentMethod    = null;
+        $this->newPaymentAmount = '';
+        $this->newPaymentDate = '';
+        $this->newPaymentMethod = null;
         $this->newPaymentReference = null;
-        $this->newPaymentNotes     = null;
+        $this->newPaymentNotes = null;
 
         $this->success(__('app.payments.payment_added'));
     }
@@ -113,9 +113,9 @@ trait HasPaymentTracking
         }
 
         Payment::create([
-            'invoice_id'     => $invoice->id,
-            'amount'         => $remaining,
-            'paid_at'        => now()->format('Y-m-d'),
+            'invoice_id' => $invoice->id,
+            'amount' => $remaining,
+            'paid_at' => now()->format('Y-m-d'),
             'payment_method' => $invoice->payment_method ?: null,
         ]);
 

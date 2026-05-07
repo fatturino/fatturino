@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\SdiStatus;
+use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
@@ -11,7 +12,6 @@ use App\Models\PurchaseInvoice;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Models\User;
-use App\Enums\VatRate;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 

@@ -11,11 +11,16 @@ namespace App\Enums;
 class AtecoCode
 {
     // Classificazione levels from the JSON source
-    public const LEVEL_SEZIONE       = 'Sezione';
-    public const LEVEL_DIVISIONE     = 'Divisione';
-    public const LEVEL_GRUPPO        = 'Gruppo';
-    public const LEVEL_CLASSE        = 'Classe';
-    public const LEVEL_CATEGORIA     = 'Categoria';
+    public const LEVEL_SEZIONE = 'Sezione';
+
+    public const LEVEL_DIVISIONE = 'Divisione';
+
+    public const LEVEL_GRUPPO = 'Gruppo';
+
+    public const LEVEL_CLASSE = 'Classe';
+
+    public const LEVEL_CATEGORIA = 'Categoria';
+
     public const LEVEL_SOTTOCATEGORIA = 'Sottocategoria';
 
     /** @var array<int, array{codice: string, titolo: string, classificazione: string}>|null */
@@ -69,7 +74,7 @@ class AtecoCode
      * Each option has 'id' (codice) and 'name' (codice + titolo).
      *
      * @param  string|null  $search  Case-insensitive substring filter applied to codice and titolo
-     * @param  string|null  $level   Optional classificazione level filter
+     * @param  string|null  $level  Optional classificazione level filter
      * @return array<int, array{id: string, name: string}>
      */
     public static function options(?string $search = null, ?string $level = null): array
@@ -90,7 +95,7 @@ class AtecoCode
         }
 
         return array_values(array_map(
-            fn (array $e) => ['id' => $e['codice'], 'name' => $e['codice'] . ' - ' . $e['titolo']],
+            fn (array $e) => ['id' => $e['codice'], 'name' => $e['codice'].' - '.$e['titolo']],
             $entries
         ));
     }
@@ -102,6 +107,6 @@ class AtecoCode
     {
         $entry = self::find($codice);
 
-        return $entry !== null ? $entry['codice'] . ' - ' . $entry['titolo'] : $codice;
+        return $entry !== null ? $entry['codice'].' - '.$entry['titolo'] : $codice;
     }
 }

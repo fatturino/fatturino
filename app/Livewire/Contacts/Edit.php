@@ -5,9 +5,9 @@ namespace App\Livewire\Contacts;
 use App\Models\Contact;
 use App\Rules\ItalianTaxCode;
 use App\Rules\ItalianVatNumber;
+use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Mary\Traits\Toast;
-use Livewire\Attributes\Validate;
 
 class Edit extends Component
 {
@@ -25,12 +25,19 @@ class Edit extends Component
 
     #[Validate(['nullable', new ItalianTaxCode])]
     public ?string $tax_code = null;
+
     public ?string $sdi_code = null;
+
     public ?string $pec = null;
+
     public string $country = 'IT';
+
     public ?string $address = null;
+
     public ?string $postal_code = null;
+
     public ?string $city = null;
+
     public ?string $province = null;
 
     public function mount(Contact $contact)
@@ -101,7 +108,7 @@ class Edit extends Component
         ];
 
         return view('livewire.contacts.edit', [
-            'countries' => $countries
+            'countries' => $countries,
         ]);
     }
 }

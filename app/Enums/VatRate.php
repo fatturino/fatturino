@@ -53,9 +53,9 @@ enum VatRate: string
         return match ($this) {
             self::R22 => 22.00,
             self::R10 => 10.00,
-            self::R5  => 5.00,
-            self::R4  => 4.00,
-            default   => 0.00,
+            self::R5 => 5.00,
+            self::R4 => 4.00,
+            default => 0.00,
         };
     }
 
@@ -78,11 +78,11 @@ enum VatRate: string
     public function label(): string
     {
         return match ($this) {
-            self::R22  => '22% - Aliquota Ordinaria',
-            self::R10  => '10% - Aliquota Ridotta',
-            self::R5   => '5% - Aliquota Ridotta Speciale',
-            self::R4   => '4% - Aliquota Minima',
-            self::N1   => '0% N1 - Escluse ex art. 15',
+            self::R22 => '22% - Aliquota Ordinaria',
+            self::R10 => '10% - Aliquota Ridotta',
+            self::R5 => '5% - Aliquota Ridotta Speciale',
+            self::R4 => '4% - Aliquota Minima',
+            self::N1 => '0% N1 - Escluse ex art. 15',
             self::N2_1 => '0% N2.1 - Non soggette ex artt. da 7 a 7-septies',
             self::N2_2 => '0% N2.2 - Non soggette - altri casi',
             self::N3_1 => '0% N3.1 - Non imponibili - esportazioni',
@@ -91,8 +91,8 @@ enum VatRate: string
             self::N3_4 => '0% N3.4 - Non imponibili - operazioni assimilate alle esportazioni',
             self::N3_5 => '0% N3.5 - Non imponibili - a seguito di dichiarazioni d\'intento',
             self::N3_6 => '0% N3.6 - Non imponibili - altre operazioni che non concorrono alla formazione del plafond',
-            self::N4   => '0% N4 - Esenti',
-            self::N5   => '0% N5 - Regime del margine',
+            self::N4 => '0% N4 - Esenti',
+            self::N5 => '0% N5 - Regime del margine',
             self::N6_1 => '0% N6.1 - Inversione contabile - cessione di rottami',
             self::N6_2 => '0% N6.2 - Inversione contabile - cessione di oro e argento',
             self::N6_3 => '0% N6.3 - Inversione contabile - subappalto settore edile',
@@ -102,7 +102,7 @@ enum VatRate: string
             self::N6_7 => '0% N6.7 - Inversione contabile - prestazioni settore edile',
             self::N6_8 => '0% N6.8 - Inversione contabile - operazioni settore energetico',
             self::N6_9 => '0% N6.9 - Inversione contabile - altri casi',
-            self::N7   => '0% N7 - IVA assolta in altro stato UE',
+            self::N7 => '0% N7 - IVA assolta in altro stato UE',
         };
     }
 

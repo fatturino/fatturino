@@ -28,10 +28,10 @@ use FatturaElettronicaPhp\FatturaElettronica\Total;
 class CreditNoteXmlService
 {
     use GeneratesSdiFilename;
+
     public function __construct(
         protected CompanySettings $companySettings
-    ) {
-    }
+    ) {}
 
     /**
      * Build SDI-compliant filename: CC + IdCodice + '_' + ProgressivoInvio + .xml
@@ -126,7 +126,7 @@ class CreditNoteXmlService
             $documentTotal += $creditNote->stamp_duty_amount / 100;
         }
         $instance->setDocumentTotal($documentTotal);
-        $instance->addDescription($creditNote->notes ?? 'Nota di Credito n. ' . $creditNote->number);
+        $instance->addDescription($creditNote->notes ?? 'Nota di Credito n. '.$creditNote->number);
 
         // Virtual stamp duty (DatiBollo)
         if ($creditNote->stamp_duty_applied) {
@@ -187,13 +187,13 @@ class CreditNoteXmlService
         foreach ($creditNote->lines as $line) {
             $rate = $line->vat_rate?->percent() ?? 0;
             $nature = $line->vat_rate?->nature() ?? '';
-            $key = $rate . '_' . $nature;
+            $key = $rate.'_'.$nature;
             if (! isset($summary[$key])) {
                 $summary[$key] = [
-                    'rate'    => $rate,
-                    'nature'  => $nature ?: null,
+                    'rate' => $rate,
+                    'nature' => $nature ?: null,
                     'taxable' => 0,
-                    'tax'     => 0,
+                    'tax' => 0,
                 ];
             }
 

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Livewire\PurchaseInvoices;
 
-use App\Enums\SdiStatus;
 use App\Livewire\PurchaseInvoices\Index;
 use App\Models\Contact;
 use App\Models\PurchaseInvoice;

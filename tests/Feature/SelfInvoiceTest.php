@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\SdiStatus;
-use App\Models\Contact;
 use App\Enums\VatRate;
+use App\Models\Contact;
 use App\Models\InvoiceLine;
 use App\Models\SelfInvoice;
 

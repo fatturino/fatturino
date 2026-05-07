@@ -93,7 +93,7 @@ class Sequence extends Model
 
             return [
                 'sequential_number' => $nextNumber,
-                'formatted_number'  => $formatted,
+                'formatted_number' => $formatted,
             ];
         });
     }
@@ -108,7 +108,7 @@ class Sequence extends Model
             // Block 1: System records cannot be deleted
             if ($sequence->is_system) {
                 throw new \Exception(
-                    'Impossibile eliminare un sezionale di sistema. ' .
+                    'Impossibile eliminare un sezionale di sistema. '.
                     'I sezionali predefiniti non possono essere rimossi.'
                 );
             }
@@ -117,8 +117,8 @@ class Sequence extends Model
             if ($sequence->invoices()->exists()) {
                 $count = $sequence->invoices()->count();
                 throw new \Exception(
-                    "Impossibile eliminare il sezionale \"{$sequence->name}\". " .
-                    "È utilizzato in {$count} fatture. " .
+                    "Impossibile eliminare il sezionale \"{$sequence->name}\". ".
+                    "È utilizzato in {$count} fatture. ".
                     'Rimuovere prima i riferimenti per procedere.'
                 );
             }

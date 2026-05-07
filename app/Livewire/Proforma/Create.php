@@ -9,6 +9,7 @@ use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\Sequence;
 use App\Settings\InvoiceSettings;
+use Carbon\Carbon;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Mary\Traits\Toast;
@@ -31,18 +32,25 @@ class Create extends Component
 
     // Withholding tax (Ritenuta d'acconto)
     public bool $withholding_tax_enabled = false;
+
     public string $withholding_tax_percent = '20.00';
 
     // Professional fund (Cassa Previdenziale)
     public bool $fund_enabled = false;
+
     public ?string $fund_type = null;
+
     public string $fund_percent = '4.00';
+
     public ?string $fund_vat_rate = null;
+
     public bool $fund_has_deduction = false;
 
     // Stamp duty (Marca da bollo)
     public bool $stamp_duty_applied = false;
+
     public bool $auto_stamp_duty = false;
+
     public string $stamp_duty_threshold = '77.47';
 
     // Lines
@@ -50,7 +58,9 @@ class Create extends Component
 
     // Reverse calculation modal (Scorporo)
     public bool $reverseCalcModal = false;
+
     public string $reverseCalcDesiredNet = '';
+
     public ?string $reverseCalcVatRate = null;
 
     public function updatedLines()
@@ -83,6 +93,7 @@ class Create extends Component
         // Prevent creating proforma when a past fiscal year is selected
         if (session('fiscal_year', now()->year) < now()->year) {
             $this->redirectRoute('proforma.index', navigate: true);
+
             return;
         }
 
@@ -118,12 +129,12 @@ class Create extends Component
     public function addLine()
     {
         $this->lines[] = [
-            'description'     => '',
-            'quantity'        => 1,
+            'description' => '',
+            'quantity' => 1,
             'unit_of_measure' => '',
-            'unit_price'      => 0,
-            'vat_rate'        => VatRate::R22->value,
-            'total'           => 0,
+            'unit_price' => 0,
+            'vat_rate' => VatRate::R22->value,
+            'total' => 0,
         ];
     }
 
@@ -295,38 +306,38 @@ class Create extends Component
         $this->validate();
 
         $sequence = Sequence::find($this->sequence_id);
-        $year = \Carbon\Carbon::parse($this->date)->year;
+        $year = Carbon::parse($this->date)->year;
         $reserved = $sequence->reserveNextNumber($year);
 
         $proforma = ProformaInvoice::create([
-            'number'                  => $reserved['formatted_number'],
-            'sequential_number'       => $reserved['sequential_number'],
-            'date'                    => $this->date,
-            'contact_id'              => $this->contact_id,
-            'sequence_id'             => $this->sequence_id,
-            'fiscal_year'             => $year,
-            'status'                  => ProformaStatus::Draft,
+            'number' => $reserved['formatted_number'],
+            'sequential_number' => $reserved['sequential_number'],
+            'date' => $this->date,
+            'contact_id' => $this->contact_id,
+            'sequence_id' => $this->sequence_id,
+            'fiscal_year' => $year,
+            'status' => ProformaStatus::Draft,
             'withholding_tax_enabled' => $this->withholding_tax_enabled,
             'withholding_tax_percent' => $this->withholding_tax_enabled ? $this->withholding_tax_percent : null,
-            'fund_enabled'            => $this->fund_enabled,
-            'fund_type'               => $this->fund_enabled ? $this->fund_type : null,
-            'fund_percent'            => $this->fund_enabled ? $this->fund_percent : null,
-            'fund_vat_rate'           => $this->fund_enabled ? $this->fund_vat_rate : null,
-            'fund_has_deduction'      => $this->fund_enabled && $this->fund_has_deduction,
-            'stamp_duty_applied'      => $this->stamp_duty_applied,
-            'stamp_duty_amount'       => $this->stamp_duty_applied ? 200 : 0,
+            'fund_enabled' => $this->fund_enabled,
+            'fund_type' => $this->fund_enabled ? $this->fund_type : null,
+            'fund_percent' => $this->fund_enabled ? $this->fund_percent : null,
+            'fund_vat_rate' => $this->fund_enabled ? $this->fund_vat_rate : null,
+            'fund_has_deduction' => $this->fund_enabled && $this->fund_has_deduction,
+            'stamp_duty_applied' => $this->stamp_duty_applied,
+            'stamp_duty_amount' => $this->stamp_duty_applied ? 200 : 0,
         ]);
 
         foreach ($this->lines as $line) {
             $lineTotal = (float) $line['quantity'] * (float) $line['unit_price'];
 
             $proforma->lines()->create([
-                'description'     => $line['description'],
-                'quantity'        => $line['quantity'],
+                'description' => $line['description'],
+                'quantity' => $line['quantity'],
                 'unit_of_measure' => ($line['unit_of_measure'] ?? null) ?: null,
-                'unit_price'      => (int) round($line['unit_price'] * 100),
-                'vat_rate'        => $line['vat_rate'],
-                'total'           => (int) round($lineTotal * 100),
+                'unit_price' => (int) round($line['unit_price'] * 100),
+                'vat_rate' => $line['vat_rate'],
+                'total' => (int) round($lineTotal * 100),
             ]);
         }
 
@@ -338,9 +349,9 @@ class Create extends Component
     public function render()
     {
         return view('livewire.proforma.create', [
-            'contacts'     => Contact::orderBy('name')->get(),
+            'contacts' => Contact::orderBy('name')->get(),
             'sequenceName' => Sequence::find($this->sequence_id)?->name,
-            'vatRates'     => VatRate::options(),
+            'vatRates' => VatRate::options(),
         ]);
     }
 }

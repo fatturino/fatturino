@@ -5,7 +5,6 @@ namespace Tests\Feature\Livewire\SelfInvoices;
 use App\Livewire\SelfInvoices\Create;
 use App\Livewire\SelfInvoices\Index;
 use App\Models\Contact;
-use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

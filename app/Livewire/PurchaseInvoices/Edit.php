@@ -2,6 +2,7 @@
 
 namespace App\Livewire\PurchaseInvoices;
 
+use App\Enums\SdiStatus;
 use App\Enums\VatRate;
 use App\Livewire\Traits\HasPaymentTracking;
 use App\Models\Contact;
@@ -44,22 +45,22 @@ class Edit extends Component
     public function mount(PurchaseInvoice $purchaseInvoice): void
     {
         $this->purchaseInvoice = $purchaseInvoice;
-        $this->isSdiLocked     = ! $purchaseInvoice->isSdiEditable();
-        $this->isFromSdi       = $purchaseInvoice->sdi_status === \App\Enums\SdiStatus::Received;
-        $this->isReadOnly      = $purchaseInvoice->date->year < now()->year || $this->isSdiLocked;
+        $this->isSdiLocked = ! $purchaseInvoice->isSdiEditable();
+        $this->isFromSdi = $purchaseInvoice->sdi_status === SdiStatus::Received;
+        $this->isReadOnly = $purchaseInvoice->date->year < now()->year || $this->isSdiLocked;
 
         $this->fill($purchaseInvoice->only(['number', 'date', 'contact_id', 'sequence_id']));
         $this->date = $purchaseInvoice->date->format('Y-m-d');
 
         foreach ($purchaseInvoice->lines as $line) {
             $this->lines[] = [
-                'id'              => $line->id,
-                'description'     => $line->description,
-                'quantity'        => $line->quantity,
+                'id' => $line->id,
+                'description' => $line->description,
+                'quantity' => $line->quantity,
                 'unit_of_measure' => $line->unit_of_measure ?? '',
-                'unit_price'      => $line->unit_price / 100, // Convert from cents
-                'vat_rate'        => $line->vat_rate?->value,
-                'total'           => $line->total / 100, // Convert from cents
+                'unit_price' => $line->unit_price / 100, // Convert from cents
+                'vat_rate' => $line->vat_rate?->value,
+                'total' => $line->total / 100, // Convert from cents
             ];
         }
     }
@@ -67,12 +68,12 @@ class Edit extends Component
     public function addLine(): void
     {
         $this->lines[] = [
-            'description'     => '',
-            'quantity'        => 1,
+            'description' => '',
+            'quantity' => 1,
             'unit_of_measure' => '',
-            'unit_price'      => 0,
-            'vat_rate'        => VatRate::R22->value,
-            'total'           => 0,
+            'unit_price' => 0,
+            'vat_rate' => VatRate::R22->value,
+            'total' => 0,
         ];
     }
 
@@ -88,6 +89,7 @@ class Edit extends Component
         foreach ($this->lines as $line) {
             $total += (float) $line['quantity'] * (float) $line['unit_price'];
         }
+
         return $total;
     }
 
@@ -101,6 +103,7 @@ class Edit extends Component
                 $total += $lineTotal * ($vatRate->percent() / 100);
             }
         }
+
         return $total;
     }
 
@@ -118,15 +121,16 @@ class Edit extends Component
     {
         if ($this->isReadOnly) {
             $this->error(__('app.purchase_invoices.readonly_error'));
+
             return;
         }
 
         $this->validate();
 
         $this->purchaseInvoice->update([
-            'number'      => $this->number,
-            'date'        => $this->date,
-            'contact_id'  => $this->contact_id,
+            'number' => $this->number,
+            'date' => $this->date,
+            'contact_id' => $this->contact_id,
             'sequence_id' => $this->sequence_id,
         ]);
 
@@ -137,12 +141,12 @@ class Edit extends Component
             $lineTotal = (float) $line['quantity'] * (float) $line['unit_price'];
 
             $this->purchaseInvoice->lines()->create([
-                'description'     => $line['description'],
-                'quantity'        => $line['quantity'],
+                'description' => $line['description'],
+                'quantity' => $line['quantity'],
                 'unit_of_measure' => $line['unit_of_measure'] ?: null,
-                'unit_price'      => (int) round($line['unit_price'] * 100), // Convert to cents
-                'vat_rate'        => $line['vat_rate'],
-                'total'           => (int) round($lineTotal * 100), // Convert to cents
+                'unit_price' => (int) round($line['unit_price'] * 100), // Convert to cents
+                'vat_rate' => $line['vat_rate'],
+                'total' => (int) round($lineTotal * 100), // Convert to cents
             ]);
         }
 
@@ -154,9 +158,9 @@ class Edit extends Component
     public function render()
     {
         return view('livewire.purchase-invoices.edit', [
-            'contacts'   => Contact::orderBy('name')->get(),
-            'sequences'  => Sequence::where('type', 'purchase')->orderBy('name')->get(),
-            'vatRates'   => VatRate::options(),
+            'contacts' => Contact::orderBy('name')->get(),
+            'sequences' => Sequence::where('type', 'purchase')->orderBy('name')->get(),
+            'vatRates' => VatRate::options(),
             'isReadOnly' => $this->isReadOnly,
         ]);
     }

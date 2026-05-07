@@ -276,20 +276,20 @@ class ReportService
         // Build bucket definitions: overdue + 6 monthly forward buckets
         $bucketDefs = [
             [
-                'key'   => 'overdue',
+                'key' => 'overdue',
                 'label' => __('app.dashboard.overdue'),
                 'start' => null,
-                'end'   => $today->copy()->subDay()->endOfDay(),
+                'end' => $today->copy()->subDay()->endOfDay(),
             ],
         ];
 
         for ($i = 0; $i < 6; $i++) {
             $monthRef = $today->copy()->addMonths($i);
             $bucketDefs[] = [
-                'key'   => $monthRef->format('Y-m'),
+                'key' => $monthRef->format('Y-m'),
                 'label' => ucfirst($monthRef->locale('it')->isoFormat('MMMM YYYY')),
                 'start' => $i === 0 ? $today->copy() : $monthRef->copy()->startOfMonth(),
-                'end'   => $monthRef->copy()->endOfMonth(),
+                'end' => $monthRef->copy()->endOfMonth(),
             ];
         }
 
@@ -325,11 +325,11 @@ class ReportService
                 ->value('balance_due');
 
             $buckets[] = [
-                'key'      => $bucketDef['key'],
-                'label'    => $bucketDef['label'],
-                'inflows'  => $inflows,
+                'key' => $bucketDef['key'],
+                'label' => $bucketDef['label'],
+                'inflows' => $inflows,
                 'outflows' => $outflows,
-                'net'      => $inflows - $outflows,
+                'net' => $inflows - $outflows,
             ];
         }
 
