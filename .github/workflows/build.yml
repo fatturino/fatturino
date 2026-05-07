@@ -33,7 +33,16 @@ jobs:
         run: php artisan key:generate
 
       - name: Create dummy Vite manifest
-        run: mkdir -p public/build && echo '{}' > public/build/manifest.json
+        run: |
+          mkdir -p public/build/assets
+          touch public/build/assets/app.css
+          touch public/build/assets/app.js
+          cat > public/build/manifest.json << 'EOF'
+          {
+              "resources/css/app.css": {"file": "assets/app.css", "src": "resources/css/app.css"},
+              "resources/js/app.js": {"file": "assets/app.js", "src": "resources/js/app.js"}
+          }
+          EOF
 
       - name: Run tests
         run: composer test
