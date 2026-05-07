@@ -82,7 +82,7 @@ test('send dispatches DocumentMail with default template', function () {
 
     app(DocumentMailer::class)->send($invoice, 'mario@example.com');
 
-    Mail::assertQueued(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasTo('mario@example.com'));
+    Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasTo('mario@example.com'));
 });
 
 test('sendWithOverrides dispatches DocumentMail with custom subject and body', function () {
@@ -103,7 +103,7 @@ test('sendWithOverrides dispatches DocumentMail with custom subject and body', f
         'Corpo personalizzato',
     );
 
-    Mail::assertQueued(DocumentMail::class, function (DocumentMail $mail) {
+    Mail::assertSent(DocumentMail::class, function (DocumentMail $mail) {
         return $mail->hasTo('mario@example.com')
             && $mail->emailSubject === 'Oggetto personalizzato'
             && $mail->emailBody === 'Corpo personalizzato';
@@ -124,7 +124,7 @@ test('sendWithOverrides without PDF does not attach document', function () {
         attachPdf: false,
     );
 
-    Mail::assertQueued(DocumentMail::class, fn (DocumentMail $mail) => $mail->document === null);
+    Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->document === null);
 });
 
 test('renderSubject for proforma replaces placeholders correctly', function () {
@@ -211,7 +211,7 @@ test('sendWithOverrides with CC includes CC address in envelope', function () {
         cc: 'contabilita@example.com',
     );
 
-    Mail::assertQueued(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasCc('contabilita@example.com'));
+    Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasCc('contabilita@example.com'));
 });
 
 test('testConnection returns error string when no from address configured', function () {
