@@ -80,7 +80,7 @@ class ProformaEmailTest extends TestCase
             ->set('emailBody', 'Test Body')
             ->call('sendEmail');
 
-        Mail::assertQueued(DocumentMail::class, fn ($mail) => $mail->hasTo('luigi@example.com'));
+        Mail::assertSent(DocumentMail::class, fn ($mail) => $mail->hasTo('luigi@example.com'));
     }
 
     public function test_send_email_closes_modal_and_shows_no_errors()
@@ -134,7 +134,7 @@ class ProformaEmailTest extends TestCase
             ->test(Edit::class, ['proformaInvoice' => $proforma])
             ->call('markAsSent');
 
-        Mail::assertQueued(DocumentMail::class, fn ($mail) => $mail->hasTo('luigi@example.com'));
+        Mail::assertSent(DocumentMail::class, fn ($mail) => $mail->hasTo('luigi@example.com'));
     }
 
     public function test_mark_as_sent_skips_auto_send_when_disabled()

@@ -136,7 +136,7 @@ class InvoiceEmailTest extends TestCase
             ->set('emailBody', 'Test Body')
             ->call('sendEmail');
 
-        Mail::assertQueued(\App\Mail\DocumentMail::class, fn ($mail) => $mail->hasTo('mario@example.com'));
+        Mail::assertSent(\App\Mail\DocumentMail::class, fn ($mail) => $mail->hasTo('mario@example.com'));
     }
 
     public function test_send_email_validates_empty_subject()
@@ -185,7 +185,7 @@ class InvoiceEmailTest extends TestCase
             ->set('emailBody', 'Test')
             ->call('sendEmail');
 
-        Mail::assertQueued(\App\Mail\DocumentMail::class, fn ($mail) => $mail->hasCc('contabilita@example.com'));
+        Mail::assertSent(\App\Mail\DocumentMail::class, fn ($mail) => $mail->hasCc('contabilita@example.com'));
     }
 
     public function test_send_email_validates_invalid_cc_email()

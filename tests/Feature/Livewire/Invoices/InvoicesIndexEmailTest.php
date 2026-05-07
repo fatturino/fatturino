@@ -53,7 +53,7 @@ class InvoicesIndexEmailTest extends TestCase
             ->test(Index::class)
             ->call('sendEmail', $invoice);
 
-        Mail::assertQueued(DocumentMail::class, fn ($mail) => $mail->hasTo('mario@example.com'));
+        Mail::assertSent(DocumentMail::class, fn ($mail) => $mail->hasTo('mario@example.com'));
     }
 
     public function test_send_email_from_index_shows_error_when_contact_has_no_email()
