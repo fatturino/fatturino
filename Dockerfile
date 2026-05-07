@@ -50,8 +50,6 @@ RUN install-php-extensions bcmath intl gd \
 
 RUN mkdir -p /data && chown www-data:www-data /data
 
-USER www-data
-
 WORKDIR /var/www/html
 
 COPY --chown=www-data:www-data composer.json composer.lock ./
