@@ -29,7 +29,6 @@ use App\Livewire\Settings\Plugins as PluginsSettings;
 use App\Livewire\Settings\SdiSettings;
 use App\Livewire\Settings\Services as ServicesSettings;
 use App\Livewire\Setup\Wizard as SetupWizard;
-use App\Livewire\Wip;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -99,8 +98,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/proforma/{proformaInvoice}/edit', ProformaEdit::class)->name(
         'proforma.edit',
     );
-    Route::get('/products', Wip::class)->name('products.index');
-
     Route::get('/sequences', SequencesIndex::class)->name('sequences.index');
 
     Route::get('/company-settings', CompanySettings::class)->name(

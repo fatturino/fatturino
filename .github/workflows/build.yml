@@ -4,10 +4,42 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, intl, gd, sqlite3
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-progress --no-interaction --prefer-dist
+
+      - name: Copy .env
+        run: cp .env.example .env || true
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Run tests
+        run: composer test
+
+      - name: Lint (Pint)
+        run: vendor/bin/pint --test
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 60
 

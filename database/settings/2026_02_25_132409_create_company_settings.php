@@ -23,5 +23,8 @@ return new class extends SettingsMigration
         $this->migrator->add('company.company_fund_percent', '4.00');
 
         $this->migrator->add('company.company_logo_path', null);
+        $this->migrator->add('company.company_ateco_codes', null);
+        $this->migrator->add('company.company_email', '');
+        $this->migrator->add('company.conservation_acknowledged', false);
     }
 };

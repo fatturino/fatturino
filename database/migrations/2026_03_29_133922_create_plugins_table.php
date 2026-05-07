@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('plugins', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->boolean('active')->default(true);
+            $table->boolean('locked')->default(false);
             $table->timestamps();
         });
     }
