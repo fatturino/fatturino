@@ -428,6 +428,8 @@ class ReportService
             'upcomingDueDates' => $this->upcomingDueDates(5, $year),
             'cashflowForecast' => $this->cashflowForecast($year),
             'revenueTrend' => $this->monthlyRevenueTrend($year),
+            'draftCount' => Invoice::where('status', 'draft')->whereYear('date', $year)->count(),
+            'readyForSdiCount' => Invoice::whereIn('status', ['generated', 'xml_validated'])->whereYear('date', $year)->count(),
         ];
     }
 

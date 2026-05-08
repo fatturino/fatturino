@@ -44,11 +44,14 @@
         <x-dashboard.quick-actions :is-current-year="$isCurrentYear" />
     </div>
 
-    {{-- ROW 3: Recent invoices --}}
+    {{-- ROW 3: Operational overview --}}
     <div class="mt-4">
-        <x-dashboard.recent-invoices
+        <x-dashboard.operational-overview
             :recent-invoices="$recentInvoices"
             :is-current-year="$isCurrentYear"
+            :revenue-trend="$revenueTrend"
+            :draft-count="$draftCount"
+            :ready-for-sdi-count="$readyForSdiCount"
         />
     </div>
 

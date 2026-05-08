@@ -118,6 +118,10 @@ return [
         // Read-only banner for past fiscal years
         'readonly_year_title' => 'Anno fiscale :year, sola visualizzazione',
         'quick_actions' => 'Azioni Rapide',
+        'quick_invoice' => 'Nuova Fattura',
+        'quick_self_invoice' => 'Autofattura',
+        'quick_contact' => 'Nuovo Cliente',
+        'quick_import' => 'Importa XML',
         'vat_quarterly' => 'IVA Trimestrale',
 
         // Recent invoices
@@ -131,6 +135,15 @@ return [
         'payments_paid' => 'Incassate',
         'payments_overdue_title' => 'Scadute',
         'revenue_trend' => 'Andamento Fatturato',
+        'drafts' => 'Bozze',
+        'drafts_desc' => 'Da completare e inviare',
+        'drafts_action' => 'Vai alle fatture',
+        'ready_for_sdi' => 'Pronte per SDI',
+        'ready_for_sdi_desc' => 'Validate, da inviare',
+        'ready_for_sdi_action' => 'Invia a SDI',
+        'latest_sent' => 'Ultime fatture inviate',
+        'month_comparison' => 'Fatturato mese',
+        'vs_last_year' => 'vs anno scorso',
         'payments_overdue_total' => 'Totale scaduto',
         'payments_all_clear' => 'Nessuna fattura in scadenza',
         'payments_upcoming' => 'Prossime scadenze',
