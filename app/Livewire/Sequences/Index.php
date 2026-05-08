@@ -7,7 +7,7 @@ use Illuminate\Validation\Rule;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Index extends Component
 {

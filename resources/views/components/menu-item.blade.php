@@ -1,0 +1,34 @@
+@props([
+    'title' => null,
+    'icon' => null,
+    'link' => null,
+    'active' => false,
+    'badge' => null,
+])
+
+@php
+$isActive = $active || ($link && request()->url() === url($link));
+$classes = 'flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg transition-colors '
+    . ($isActive
+        ? 'bg-white/15 text-white font-semibold'
+        : 'text-white/70 hover:bg-white/10 hover:text-white');
+@endphp
+
+@if($link)
+    <a href="{{ $link }}" {{ $attributes->merge(['class' => $classes]) }} wire:navigate>
+        @if($icon)
+            <x-icon :name="$icon" class="w-5 h-5 shrink-0" />
+        @endif
+        <span class="flex-1">{{ $title }}</span>
+        @if($badge)
+            <span class="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{{ $badge }}</span>
+        @endif
+    </a>
+@else
+    <div {{ $attributes->merge(['class' => $classes]) }}>
+        @if($icon)
+            <x-icon :name="$icon" class="w-5 h-5 shrink-0" />
+        @endif
+        <span class="flex-1">{{ $title ?? $slot }}</span>
+    </div>
+@endif

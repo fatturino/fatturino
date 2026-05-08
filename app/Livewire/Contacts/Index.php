@@ -5,7 +5,7 @@ namespace App\Livewire\Contacts;
 use App\Models\Contact;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Index extends Component
 {
@@ -48,6 +48,7 @@ class Index extends Component
             ['key' => 'vat_number', 'label' => __('app.contacts.col_vat_number')],
             ['key' => 'email', 'label' => __('app.contacts.col_email')],
             ['key' => 'city', 'label' => __('app.contacts.col_city')],
+            ['key' => 'actions', 'label' => '', 'class' => 'w-1', 'view' => 'partials.contact-actions'],
         ];
     }
 

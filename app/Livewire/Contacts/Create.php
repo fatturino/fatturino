@@ -7,7 +7,7 @@ use App\Rules\ItalianTaxCode;
 use App\Rules\ItalianVatNumber;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Create extends Component
 {

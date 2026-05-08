@@ -1,7 +1,7 @@
 <div>
     <x-header :title="__('app.settings.invoice.title')" separator>
         <x-slot:actions>
-            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary" spinner="save" />
+            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
         </x-slot:actions>
     </x-header>
 

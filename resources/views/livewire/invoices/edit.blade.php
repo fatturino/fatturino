@@ -1,9 +1,9 @@
 <div>
     <x-header :title="__('app.invoices.edit_title', ['number' => $invoice->number])" separator>
         <x-slot:actions>
-            <x-button :label="__('app.invoices.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" class="btn-outline btn-sm" />
+            <x-button :label="__('app.invoices.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" variant="outline" size="sm" />
             @unless($isReadOnly)
-                <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" class="btn-outline btn-sm" />
+                <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" variant="outline" size="sm" />
             @endunless
         </x-slot:actions>
     </x-header>
@@ -58,9 +58,9 @@
                     {{-- Status badge --}}
                     <div class="flex items-center gap-2">
                         @if($invoice->sdi_status)
-                            <x-badge :value="$invoice->sdi_status->label()" :class="$invoice->sdi_status->color()" />
+                            <x-badge :value="$invoice->sdi_status->label()" variant="$invoice->sdi_status->badgeVariant()" type="soft"" />
                         @else
-                            <x-badge :value="$invoice->status->label()" :class="$invoice->status->color()" />
+                            <x-badge :value="$invoice->status->label()" variant="$invoice->status->badgeVariant()" type="soft"" />
                         @endif
                     </div>
 
@@ -80,15 +80,15 @@
                     <div class="flex flex-col gap-2">
                         {{-- Primary actions --}}
                         @unless($isReadOnly)
-                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary w-full" spinner="save" />
+                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
                         @endunless
 
                         {{-- SDI actions --}}
                         @if(!$isReadOnly && $invoice->isSdiEditable() && $invoice->status->canValidateXml())
-                            <x-button :label="__('app.invoices.validate_xml')" wire:click="validateXml" wire:confirm="{{ __('app.invoices.confirm_validate_xml') }}" icon="o-shield-check" class="btn-accent w-full" spinner="validateXml" :disabled="!$sdiConfigured" />
+                            <x-button :label="__('app.invoices.validate_xml')" wire:click="validateXml" wire:confirm="{{ __('app.invoices.confirm_validate_xml') }}" icon="o-shield-check" variant="accent" class="w-full" spinner="validateXml" :disabled="!$sdiConfigured" />
                         @endif
                         @if(!$isReadOnly && $invoice->isSdiEditable() && $invoice->status->canSendToSdi())
-                            <x-button :label="__('app.invoices.send_to_sdi')" wire:click="sendToSdi" wire:confirm="{{ __('app.invoices.confirm_send_sdi') }}" icon="o-paper-airplane" class="btn-warning w-full" spinner="sendToSdi" :disabled="!$sdiConfigured" />
+                            <x-button :label="__('app.invoices.send_to_sdi')" wire:click="sendToSdi" wire:confirm="{{ __('app.invoices.confirm_send_sdi') }}" icon="o-paper-airplane" variant="warning" class="w-full" spinner="sendToSdi" :disabled="!$sdiConfigured" />
                         @endif
                         @if(!$sdiConfigured && !$isReadOnly && $invoice->isSdiEditable())
                             <p class="text-xs text-base-content/50 text-center">{{ __('app.invoices.sdi_not_configured_hint') }}</p>
@@ -96,14 +96,14 @@
 
                         {{-- Secondary actions: downloads + email + cancel in a 2-column grid --}}
                         <div class="grid grid-cols-2 gap-2 pt-1">
-                            <x-button :label="__('app.invoices.download_pdf')" wire:click="downloadPdf" icon="o-document-text" class="btn-ghost btn-sm" spinner="downloadPdf" />
-                            <x-button :label="__('app.invoices.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" class="btn-ghost btn-sm" spinner="downloadXml" />
+                            <x-button :label="__('app.invoices.download_pdf')" wire:click="downloadPdf" icon="o-document-text" variant="ghost" size="sm" spinner="downloadPdf" />
+                            <x-button :label="__('app.invoices.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" variant="ghost" size="sm" spinner="downloadXml" />
                             @if($invoice->contact?->email)
                                 @allowed('send-document-email')
-                                    <x-button :label="__('app.email.send_email')" wire:click="openEmailModal" icon="o-envelope" class="btn-ghost btn-sm" spinner="openEmailModal" />
+                                    <x-button :label="__('app.email.send_email')" wire:click="openEmailModal" icon="o-envelope" variant="ghost" size="sm" spinner="openEmailModal" />
                                 @endallowed
                             @endif
-                            <x-button :label="__('app.common.cancel')" link="{{ route('sell-invoices.index') }}" icon="o-x-mark" class="btn-ghost btn-sm" />
+                            <x-button :label="__('app.common.cancel')" link="{{ route('sell-invoices.index') }}" icon="o-x-mark" variant="ghost" size="sm" />
                         </div>
                     </div>
 
@@ -175,7 +175,7 @@
         </div>
         <x-slot:actions>
             <x-button :label="__('app.common.cancel')" @click="$wire.emailModal = false" />
-            <x-button :label="__('app.email.send')" wire:click="sendEmail" icon="o-envelope" class="btn-primary" spinner="sendEmail" />
+            <x-button :label="__('app.email.send')" wire:click="sendEmail" icon="o-envelope" variant="primary" spinner="sendEmail" />
         </x-slot:actions>
     </x-modal>
 </div>

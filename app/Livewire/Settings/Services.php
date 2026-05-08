@@ -8,7 +8,7 @@ use App\Settings\BackupSettings;
 use App\Settings\MonitoringSettings;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Services extends Component
 {

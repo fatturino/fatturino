@@ -7,7 +7,7 @@ use App\Enums\VatRate;
 use App\Models\Sequence;
 use App\Settings\InvoiceSettings;
 use Livewire\Component;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Invoice extends Component
 {

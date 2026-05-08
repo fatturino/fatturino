@@ -80,7 +80,7 @@
                         label="{{ __('app.setup.next') }}"
                         type="submit"
                         icon-right="o-arrow-right"
-                        class="btn-primary"
+                        variant="primary"
                         spinner="nextStep"
                     />
                 </x-slot:actions>
@@ -119,7 +119,7 @@
                         icon="o-scale"
                     />
 
-                    <div class="divider text-sm text-accent font-medium">{{ __('app.setup.invoice_defaults') }}</div>
+                    <div <hr class="border-base-300 my-2" />text-sm text-accent font-medium">{{ __('app.setup.invoice_defaults') }}</div>
 
                     <x-toggle
                         wire:model="auto_stamp_duty"
@@ -139,13 +139,13 @@
                             label="{{ __('app.setup.back') }}"
                             wire:click="previousStep"
                             icon="o-arrow-left"
-                            class="btn-ghost"
+                            variant="ghost"
                         />
                         <x-button
                             label="{{ __('app.setup.next') }}"
                             type="submit"
                             icon-right="o-arrow-right"
-                            class="btn-primary"
+                            variant="primary"
                             spinner="nextStep"
                         />
                     </div>
@@ -188,7 +188,7 @@
                         />
                     </div>
 
-                    <div class="divider text-sm text-accent font-medium">{{ __('app.settings.company.electronic_invoicing') }}</div>
+                    <div <hr class="border-base-300 my-2" />text-sm text-accent font-medium">{{ __('app.settings.company.electronic_invoicing') }}</div>
 
                     <x-input
                         wire:model="company_pec"
@@ -203,12 +203,12 @@
                         placeholder="0000000"
                     />
 
-                    <div class="divider text-sm text-accent font-medium">{{ __('app.conservation.section_title') }}</div>
+                    <div <hr class="border-base-300 my-2" />text-sm text-accent font-medium">{{ __('app.conservation.section_title') }}</div>
 
                     <x-alert
                         :description="__('app.conservation.setup_description')"
                         icon="o-information-circle"
-                        class="alert-info"
+                        variant="info"
                     >
                         <x-slot:actions>
                             <x-button
@@ -216,7 +216,7 @@
                                 icon-right="o-arrow-top-right-on-square"
                                 link="https://ivaservizi.agenziaentrate.gov.it"
                                 external
-                                class="btn-sm btn-outline"
+                                variant="outline" size="sm"
                             />
                         </x-slot:actions>
                     </x-alert>
@@ -234,13 +234,13 @@
                             label="{{ __('app.setup.back') }}"
                             wire:click="previousStep"
                             icon="o-arrow-left"
-                            class="btn-ghost"
+                            variant="ghost"
                         />
                         <x-button
                             label="{{ __('app.setup.complete') }}"
                             type="submit"
                             icon="o-check"
-                            class="btn-primary"
+                            variant="primary"
                             spinner="complete"
                         />
                     </div>

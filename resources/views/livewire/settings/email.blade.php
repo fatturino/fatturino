@@ -2,14 +2,14 @@
     <x-header :title="__('app.settings.email.title')" separator>
         @allowed('edit-email-settings')
             <x-slot:actions>
-                <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary" spinner="save" />
+                <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
             </x-slot:actions>
         @endallowed
     </x-header>
 
     @allowed('edit-email-settings')
     @elseallowed
-        <x-alert :title="__('app.settings.email.readonly_title')" :description="__('app.settings.email.readonly_description')" icon="o-lock-closed" class="alert-warning mb-6" />
+        <x-alert :title="__('app.settings.email.readonly_title')" :description="__('app.settings.email.readonly_description')" icon="o-lock-closed" variant="warning" class="mb-6" />
     @endallowed
 
     <x-form wire:submit="save">
@@ -18,7 +18,7 @@
                 :title="__('app.settings.email.smtp_managed_by_env_title')"
                 :description="__('app.settings.email.smtp_managed_by_env_description')"
                 icon="o-cloud"
-                class="alert-info mb-6"
+                variant="info" class="mb-6"
             />
         @else
         <div class="grid lg:grid-cols-2 gap-5">
@@ -58,7 +58,7 @@
                             :label="__('app.email.test_connection')"
                             wire:click="testConnection"
                             icon="o-paper-airplane"
-                            class="btn-outline btn-sm"
+                            variant="outline" size="sm"
                             spinner="testConnection"
                             :disabled="$readonly"
                         />

@@ -1,7 +1,7 @@
 <div>
     <x-header :title="__('app.self_invoices.edit_title', ['number' => $selfInvoice->number])" separator>
         <x-slot:actions>
-            <x-button :label="__('app.invoices.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" class="btn-outline btn-sm" />
+            <x-button :label="__('app.invoices.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" variant="outline" size="sm" />
         </x-slot:actions>
     </x-header>
 
@@ -104,8 +104,8 @@
                     {{-- Action buttons --}}
                     <div class="flex flex-col gap-2">
                         @unless($isReadOnly)
-                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary w-full" spinner="save" />
-                            <x-button :label="__('app.self_invoices.send_sdi')" wire:click="sendToSdi" icon="o-paper-airplane" class="btn-secondary w-full" spinner="sendToSdi" :disabled="!$sdiConfigured" />
+                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
+                            <x-button :label="__('app.self_invoices.send_sdi')" wire:click="sendToSdi" icon="o-paper-airplane" variant="secondary" class="w-full" spinner="sendToSdi" :disabled="!$sdiConfigured" />
                         @endunless
                         @if(!$sdiConfigured && !$isReadOnly)
                             <p class="text-xs text-base-content/50 text-center">{{ __('app.invoices.sdi_not_configured_hint') }}</p>
@@ -113,9 +113,9 @@
 
                         <div class="flex gap-2">
                             @unless($isReadOnly)
-                                <x-button :label="__('app.self_invoices.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" class="btn-ghost btn-sm flex-1" spinner="downloadXml" />
+                                <x-button :label="__('app.self_invoices.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" variant="ghost" size="sm" class="flex-1" spinner="downloadXml" />
                             @endunless
-                            <x-button :label="__('app.common.cancel')" link="{{ route('self-invoices.index') }}" icon="o-x-mark" class="btn-ghost btn-sm flex-1" />
+                            <x-button :label="__('app.common.cancel')" link="{{ route('self-invoices.index') }}" icon="o-x-mark" variant="ghost" size="sm" class="flex-1" />
                         </div>
                     </div>
                 </div>

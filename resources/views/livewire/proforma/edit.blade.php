@@ -1,9 +1,9 @@
 <div>
     <x-header :title="__('app.proforma.edit_title', ['number' => $proformaInvoice->number])" separator>
         <x-slot:actions>
-            <x-button :label="__('app.proforma.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" class="btn-outline btn-sm" />
+            <x-button :label="__('app.proforma.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" variant="outline" size="sm" />
             @unless($isReadOnly)
-                <x-button :label="__('app.proforma.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" class="btn-outline btn-sm" />
+                <x-button :label="__('app.proforma.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" variant="outline" size="sm" />
             @endunless
         </x-slot:actions>
     </x-header>
@@ -58,7 +58,7 @@
 
                     {{-- Status badge --}}
                     <div class="flex items-center gap-2">
-                        <x-badge :value="$proformaInvoice->status->label()" :class="$proformaInvoice->status->color()" />
+                        <x-badge :value="$proformaInvoice->status->label()" variant="$proformaInvoice->status->badgeVariant()" type="soft"" />
                     </div>
 
                     @include('livewire.invoices.partials._tax-options-section', [
@@ -72,7 +72,7 @@
                     {{-- Action buttons --}}
                     <div class="flex flex-col gap-2">
                         @unless($isReadOnly)
-                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary w-full" spinner="save" />
+                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
                         @endunless
 
                         {{-- Proforma-specific actions --}}
@@ -82,7 +82,7 @@
                                 wire:click="markAsSent"
                                 wire:confirm="{{ __('app.proforma.confirm_mark_sent') }}"
                                 icon="o-paper-airplane"
-                                class="btn-info w-full"
+                                variant="info" class="w-full"
                                 spinner="markAsSent"
                             />
                         @endif
@@ -93,7 +93,7 @@
                                 wire:click="convertToInvoice"
                                 wire:confirm="{{ __('app.proforma.confirm_convert') }}"
                                 icon="o-document-check"
-                                class="btn-success w-full"
+                                variant="success" class="w-full"
                                 spinner="convertToInvoice"
                             />
                         @endif
@@ -104,14 +104,14 @@
                                 wire:click="cancelProforma"
                                 wire:confirm="{{ __('app.proforma.confirm_cancel') }}"
                                 icon="o-x-circle"
-                                class="btn-ghost w-full text-error"
+                                variant="ghost" class="w-full !text-error"
                                 spinner="cancelProforma"
                             />
                         @endif
 
-                        <x-button :label="__('app.invoices.download_pdf')" wire:click="downloadPdf" icon="o-document-text" class="btn-ghost w-full" spinner="downloadPdf" />
+                        <x-button :label="__('app.invoices.download_pdf')" wire:click="downloadPdf" icon="o-document-text" variant="ghost" class="w-full" spinner="downloadPdf" />
 
-                        <x-button :label="__('app.common.cancel')" link="{{ route('proforma.index') }}" icon="o-x-mark" class="btn-ghost w-full" />
+                        <x-button :label="__('app.common.cancel')" link="{{ route('proforma.index') }}" icon="o-x-mark" variant="ghost" class="w-full" />
 
                         {{-- Email send button (shown when contact has email and email sending is allowed) --}}
                         @if($proformaInvoice->contact?->email)
@@ -120,7 +120,7 @@
                                     :label="__('app.email.send_email')"
                                     wire:click="openEmailModal"
                                     icon="o-envelope"
-                                    class="btn-outline w-full"
+                                    variant="outline" class="w-full"
                                     spinner="openEmailModal"
                                 />
                             @endallowed
@@ -151,7 +151,7 @@
         </div>
         <x-slot:actions>
             <x-button :label="__('app.common.cancel')" @click="$wire.emailModal = false" />
-            <x-button :label="__('app.email.send')" wire:click="sendEmail" icon="o-envelope" class="btn-primary" spinner="sendEmail" />
+            <x-button :label="__('app.email.send')" wire:click="sendEmail" icon="o-envelope" variant="primary" spinner="sendEmail" />
         </x-slot:actions>
     </x-modal>
 </div>

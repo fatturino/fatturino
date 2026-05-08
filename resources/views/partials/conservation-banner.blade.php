@@ -24,13 +24,13 @@
                 icon-right="o-arrow-top-right-on-square"
                 link="https://ivaservizi.agenziaentrate.gov.it"
                 external
-                class="btn-sm btn-outline"
+                variant="outline" size="sm"
             />
             <x-button
                 :label="__('app.conservation.acknowledge_button')"
                 wire:click="acknowledgeConservation"
                 icon="o-check"
-                class="btn-sm btn-primary"
+                variant="primary" size="sm"
                 spinner="acknowledgeConservation"
             />
         </x-slot:actions>

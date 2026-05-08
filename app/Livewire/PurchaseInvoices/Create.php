@@ -10,7 +10,7 @@ use App\Models\Sequence;
 use Carbon\Carbon;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Create extends Component
 {

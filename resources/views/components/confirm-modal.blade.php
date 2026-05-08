@@ -68,12 +68,12 @@
                 <x-button
                     :label="__('app.common.cancel')"
                     x-on:click="cancel()"
-                    class="btn-ghost"
+                    variant="ghost"
                 />
                 <x-button
                     :label="__('app.common.confirm')"
                     x-on:click="confirm()"
-                    class="btn-primary"
+                    variant="primary"
                 />
             </div>
         </div>

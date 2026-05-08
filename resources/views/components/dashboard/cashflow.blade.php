@@ -10,10 +10,13 @@
         ->max() ?: 1;
 @endphp
 
-<x-card :title="__('app.dashboard.cashflow_title')">
-    <x-slot:menu>
-        <x-icon name="o-chart-bar" class="w-4 h-4 text-base-content/40" />
-    </x-slot:menu>
+<x-card>
+    <div class="flex items-center gap-2 mb-4">
+        <div class="bg-primary/10 rounded-xl p-2.5">
+            <x-icon name="o-chart-bar" class="w-5 h-5 text-primary" />
+        </div>
+        <span class="font-semibold">{{ __('app.dashboard.cashflow_title') }}</span>
+    </div>
 
     @if(! $hasData)
         <p class="text-sm text-base-content/50 text-center py-4">

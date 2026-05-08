@@ -80,8 +80,8 @@
 
                     {{-- Action buttons --}}
                     <div class="flex flex-col gap-2">
-                        <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary w-full" spinner="save" />
-                        <x-button :label="__('app.common.cancel')" link="{{ route('credit-notes.index') }}" icon="o-x-mark" class="btn-ghost w-full" />
+                        <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
+                        <x-button :label="__('app.common.cancel')" link="{{ route('credit-notes.index') }}" icon="o-x-mark" variant="ghost" class="w-full" />
                     </div>
                 </div>
             </div>

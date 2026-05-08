@@ -22,8 +22,18 @@ enum PaymentStatus: string
         };
     }
 
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Unpaid => 'warning',
+            self::Partial => 'info',
+            self::Paid => 'success',
+            self::Overdue => 'danger',
+        };
+    }
+
     /**
-     * Badge color class for Mary UI / DaisyUI
+     * Badge color class for Mary UI / DaisyUI (deprecated, use badgeVariant)
      */
     public function color(): string
     {

@@ -17,7 +17,7 @@
     <div class="flex items-center justify-between mb-3">
         <h3 class="font-semibold text-base">{{ __('app.invoices.lines_section') }}</h3>
         @unless($isReadOnly)
-            <x-button :label="__('app.invoices.add_line')" icon="o-plus" wire:click="addLine" class="btn-sm btn-ghost" />
+            <x-button :label="__('app.invoices.add_line')" icon="o-plus" wire:click="addLine" variant="ghost" size="sm" />
         @endunless
     </div>
 
@@ -41,7 +41,7 @@
                 {{-- Delete button centered vertically --}}
                 @unless($isReadOnly)
                     <div class="flex items-center">
-                        <x-button icon="o-trash" wire:click="removeLine({{ $index }})" class="btn-ghost btn-sm text-error" />
+                        <x-button icon="o-trash" wire:click="removeLine({{ $index }})" variant="ghost" size="sm" class="!text-error" />
                     </div>
                 @endunless
             </div>

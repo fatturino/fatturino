@@ -23,7 +23,7 @@
                     <x-button
                         :label="__('app.imports.start_import')"
                         icon="o-arrow-down-tray"
-                        class="btn-primary btn-sm"
+                        variant="primary" size="sm"
                         wire:click="openImport('xml_sales')"
                     />
                 </div>
@@ -44,7 +44,7 @@
                     <x-button
                         :label="__('app.imports.start_import')"
                         icon="o-arrow-down-tray"
-                        class="btn-secondary btn-sm"
+                        variant="secondary" size="sm"
                         wire:click="openImport('xml_purchase')"
                     />
                 </div>
@@ -65,7 +65,7 @@
                     <x-button
                         :label="__('app.imports.start_import')"
                         icon="o-arrow-down-tray"
-                        class="btn-accent btn-sm"
+                        variant="accent" size="sm"
                         wire:click="openImport('xml_self_invoice')"
                     />
                 </div>
@@ -96,7 +96,7 @@
                     <x-button
                         :label="__('app.imports.start_import')"
                         icon="o-arrow-down-tray"
-                        class="btn-warning btn-sm"
+                        variant="warning" size="sm"
                         wire:click="openImport('fattura24_contacts')"
                     />
                 </div>
@@ -114,7 +114,7 @@
                     </div>
                 </div>
                 <div class="flex items-center justify-end gap-2">
-                    <x-badge value="Prossimamente" class="badge-soft badge-info badge-sm" />
+                    <x-badge value="Prossimamente" variant="info" type="soft" />
                 </div>
             </x-card>
 
@@ -130,7 +130,7 @@
                     </div>
                 </div>
                 <div class="flex items-center justify-end gap-2">
-                    <x-badge value="Prossimamente" class="badge-soft badge-info badge-sm" />
+                    <x-badge value="Prossimamente" variant="info" type="soft" />
                 </div>
             </x-card>
 
@@ -148,15 +148,13 @@
             <div class="space-y-4">
 
                 @if (empty($importResult['errors']))
-                    <div role="alert" class="alert alert-success">
-                        <x-icon name="o-check-circle" class="w-5 h-5" />
-                        <span>{{ __('app.imports.completed_no_errors') }}</span>
-                    </div>
+                    <x-alert variant="success" class="text-sm">
+                        {{ __('app.imports.completed_no_errors') }}
+                    </x-alert>
                 @else
-                    <div role="alert" class="alert alert-warning">
-                        <x-icon name="o-exclamation-triangle" class="w-5 h-5" />
-                        <span>{{ __('app.imports.completed_with_errors') }}</span>
-                    </div>
+                    <x-alert variant="warning" class="text-sm">
+                        {{ __('app.imports.completed_with_errors') }}
+                    </x-alert>
                 @endif
 
                 {{-- Stats Grid --}}
@@ -254,13 +252,13 @@
         <x-slot:actions>
             @if ($importResult)
                 <x-button :label="__('app.imports.import_another')" wire:click="resetImport" />
-                <x-button :label="__('app.common.done')" @click="$wire.showModal = false" class="btn-primary" />
+                <x-button :label="__('app.common.done')" @click="$wire.showModal = false" variant="primary" />
             @else
                 <x-button :label="__('app.common.cancel')" @click="$wire.showModal = false" />
                 <x-button
                     :label="__('app.imports.run_import')"
                     icon="o-arrow-down-tray"
-                    class="btn-primary"
+                    variant="primary"
                     wire:click="runImport"
                     spinner="runImport"
                 />

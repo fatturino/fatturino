@@ -10,7 +10,13 @@
     $overdueCount = $paymentSummary['overdue']['count'];
 @endphp
 
-<x-card :title="__('app.dashboard.payments_title')">
+<x-card>
+    <div class="flex items-center gap-2 mb-4">
+        <div class="bg-primary/10 rounded-xl p-2.5">
+            <x-icon name="o-credit-card" class="w-5 h-5 text-primary" />
+        </div>
+        <span class="font-semibold">{{ __('app.dashboard.payments_title') }}</span>
+    </div>
 
     {{-- Status summary rows --}}
     <div class="space-y-2 mb-4">
@@ -19,7 +25,7 @@
                 <span class="w-2 h-2 rounded-full bg-error shrink-0"></span>
                 <span>{{ __('app.dashboard.payments_unpaid') }}</span>
                 @if($overdueCount > 0)
-                    <x-badge :value="$overdueCount . ' ' . __('app.dashboard.payments_overdue')" class="badge-soft badge-error badge-xs" />
+                                        <x-badge :value="$overdueCount . ' ' . __('app.dashboard.payments_overdue')" variant="danger" type="soft" class="text-xs" />
                 @endif
             </div>
             <div class="text-right">
@@ -53,7 +59,8 @@
 
     {{-- Upcoming due dates --}}
     @if($upcomingDueDates->isNotEmpty())
-        <div class="divider text-xs text-base-content/40 my-2">{{ __('app.dashboard.payments_upcoming') }}</div>
+        <hr class="border-base-200 my-3">
+        <p class="text-xs text-base-content/40 mb-2">{{ __('app.dashboard.payments_upcoming') }}</p>
         <div class="space-y-2">
             @foreach($upcomingDueDates as $invoice)
                 <a href="/sell-invoices/{{ $invoice->id }}/edit" class="flex items-center justify-between text-sm hover:bg-base-200 rounded-lg px-2 py-1 -mx-2 transition-colors">

@@ -8,7 +8,7 @@ use App\Services\InvoiceXmlImportService;
 use App\Settings\InvoiceSettings;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Index extends Component
 {

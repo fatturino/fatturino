@@ -2,7 +2,7 @@
     <x-header :title="$contact->name" separator>
         <x-slot:actions>
             <x-button :label="__('app.common.cancel')" link="/contacts" icon="o-x-mark" />
-            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary" spinner="save" />
+            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
         </x-slot:actions>
     </x-header>
 

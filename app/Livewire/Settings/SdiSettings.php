@@ -5,7 +5,7 @@ namespace App\Livewire\Settings;
 use App\Contracts\SdiProvider;
 use App\Settings\CompanySettings;
 use Livewire\Component;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 /**
  * Fallback SDI settings page shown when no provider plugin is installed.

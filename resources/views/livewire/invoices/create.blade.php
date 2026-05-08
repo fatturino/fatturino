@@ -1,7 +1,7 @@
 <div>
     <x-header :title="__('app.invoices.create_title')" separator>
         <x-slot:actions>
-            <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" class="btn-outline btn-sm" />
+            <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" variant="outline" size="sm" />
         </x-slot:actions>
     </x-header>
 
@@ -40,8 +40,8 @@
 
                     {{-- Action buttons --}}
                     <div class="flex flex-col gap-2">
-                        <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary w-full" spinner="save" />
-                        <x-button :label="__('app.common.cancel')" link="/sell-invoices" icon="o-x-mark" class="btn-ghost w-full" />
+                        <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
+                        <x-button :label="__('app.common.cancel')" link="/sell-invoices" icon="o-x-mark" variant="ghost" class="w-full" />
                     </div>
                 </div>
             </div>

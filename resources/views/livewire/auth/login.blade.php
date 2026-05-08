@@ -13,10 +13,9 @@
 
     {{-- Plugin-provided login hint (e.g., demo credentials) --}}
     @if($hint = app(\App\Contracts\LoginCustomizer::class)->hint())
-        <div class="alert alert-info text-sm mb-4">
-            <x-icon name="o-information-circle" class="w-5 h-5" />
+        <x-alert variant="info" class="text-sm mb-4">
             {{ $hint }}
-        </div>
+        </x-alert>
     @endif
 
     {{-- Login form --}}
@@ -48,7 +47,7 @@
                 label="{{ __('app.auth.login') }}"
                 type="submit"
                 icon="o-arrow-right-end-on-rectangle"
-                class="btn-primary w-full"
+                variant="primary" class="w-full"
                 spinner="login"
             />
         </x-slot:actions>

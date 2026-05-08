@@ -36,7 +36,7 @@
         <span class="font-semibold text-error">- € {{ number_format($vatOnPurchasesYtd / 100, 2, ',', '.') }}</span>
     </div>
 
-    <div class="divider my-1"></div>
+    <hr class="border-base-300 my-3">
 
     {{-- Balance: positive = owed to state (warning), negative = credit (success) --}}
     <div class="flex items-center justify-between">

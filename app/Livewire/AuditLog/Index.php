@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 use OwenIt\Auditing\Models\Audit;
 
 /**

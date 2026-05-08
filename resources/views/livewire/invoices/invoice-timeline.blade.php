@@ -24,7 +24,7 @@
                         <x-slot:description>
                             <x-button
                                 :label="$isExpanded ? __('app.audit.collapse') : __('app.audit.expand')"
-                                class="btn-ghost btn-xs"
+                                variant="ghost" size="xs"
                                 wire:click="toggleCluster('{{ $cluster['key'] }}')"
                             />
                         </x-slot:description>

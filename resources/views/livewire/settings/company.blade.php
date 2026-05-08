@@ -2,14 +2,14 @@
     <x-header :title="__('app.settings.company.title')" separator>
         @allowed('edit-company-settings')
             <x-slot:actions>
-                <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary" spinner="save" />
+                <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
             </x-slot:actions>
         @endallowed
     </x-header>
 
     @allowed('edit-company-settings')
     @elseallowed
-        <x-alert :title="__('app.settings.company.readonly_title')" :description="__('app.settings.company.readonly_description')" icon="o-lock-closed" class="alert-warning mb-6" />
+        <x-alert :title="__('app.settings.company.readonly_title')" :description="__('app.settings.company.readonly_description')" icon="o-lock-closed" variant="warning" class="mb-6" />
     @endallowed
 
     <x-form wire:submit="save">
@@ -126,7 +126,7 @@
                                     :label="__('app.settings.company.remove_logo')"
                                     wire:click="removeLogo"
                                     icon="o-trash"
-                                    class="btn-ghost btn-sm text-error"
+                                    variant="ghost" size="sm" class="!text-error"
                                     spinner="removeLogo"
                                 />
                             @endallowed

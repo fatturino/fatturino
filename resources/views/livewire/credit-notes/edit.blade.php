@@ -1,7 +1,7 @@
 <div>
     <x-header :title="__('app.credit_notes.edit_title', ['number' => $creditNote->number])" separator>
         <x-slot:actions>
-            <x-button :label="__('app.invoices.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" class="btn-outline btn-sm" />
+            <x-button :label="__('app.invoices.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" variant="outline" size="sm" />
         </x-slot:actions>
     </x-header>
 
@@ -69,7 +69,7 @@
                     {{-- SDI status badge --}}
                     @if($creditNote->sdi_status)
                         <div class="flex items-center gap-2">
-                            <x-badge :value="$creditNote->sdi_status->label()" :class="$creditNote->sdi_status->color()" />
+                            <x-badge :value="$creditNote->sdi_status->label()" variant="$creditNote->sdi_status->badgeVariant()" type="soft"" />
                             @if($creditNote->sdi_message)
                                 <span class="text-sm text-base-content/60">{{ $creditNote->sdi_message }}</span>
                             @endif
@@ -112,12 +112,12 @@
                     {{-- Action buttons --}}
                     <div class="flex flex-col gap-2">
                         @unless($isReadOnly)
-                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" class="btn-primary w-full" spinner="save" />
+                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
                             <x-button
                                 :label="__('app.credit_notes.send_sdi')"
                                 wire:click="sendToSdi"
                                 icon="o-paper-airplane"
-                                class="btn-secondary w-full"
+                                variant="secondary" class="w-full"
                                 spinner="sendToSdi"
                                 :disabled="!$sdiConfigured"
                             />
@@ -127,9 +127,9 @@
                         @endif
 
                         <div class="flex gap-2">
-                            <x-button :label="__('app.credit_notes.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" class="btn-ghost btn-sm flex-1" spinner="downloadXml" />
-                            <x-button icon="o-document" wire:click="downloadPdf" class="btn-ghost btn-sm" spinner="downloadPdf" tooltip="PDF" />
-                            <x-button :label="__('app.common.cancel')" link="{{ route('credit-notes.index') }}" icon="o-x-mark" class="btn-ghost btn-sm flex-1" />
+                            <x-button :label="__('app.credit_notes.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" variant="ghost" size="sm" class="flex-1" spinner="downloadXml" />
+                            <x-button icon="o-document" wire:click="downloadPdf" variant="ghost" size="sm" spinner="downloadPdf" tooltip="PDF" />
+                            <x-button :label="__('app.common.cancel')" link="{{ route('credit-notes.index') }}" icon="o-x-mark" variant="ghost" size="sm" class="flex-1" />
                         </div>
                     </div>
                 </div>

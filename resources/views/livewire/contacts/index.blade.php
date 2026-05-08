@@ -2,7 +2,7 @@
     <!-- HEADER -->
     <x-header :title="__('app.contacts.title')" separator progress-indicator>
         <x-slot:actions>
-            <x-button :label="__('app.common.create')" link="/contacts/create" responsive icon="o-plus" class="btn-primary" />
+            <x-button :label="__('app.common.create')" link="/contacts/create" responsive icon="o-plus" variant="primary" />
         </x-slot:actions>
     </x-header>
 
@@ -15,14 +15,6 @@
                     <p class="text-sm">{{ __('app.common.empty_table') }}</p>
                 </div>
             </x-slot:empty>
-
-            @scope('name', $contact)
-            {{ $contact->name }}
-            @endscope
-
-            @scope('actions', $contact)
-            <x-button icon="o-trash" wire:click="delete({{ $contact['id'] }})" wire:confirm="{{ __('app.common.confirm_delete') }}" spinner class="btn-ghost btn-sm text-red-500" />
-            @endscope
         </x-table>
     </x-card>
 
@@ -32,7 +24,7 @@
 
         <x-slot:actions>
             <x-button :label="__('app.common.reset')" icon="o-x-mark" wire:click="clear" spinner />
-            <x-button :label="__('app.common.done')" icon="o-check" class="btn-primary" @click="$wire.drawer = false" />
+            <x-button :label="__('app.common.done')" icon="o-check" variant="primary" @click="$wire.drawer = false" />
         </x-slot:actions>
     </x-drawer>
 </div>

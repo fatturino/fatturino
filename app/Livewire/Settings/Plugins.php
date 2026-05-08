@@ -4,7 +4,7 @@ namespace App\Livewire\Settings;
 
 use App\Services\PluginRegistry;
 use Livewire\Component;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Plugins extends Component
 {

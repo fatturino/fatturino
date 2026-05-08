@@ -1,7 +1,7 @@
 <div>
     <x-header :title="__('app.sequences.title')" separator>
         <x-slot:actions>
-            <x-button :label="__('app.common.create')" icon="o-plus" class="btn-primary" wire:click="create" />
+            <x-button :label="__('app.common.create')" icon="o-plus" variant="primary" wire:click="create" />
         </x-slot:actions>
     </x-header>
 
@@ -27,7 +27,7 @@
             @endscope
 
             @scope('actions', $sequence)
-                <x-button icon="o-pencil" wire:click="edit({{ $sequence->id }})" class="btn-ghost btn-sm" />
+                <x-button icon="o-pencil" wire:click="edit({{ $sequence->id }})" variant="ghost" size="sm" />
                 @if(!$sequence->is_system)
                     <x-button icon="o-trash" wire:click="delete({{ $sequence->id }})" wire:confirm="{{ __('app.common.confirm_delete') }}" class="btn-ghost btn-sm text-red-500" />
                 @endif
@@ -54,7 +54,7 @@
 
             <x-slot:actions>
                 <x-button :label="__('app.common.cancel')" @click="$wire.modal = false" />
-                <x-button :label="__('app.common.save')" class="btn-primary" type="submit" spinner="save" />
+                <x-button :label="__('app.common.save')" variant="primary" type="submit" spinner="save" />
             </x-slot:actions>
         </x-form>
     </x-modal>

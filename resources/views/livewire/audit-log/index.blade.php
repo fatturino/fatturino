@@ -40,7 +40,7 @@
     </div>
 
     <div class="mb-3 flex justify-end">
-        <x-button :label="__('app.common.reset')" wire:click="clearFilters" icon="o-x-mark" class="btn-ghost btn-sm" />
+        <x-button :label="__('app.common.reset')" wire:click="clearFilters" icon="o-x-mark" variant="ghost" size="sm" />
     </div>
 
     {{-- Audit table --}}

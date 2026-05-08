@@ -9,7 +9,7 @@
             </div>
         </x-card>
     @else
-        <x-alert icon="o-information-circle" class="alert-info mb-4">
+        <x-alert icon="o-information-circle" variant="info" class="mb-4">
             {{ __('app.settings.plugins.restart_hint') }}
         </x-alert>
 
@@ -20,11 +20,11 @@
                         <div>
                             <div class="flex items-center gap-3">
                                 <h3 class="font-bold text-lg">{{ $plugin['name'] }}</h3>
-                                <x-badge :value="$plugin['version']" class="badge-ghost badge-sm" />
+                                <x-badge :value="$plugin['version']" variant="neutral" type="outline" />
                                 @if($plugin['active'])
-                                    <x-badge :value="__('app.settings.plugins.active')" class="badge-soft badge-success badge-sm" />
+                                    <x-badge :value="__('app.settings.plugins.active')" variant="success" type="soft" />
                                 @else
-                                    <x-badge :value="__('app.settings.plugins.inactive')" class="badge-soft badge-warning badge-sm" />
+                                    <x-badge :value="__('app.settings.plugins.inactive')" variant="warning" type="soft" />
                                 @endif
                             </div>
                             @if($plugin['description'])
@@ -36,14 +36,14 @@
                         </div>
                         <div class="flex items-center gap-3">
                             @if($plugin['locked'])
-                                <x-badge :value="__('app.settings.plugins.locked')" class="badge-ghost badge-sm" icon="o-lock-closed" />
+                                <x-badge :value="__('app.settings.plugins.locked')" variant="neutral" type="outline" icon="o-lock-closed" />
                             @elseif($plugin['active'])
                                 <x-button
                                     :label="__('app.settings.plugins.deactivate')"
                                     wire:click="deactivate('{{ $id }}')"
                                     wire:confirm="{{ __('app.settings.plugins.deactivate_confirm', ['name' => $plugin['name']]) }}"
                                     icon="o-x-circle"
-                                    class="btn-sm btn-error btn-outline"
+                                    variant="danger" size="sm"
                                     spinner="deactivate('{{ $id }}')"
                                 />
                             @else
@@ -51,7 +51,7 @@
                                     :label="__('app.settings.plugins.activate')"
                                     wire:click="activate('{{ $id }}')"
                                     icon="o-check-circle"
-                                    class="btn-sm btn-success btn-outline"
+                                    variant="success" size="sm"
                                     spinner="activate('{{ $id }}')"
                                 />
                             @endif

@@ -13,7 +13,7 @@
                 <p class="text-sm text-base-content/50">{{ __('app.payments.no_payments') }}</p>
             @else
                 <div class="overflow-x-auto">
-                    <table class="table table-sm w-full">
+                    <table class="min-w-full divide-y divide-base-200 text-sm">
                         <thead>
                             <tr>
                                 <th>{{ __('app.payments.date') }}</th>
@@ -35,7 +35,7 @@
                                         <template x-if="!confirming">
                                             <x-button
                                                 icon="o-trash"
-                                                class="btn-ghost btn-xs text-error"
+                                                variant="ghost" size="xs" class="!text-error"
                                                 @click="confirming = true"
                                             />
                                         </template>
@@ -44,12 +44,12 @@
                                                 <x-button
                                                     :label="__('app.payments.delete_yes')"
                                                     wire:click="deletePayment({{ $payment->id }})"
-                                                    class="btn-error btn-xs"
+                                                    variant="danger" size="xs"
                                                     spinner
                                                 />
                                                 <x-button
                                                     :label="__('app.common.cancel')"
-                                                    class="btn-ghost btn-xs"
+                                                    variant="ghost" size="xs"
                                                     @click="confirming = false"
                                                 />
                                             </div>
@@ -126,14 +126,14 @@
                 :label="__('app.payments.mark_as_paid')"
                 wire:click="markAsPaid"
                 icon="o-check-circle"
-                class="btn-success btn-outline"
+                variant="success" size="sm"
                 spinner="markAsPaid"
             />
             <x-button
                 :label="__('app.payments.record_payment')"
                 wire:click="addPayment"
                 icon="o-plus"
-                class="btn-primary"
+                variant="primary"
                 spinner="addPayment"
             />
         @endif

@@ -5,7 +5,7 @@
             @if($isCurrentYear)
                 <x-button
                     icon="o-plus"
-                    class="btn-primary"
+                    variant="primary"
                     :label="__('app.invoices.create_title')"
                     link="{{ route('sell-invoices.create') }}"
                 />
@@ -18,7 +18,7 @@
         <x-alert
             :title="__('app.dashboard.readonly_year_title', ['year' => $fiscalYear])"
             icon="o-lock-closed"
-            class="mb-4 alert-warning"
+            variant="warning"
         />
     @endunless
 

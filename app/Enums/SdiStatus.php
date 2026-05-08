@@ -32,8 +32,23 @@ enum SdiStatus: string
         };
     }
 
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Sent => 'info',
+            self::Rejected => 'danger',
+            self::Delivered => 'success',
+            self::NotDelivered => 'warning',
+            self::Expired => 'success',
+            self::Accepted => 'success',
+            self::Refused => 'danger',
+            self::Error => 'danger',
+            self::Received => 'accent',
+        };
+    }
+
     /**
-     * Badge color class for Mary UI
+     * Badge color class for Mary UI (deprecated, use badgeVariant)
      */
     public function color(): string
     {

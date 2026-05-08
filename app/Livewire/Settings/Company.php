@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Company extends Component
 {

@@ -22,8 +22,18 @@ enum ProformaStatus: string
         };
     }
 
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Draft => 'warning',
+            self::Sent => 'info',
+            self::Converted => 'success',
+            self::Cancelled => 'neutral',
+        };
+    }
+
     /**
-     * Badge color class for Mary UI / DaisyUI
+     * Badge color class for Mary UI / DaisyUI (deprecated, use badgeVariant)
      */
     public function color(): string
     {

@@ -23,7 +23,20 @@ enum InvoiceStatus: string
     }
 
     /**
-     * Badge color class for Mary UI / DaisyUI
+     * Badge variant for Pines UI
+     */
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Draft => 'warning',
+            self::Generated => 'info',
+            self::XmlValidated => 'accent',
+            self::Sent => 'success',
+        };
+    }
+
+    /**
+     * Badge color class for Mary UI / DaisyUI (deprecated, use badgeVariant)
      */
     public function color(): string
     {

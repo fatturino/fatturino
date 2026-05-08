@@ -99,7 +99,7 @@
         <x-button
             :label="__('app.invoices.reverse_calc_apply')"
             wire:click="applyReverseCalculation"
-            class="btn-primary"
+            variant="primary"
             spinner="applyReverseCalculation"
             :disabled="$this->reverseCalcNet <= 0"
         />

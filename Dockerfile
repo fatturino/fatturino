@@ -27,7 +27,7 @@ RUN bun install --frozen-lockfile
 COPY vite.config.js ./
 COPY resources/ resources/
 
-COPY --from=composer /app/vendor/robsontenorio/mary/ vendor/robsontenorio/mary/
+COPY --from=composer /app/vendor/fatturino/ vendor/fatturino/
 
 RUN bun run build
 

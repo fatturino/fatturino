@@ -15,7 +15,7 @@ use App\Services\SelfInvoiceXmlService;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use Mary\Traits\Toast;
+use App\Traits\Toast;
 
 class Edit extends Component
 {

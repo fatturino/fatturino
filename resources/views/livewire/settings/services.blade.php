@@ -7,19 +7,19 @@
             :title="__('app.settings.services.backup.managed_by_env_title')"
             :description="__('app.settings.services.backup.managed_by_env_description')"
             icon="o-cloud"
-            class="alert-info mb-6"
+            variant="info" class="mb-6"
         />
     @else
         @allowed('manage-backup-settings')
         @elseallowed
-            <x-alert :title="__('app.settings.services.readonly_title')" :description="__('app.settings.services.readonly_description')" icon="o-lock-closed" class="alert-warning mb-6" />
+            <x-alert :title="__('app.settings.services.readonly_title')" :description="__('app.settings.services.readonly_description')" icon="o-lock-closed" variant="warning" class="mb-6" />
         @endallowed
 
         <x-form wire:submit="save">
             <x-card :title="__('app.settings.services.backup.title')" :subtitle="__('app.settings.services.backup.subtitle')" separator>
                 <x-slot:actions>
                     @allowed('manage-backup-settings')
-                        <x-button :label="__('app.common.save')" type="submit" icon="o-check" class="btn-primary" spinner="save" />
+                        <x-button :label="__('app.common.save')" type="submit" icon="o-check" variant="primary" spinner="save" />
                     @endallowed
                 </x-slot:actions>
 
@@ -130,7 +130,7 @@
                                     :label="__('app.settings.services.backup.test_connection')"
                                     wire:click="testConnection"
                                     icon="o-signal"
-                                    class="btn-outline btn-sm"
+                                    variant="outline" size="sm"
                                     spinner="testConnection"
                                     :disabled="$readonly"
                                 />
@@ -151,19 +151,19 @@
             :title="__('app.settings.services.monitoring.managed_by_env_title')"
             :description="__('app.settings.services.monitoring.managed_by_env_description')"
             icon="o-cloud"
-            class="alert-info mb-6"
+            variant="info" class="mb-6"
         />
     @else
         @allowed('manage-monitoring-settings')
         @elseallowed
-            <x-alert :title="__('app.settings.services.readonly_title')" :description="__('app.settings.services.readonly_description')" icon="o-lock-closed" class="alert-warning mb-6" />
+            <x-alert :title="__('app.settings.services.readonly_title')" :description="__('app.settings.services.readonly_description')" icon="o-lock-closed" variant="warning" class="mb-6" />
         @endallowed
 
         <x-form wire:submit="saveMonitoring">
             <x-card :title="__('app.settings.services.monitoring.title')" :subtitle="__('app.settings.services.monitoring.subtitle')" separator>
                 <x-slot:actions>
                     @allowed('manage-monitoring-settings')
-                        <x-button :label="__('app.common.save')" type="submit" icon="o-check" class="btn-primary" spinner="saveMonitoring" />
+                        <x-button :label="__('app.common.save')" type="submit" icon="o-check" variant="primary" spinner="saveMonitoring" />
                     @endallowed
                 </x-slot:actions>
 
