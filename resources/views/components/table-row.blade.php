@@ -1,6 +1,8 @@
-@props(['headers' => [], 'row' => null, 'link' => null])
+@props(['headers' => [], 'row' => null, 'link' => null, 'index' => 0])
 
 @php
+$rowId = data_get($row, 'id', $index);
+
 $buildLink = function(array $row) use ($link): ?string {
     if (!$link) return null;
     $url = $link;
@@ -12,7 +14,8 @@ $buildLink = function(array $row) use ($link): ?string {
 $rowLink = $buildLink(is_array($row) ? $row : $row->toArray());
 @endphp
 
-<tr class="text-base-content transition-colors {{ $rowLink ? 'cursor-pointer hover:bg-base-100' : '' }}"
+<tr wire:key="row-{{ $rowId }}"
+    class="text-base-content transition-colors {{ $rowLink ? 'cursor-pointer hover:bg-base-100' : '' }}"
     @if($rowLink) onclick="window.location='{{ $rowLink }}'" @endif>
     @foreach($headers as $header)
         @php $key = $header['key'] ?? null; @endphp

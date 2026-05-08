@@ -21,7 +21,11 @@ $buildLink = function(array $row) use ($link): ?string {
 <div class="flex flex-col">
     <div class="overflow-x-auto">
         <div class="inline-block min-w-full">
-            <div class="overflow-hidden border border-base-300 rounded-lg">
+            <div class="overflow-hidden border border-base-300 rounded-lg relative">
+                {{-- Subtle loading bar on sort --}}
+                <div wire:loading wire:target="sortBy" class="absolute top-0 inset-x-0 h-0.5 bg-primary/50 z-10">
+                    <div class="h-full bg-primary animate-pulse w-1/3"></div>
+                </div>
                 <table class="min-w-full divide-y divide-base-300">
                     <thead class="bg-base-200">
                         <tr>
@@ -55,7 +59,7 @@ $buildLink = function(array $row) use ($link): ?string {
                     </thead>
                     <tbody class="divide-y divide-base-300 bg-white">
                         @forelse($rows as $i => $row)
-                            @include('components.table-row', ['headers' => $headers, 'row' => $row, 'link' => $link])
+                            @include('components.table-row', ['headers' => $headers, 'row' => $row, 'link' => $link, 'index' => $i])
                         @empty
                             <tr>
                                 <td colspan="{{ count($headers) }}" class="px-5 py-8 text-center">

@@ -13,7 +13,9 @@ return [
     |
     */
 
-    'previous' => '&laquo; Previous',
-    'next' => 'Next &raquo;',
+    'previous' => '&laquo; Precedente',
+    'next' => 'Successivo &raquo;',
+    'showing' => 'Mostrando da :first a :last di :total risultati',
+    'label' => 'Pagina',
 
 ];
