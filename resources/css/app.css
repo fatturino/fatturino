@@ -16,7 +16,7 @@
     --color-secondary: #6b7280;
     --color-secondary-content: white;
 
-    --color-accent: #d97706;
+    --color-accent: #3D348B;
     --color-accent-content: white;
 
     --color-neutral: #1f2937;
@@ -43,8 +43,8 @@
  */
 
 .fatturino-sidebar {
-    background: var(--color-neutral);
-    color: var(--color-neutral-content);
+    background: var(--color-accent);
+    color: var(--color-accent-content);
 }
 
 /* Separators */
@@ -63,6 +63,10 @@
 /* All icons and muted text inside sidebar */
 .fatturino-sidebar svg {
     color: rgba(255 255 255 / 0.6);
+}
+
+.fatturino-sidebar .text-base-content\/40 {
+    color: rgba(255 255 255 / 0.5) !important;
 }
 
 .fatturino-sidebar .text-base-content\/50,

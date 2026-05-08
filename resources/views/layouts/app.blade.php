@@ -23,7 +23,7 @@
       @keydown.window.escape="sidebarOpen = false">
 
     {{-- Mobile navbar --}}
-    <div class="lg:hidden fixed top-0 inset-x-0 z-40 bg-primary text-primary-content shadow-lg">
+    <div class="lg:hidden fixed top-0 inset-x-0 z-40 bg-accent text-accent-content shadow-lg">
         <div class="flex items-center justify-between px-4 h-14">
             <button @click="sidebarOpen = true" class="p-1 -ml-1">
                 <x-icon name="o-bars-3" class="w-6 h-6" />
@@ -64,22 +64,14 @@
 
             {{-- MENU --}}
             <nav class="flex-1 px-3 py-2 space-y-0.5">
-                {{-- User --}}
                 @if($user = auth()->user())
-                    <x-menu-separator />
-
-                    <x-list-item :item="$user" value="name" sub-value="email" no-separator no-hover>
-                        <x-slot:actions>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <x-button icon="o-power" variant="ghost" size="xs" type="submit" />
-                            </form>
-                        </x-slot:actions>
-                    </x-list-item>
-
-                    <x-menu-separator />
+                    <div class="px-1 pb-2 mb-1 border-b border-white/10">
+                        <div class="text-xs text-white/70 font-medium truncate">{{ $user->name }}</div>
+                        <div class="text-[11px] text-white/40 truncate">{{ $user->email }}</div>
+                    </div>
                 @endif
 
+                {{-- Separator --}}
                 @foreach(app(\App\Services\MenuRegistry::class)->tree() as $item)
                     @continue($item['gate'] && ! auth()->user()?->can($item['gate']))
                     @if(count($item['children']))
@@ -107,6 +99,27 @@
             @foreach(app(\App\Services\PluginRegistry::class)->injections('sidebar-bottom') as $__view)
                 @include($__view)
             @endforeach
+
+            {{-- Logout --}}
+            @if($user = auth()->user())
+                <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">
+                    @csrf
+                </form>
+                <a href="{{ route('logout') }}"
+                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+                   class="flex items-center gap-2 px-4 py-2 text-sm text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                    <x-icon name="o-power" class="w-4 h-4" />
+                    <span>{{ __('app.common.logoff') }}</span>
+                </a>
+            @endif
+
+            {{-- Documentation --}}
+            <a href="https://fatturino.it/docs/intro" target="_blank"
+               class="flex items-center gap-2 px-4 py-2 text-sm text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                <x-icon name="o-book-open" class="w-4 h-4" />
+                <span>Documentazione</span>
+                <x-icon name="o-arrow-top-right-on-square" class="w-3 h-3 ml-auto" />
+            </a>
 
             {{-- Version --}}
             <div class="mt-auto px-5 pb-5 pt-3">
