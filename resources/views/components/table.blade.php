@@ -27,9 +27,9 @@ $buildLink = function(array $row) use ($link): ?string {
                         <tr>
                             @foreach($headers as $header)
                                 <th class="px-5 py-3 text-xs font-semibold text-left uppercase tracking-wider text-base-content/60 {{ $header['class'] ?? '' }}">
-                                    @if($sortBy && isset($header['key']) && $header['key'] !== 'actions')
+                                    @if($sortBy && isset($header['key']) && $header['key'] !== 'actions' && ($header['sortable'] ?? true) !== false)
                                         <button
-                                            wire:click="$set('sortBy', ['column' => '{{ $header['key'] }}', 'direction' => '{{ $sortBy['column'] === $header['key'] && $sortBy['direction'] === 'asc' ? 'desc' : 'asc' }}'])"
+                                            wire:click="$wire.set('sortBy', {column: '{{ $header['key'] }}', direction: '{{ ($sortBy['column'] ?? '') === $header['key'] && ($sortBy['direction'] ?? 'asc') === 'asc' ? 'desc' : 'asc' }}'})"
                                             class="inline-flex items-center gap-1 hover:text-base-content transition-colors group"
                                         >
                                             <span>{{ $header['label'] }}</span>

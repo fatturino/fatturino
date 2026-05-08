@@ -6,13 +6,17 @@
     </x-header>
 
     <x-card>
-        <x-table
-            :rows="$sequences"
-            :headers="[
+        @php
+            $seqHeaders = [
                 ['key' => 'name',    'label' => __('app.sequences.col_name')],
                 ['key' => 'pattern', 'label' => __('app.sequences.col_pattern')],
-                ['key' => 'type',    'label' => __('app.sequences.col_type')],
-            ]"
+                ['key' => 'type',    'label' => __('app.sequences.col_type'), 'view' => 'partials.sequence-type-cell'],
+                ['key' => 'actions', 'label' => '', 'class' => 'w-1', 'view' => 'partials.sequence-actions'],
+            ];
+        @endphp
+        <x-table
+            :rows="$sequences"
+            :headers="$seqHeaders"
             with-pagination
         >
             <x-slot:empty>
@@ -21,17 +25,6 @@
                     <p class="text-sm">{{ __('app.common.empty_table') }}</p>
                 </div>
             </x-slot:empty>
-
-            @scope('cell_type', $sequence)
-                <x-badge :value="__('app.sequences.type_' . $sequence->type)" />
-            @endscope
-
-            @scope('actions', $sequence)
-                <x-button icon="o-pencil" wire:click="edit({{ $sequence->id }})" variant="ghost" size="sm" />
-                @if(!$sequence->is_system)
-                    <x-button icon="o-trash" wire:click="delete({{ $sequence->id }})" wire:confirm="{{ __('app.common.confirm_delete') }}" class="btn-ghost btn-sm text-red-500" />
-                @endif
-            @endscope
         </x-table>
     </x-card>
 
