@@ -25,7 +25,7 @@
                 <span class="w-2 h-2 rounded-full bg-error shrink-0"></span>
                 <span>{{ __('app.dashboard.payments_unpaid') }}</span>
                 @if($overdueCount > 0)
-                                        <x-badge :value="$overdueCount . ' ' . __('app.dashboard.payments_overdue')" variant="danger" type="soft" class="text-xs" />
+                    <x-badge :value="$overdueCount . ' ' . __('app.dashboard.payments_overdue')" variant="danger" type="soft" class="text-xs" />
                 @endif
             </div>
             <div class="text-right">
@@ -57,28 +57,23 @@
         </div>
     </div>
 
-    {{-- Upcoming due dates --}}
+    {{-- Scadute --}}
     @if($upcomingDueDates->isNotEmpty())
         <hr class="border-base-200 my-3">
-        <p class="text-xs text-base-content/40 mb-2">{{ __('app.dashboard.payments_upcoming') }}</p>
-        <div class="space-y-2">
+        <div class="flex items-center gap-2 mb-2">
+            <x-icon name="o-exclamation-triangle" class="w-3.5 h-3.5 text-error" />
+            <span class="text-xs font-medium text-error">{{ __('app.dashboard.payments_overdue_title') }}</span>
+        </div>
+        <div class="space-y-1.5">
             @foreach($upcomingDueDates as $invoice)
-                <a href="/sell-invoices/{{ $invoice->id }}/edit" class="flex items-center justify-between text-sm hover:bg-base-200 rounded-lg px-2 py-1 -mx-2 transition-colors">
-                    <div class="flex items-center gap-2 min-w-0">
-                        @if($invoice->payment_status === \App\Enums\PaymentStatus::Overdue)
-                            <x-icon name="o-exclamation-triangle" class="w-4 h-4 text-error shrink-0" />
-                        @else
-                            <x-icon name="o-clock" class="w-4 h-4 text-warning shrink-0" />
-                        @endif
-                        <span class="truncate">{{ $invoice->contact?->name ?? __('app.common.unknown') }}</span>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <span class="font-semibold">€ {{ number_format($invoice->total_gross / 100, 2, ',', '.') }}</span>
-                        <span @class([
-                            'text-xs',
-                            'text-error' => $invoice->due_date->isPast(),
-                            'text-base-content/50' => !$invoice->due_date->isPast(),
-                        ])>{{ $invoice->due_date->format('d/m') }}</span>
+                <a href="/sell-invoices/{{ $invoice->id }}/edit"
+                   class="flex items-center justify-between text-sm hover:bg-base-200/50 rounded px-2 py-1 -mx-2 transition-colors">
+                    <span class="truncate text-base-content/70">{{ $invoice->contact?->name ?? __('app.common.unknown') }}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="font-medium">€ {{ number_format($invoice->total_gross / 100, 2, ',', '.') }}</span>
+                        <span class="text-xs {{ $invoice->due_date->isPast() ? 'text-error font-semibold' : 'text-base-content/50' }}">
+                            {{ $invoice->due_date->format('d/m') }}
+                        </span>
                     </div>
                 </a>
             @endforeach

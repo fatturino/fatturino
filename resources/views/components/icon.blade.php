@@ -94,6 +94,7 @@ $iconMap = [
     'o-map' => 'map-trifold',
     'o-presentation-chart-bar' => 'presentation-chart',
     'o-presentation-chart-line' => 'chart-line-up',
+    'o-chart-line-up' => 'chart-line-up',
     'o-square-3-stack-3d' => 'stack',
     'o-cube' => 'cube',
     'o-cube-transparent' => 'cube-transparent',

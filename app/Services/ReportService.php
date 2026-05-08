@@ -176,6 +176,61 @@ class ReportService
     }
 
     /**
+     * VAT balance broken down by quarter for the given year.
+     * Returns array of ['q' => 1..4, 'collected' => int, 'purchases' => int, 'balance' => int]
+     */
+    public function vatByQuarter(int $year = 0): array
+    {
+        $year = $year ?: now()->year;
+        $quarters = [];
+
+        for ($q = 1; $q <= 4; $q++) {
+            $start = sprintf('%04d-%02d-01', $year, ($q - 1) * 3 + 1);
+            $end = sprintf('%04d-%02d-%02d', $year, $q * 3, (new \DateTime("$year-".($q*3)."-01"))->format('t'));
+
+            $collected = (int) Invoice::whereBetween('date', [$start, $end])->sum('total_vat');
+            $purchases = (int) PurchaseInvoice::betweenDates($start, $end)->sum('total_vat');
+
+            $quarters[] = [
+                'q' => $q,
+                'collected' => $collected,
+                'purchases' => $purchases,
+                'balance' => $collected - $purchases,
+            ];
+        }
+
+        return $quarters;
+    }
+
+    /**
+     * Monthly revenue for current and previous year (12 months each, in cents).
+     * Returns ['current' => [int x12], 'previous' => [int x12], 'labels' => [string x12]]
+     */
+    public function monthlyRevenueTrend(int $year = 0): array
+    {
+        $year = $year ?: now()->year;
+        $current = [];
+        $previous = [];
+        $labels = ['G', 'F', 'M', 'A', 'M', 'G', 'L', 'A', 'S', 'O', 'N', 'D'];
+
+        for ($m = 1; $m <= 12; $m++) {
+            $start = sprintf('%04d-%02d-01', $year, $m);
+            $end = sprintf('%04d-%02d-%02d', $year, $m, (new \DateTime("$year-$m-01"))->format('t'));
+            $current[] = (int) Invoice::whereBetween('date', [$start, $end])->sum('total_gross');
+
+            $prevStart = sprintf('%04d-%02d-01', $year - 1, $m);
+            $prevEnd = sprintf('%04d-%02d-%02d', $year - 1, $m, (new \DateTime(($year-1)."-$m-01"))->format('t'));
+            $previous[] = (int) Invoice::whereBetween('date', [$prevStart, $prevEnd])->sum('total_gross');
+        }
+
+        return [
+            'labels' => $labels,
+            'current' => $current,
+            'previous' => $previous,
+        ];
+    }
+
+    /**
      * Top N contacts ranked by gross revenue for the given year, descending.
      */
     public function topClients(int $limit = 5, int $year = 0): Collection
@@ -366,11 +421,13 @@ class ReportService
             'vatCollectedYtd' => $vatCollectedYtd,
             'vatOnPurchasesYtd' => $vatOnPurchasesYtd,
             'vatBalanceYtd' => $vatCollectedYtd - $vatOnPurchasesYtd,
+            'vatByQuarter' => $this->vatByQuarter($year),
             'topClients' => $this->topClients(5, $year),
             'recentInvoices' => $this->recentInvoices(8, $year),
             'paymentSummary' => $this->paymentSummary($year),
             'upcomingDueDates' => $this->upcomingDueDates(5, $year),
-            'cashflowForecast' => $this->cashflowForecast(),
+            'cashflowForecast' => $this->cashflowForecast($year),
+            'revenueTrend' => $this->monthlyRevenueTrend($year),
         ];
     }
 

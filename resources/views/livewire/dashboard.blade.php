@@ -36,17 +36,12 @@
         :total-contacts-count="$totalContactsCount"
     />
 
-    {{-- ROW 2: Top clients + fiscal summary --}}
+    {{-- ROW 2: Top clients + Quick actions --}}
     <div class="grid lg:grid-cols-3 gap-4 mt-4">
         <div class="lg:col-span-2">
             <x-dashboard.top-clients :top-clients="$topClients" />
         </div>
-        <x-dashboard.fiscal-summary
-            :vat-collected-ytd="$vatCollectedYtd"
-            :withholding-tax-ytd="$withholdingTaxYtd"
-            :is-current-year="$isCurrentYear"
-            :fiscal-year="$fiscalYear"
-        />
+        <x-dashboard.quick-actions :is-current-year="$isCurrentYear" />
     </div>
 
     {{-- ROW 3: Recent invoices --}}
@@ -59,10 +54,11 @@
 
     {{-- ROW 4: Bottom widgets --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-        <x-dashboard.vat-balance
+        <x-dashboard.fiscal-summary
             :vat-collected-ytd="$vatCollectedYtd"
             :vat-on-purchases-ytd="$vatOnPurchasesYtd"
             :vat-balance-ytd="$vatBalanceYtd"
+            :vat-by-quarter="$vatByQuarter"
             :is-current-year="$isCurrentYear"
             :fiscal-year="$fiscalYear"
         />
@@ -70,6 +66,6 @@
             :payment-summary="$paymentSummary"
             :upcoming-due-dates="$upcomingDueDates"
         />
-        <x-dashboard.cashflow :buckets="$cashflowForecast" />
+        <x-dashboard.revenue-chart :revenue-trend="$revenueTrend" />
     </div>
 </div>

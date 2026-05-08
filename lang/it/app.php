@@ -117,6 +117,8 @@ return [
 
         // Read-only banner for past fiscal years
         'readonly_year_title' => 'Anno fiscale :year, sola visualizzazione',
+        'quick_actions' => 'Azioni Rapide',
+        'vat_quarterly' => 'IVA Trimestrale',
 
         // Recent invoices
         'view_all' => 'Vedi tutte',
@@ -127,7 +129,10 @@ return [
         'payments_unpaid' => 'Da incassare',
         'payments_partial' => 'Parziali',
         'payments_paid' => 'Incassate',
-        'payments_overdue' => 'scadute',
+        'payments_overdue_title' => 'Scadute',
+        'revenue_trend' => 'Andamento Fatturato',
+        'payments_overdue_total' => 'Totale scaduto',
+        'payments_all_clear' => 'Nessuna fattura in scadenza',
         'payments_upcoming' => 'Prossime scadenze',
 
         // VAT Balance widget
