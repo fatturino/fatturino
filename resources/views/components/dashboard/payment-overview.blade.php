@@ -10,7 +10,7 @@
     $overdueCount = $paymentSummary['overdue']['count'];
 @endphp
 
-<x-card>
+<x-card class="h-full">
     <div class="flex items-center gap-2 mb-4">
         <div class="bg-primary/10 rounded-xl p-2.5">
             <x-icon name="o-credit-card" class="w-5 h-5 text-primary" />

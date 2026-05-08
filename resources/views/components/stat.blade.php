@@ -7,7 +7,7 @@
     'tooltip' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'bg-base-100 rounded-xl border border-base-200 p-5']) }}>
+<div {{ $attributes->merge(['class' => 'bg-base-100 rounded-xl border border-base-200 p-5 h-full shadow']) }}>
     <div class="flex items-center gap-2 mb-2">
         @if($icon)
             <div class="bg-primary/10 rounded-xl p-2.5">
