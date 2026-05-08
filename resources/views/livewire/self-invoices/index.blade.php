@@ -28,7 +28,7 @@
     </div>
 
     <!-- TABLE -->
-    <x-card>
+    
     <x-table :headers="$headers" :rows="$invoices" :sort-by="$sortBy" with-pagination link="/self-invoices/{id}/edit">
         <x-slot:empty>
             <div class="py-8 flex flex-col items-center gap-2">
@@ -38,7 +38,7 @@
         </x-slot:empty>
 
 </x-table>
-    </x-card>
+    
 
     <!-- FILTER DRAWER -->
     <x-drawer wire:model="drawer" :title="__('app.common.filters')" right separator with-close-button class="lg:w-1/3">

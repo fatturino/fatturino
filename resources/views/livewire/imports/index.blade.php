@@ -9,7 +9,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 
             {{-- XML Fatture Vendite --}}
-            <x-card>
+            
                 <div class="flex items-start gap-4 mb-4">
                     <div class="p-3 rounded-lg bg-primary/10">
                         <x-icon name="o-document-arrow-up" class="w-8 h-8 text-primary" />
@@ -27,10 +27,10 @@
                         wire:click="openImport('xml_sales')"
                     />
                 </div>
-            </x-card>
+            
 
             {{-- XML Fatture Acquisti --}}
-            <x-card>
+            
                 <div class="flex items-start gap-4 mb-4">
                     <div class="p-3 rounded-lg bg-secondary/10">
                         <x-icon name="o-document-arrow-down" class="w-8 h-8 text-secondary" />
@@ -48,10 +48,10 @@
                         wire:click="openImport('xml_purchase')"
                     />
                 </div>
-            </x-card>
+            
 
             {{-- XML Autofatture --}}
-            <x-card>
+            
                 <div class="flex items-start gap-4 mb-4">
                     <div class="p-3 rounded-lg bg-accent/10">
                         <x-icon name="o-document-duplicate" class="w-8 h-8 text-accent" />
@@ -69,7 +69,7 @@
                         wire:click="openImport('xml_self_invoice')"
                     />
                 </div>
-            </x-card>
+            
 
         </div>
     </div>
@@ -82,7 +82,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 
             {{-- Fattura24 - Rubrica --}}
-            <x-card>
+            
                 <div class="flex items-start gap-4 mb-4">
                     <div class="p-3 rounded-lg bg-warning/10">
                         <x-icon name="o-user-group" class="w-8 h-8 text-warning" />
@@ -100,10 +100,10 @@
                         wire:click="openImport('fattura24_contacts')"
                     />
                 </div>
-            </x-card>
+            
 
             {{-- Aruba - Rubrica (coming soon) --}}
-            <x-card class="opacity-50 cursor-not-allowed">
+            
                 <div class="flex items-start gap-4 mb-4">
                     <div class="p-3 rounded-lg bg-info/10">
                         <x-icon name="o-user-group" class="w-8 h-8 text-info" />
@@ -116,10 +116,10 @@
                 <div class="flex items-center justify-end gap-2">
                     <x-badge value="Prossimamente" variant="info" type="soft" />
                 </div>
-            </x-card>
+            
 
             {{-- Fatture in Cloud - Rubrica (coming soon) --}}
-            <x-card class="opacity-50 cursor-not-allowed">
+            
                 <div class="flex items-start gap-4 mb-4">
                     <div class="p-3 rounded-lg bg-success/10">
                         <x-icon name="o-user-group" class="w-8 h-8 text-success" />
@@ -132,7 +132,7 @@
                 <div class="flex items-center justify-end gap-2">
                     <x-badge value="Prossimamente" variant="info" type="soft" />
                 </div>
-            </x-card>
+            
 
         </div>
     </div>

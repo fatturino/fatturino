@@ -78,13 +78,13 @@ new class extends Component {
     </x-header>
 
     <!-- TABLE  -->
-    <x-card>
+    
         <x-table :headers="$headers" :rows="$users" :sort-by="$sortBy">
             <x-slot:actions>
                 <x-button icon="o-trash" wire:click="delete({{ $row['id'] }})" wire:confirm="Are you sure?" spinner="delete" variant="ghost" size="sm" class="!text-error" />
             </x-slot:actions>
         </x-table>
-    </x-card>
+    
 
     <!-- FILTER DRAWER -->
     <x-drawer wire:model="drawer" title="Filters" right separator with-close-button class="lg:w-1/3">

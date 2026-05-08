@@ -44,7 +44,7 @@
     </div>
 
     {{-- Audit table --}}
-    <x-card>
+    
         @if ($audits->isEmpty())
             <p class="p-6 text-center text-base-content/60">{{ __('app.common.empty_table') }}</p>
         @else
@@ -134,5 +134,5 @@
                 {{ $audits->links() }}
             </div>
         @endif
-    </x-card>
+    
 </div>

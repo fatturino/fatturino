@@ -5,7 +5,7 @@
         </x-slot:actions>
     </x-header>
 
-    <x-card>
+    
         @php
             $seqHeaders = [
                 ['key' => 'name',    'label' => __('app.sequences.col_name')],
@@ -26,7 +26,7 @@
                 </div>
             </x-slot:empty>
         </x-table>
-    </x-card>
+    
 
     <x-modal wire:model="modal" :title="$is_editing ? __('app.sequences.edit_modal') : __('app.sequences.create_modal')">
         <x-form wire:submit="save">
