@@ -26,22 +26,23 @@ $buildLink = function(array $row) use ($link): ?string {
                     <thead class="bg-base-200">
                         <tr>
                             @foreach($headers as $header)
-                                <th class="px-5 py-3 text-xs font-semibold text-left uppercase tracking-wider text-base-content/60 {{ $header['class'] ?? '' }}">
+                                @php $isActive = ($sortBy['column'] ?? '') === ($header['key'] ?? ''); @endphp
+                                <th class="px-5 py-3 text-xs font-semibold text-left uppercase tracking-wider {{ $isActive ? 'text-base-content' : 'text-base-content/50' }} {{ $header['class'] ?? '' }}">
                                     @if($sortBy && isset($header['key']) && $header['key'] !== 'actions' && ($header['sortable'] ?? true) !== false)
                                         <button
-                                            wire:click="$wire.set('sortBy', {column: '{{ $header['key'] }}', direction: '{{ ($sortBy['column'] ?? '') === $header['key'] && ($sortBy['direction'] ?? 'asc') === 'asc' ? 'desc' : 'asc' }}'})"
-                                            class="inline-flex items-center gap-1 hover:text-base-content transition-colors group"
+                                            wire:click="$wire.set('sortBy', {column: '{{ $header['key'] }}', direction: '{{ $isActive && ($sortBy['direction'] ?? 'asc') === 'asc' ? 'desc' : 'asc' }}'})"
+                                            class="inline-flex items-center gap-1.5 hover:text-base-content transition-colors group"
                                         >
-                                            <span>{{ $header['label'] }}</span>
-                                            <span class="text-base-content/30 group-hover:text-base-content/50">
-                                                @if(($sortBy['column'] ?? '') === $header['key'])
+                                            <span class="{{ $isActive ? 'text-primary' : '' }}">{{ $header['label'] }}</span>
+                                            <span class="{{ $isActive ? 'text-primary' : 'text-base-content/20' }} group-hover:text-base-content/50 transition-colors">
+                                                @if($isActive)
                                                     @if(($sortBy['direction'] ?? 'asc') === 'asc')
-                                                        &#9650;
+                                                        <x-icon name="o-chevron-up" class="w-3.5 h-3.5" />
                                                     @else
-                                                        &#9660;
+                                                        <x-icon name="o-chevron-down" class="w-3.5 h-3.5" />
                                                     @endif
                                                 @else
-                                                    &#8693;
+                                                    <x-icon name="o-chevron-up-down" class="w-3.5 h-3.5" />
                                                 @endif
                                             </span>
                                         </button>
