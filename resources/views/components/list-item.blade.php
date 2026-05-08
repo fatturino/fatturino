@@ -9,7 +9,7 @@
 ])
 
 @php
-$item = is_array($item) ? $item : (array)$item;
+$item = is_array($item) ? $item : (method_exists($item, 'toArray') ? $item->toArray() : (array) $item);
 @endphp
 
 <div class="flex items-center gap-3 px-3 py-2 {{ !$noHover ? 'hover:bg-base-200/50 rounded-lg' : '' }} {{ !$noSeparator ? 'border-b border-base-200/50' : '' }}">
