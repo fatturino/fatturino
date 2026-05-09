@@ -92,82 +92,10 @@
     background-color: rgba(255 255 255 / 0.08) !important;
 }
 
-/* ─── Guest screens: auth & setup wizard ─── */
-
-/* Animated gradient for left panel */
-@keyframes guest-gradient {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-}
-
-.guest-panel-bg {
-    background: linear-gradient(
-        135deg,
-        oklch(38.81% 0.139 282.45),
-        oklch(32.06% 0.105 282.33),
-        oklch(42% 0.16 270),
-        oklch(38.81% 0.139 282.45)
-    );
-    background-size: 300% 300%;
-    animation: guest-gradient 8s ease infinite;
-}
-
-/* Floating decorative orbs */
-@keyframes float-slow {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
-}
-
-@keyframes float-slower {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(16px); }
-}
-
-.guest-orb {
-    position: absolute;
-    border-radius: 9999px;
-    pointer-events: none;
-}
-
-.guest-orb-1 {
-    width: 300px;
-    height: 300px;
-    top: -60px;
-    right: -80px;
-    background: rgba(247 184 1 / 0.08);
-    animation: float-slow 6s ease-in-out infinite;
-}
-
-.guest-orb-2 {
-    width: 200px;
-    height: 200px;
-    bottom: 80px;
-    left: -40px;
-    background: rgba(255 255 255 / 0.06);
-    animation: float-slower 9s ease-in-out infinite;
-}
-
-.guest-orb-3 {
-    width: 120px;
-    height: 120px;
-    top: 45%;
-    right: 15%;
-    background: rgba(247 184 1 / 0.05);
-    animation: float-slow 7s ease-in-out infinite 1s;
-}
-
-/* Glass card for form containers */
-.glass-card {
-    backdrop-filter: blur(12px);
-    background: rgba(255 255 255 / 0.7);
-    border: 1px solid rgba(255 255 255 / 0.3);
-    border-radius: 1.5rem;
-    box-shadow: 0 8px 32px rgba(61 52 139 / 0.08);
-}
 
 /* Windows High Contrast Mode: restore visible focus when box-shadow is stripped */
 @media (forced-colors: active) {
-    .focus\outline-none:focus-visible {
+    .focus\\outline-none:focus-visible {
         outline: 2px solid CanvasText;
         outline-offset: 2px;
     }
