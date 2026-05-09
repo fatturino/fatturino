@@ -25,7 +25,9 @@ document.addEventListener('alpine:init', () => {
             this.description = description;
             this.position = position;
             this.show = true;
-            this.timer = setTimeout(() => { this.show = false; }, 4000);
+            // Error and warning toasts stay longer for readability
+            const duration = (type === 'error' || type === 'warning') ? 8000 : 4000;
+            this.timer = setTimeout(() => { this.show = false; }, duration);
         },
 
         success(message, description = '', position = 'toast-bottom toast-end') {

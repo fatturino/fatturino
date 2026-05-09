@@ -88,7 +88,13 @@
                         @if(count($visibleChildren))
                             <x-menu-sub :title="$item['title']" :icon="$item['icon']" :active="$hasActiveChild">
                                 @foreach($visibleChildren as $child)
-                                    <x-menu-item :title="$child['title']" :icon="$child['icon']" :link="$child['link']" />
+                                    <x-menu-item :title="$child['title']" :icon="$child['icon']" :link="$child['link']">
+                                        @if(($child['id'] ?? '') === 'purchase-invoices')
+                                            <x-slot:badgeSlot>
+                                                <livewire:purchase-invoice-badge wire:poll.60s />
+                                            </x-slot:badgeSlot>
+                                        @endif
+                                    </x-menu-item>
                                 @endforeach
                             </x-menu-sub>
                         @endif
@@ -117,7 +123,7 @@
             @endif
 
             {{-- Documentation --}}
-            <a href="https://fatturino.it/docs/intro" target="_blank"
+            <a href="https://fatturino.it/docs/intro" target="_blank" rel="external noopener"
                class="flex items-center gap-2 px-4 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                 <x-icon name="o-book-open" class="w-4 h-4" />
                 <span>Documentazione</span>
