@@ -42,8 +42,8 @@ $isCircle = !$label && $icon;
 if ($isCircle) {
     $sizeClasses = match($size) {
         'xs' => 'p-1 text-xs',
-        'sm' => 'p-1.5 text-sm',
-        'md' => 'p-2 text-sm',
+        'sm' => 'p-2 text-sm',
+        'md' => 'p-2.5 text-sm',
         'lg' => 'p-3 text-base',
         default => 'p-2 text-sm',
     };

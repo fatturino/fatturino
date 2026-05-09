@@ -30,5 +30,15 @@ export default defineConfig(({ mode }) => {
                 ignored: ["**/storage/framework/views/**"],
             },
         },
+        build: {
+            rollupOptions: {
+                output: {
+                    manualChunks: {
+                        phosphor: ['phosphor-icons'],
+                        alpine: ['@alpinejs/anchor', '@alpinejs/collapse'],
+                    },
+                },
+            },
+        },
     };
 });

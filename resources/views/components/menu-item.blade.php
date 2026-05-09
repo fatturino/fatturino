@@ -15,7 +15,7 @@ $classes = 'flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg transition-co
 @endphp
 
 @if($link)
-    <a href="{{ $link }}" {{ $attributes->merge(['class' => $classes]) }} wire:navigate>
+    <a href="{{ $link }}" {{ $attributes->merge(['class' => $classes]) }} wire:navigate @if($isActive) aria-current="page" @endif>
         @if($icon)
             <x-icon :name="$icon" class="w-5 h-5 shrink-0" />
         @endif

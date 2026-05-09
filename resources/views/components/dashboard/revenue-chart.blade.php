@@ -30,12 +30,7 @@
 @endphp
 
 <x-card class="h-full">
-    <div class="flex items-center gap-2 mb-3">
-        <div class="bg-primary/10 rounded-xl p-2.5">
-            <x-icon name="o-chart-line-up" class="w-5 h-5 text-primary" />
-        </div>
-        <span class="font-semibold">{{ __('app.dashboard.revenue_trend') }}</span>
-    </div>
+    <x-card-header icon="o-chart-line-up" :title="__('app.dashboard.revenue_trend')" />
 
     {{-- Legend --}}
     <div class="flex items-center gap-4 mb-3 text-xs">
@@ -55,12 +50,12 @@
         @for($i = 0; $i <= 4; $i++)
             @php $gy = $padY + ($chartH - $padY * 2) * ($i / 4); @endphp
             <line x1="{{ $padX }}" y1="{{ $gy }}" x2="{{ $chartW - $padX }}" y2="{{ $gy }}"
-                  stroke="#e5e7eb" stroke-width="1" />
+                  stroke="var(--color-base-300)" stroke-width="1" />
         @endfor
 
         {{-- Previous year line --}}
         <polyline points="{{ trim($pointsPrevious) }}"
-                  fill="none" stroke="#d1d5db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4,3" />
+                  fill="none" stroke="var(--color-base-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4,3" />
 
         {{-- Current year line --}}
         <polyline points="{{ trim($pointsCurrent) }}"

@@ -149,6 +149,14 @@
     box-shadow: 0 8px 32px rgba(61 52 139 / 0.08);
 }
 
+/* Windows High Contrast Mode: restore visible focus when box-shadow is stripped */
+@media (forced-colors: active) {
+    .focus\outline-none:focus-visible {
+        outline: 2px solid CanvasText;
+        outline-offset: 2px;
+    }
+}
+
 /* Fade-in entrance animation */
 @keyframes fade-in-up {
     from {

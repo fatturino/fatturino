@@ -18,12 +18,7 @@
 @endphp
 
 <x-card class="h-full">
-    <div class="flex items-center gap-2 mb-4">
-        <div class="bg-primary/10 rounded-xl p-2.5">
-            <x-icon name="o-scale" class="w-5 h-5 text-primary" />
-        </div>
-        <span class="font-semibold">{{ __('app.dashboard.vat_balance_title') }}</span>
-    </div>
+    <x-card-header icon="o-scale" :title="__('app.dashboard.vat_balance_title')" class="mb-4" />
 
     {{-- VAT Collected --}}
     <div class="flex items-center justify-between text-sm mb-2">

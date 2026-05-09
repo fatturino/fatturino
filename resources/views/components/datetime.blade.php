@@ -11,7 +11,7 @@ $modelName = null;
 try { $modelName = $attributes->wire('model')->value(); } catch (\Throwable) {}
 
 $wrapperClasses = $inline ? 'flex items-center gap-3' : 'w-full';
-$inputClasses = 'flex w-full h-10 px-3 py-2 text-sm bg-white border rounded-md border-base-300 placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
+$inputClasses = 'flex w-full h-11 px-3 py-2 text-sm bg-white border rounded-md border-base-300 placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
 
 if ($icon) {
     $inputClasses .= ' pl-10';

@@ -32,7 +32,7 @@ new class extends Component {
     {
         return [
             ['key' => 'id', 'label' => '#', 'class' => 'w-1'],
-            ['key' => 'name', 'label' => 'Name', 'class' => 'w-64'],
+            ['key' => 'name', 'label' => 'Name', 'class' => 'min-w-[160px] max-w-[240px]'],
             ['key' => 'age', 'label' => 'Age', 'class' => 'w-20'],
             ['key' => 'email', 'label' => 'E-mail', 'sortable' => false],
         ];

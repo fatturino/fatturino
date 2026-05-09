@@ -1,12 +1,7 @@
 @props(['isCurrentYear'])
 
 <x-card class="h-full">
-    <div class="flex items-center gap-2 mb-4">
-        <div class="bg-primary/10 rounded-xl p-2.5">
-            <x-icon name="o-bolt" class="w-5 h-5 text-primary" />
-        </div>
-        <span class="font-semibold">{{ __('app.dashboard.quick_actions') }}</span>
-    </div>
+    <x-card-header icon="o-bolt" :title="__('app.dashboard.quick_actions')" class="mb-4" />
 
     <div class="grid grid-cols-2 gap-2">
         @if($isCurrentYear)

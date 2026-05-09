@@ -11,12 +11,7 @@
 @endphp
 
 <x-card class="h-full">
-    <div class="flex items-center gap-2 mb-4">
-        <div class="bg-primary/10 rounded-xl p-2.5">
-            <x-icon name="o-chart-bar" class="w-5 h-5 text-primary" />
-        </div>
-        <span class="font-semibold">{{ __('app.dashboard.cashflow_title') }}</span>
-    </div>
+    <x-card-header icon="o-chart-bar" :title="__('app.dashboard.cashflow_title')" class="mb-4" />
 
     @if(! $hasData)
         <p class="text-sm text-base-content/50 text-center py-4">

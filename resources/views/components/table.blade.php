@@ -36,6 +36,7 @@ $buildLink = function(array $row) use ($link): ?string {
                                         <button
                                             wire:click="$wire.set('sortBy', {column: '{{ $header['key'] }}', direction: '{{ $isActive && ($sortBy['direction'] ?? 'asc') === 'asc' ? 'desc' : 'asc' }}'})"
                                             class="inline-flex items-center gap-1.5 hover:text-base-content transition-colors group"
+                                            aria-sort="{{ $isActive ? (($sortBy['direction'] ?? 'asc') === 'asc' ? 'ascending' : 'descending') : 'none' }}"
                                         >
                                             <span class="{{ $isActive ? 'text-primary' : '' }}">{{ $header['label'] }}</span>
                                             <span class="{{ $isActive ? 'text-primary' : 'text-base-content/20' }} group-hover:text-base-content/50 transition-colors">

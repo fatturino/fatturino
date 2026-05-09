@@ -42,7 +42,8 @@
                 {{-- Logo and tagline --}}
                 <div>
                     <div class="flex items-center gap-3 mb-2">
-                        <svg class="w-12 h-14" viewBox="0 0 28 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg class="w-12 h-14" viewBox="0 0 28 34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <title>{{ config('app.name') }}</title>
                             <path d="M2 3C2 1.34 3.34 0 5 0H23C24.66 0 26 1.34 26 3V29L23 27L20 29L17 27L14 29L11 27L8 29L5 27L2 29V3Z"
                                   fill="white" fill-opacity="0.95"/>
                             <path d="M8 6H20V9.5H12.5V13.5H18.5V17H12.5V24H8V6Z" fill="#3D348B"/>
@@ -54,6 +55,7 @@
                 </div>
 
                 {{-- Feature highlights with glassmorphism --}}
+                <h2 class=sr-only>{{ __('app.landing.features_title') }}</h2>
                 <div class="space-y-6">
                     <div class="flex items-start gap-4">
                         <div class="w-12 h-12 rounded-xl bg-white/[0.08] backdrop-blur-sm border border-white/[0.12] flex items-center justify-center shrink-0">

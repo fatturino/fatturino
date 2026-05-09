@@ -48,7 +48,7 @@
 
         {{-- Sidebar --}}
         <aside
-            class="fatturino-sidebar fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-64 shrink-0 overflow-y-auto flex flex-col
+            class="fatturino-sidebar fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-64 lg:w-56 shrink-0 overflow-y-auto flex flex-col
                    transition-transform duration-300 lg:translate-x-0"
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
         >
