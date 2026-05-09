@@ -1,23 +1,26 @@
 <div>
     <x-header :title="__('app.invoices.create_title')" separator>
         <x-slot:actions>
-            <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" variant="outline" size="sm" />
+            <x-button :label="__('app.common.back')" link="/sell-invoices" icon="o-arrow-left" variant="ghost" />
+            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
         </x-slot:actions>
     </x-header>
 
     <form wire:submit="save">
+        <div class="bg-base-100 rounded-xl border border-base-200 p-5 lg:p-6">
         <div class="grid lg:grid-cols-3 gap-6">
 
-            {{-- LEFT COLUMN: Header fields + Invoice lines --}}
+            {{-- LEFT COLUMN: Header + Notes + Lines --}}
             <div class="lg:col-span-2 space-y-6">
 
-                @include('livewire.invoices.partials._header-fields', [
-                    'mode' => 'create',
-                    'contacts' => $contacts,
-                    'sequenceName' => $sequenceName,
-                ])
+                <x-card :title="__('app.invoices.header_section')" separator>
+                    @include('livewire.invoices.partials._header-fields', [
+                        'mode' => 'create',
+                        'contacts' => $contacts,
+                        'sequenceName' => $sequenceName,
+                    ])
+                </x-card>
 
-                {{-- Notes / Causale --}}
                 <x-textarea :label="__('app.invoices.notes_label')" wire:model="notes" rows="2" />
 
                 @include('livewire.invoices.partials._invoice-lines-editor', [
@@ -26,7 +29,7 @@
                 ])
             </div>
 
-            {{-- RIGHT COLUMN: Sticky sidebar --}}
+            {{-- RIGHT COLUMN: Sticky — Tax + Payment + Totals --}}
             <div class="lg:col-span-1">
                 <div class="lg:sticky lg:top-4 space-y-4">
 
@@ -38,14 +41,11 @@
 
                     @include('livewire.invoices.partials._totals-sidebar')
 
-                    {{-- Action buttons --}}
-                    <div class="flex flex-col gap-2">
-                        <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
-                        <x-button :label="__('app.common.cancel')" link="/sell-invoices" icon="o-x-mark" variant="ghost" class="w-full" />
-                    </div>
+                    {{-- Reverse calculation shortcut --}}
+                    <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" variant="ghost" size="sm" class="w-full" />
 
                     {{-- Autosave indicator --}}
-                    <div class="text-center mt-3"
+                    <div class="text-center"
                          x-data="{ lastSaved: '' }"
                          x-init="
                             setInterval(() => { $wire.saveDraft(); lastSaved = $wire.draftSavedAt; }, 30000);
@@ -58,6 +58,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </form>
 

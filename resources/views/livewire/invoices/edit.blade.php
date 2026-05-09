@@ -31,18 +31,22 @@
 
         <x-tabs.panel name="details">
             <form wire:submit="save">
+        <div class="bg-base-100 rounded-xl border border-base-200 p-5 lg:p-6">
         <div class="grid lg:grid-cols-3 gap-6">
 
             {{-- LEFT COLUMN: Header fields + Invoice lines --}}
             <div class="lg:col-span-2 space-y-6">
 
-                @include('livewire.invoices.partials._header-fields', [
-                    'mode' => 'edit',
-                    'contacts' => $contacts,
-                    'sequences' => $sequences,
-                    'invoice' => $invoice,
-                    'isReadOnly' => $isReadOnly,
-                ])
+                {{-- Header card --}}
+                <x-card :title="__('app.invoices.header_section')" separator>
+                    @include('livewire.invoices.partials._header-fields', [
+                        'mode' => 'edit',
+                        'contacts' => $contacts,
+                        'sequences' => $sequences,
+                        'invoice' => $invoice,
+                        'isReadOnly' => $isReadOnly,
+                    ])
+                </x-card>
 
                 {{-- Notes / Causale --}}
                 <div @class(['pointer-events-none' => $isReadOnly])>
@@ -54,6 +58,8 @@
                     'vatRates' => $vatRates,
                     'isReadOnly' => $isReadOnly,
                 ])
+
+
             </div>
 
             {{-- RIGHT COLUMN: Sticky sidebar --}}

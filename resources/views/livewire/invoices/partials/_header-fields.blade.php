@@ -19,7 +19,7 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <x-input :label="__('app.invoices.number')" wire:model="number" :hint="$sequenceName ?? null" readonly />
         <x-datetime :label="__('app.invoices.date')" wire:model="date" type="date" />
-        <x-select :label="__('app.invoices.customer')" :options="$contacts" wire:model.live="contact_id" search :placeholder="__('app.invoices.select_customer')" placholder-value="null" />
+        <x-select :label="__('app.invoices.customer')" :options="$contacts" wire:model.live="contact_id" search :placeholder="__('app.invoices.select_customer')" placholder-value="null" class="col-span-2" />
         <x-select :label="__('app.invoices.document_type')" :options="\App\Enums\SalesDocumentType::options()" wire:model="document_type" />
     </div>
 @else

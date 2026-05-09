@@ -1,5 +1,10 @@
 <div>
-    <x-header :title="__('app.purchase_invoices.create_title')" separator />
+    <x-header :title="__('app.purchase_invoices.create_title')" separator>
+        <x-slot:actions>
+            <x-button :label="__('app.common.back')" link="/purchase-invoices" icon="o-arrow-left" variant="ghost" />
+            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
+        </x-slot:actions>
+    </x-header>
 
     <form wire:submit="save">
         <div class="grid lg:grid-cols-3 gap-6">
@@ -7,13 +12,15 @@
             {{-- LEFT COLUMN --}}
             <div class="lg:col-span-2 space-y-6">
 
-                {{-- Header fields --}}
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <x-card :title="__('app.purchase_invoices.header_section')" separator>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <x-select :label="__('app.purchase_invoices.sequence')" :options="$sequences" wire:model.live="sequence_id" />
                     <x-input :label="__('app.purchase_invoices.number')" wire:model="number" readonly />
                     <x-datetime :label="__('app.purchase_invoices.date')" wire:model="date" type="date" />
                     <x-select :label="__('app.purchase_invoices.supplier')" :options="$contacts" wire:model.live="contact_id" search :placeholder="__('app.purchase_invoices.select_supplier')" placholder-value="null" />
                 </div>
+
+                </x-card>
 
                 @include('livewire.invoices.partials._invoice-lines-editor', [
                     'lines'        => $lines,
@@ -49,8 +56,6 @@
 
                     {{-- Action buttons --}}
                     <div class="flex flex-col gap-2">
-                        <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
-                        <x-button :label="__('app.common.cancel')" link="{{ route('purchase-invoices.index') }}" icon="o-x-mark" variant="ghost" class="w-full" />
                     </div>
                 </div>
             </div>

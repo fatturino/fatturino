@@ -15,6 +15,7 @@
     @endif
 
     <form wire:submit="save">
+        <div class="bg-base-100 rounded-xl border border-base-200 p-5 lg:p-6">
         <div class="grid lg:grid-cols-3 gap-6">
 
             {{-- LEFT COLUMN --}}
@@ -134,6 +135,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </form>
 
