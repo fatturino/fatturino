@@ -1,6 +1,11 @@
 <div>
     <!-- HEADER -->
     <x-header :title="__('app.credit_notes.title')" separator progress-indicator>
+        <x-slot:actions>
+            @unless($isReadOnly)
+                <x-button :label="__('app.common.create')" link="/credit-notes/create" icon="o-plus" variant="primary" responsive />
+            @endunless
+        </x-slot:actions>
     </x-header>
 
     {{-- Read-only banner for concluded fiscal years --}}
@@ -14,15 +19,8 @@
 
     {{-- Summary stats --}}
     <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.credit_notes.stat_total_notes') }}</div>
-            <div class="text-2xl font-bold mt-1">{{ $this->stats['total_count'] }}</div>
-        </div>
-
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.credit_notes.stat_total_amount') }}</div>
-            <div class="text-2xl font-bold mt-1">€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}</div>
-        </div>
+        <x-stat :title="__('app.credit_notes.stat_total_notes')" icon="o-document-text" :value="$this->stats['total_count']" />
+        <x-stat :title="__('app.credit_notes.stat_total_amount')" icon="o-banknotes" value="€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}" />
     </div>
 
     <!-- TABLE -->

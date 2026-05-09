@@ -194,6 +194,7 @@ return [
         'status_received' => 'Received from SDI',
 
         // Listing stats
+        'stat_total_contacts' => 'Total contacts',
         'stat_total_invoices' => 'Purchases',
         'stat_total_amount' => 'Total expenses',
         'stat_unpaid' => 'Unpaid',
@@ -281,6 +282,7 @@ return [
         'status_sent' => 'Sent',
 
         // Listing stats
+        'stat_total_contacts' => 'Total contacts',
         'stat_total_invoices' => 'Invoices',
         'stat_total_amount' => 'Revenue',
         'stat_unpaid' => 'Unpaid',
@@ -547,6 +549,7 @@ return [
         'col_status' => 'Status',
 
         // Summary stats
+        'stat_total_contacts' => 'Total contacts',
         'stat_total_invoices' => 'Total self-invoices',
         'stat_total_amount' => 'Total amount',
         'stat_unpaid' => 'Unpaid',
@@ -629,6 +632,7 @@ return [
     'contacts' => [
         'title' => 'Customers',
         'create_title' => 'Create Customer',
+        'stat_total' => 'Total contacts',
 
         'main_data' => 'General Information',
         'full_name' => 'Company Name / Full Name',

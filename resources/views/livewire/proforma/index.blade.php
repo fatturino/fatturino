@@ -1,6 +1,11 @@
 <div>
     <!-- HEADER -->
     <x-header :title="__('app.proforma.title')" separator progress-indicator>
+        <x-slot:actions>
+            @unless($isReadOnly)
+                <x-button :label="__('app.common.create')" link="/proforma/create" icon="o-plus" variant="primary" responsive />
+            @endunless
+        </x-slot:actions>
     </x-header>
 
     {{-- Read-only banner for concluded fiscal years --}}
@@ -14,36 +19,13 @@
 
     {{-- Summary stats --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {{-- Total proforma --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.proforma.stat_total') }}</div>
-            <div class="text-2xl font-bold mt-1">{{ $this->stats['total_count'] }}</div>
-        </div>
-
-        {{-- Total amount --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.proforma.stat_total_amount') }}</div>
-            <div class="text-2xl font-bold mt-1">€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}</div>
-        </div>
-
-        {{-- Unpaid --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.proforma.stat_unpaid') }}</div>
-            <div class="text-2xl font-bold mt-1 {{ $this->stats['unpaid_count'] > 0 ? 'text-warning' : '' }}">
-                {{ $this->stats['unpaid_count'] }}
-            </div>
-        </div>
-
-        {{-- Converted --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.proforma.stat_converted') }}</div>
-            <div class="text-2xl font-bold mt-1 text-success">
-                {{ $this->stats['converted_count'] }}
-            </div>
-        </div>
+        <x-stat :title="__('app.proforma.stat_total')" icon="o-clipboard-document-list" :value="$this->stats['total_count']" />
+        <x-stat :title="__('app.proforma.stat_total_amount')" icon="o-banknotes" value="€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}" />
+        <x-stat :title="__('app.proforma.stat_converted')" icon="o-arrow-right-end-on-rectangle" :value="$this->stats['converted_count']" />
+        <x-stat :title="__('app.proforma.stat_cancelled')" icon="o-x-circle" :value="$this->stats['cancelled_count']" />
     </div>
 
-    <!-- TABLE -->
+        <!-- TABLE -->
     
     <x-table :headers="$headers" :rows="$proformas" :sort-by="$sortBy" with-pagination link="/proforma/{id}/edit">
         <x-slot:empty>

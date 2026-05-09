@@ -1,6 +1,11 @@
 <div>
     <!-- HEADER -->
     <x-header :title="__('app.self_invoices.title')" separator progress-indicator>
+        <x-slot:actions>
+            @unless($isReadOnly)
+                <x-button :label="__('app.common.create')" link="/self-invoices/create" icon="o-plus" variant="primary" responsive />
+            @endunless
+        </x-slot:actions>
     </x-header>
 
     {{-- Read-only banner for concluded fiscal years --}}
@@ -14,17 +19,8 @@
 
     {{-- Summary stats --}}
     <div class="grid grid-cols-2 gap-4 mb-6">
-        {{-- Total self-invoices --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.self_invoices.stat_total_invoices') }}</div>
-            <div class="text-2xl font-bold mt-1">{{ $this->stats['total_count'] }}</div>
-        </div>
-
-        {{-- Total amount --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.self_invoices.stat_total_amount') }}</div>
-            <div class="text-2xl font-bold mt-1">€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}</div>
-        </div>
+        <x-stat :title="__('app.self_invoices.stat_total_invoices')" icon="o-document-duplicate" :value="$this->stats['total_count']" />
+        <x-stat :title="__('app.self_invoices.stat_total_amount')" icon="o-banknotes" value="€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}" />
     </div>
 
     <!-- TABLE -->

@@ -211,6 +211,7 @@ return [
         'status_received' => 'Ricevuta da SDI',
 
         // Listing stats
+        'stat_total_contacts' => 'Totale contatti',
         'stat_total_invoices' => 'Acquisti',
         'stat_total_amount' => 'Totale spese',
         'stat_unpaid' => 'Non pagati',
@@ -298,6 +299,7 @@ return [
         'status_sent' => 'Inviata',
 
         // Listing stats
+        'stat_total_contacts' => 'Totale contatti',
         'stat_total_invoices' => 'Fatture',
         'stat_total_amount' => 'Fatturato',
         'stat_unpaid' => 'Non pagate',
@@ -585,6 +587,7 @@ return [
         'col_status' => 'Stato',
 
         // Summary stats
+        'stat_total_contacts' => 'Totale contatti',
         'stat_total_invoices' => 'Autofatture totali',
         'stat_total_amount' => 'Totale importo',
         'stat_unpaid' => 'Non pagate',

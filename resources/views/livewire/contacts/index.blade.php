@@ -6,6 +6,11 @@
         </x-slot:actions>
     </x-header>
 
+    {{-- Summary stats --}}
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <x-stat :title="__('app.contacts.stat_total')" icon="o-users" :value="$contacts->total()" />
+    </div>
+
     <!-- TABLE  -->
     
         <x-table :headers="$headers" :rows="$contacts" :sort-by="$sortBy" with-pagination link="/contacts/{id}/edit">

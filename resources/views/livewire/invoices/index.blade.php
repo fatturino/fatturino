@@ -1,6 +1,11 @@
 <div>
     <!-- HEADER -->
     <x-header :title="__('app.invoices.title')" separator progress-indicator>
+        <x-slot:actions>
+            @unless($isReadOnly)
+                <x-button :label="__('app.invoices.create_title')" link="/sell-invoices/create" icon="o-plus" variant="primary" responsive />
+            @endunless
+        </x-slot:actions>
     </x-header>
 
     {{-- SDI send progress indicator --}}
@@ -32,36 +37,10 @@
 
     {{-- Summary stats --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {{-- Total invoices --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.invoices.stat_total_invoices') }}</div>
-            <div class="text-2xl font-bold mt-1">{{ $this->stats['total_count'] }}</div>
-        </div>
-
-        {{-- Total revenue --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.invoices.stat_total_amount') }}</div>
-            <div class="text-2xl font-bold mt-1 tabular-nums">€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}</div>
-        </div>
-
-        {{-- Unpaid --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.invoices.stat_unpaid') }}</div>
-            <div class="text-2xl font-bold mt-1 {{ $this->stats['unpaid_count'] > 0 ? 'text-warning' : '' }}">
-                {{ $this->stats['unpaid_count'] }}
-                @if($this->stats['unpaid_count'] > 0)
-                    <span class="text-sm font-normal text-base-content/50">/ € {{ number_format($this->stats['unpaid_amount'] / 100, 0, ',', '.') }}</span>
-                @endif
-            </div>
-        </div>
-
-        {{-- Overdue --}}
-        <div class="bg-base-100 rounded-xl border border-base-200 p-4">
-            <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.invoices.stat_overdue') }}</div>
-            <div class="text-2xl font-bold mt-1 {{ $this->stats['overdue_count'] > 0 ? 'text-error' : 'text-success' }}">
-                {{ $this->stats['overdue_count'] }}
-            </div>
-        </div>
+        <x-stat :title="__('app.invoices.stat_total_invoices')" icon="o-document-text" :value="$this->stats['total_count']" />
+        <x-stat :title="__('app.invoices.stat_total_amount')" icon="o-banknotes" value="€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}" />
+        <x-stat :title="__('app.invoices.stat_unpaid')" icon="o-exclamation-triangle" :value="$this->stats['unpaid_count']" :description="$this->stats['unpaid_count'] > 0 ? '€ ' . number_format($this->stats['unpaid_amount'] / 100, 0, ',', '.') : null" :color="$this->stats['unpaid_count'] > 0 ? 'text-warning' : ''" />
+        <x-stat :title="__('app.invoices.stat_overdue')" icon="o-clock" :value="$this->stats['overdue_count']" :color="$this->stats['overdue_count'] > 0 ? 'text-error' : 'text-success'" />
     </div>
 
     <!-- TABLE -->
