@@ -1,8 +1,8 @@
 {{--
-    Reusable payment modal for all invoice types.
+    Payment drawer (slides from right, keeps invoice context visible).
     Requires the host Livewire component to use the HasPaymentTracking trait.
 --}}
-<x-modal wire:model="paymentModal" :title="__('app.payments.title')" box-class="max-w-2xl">
+<x-drawer wire:model="paymentModal" :title="__('app.payments.title')" right with-close-button separator class="max-w-xl">
     <div class="space-y-6">
 
         {{-- Registered payments list --}}
@@ -138,4 +138,4 @@
             />
         @endif
     </x-slot:actions>
-</x-modal>
+</x-drawer>
