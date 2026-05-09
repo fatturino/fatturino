@@ -152,7 +152,8 @@ class Edit extends Component
 
         $this->purchaseInvoice->calculateTotals();
 
-        $this->success(__('app.purchase_invoices.updated'), redirectTo: route('purchase-invoices.index'));
+        $this->success(__('app.purchase_invoices.updated'));
+        $this->redirect(route('purchase-invoices.index'), navigate: true);
     }
 
     public function render()

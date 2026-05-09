@@ -343,7 +343,8 @@ class Create extends Component
 
         $proforma->calculateTotals();
 
-        $this->success(__('app.proforma.created'), redirectTo: '/proforma');
+        $this->success(__('app.proforma.created'));
+        $this->redirect('/proforma', navigate: true);
     }
 
     public function render()

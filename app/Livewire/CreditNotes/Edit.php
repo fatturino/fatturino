@@ -169,7 +169,8 @@ class Edit extends Component
 
         $this->creditNote->calculateTotals();
 
-        $this->success(__('app.credit_notes.updated'), redirectTo: route('credit-notes.index'));
+        $this->success(__('app.credit_notes.updated'));
+        $this->redirect(route('credit-notes.index'), navigate: true);
     }
 
     public function downloadXml(CreditNoteXmlService $xmlService): mixed

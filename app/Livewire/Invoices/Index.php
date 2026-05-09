@@ -298,7 +298,8 @@ class Index extends Component
 
         $clone->calculateTotals();
 
-        $this->success(__('app.invoices.duplicated'), redirectTo: '/sell-invoices/' . $clone->id . '/edit', navigate: true);
+        $this->success(__('app.invoices.duplicated'));
+        $this->redirect('/sell-invoices/' . $clone->id . '/edit', navigate: true);
     }
 
     public function render()

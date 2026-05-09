@@ -142,7 +142,8 @@ class Create extends Component
 
         $invoice->calculateTotals();
 
-        $this->success(__('app.purchase_invoices.created'), redirectTo: route('purchase-invoices.index'));
+        $this->success(__('app.purchase_invoices.created'));
+        $this->redirect(route('purchase-invoices.index'), navigate: true);
     }
 
     public function render()

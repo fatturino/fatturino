@@ -351,10 +351,8 @@ class Edit extends Component
             return;
         }
 
-        $this->success(
-            __('app.proforma.converted_success', ['number' => $invoice->number]),
-            redirectTo: route('sell-invoices.edit', $invoice)
-        );
+        \$this->success(__('app.proforma.converted_success', ['number' => \$invoice->number]));
+        \$this->redirect(route('sell-invoices.edit', \$invoice), navigate: true);
     }
 
     public function save()
@@ -401,7 +399,8 @@ class Edit extends Component
 
         $this->proformaInvoice->calculateTotals();
 
-        $this->success(__('app.proforma.updated'), redirectTo: '/proforma');
+        $this->success(__('app.proforma.updated'));
+        $this->redirect('/proforma', navigate: true);
     }
 
     public function downloadPdf(CourtesyPdfService $pdfService)

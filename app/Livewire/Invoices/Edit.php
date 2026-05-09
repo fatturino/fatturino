@@ -214,7 +214,8 @@ class Edit extends Component
         // Recalculate totals
         $this->invoice->calculateTotals();
 
-        $this->success(__('app.invoices.updated'), redirectTo: '/sell-invoices');
+        $this->success(__('app.invoices.updated'));
+        $this->redirect('/sell-invoices', navigate: true);
     }
 
     public function downloadXml(InvoiceXmlService $xmlService)

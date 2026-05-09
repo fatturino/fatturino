@@ -171,7 +171,8 @@ class Edit extends Component
 
         $this->selfInvoice->calculateTotals();
 
-        $this->success(__('app.self_invoices.updated'), redirectTo: route('self-invoices.index'));
+        $this->success(__('app.self_invoices.updated'));
+        $this->redirect(route('self-invoices.index'), navigate: true);
     }
 
     public function downloadXml(SelfInvoiceXmlService $xmlService): mixed

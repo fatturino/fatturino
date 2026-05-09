@@ -156,7 +156,8 @@ class Create extends Component
 
         $creditNote->calculateTotals();
 
-        $this->success(__('app.credit_notes.created'), redirectTo: route('credit-notes.index'));
+        $this->success(__('app.credit_notes.created'));
+        $this->redirect(route('credit-notes.index'), navigate: true);
     }
 
     public function render()

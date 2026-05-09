@@ -157,7 +157,8 @@ class Create extends Component
 
         $invoice->calculateTotals();
 
-        $this->success(__('app.self_invoices.created'), redirectTo: route('self-invoices.index'));
+        $this->success(__('app.self_invoices.created'));
+        $this->redirect(route('self-invoices.index'), navigate: true);
     }
 
     public function documentTypeOptions(): array

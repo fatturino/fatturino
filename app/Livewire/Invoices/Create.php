@@ -197,7 +197,8 @@ class Create extends Component
         $invoice->calculateTotals();
 
         Cache::forget('invoice_draft_' . auth()->id());
-        $this->success(__('app.invoices.created'), redirectTo: '/sell-invoices');
+        $this->success(__('app.invoices.created'));
+        $this->redirect('/sell-invoices', navigate: true);
     }
 
     public function saveDraft(): void

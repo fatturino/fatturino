@@ -61,7 +61,8 @@ class Create extends Component
             'is_customer' => true,
         ]);
 
-        $this->success(__('app.contacts.created'), redirectTo: '/contacts');
+        $this->success(__('app.contacts.created'));
+        $this->redirect('/contacts', navigate: true);
     }
 
     public function render()

@@ -68,7 +68,8 @@ class Edit extends Component
             'province' => $this->province,
         ]);
 
-        $this->success(__('app.contacts.updated'), redirectTo: '/contacts');
+        $this->success(__('app.contacts.updated'));
+        $this->redirect('/contacts', navigate: true);
     }
 
     public function render()
