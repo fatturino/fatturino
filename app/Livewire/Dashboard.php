@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Invoice;
 use App\Services\ReportService;
 use Livewire\Component;
 

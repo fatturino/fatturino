@@ -91,6 +91,10 @@ return [
     ],
 
     'dashboard' => [
+        'welcome_title' => 'Benvenuto in Fatturino!',
+        'welcome_desc' => 'La tua piattaforma per la fatturazione elettronica e pronta. Inizia creando la tua prima fattura o importando i tuoi contatti.',
+        'welcome_cta' => 'Crea la prima fattura',
+        'welcome_contacts' => 'Importa contatti',
         'title' => 'Dashboard',
         'recent_invoices' => 'Fatture Recenti',
         'welcome' => 'Benvenuto nella tua dashboard!',
@@ -946,7 +950,7 @@ return [
         'fiscal_regime' => 'Regime Fiscale',
         'invoice_defaults' => 'Impostazioni Fattura',
         'auto_stamp_duty' => 'Bollo Automatico',
-        'auto_stamp_duty_hint' => 'Applica automaticamente il bollo di €2 sulle fatture esenti IVA sopra €77,47',
+        'auto_stamp_duty_hint' => 'Bollo automatico di €2 per fatture sopra €77,47',
         'withholding_tax_enabled' => "Ritenuta d'Acconto",
         'withholding_tax_hint' => "Abilita la ritenuta d'acconto sulle nuove fatture",
         'next' => 'Avanti',

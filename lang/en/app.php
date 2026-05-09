@@ -92,6 +92,10 @@ return [
     ],
 
     'dashboard' => [
+        'welcome_title' => 'Welcome to Fatturino!',
+        'welcome_desc' => 'Your electronic invoicing platform is ready. Start by creating your first invoice or importing your contacts.',
+        'welcome_cta' => 'Create your first invoice',
+        'welcome_contacts' => 'Import contacts',
         'title' => 'Dashboard',
         'recent_invoices' => 'Recent Invoices',
         'welcome' => 'Welcome to your dashboard!',
@@ -894,7 +898,7 @@ return [
         'fiscal_regime' => 'Fiscal Regime',
         'invoice_defaults' => 'Invoice Defaults',
         'auto_stamp_duty' => 'Automatic Stamp Duty',
-        'auto_stamp_duty_hint' => 'Automatically apply €2 stamp duty on invoices above €77.47 without VAT',
+        'auto_stamp_duty_hint' => 'Automatically apply €2 stamp duty on invoices above €77.47',
         'withholding_tax_enabled' => 'Withholding Tax',
         'withholding_tax_hint' => 'Enable withholding tax (ritenuta d\'acconto) on invoices by default',
         'next' => 'Next',

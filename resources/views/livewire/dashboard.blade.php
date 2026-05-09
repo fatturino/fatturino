@@ -22,6 +22,22 @@
         />
     @endunless
 
+    {{-- First-run welcome banner --}}
+    @if($isCurrentYear && !$hasInvoices)
+        <div class="mb-8 bg-gradient-to-br from-primary to-secondary rounded-2xl p-8 sm:p-10 text-white relative overflow-hidden">
+            {{-- Subtle pattern --}}
+            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 20px 20px;"></div>
+            <div class="relative z-10 max-w-2xl">
+                <h2 class="text-2xl font-bold mb-3">{{ __('app.dashboard.welcome_title') }}</h2>
+                <p class="text-white/80 text-base mb-6">{{ __('app.dashboard.welcome_desc') }}</p>
+                <div class="flex flex-wrap gap-3">
+                    <x-button :label="__('app.dashboard.welcome_cta')" icon="o-plus" variant="primary" link="{{ route('sell-invoices.create') }}" class="!bg-white !text-primary hover:!bg-white/90" size="lg" />
+                    <x-button :label="__('app.dashboard.welcome_contacts')" icon="o-users" link="/contacts" variant="ghost" class="!text-white hover:!bg-white/10" />
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- ROW 1: KPI stats --}}
     <x-dashboard.kpi-stats
         :is-current-year="$isCurrentYear"
