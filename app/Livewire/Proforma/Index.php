@@ -128,8 +128,10 @@ class Index extends Component
             return;
         }
 
-        \$this->success(__('app.proforma.converted_success', ['number' => \$invoice->number]));
-        \$this->redirect(route('sell-invoices.edit', \$invoice), navigate: true);
+        $this->success(
+            __('app.proforma.converted_success', ['number' => $invoice->number]),
+            redirectTo: route('sell-invoices.edit', $invoice)
+        );
     }
 
     /**
