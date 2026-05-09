@@ -91,9 +91,15 @@ return [
     ],
 
     'dashboard' => [
-        'welcome_title' => 'Benvenuto in Fatturino!',
-        'welcome_desc' => 'La tua piattaforma per la fatturazione elettronica e pronta. Inizia creando la tua prima fattura o importando i tuoi contatti.',
-        'welcome_cta' => 'Crea la prima fattura',
+        'welcome_title' => 'Benvenuto in Fatturino',
+        'welcome_desc' => 'Completa questi passi per iniziare a fatturare.',
+        'setup_step_account' => 'Account creato',
+        'setup_step_sdi' => 'Configura fatturazione elettronica (SDI)',
+        'setup_step_sdi_done' => 'Fatturazione elettronica configurata',
+        'setup_step_contacts' => 'Aggiungi il tuo primo cliente',
+        'setup_step_contacts_done' => 'Clienti importati',
+        'setup_step_invoice' => 'Crea la tua prima fattura',
+                'welcome_cta' => 'Crea la prima fattura',
         'welcome_contacts' => 'Importa contatti',
         'title' => 'Dashboard',
         'recent_invoices' => 'Fatture Recenti',

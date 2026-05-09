@@ -92,9 +92,15 @@ return [
     ],
 
     'dashboard' => [
-        'welcome_title' => 'Welcome to Fatturino!',
-        'welcome_desc' => 'Your electronic invoicing platform is ready. Start by creating your first invoice or importing your contacts.',
-        'welcome_cta' => 'Create your first invoice',
+        'welcome_title' => 'Welcome to Fatturino',
+        'welcome_desc' => 'Complete these steps to start invoicing.',
+        'setup_step_account' => 'Account created',
+        'setup_step_sdi' => 'Configure electronic invoicing (SDI)',
+        'setup_step_sdi_done' => 'Electronic invoicing configured',
+        'setup_step_contacts' => 'Add your first customer',
+        'setup_step_contacts_done' => 'Customers added',
+        'setup_step_invoice' => 'Create your first invoice',
+                'welcome_cta' => 'Create your first invoice',
         'welcome_contacts' => 'Import contacts',
         'title' => 'Dashboard',
         'recent_invoices' => 'Recent Invoices',

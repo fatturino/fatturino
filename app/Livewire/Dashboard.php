@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Contact;
 use App\Models\Invoice;
 use App\Services\ReportService;
 use Livewire\Component;
@@ -16,6 +17,9 @@ class Dashboard extends Component
         return view('livewire.dashboard', array_merge($stats, [
             'fiscalYear' => $fiscalYear,
             'isCurrentYear' => $fiscalYear === now()->year,
+            'hasInvoices' => Invoice::whereYear('date', $fiscalYear)->exists(),
+            'hasSdi' => app(\App\Contracts\SdiProvider::class)->isConfigured(),
+            'hasContacts' => Contact::exists(),
         ]));
     }
 }

@@ -22,18 +22,53 @@
         />
     @endunless
 
-    {{-- First-run welcome banner --}}
+    {{-- First-run setup checklist --}}
     @if($isCurrentYear && !$hasInvoices)
-        <div class="mb-8 bg-gradient-to-br from-primary to-secondary rounded-2xl p-8 sm:p-10 text-white relative overflow-hidden">
-            {{-- Subtle pattern --}}
-            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 20px 20px;"></div>
-            <div class="relative z-10 max-w-2xl">
-                <h2 class="text-2xl font-bold mb-3">{{ __('app.dashboard.welcome_title') }}</h2>
-                <p class="text-white/80 text-base mb-6">{{ __('app.dashboard.welcome_desc') }}</p>
-                <div class="flex flex-wrap gap-3">
-                    <x-button :label="__('app.dashboard.welcome_cta')" icon="o-plus" variant="primary" link="{{ route('sell-invoices.create') }}" class="!bg-white !text-primary hover:!bg-white/90" size="lg" />
-                    <x-button :label="__('app.dashboard.welcome_contacts')" icon="o-users" link="/contacts" variant="ghost" class="!text-white hover:!bg-white/10" />
+        <div class="mb-8 bg-primary rounded-2xl p-6 sm:p-8 text-white">
+            <h2 class="text-xl font-bold mb-1">{{ __('app.dashboard.welcome_title') }}</h2>
+            <p class="text-white/60 text-sm mb-6">{{ __('app.dashboard.welcome_desc') }}</p>
+
+            <div class="space-y-2">
+                {{-- Step 1: Account (always done after wizard) --}}
+                <div class="flex items-center gap-3 text-sm bg-white/10 rounded-lg px-4 py-3">
+                    <x-icon name="o-check-circle" class="w-5 h-5 text-success shrink-0" />
+                    <span class="text-white/80">{{ __('app.dashboard.setup_step_account') }}</span>
                 </div>
+
+                {{-- Step 2: SDI Configuration --}}
+                @if($hasSdi)
+                    <div class="flex items-center gap-3 text-sm bg-white/10 rounded-lg px-4 py-3">
+                        <x-icon name="o-check-circle" class="w-5 h-5 text-success shrink-0" />
+                        <span class="text-white/80">{{ __('app.dashboard.setup_step_sdi_done') }}</span>
+                    </div>
+                @else
+                    <a href="/electronic-invoice-settings" wire:navigate class="flex items-center gap-3 text-sm bg-white/15 hover:bg-white/20 rounded-lg px-4 py-3 transition-colors group">
+                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/20 text-xs font-bold shrink-0">2</span>
+                        <span class="flex-1 text-white">{{ __('app.dashboard.setup_step_sdi') }}</span>
+                        <x-icon name="o-arrow-right" class="w-4 h-4 text-white/50 group-hover:text-white transition-colors shrink-0" />
+                    </a>
+                @endif
+
+                {{-- Step 3: Contacts --}}
+                @if($hasContacts)
+                    <div class="flex items-center gap-3 text-sm bg-white/10 rounded-lg px-4 py-3">
+                        <x-icon name="o-check-circle" class="w-5 h-5 text-success shrink-0" />
+                        <span class="text-white/80">{{ __('app.dashboard.setup_step_contacts_done') }}</span>
+                    </div>
+                @else
+                    <a href="/contacts/create" wire:navigate class="flex items-center gap-3 text-sm bg-white/15 hover:bg-white/20 rounded-lg px-4 py-3 transition-colors group">
+                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/20 text-xs font-bold shrink-0">3</span>
+                        <span class="flex-1 text-white">{{ __('app.dashboard.setup_step_contacts') }}</span>
+                        <x-icon name="o-arrow-right" class="w-4 h-4 text-white/50 group-hover:text-white transition-colors shrink-0" />
+                    </a>
+                @endif
+
+                {{-- Step 4: First invoice --}}
+                <a href="{{ route('sell-invoices.create') }}" wire:navigate class="flex items-center gap-3 text-sm bg-amber-400/20 hover:bg-amber-400/30 rounded-lg px-4 py-3 transition-colors group border border-amber-400/30">
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-primary text-xs font-bold shrink-0">4</span>
+                    <span class="flex-1 text-amber-200 font-medium">{{ __('app.dashboard.setup_step_invoice') }}</span>
+                    <x-icon name="o-arrow-right" class="w-4 h-4 text-amber-300 group-hover:text-amber-200 transition-colors shrink-0" />
+                </a>
             </div>
         </div>
     @endif
