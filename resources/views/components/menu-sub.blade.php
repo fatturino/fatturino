@@ -2,18 +2,22 @@
     'title' => null,
     'icon' => null,
     'active' => false,
+    'id' => null,
 ])
 
 @php
 $isActive = $active || request()->url() === url($attributes->get('link', ''));
+$menuId = $id ?? Str::slug($title ?? uniqid());
 @endphp
 
 <div
     x-data="{ open: @json($isActive) }"
+    x-id="['submenu']"
+    @submenu-toggle.window="open = ($event.detail.id === '{{ $menuId }}') ? !open : false"
     class="select-none"
 >
     <button
-        @click="open = !open"
+        @click="$dispatch('submenu-toggle', { id: '{{ $menuId }}' })"
         class="flex items-center gap-3 w-full px-4 py-2.5 text-sm rounded-lg transition-colors text-white/70 hover:bg-white/10 hover:text-white"
     >
         @if($icon)
