@@ -9,14 +9,14 @@
         :title="__('app.conservation.acknowledged_title')"
         :description="__('app.conservation.acknowledged_description')"
         icon="o-check-circle"
-        class="mb-6 alert-success"
+        variant="success" class="mb-6"
     />
 @else
     <x-alert
         :title="__('app.conservation.banner_title')"
         :description="__('app.conservation.banner_description')"
         icon="o-archive-box"
-        class="mb-6 alert-warning"
+        variant="warning" class="mb-6"
     >
         <x-slot:actions>
             <x-button

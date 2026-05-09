@@ -44,95 +44,90 @@
     </div>
 
     {{-- Audit table --}}
-    
-        @if ($audits->isEmpty())
-            <p class="p-6 text-center text-base-content/60">{{ __('app.common.empty_table') }}</p>
-        @else
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
+    @if ($audits->isEmpty())
+        <p class="p-6 text-center text-base-content/60">{{ __('app.common.empty_table') }}</p>
+    @else
+        <div class="overflow-x-auto border border-base-300 rounded-lg">
+            <table class="min-w-full divide-y divide-base-300 text-sm">
+                <thead class="bg-base-200">
+                    <tr>
+                        <th class="px-5 py-3 text-xs font-semibold text-left uppercase tracking-wider">{{ __('app.audit.index.column_date') }}</th>
+                        <th class="px-5 py-3 text-xs font-semibold text-left uppercase tracking-wider">{{ __('app.audit.index.column_user') }}</th>
+                        <th class="px-5 py-3 text-xs font-semibold text-left uppercase tracking-wider">{{ __('app.audit.index.column_event') }}</th>
+                        <th class="px-5 py-3 text-xs font-semibold text-left uppercase tracking-wider">{{ __('app.audit.index.column_entity') }}</th>
+                        <th class="px-5 py-3 text-xs font-semibold text-left uppercase tracking-wider">{{ __('app.audit.index.column_actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-base-300 bg-white">
+                    @foreach ($audits as $audit)
+                        @php
+                            $eventKey = 'app.audit.events.' . $audit->event;
+                            $eventLabel = __($eventKey);
+                            if ($eventLabel === $eventKey) {
+                                $eventLabel = $audit->event;
+                            }
+                        @endphp
                         <tr>
-                            <th>{{ __('app.audit.index.column_date') }}</th>
-                            <th>{{ __('app.audit.index.column_user') }}</th>
-                            <th>{{ __('app.audit.index.column_event') }}</th>
-                            <th>{{ __('app.audit.index.column_entity') }}</th>
-                            <th>{{ __('app.audit.index.column_actions') }}</th>
+                            <td class="px-5 py-3 text-sm">{{ $audit->created_at->translatedFormat('d M Y H:i') }}</td>
+                            <td class="px-5 py-3 text-sm">{{ $audit->user?->name ?? __('app.audit.system') }}</td>
+                            <td class="px-5 py-3 text-sm">{{ $eventLabel }}</td>
+                            <td class="px-5 py-3 text-sm">
+                                <span class="font-mono text-xs">{{ class_basename($audit->auditable_type) }}#{{ $audit->auditable_id }}</span>
+                            </td>
+                            <td class="px-5 py-3">
+                                <x-button
+                                    :label="__('app.audit.index.details')"
+                                    variant="ghost" size="xs"
+                                    @click="$dispatch('audit-detail', { id: {{ $audit->id }} })"
+                                />
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($audits as $audit)
-                            @php
-                                $eventKey = 'app.audit.events.' . $audit->event;
-                                $eventLabel = __($eventKey);
-                                if ($eventLabel === $eventKey) {
-                                    $eventLabel = $audit->event;
-                                }
-                            @endphp
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4">
+            {{ $audits->links() }}
+        </div>
+    @endif
+
+    {{-- Detail modal --}}
+    <x-modal wire:model="detailModal" :title="$eventLabel ?? __('app.audit.index.details')">
+        @if(isset($detailAudit))
+            <p class="text-xs text-base-content/60 mb-4">
+                {{ $detailAudit->created_at->translatedFormat('d M Y H:i:s') }}
+                · {{ $detailAudit->user?->name ?? __('app.audit.system') }}
+            </p>
+
+            @if (empty($detailAudit->old_values) && empty($detailAudit->new_values))
+                <p class="text-sm">{{ __('app.audit.index.no_changes') }}</p>
+            @else
+                <div class="overflow-x-auto border border-base-300 rounded-lg">
+                    <table class="min-w-full divide-y divide-base-300 text-sm">
+                        <thead class="bg-base-200">
                             <tr>
-                                <td class="text-sm">{{ $audit->created_at->translatedFormat('d M Y H:i') }}</td>
-                                <td class="text-sm">{{ $audit->user?->name ?? __('app.audit.system') }}</td>
-                                <td class="text-sm">{{ $eventLabel }}</td>
-                                <td class="text-sm">
-                                    <span class="font-mono text-xs">{{ class_basename($audit->auditable_type) }}#{{ $audit->auditable_id }}</span>
-                                </td>
-                                <td>
-                                    <button
-                                        type="button"
-                                        class="btn btn-ghost btn-xs"
-                                        onclick="document.getElementById('audit-modal-{{ $audit->id }}').showModal()"
-                                    >
-                                        {{ __('app.audit.index.details') }}
-                                    </button>
-
-                                    <dialog id="audit-modal-{{ $audit->id }}" class="modal">
-                                        <div class="modal-box max-w-2xl">
-                                            <h3 class="font-bold text-lg mb-3">{{ $eventLabel }}</h3>
-                                            <p class="text-xs text-base-content/60 mb-4">
-                                                {{ $audit->created_at->translatedFormat('d M Y H:i:s') }}
-                                                · {{ $audit->user?->name ?? __('app.audit.system') }}
-                                            </p>
-
-                                            @if (empty($audit->old_values) && empty($audit->new_values))
-                                                <p class="text-sm">{{ __('app.audit.index.no_changes') }}</p>
-                                            @else
-                                                <table class="table table-sm">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>{{ __('app.audit.index.column_entity') }}</th>
-                                                            <th>{{ __('app.audit.index.old_value') }}</th>
-                                                            <th>{{ __('app.audit.index.new_value') }}</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach (array_keys(array_merge($audit->old_values ?? [], $audit->new_values ?? [])) as $field)
-                                                            <tr>
-                                                                <td class="font-mono text-xs">{{ $field }}</td>
-                                                                <td class="text-xs">{{ $audit->old_values[$field] ?? '—' }}</td>
-                                                                <td class="text-xs">{{ $audit->new_values[$field] ?? '—' }}</td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            @endif
-
-                                            <div class="modal-action">
-                                                <form method="dialog">
-                                                    <button class="btn btn-sm">{{ __('app.common.close') }}</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                        <form method="dialog" class="modal-backdrop"><button>close</button></form>
-                                    </dialog>
-                                </td>
+                                <th class="px-4 py-2 text-xs font-semibold text-left">{{ __('app.audit.index.column_entity') }}</th>
+                                <th class="px-4 py-2 text-xs font-semibold text-left">{{ __('app.audit.index.old_value') }}</th>
+                                <th class="px-4 py-2 text-xs font-semibold text-left">{{ __('app.audit.index.new_value') }}</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="mt-4">
-                {{ $audits->links() }}
-            </div>
+                        </thead>
+                        <tbody class="divide-y divide-base-300 bg-white">
+                            @foreach (array_keys(array_merge($detailAudit->old_values ?? [], $detailAudit->new_values ?? [])) as $field)
+                                <tr>
+                                    <td class="px-4 py-2 font-mono text-xs">{{ $field }}</td>
+                                    <td class="px-4 py-2 text-xs">{{ $detailAudit->old_values[$field] ?? '—' }}</td>
+                                    <td class="px-4 py-2 text-xs">{{ $detailAudit->new_values[$field] ?? '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
         @endif
-    
+
+        <x-slot:actions>
+            <x-button :label="__('app.common.close')" @click="$wire.detailModal = false" />
+        </x-slot:actions>
+    </x-modal>
 </div>

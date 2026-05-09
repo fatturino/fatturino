@@ -10,7 +10,7 @@
         <x-alert
             :title="__('app.credit_notes.readonly_error')"
             icon="o-lock-closed"
-            class="mb-4 alert-warning"
+            variant="warning" class="mb-4"
         />
     @endif
 

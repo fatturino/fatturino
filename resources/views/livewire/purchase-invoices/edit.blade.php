@@ -10,13 +10,13 @@
         <x-alert
             :title="__('app.purchase_invoices.sdi_received_banner')"
             icon="o-inbox-arrow-down"
-            class="mb-4 alert-info"
+            variant="info" class="mb-4"
         />
     @elseif($isReadOnly)
         <x-alert
             :title="__('app.purchase_invoices.readonly_banner', ['year' => $purchaseInvoice->date->year])"
             icon="o-lock-closed"
-            class="mb-4 alert-warning"
+            variant="warning" class="mb-4"
         />
     @endif
 

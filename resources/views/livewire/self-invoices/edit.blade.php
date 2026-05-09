@@ -10,7 +10,7 @@
         <x-alert
             :title="__('app.invoices.readonly_error')"
             icon="o-lock-closed"
-            class="mb-4 alert-warning"
+            variant="warning" class="mb-4"
         />
     @endif
 
@@ -61,7 +61,7 @@
                             };
                         @endphp
                         <div class="flex items-center gap-2">
-                            <x-badge :value="'SDI: ' . $selfInvoice->sdi_status" :class="'badge-' . $sdiColor" />
+                            <x-badge :value="'SDI: ' . $selfInvoice->sdi_status" :variant="$sdiColor" />
                             @if($selfInvoice->sdi_message)
                                 <span class="text-sm text-base-content/60">{{ $selfInvoice->sdi_message }}</span>
                             @endif

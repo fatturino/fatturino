@@ -13,13 +13,13 @@
         <x-alert
             :title="__('app.invoices.sdi_locked_banner')"
             icon="o-lock-closed"
-            class="mb-4 alert-info"
+            variant="info" class="mb-4"
         />
     @elseif($isReadOnly)
         <x-alert
             :title="__('app.invoices.readonly_banner', ['year' => $invoice->date->year])"
             icon="o-lock-closed"
-            class="mb-4 alert-warning"
+            variant="warning" class="mb-4"
         />
     @endif
 

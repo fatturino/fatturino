@@ -10,7 +10,7 @@
 
     {{-- Status banners --}}
     @if($proformaInvoice->status === \App\Enums\ProformaStatus::Converted)
-        <x-alert icon="o-document-check" class="mb-4 alert-success">
+        <x-alert icon="o-document-check" variant="success" class="mb-4">
             {{ __('app.proforma.converted_banner') }}
             @if($convertedInvoice)
                 — <a href="{{ route('sell-invoices.edit', $convertedInvoice) }}" class="link font-semibold" wire:navigate>#{{ $convertedInvoice->number }}</a>
@@ -20,13 +20,13 @@
         <x-alert
             :title="__('app.proforma.cancelled_banner')"
             icon="o-x-circle"
-            class="mb-4 alert-neutral"
+            variant="neutral" class="mb-4"
         />
     @elseif($isReadOnly)
         <x-alert
             :title="__('app.proforma.readonly_banner', ['year' => $proformaInvoice->date->year])"
             icon="o-lock-closed"
-            class="mb-4 alert-warning"
+            variant="warning" class="mb-4"
         />
     @endif
 

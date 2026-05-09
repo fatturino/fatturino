@@ -38,10 +38,10 @@
 
             {{-- Actions --}}
             <div class="flex flex-wrap justify-center gap-3">
-                <a href="/" class="btn btn-primary">
+                <a href="/" class="inline-flex items-center justify-center font-medium tracking-wide transition-colors duration-200 rounded-md px-4 py-2 text-sm gap-2 text-primary-content bg-primary hover:bg-primary/90">
                     {{ __('app.errors.go_home') }}
                 </a>
-                <a href="javascript:history.back()" class="btn btn-ghost border border-base-300">
+                <a href="javascript:history.back()" class="inline-flex items-center justify-center font-medium tracking-wide transition-colors duration-200 rounded-md px-4 py-2 text-sm gap-2 border border-base-300 text-base-content/70 bg-transparent hover:bg-base-200">
                     {{ __('app.errors.go_back') }}
                 </a>
             </div>
