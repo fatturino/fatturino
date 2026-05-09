@@ -12,6 +12,7 @@ use App\Models\Invoice;
 use App\Models\Sequence;
 use App\Settings\InvoiceSettings;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use App\Traits\Toast;
@@ -83,6 +84,9 @@ class Create extends Component
         }
     }
 
+    // Autosave draft
+    public ?string $draftSavedAt = null;
+
     public function mount(InvoiceSettings $settings)
     {
         // Prevent creating invoices when a past fiscal year is selected
@@ -131,8 +135,21 @@ class Create extends Component
             $this->updatedSequenceId();
         }
 
-        // Add initial line
-        $this->addLine();
+        // Restore draft if one exists
+        $draft = Cache::get('invoice_draft_' . auth()->id());
+        if ($draft) {
+            foreach ($draft as $key => $value) {
+                if (property_exists($this, $key)) {
+                    $this->{$key} = $value;
+                }
+            }
+            $this->draftSavedAt = null; // Will be set on next autosave
+        }
+
+        // Add initial line only if no lines restored from draft
+        if (empty($this->lines)) {
+            $this->addLine();
+        }
     }
 
     public function save()
@@ -179,7 +196,33 @@ class Create extends Component
         // Recalculate totals
         $invoice->calculateTotals();
 
+        Cache::forget('invoice_draft_' . auth()->id());
         $this->success(__('app.invoices.created'), redirectTo: '/sell-invoices');
+    }
+
+    public function saveDraft(): void
+    {
+        // Only save if the user has started filling the form (at least a contact selected or a line added)
+        $hasContent = $this->contact_id || !empty(array_filter($this->lines, fn ($l) => !empty($l['description'])));
+        if (! $hasContent) {
+            return;
+        }
+
+        $draft = [];
+        foreach ((new \ReflectionClass($this))->getProperties(\ReflectionProperty::IS_PUBLIC) as $prop) {
+            $name = $prop->getName();
+            // Skip framework properties and computed properties
+            if (in_array($name, ['draftSavedAt', 'totalNet', 'totalVat', 'totalDue', 'netDue', 'withholdingTaxAmount', 'fundAmount', 'fundVatAmount', 'totalsByVatRate'])) {
+                continue;
+            }
+            if ($prop->isStatic() || $prop->isReadOnly()) {
+                continue;
+            }
+            $draft[$name] = $this->{$name};
+        }
+
+        Cache::put('invoice_draft_' . auth()->id(), $draft, now()->addHours(24));
+        $this->draftSavedAt = now()->format('H:i');
     }
 
     public function render()

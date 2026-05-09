@@ -43,6 +43,19 @@
                         <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
                         <x-button :label="__('app.common.cancel')" link="/sell-invoices" icon="o-x-mark" variant="ghost" class="w-full" />
                     </div>
+
+                    {{-- Autosave indicator --}}
+                    <div class="text-center mt-3"
+                         x-data="{ lastSaved: '' }"
+                         x-init="
+                            setInterval(() => { $wire.saveDraft(); lastSaved = $wire.draftSavedAt; }, 30000);
+                            $watch('$wire.draftSavedAt', v => lastSaved = v);
+                         ">
+                        <span x-show="lastSaved" x-cloak class="text-xs text-base-content/40 inline-flex items-center gap-1">
+                            <x-icon name="o-check-circle" class="w-3 h-3 text-success" />
+                            {{ __('app.invoices.draft_saved') }} <span x-text="lastSaved"></span>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -166,6 +166,7 @@ return [
         'line_price' => 'Price',
         'line_vat' => 'VAT',
         'add_line' => 'Add Line',
+        'draft_saved' => 'Draft saved at',
         'no_lines' => 'No lines yet. Add a line to get started.',
 
         'totals_section' => 'Totals',
@@ -224,6 +225,7 @@ return [
         'line_price' => 'Price',
         'line_vat' => 'VAT',
         'add_line' => 'Add Line',
+        'draft_saved' => 'Draft saved at',
         'no_lines' => 'No lines yet. Add a line to get started.',
 
 'tax_options_section' => 'Tax Options',
@@ -367,6 +369,7 @@ return [
         'line_price' => 'Price',
         'line_vat' => 'VAT',
         'add_line' => 'Add Line',
+        'draft_saved' => 'Draft saved at',
         'no_lines' => 'No lines. Add a line to get started.',
 
 'tax_options_section' => 'Tax Options',
@@ -502,6 +505,7 @@ return [
         'line_price' => 'Price',
         'line_vat' => 'VAT',
         'add_line' => 'Add Line',
+        'draft_saved' => 'Draft saved at',
         'no_lines' => 'No lines yet. Add a line to get started.',
 
         'totals_section' => 'Totals',
@@ -569,6 +573,7 @@ return [
         'line_price' => 'Price',
         'line_vat' => 'VAT',
         'add_line' => 'Add Line',
+        'draft_saved' => 'Draft saved at',
         'no_lines' => 'No lines. Add a line to get started.',
 
         'totals_section' => 'Totals',

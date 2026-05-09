@@ -184,6 +184,7 @@ return [
         'line_price' => 'Prezzo',
         'line_vat' => 'IVA',
         'add_line' => 'Aggiungi Riga',
+        'draft_saved' => 'Bozza salvata alle',
         'no_lines' => 'Nessuna riga. Aggiungi una riga per iniziare.',
 
         'totals_section' => 'Totali',
@@ -242,6 +243,7 @@ return [
         'line_price' => 'Prezzo',
         'line_vat' => 'IVA',
         'add_line' => 'Aggiungi Riga',
+        'draft_saved' => 'Bozza salvata alle',
         'no_lines' => 'Nessuna riga. Aggiungi una riga per iniziare.',
 
 'tax_options_section' => 'Opzioni Fiscali',
@@ -417,6 +419,7 @@ return [
         'line_price' => 'Prezzo',
         'line_vat' => 'IVA',
         'add_line' => 'Aggiungi Riga',
+        'draft_saved' => 'Bozza salvata alle',
         'no_lines' => 'Nessuna riga. Aggiungi una riga per iniziare.',
 
 'tax_options_section' => 'Opzioni Fiscali',
@@ -541,6 +544,7 @@ return [
         'line_price' => 'Prezzo',
         'line_vat' => 'IVA',
         'add_line' => 'Aggiungi Riga',
+        'draft_saved' => 'Bozza salvata alle',
         'no_lines' => 'Nessuna riga. Aggiungi una riga per iniziare.',
 
         'totals_section' => 'Totali',
@@ -608,6 +612,7 @@ return [
         'line_price' => 'Prezzo',
         'line_vat' => 'IVA',
         'add_line' => 'Aggiungi Riga',
+        'draft_saved' => 'Bozza salvata alle',
         'no_lines' => 'Nessuna riga. Aggiungi una riga per iniziare.',
 
         'totals_section' => 'Totali',
