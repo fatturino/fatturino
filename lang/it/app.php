@@ -273,6 +273,10 @@ return [
         'download_pdf' => 'Scarica PDF',
         'pdf_generation_error' => 'Errore generazione PDF: :error',
         'download_xml' => 'Scarica XML',
+        'sending_to_sdi' => 'Invio a SDI in corso…',
+        'sending_to_sdi_desc' => 'Generazione XML e invio al Sistema di Interscambio. Attendere prego.',
+        'duplicated' => 'Fattura duplicata con successo.',
+        'duplicate' => 'Duplica',
         'send_to_sdi' => 'Invia a SDI',
         'sent_to_sdi' => 'Inviata a SDI',
 

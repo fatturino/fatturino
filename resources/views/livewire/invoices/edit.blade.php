@@ -24,8 +24,13 @@
     @endif
 
     <x-tabs wire:model="activeTab">
-    <x-tab name="details" :label="__('app.audit.tab_details')" icon="o-document-text">
-    <form wire:submit="save">
+        <x-slot:tabs>
+            <x-tab name="details" :label="__('app.audit.tab_details')" icon="o-document-text" />
+            <x-tab name="history" :label="__('app.audit.tab_history')" icon="o-clock" />
+        </x-slot:tabs>
+
+        <x-tabs.panel name="details">
+            <form wire:submit="save">
         <div class="grid lg:grid-cols-3 gap-6">
 
             {{-- LEFT COLUMN: Header fields + Invoice lines --}}
@@ -149,11 +154,12 @@
                 </div>
             </div>
         </div>
-    </form>
-    </x-tab>
-    <x-tab name="history" :label="__('app.audit.tab_history')" icon="o-clock">
-        @livewire('invoices.invoice-timeline', ['invoice' => $invoice], key('timeline-'.$invoice->id))
-    </x-tab>
+            </form>
+        </x-tabs.panel>
+
+        <x-tabs.panel name="history">
+            @livewire('invoices.invoice-timeline', ['invoice' => $invoice], key('timeline-'.$invoice->id))
+        </x-tabs.panel>
     </x-tabs>
 
     {{-- Payment modal --}}

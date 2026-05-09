@@ -8,7 +8,7 @@
     class="relative inline-block"
 >
     {{-- Trigger --}}
-    <div @click="open = !open" class="cursor-pointer">
+    <div @click.stop="open = !open" class="cursor-pointer">
         @if(isset($trigger))
             {{ $trigger }}
         @else

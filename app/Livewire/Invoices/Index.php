@@ -270,6 +270,37 @@ class Index extends Component
         ];
     }
 
+    public function duplicate(Invoice $invoice): void
+    {
+        if (! $invoice->isSdiEditable()) {
+            $this->error(__('app.invoices.readonly_error'));
+            return;
+        }
+
+        // Clone the invoice as a new draft
+        $clone = $invoice->replicate();
+        $clone->number = null;
+        $clone->sequential_number = null;
+        $clone->date = now()->format('Y-m-d');
+        $clone->status = InvoiceStatus::Draft;
+        $clone->sdi_status = null;
+        $clone->sdi_uuid = null;
+        $clone->sdi_message = null;
+        $clone->sdi_sent_at = null;
+        $clone->payment_status = PaymentStatus::Unpaid;
+        $clone->paid_amount = 0;
+        $clone->save();
+
+        // Clone invoice lines
+        foreach ($invoice->lines as $line) {
+            $clone->lines()->create($line->replicate()->toArray());
+        }
+
+        $clone->calculateTotals();
+
+        $this->success(__('app.invoices.duplicated'), redirectTo: '/sell-invoices/' . $clone->id . '/edit', navigate: true);
+    }
+
     public function render()
     {
         $invoices = Invoice::query()

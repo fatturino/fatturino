@@ -3,6 +3,24 @@
     <x-header :title="__('app.invoices.title')" separator progress-indicator>
     </x-header>
 
+    {{-- SDI send progress indicator --}}
+    <div wire:loading wire:target="sendToSdi"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/20"
+         x-data>
+        <div class="bg-base-100 rounded-xl shadow-xl p-8 max-w-sm w-full mx-4 text-center">
+            <div class="flex justify-center mb-4">
+                <div class="bg-primary/10 rounded-full p-4">
+                    <x-icon name="o-paper-airplane" class="w-10 h-10 text-primary animate-pulse" />
+                </div>
+            </div>
+            <h3 class="font-semibold text-lg mb-2">{{ __('app.invoices.sending_to_sdi') }}</h3>
+            <p class="text-sm text-base-content/60 mb-4">{{ __('app.invoices.sending_to_sdi_desc') }}</p>
+            <div class="w-full bg-base-200 rounded-full h-2 overflow-hidden">
+                <div class="h-full bg-primary animate-pulse rounded-full" style="width: 60%"></div>
+            </div>
+        </div>
+    </div>
+
     {{-- Read-only banner for concluded fiscal years --}}
     @if($isReadOnly)
         <x-alert

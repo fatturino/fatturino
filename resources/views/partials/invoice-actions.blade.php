@@ -20,6 +20,7 @@
 
     @if(!$this->isReadOnly && $row->isSdiEditable())
         <hr class="my-1 border-base-200" />
+        <x-menu-item :title="__('app.invoices.duplicate')" icon="o-document-duplicate" wire:click="duplicate({{ $row->id }})" spinner />
         <x-menu-item :title="__('app.common.delete')" icon="o-trash" wire:click="delete({{ $row->id }})" wire:confirm="{{ __('app.common.confirm_delete') }}" class="text-error" spinner />
     @endif
 </x-dropdown>

@@ -255,6 +255,10 @@ return [
         'download_pdf' => 'Download PDF',
         'pdf_generation_error' => 'PDF generation error: :error',
         'download_xml' => 'Download XML',
+        'sending_to_sdi' => 'Sending to SDI…',
+        'sending_to_sdi_desc' => 'Generating XML and submitting to the Italian Exchange System. Please wait.',
+        'duplicated' => 'Invoice duplicated successfully.',
+        'duplicate' => 'Duplicate',
         'send_to_sdi' => 'Send to SDI',
         'sent_to_sdi' => 'Sent to SDI',
 

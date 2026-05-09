@@ -76,6 +76,22 @@
     color: rgba(255 255 255 / 0.6) !important;
 }
 
+.fatturino-sidebar .text-base-content {
+    color: white !important;
+}
+
+.fatturino-sidebar .bg-base-content\/5 {
+    background-color: rgba(255 255 255 / 0.05) !important;
+}
+
+.fatturino-sidebar .bg-base-content\/10 {
+    background-color: rgba(255 255 255 / 0.1) !important;
+}
+
+.fatturino-sidebar .hover\:bg-base-content\/5:hover {
+    background-color: rgba(255 255 255 / 0.08) !important;
+}
+
 /* ─── Guest screens: auth & setup wizard ─── */
 
 /* Animated gradient for left panel */
