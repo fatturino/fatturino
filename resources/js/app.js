@@ -51,3 +51,48 @@ window.addEventListener('toast', (e) => {
     const { type, message, description, position } = e.detail;
     store[type](message, description, position);
 });
+
+
+// ═══ Livewire resilience: offline detection & error recovery ═══
+
+document.addEventListener('livewire:init', () => {
+    let offlineToastShown = false;
+
+    window.addEventListener('offline', () => {
+        if (!offlineToastShown) {
+            Alpine.store('toast').warning(
+                'Connessione persa',
+                'Verifica la tua connessione internet.',
+            );
+            offlineToastShown = true;
+        }
+    });
+
+    window.addEventListener('online', () => {
+        if (offlineToastShown) {
+            Alpine.store('toast').success('Connessione ripristinata');
+            offlineToastShown = false;
+        }
+    });
+
+    Livewire.hook('request', ({ fail }) => {
+        fail(({ status }) => {
+            const store = Alpine.store('toast');
+            if (status === 422) return;
+
+            if (status === 419) {
+                store.error('Sessione scaduta', 'La pagina verra ricaricata...');
+                setTimeout(() => window.location.reload(), 2000);
+                return;
+            }
+
+            if (status === 500 || status === 503) {
+                store.error('Errore del server', 'Riprova tra qualche istante.');
+            } else if (status === 403) {
+                store.error('Accesso negato', 'Non hai i permessi necessari.');
+            } else {
+                store.error('Operazione non riuscita', 'Verifica la connessione e riprova.');
+            }
+        });
+    });
+});

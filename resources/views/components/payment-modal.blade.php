@@ -43,7 +43,7 @@
                                             <div class="flex items-center gap-1 justify-end">
                                                 <x-button
                                                     :label="__('app.payments.delete_yes')"
-                                                    wire:click="deletePayment({{ $payment->id }})"
+                                                    wire:click="deletePayment({{ $payment->id }})" spinner
                                                     variant="danger" size="xs"
                                                     spinner
                                                 />
