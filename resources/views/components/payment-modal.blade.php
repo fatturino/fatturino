@@ -27,7 +27,7 @@
                             @foreach($this->invoicePayments as $payment)
                                 <tr x-data="{ confirming: false }">
                                     <td>{{ $payment->paid_at->format('d/m/Y') }}</td>
-                                    <td>€ {{ number_format($payment->amount / 100, 2, ',', '.') }}</td>
+                                    <td class="tabular-nums">€ {{ number_format($payment->amount / 100, 2, ',', '.') }}</td>
                                     <td>{{ $payment->payment_method ?? '—' }}</td>
                                     <td class="max-w-xs truncate">{{ $payment->reference ?? '—' }}</td>
                                     <td class="text-right">
@@ -70,7 +70,7 @@
         @endphp
         <div class="flex justify-between items-center text-sm border-t pt-3">
             <span class="font-semibold">{{ __('app.payments.remaining_balance') }}</span>
-            <span class="font-bold {{ $remaining > 0 ? 'text-warning' : 'text-success' }}">
+            <span class="font-bold tabular-nums {{ $remaining > 0 ? 'text-warning' : 'text-success' }}">
                 € {{ number_format($remaining / 100, 2, ',', '.') }}
             </span>
         </div>

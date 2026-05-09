@@ -14,6 +14,6 @@
     </svg>
     <div class="flex flex-col">
         <span class="text-base font-bold text-white leading-tight">{{ config('app.name') }}</span>
-        <span class="text-[10px] text-white/50 leading-tight">Fattura Elettronica</span>
+        <span class="text-xs text-white/50 leading-tight">Fattura Elettronica</span>
     </div>
 </a>

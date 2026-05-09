@@ -17,7 +17,7 @@
     <div class="space-y-2">
         <div class="flex justify-between text-sm">
             <span class="text-base-content/70">{{ __('app.invoices.net_total') }}</span>
-            <span>€ {{ number_format($this->totalNet, 2, ',', '.') }}</span>
+            <span class="tabular-nums">€ {{ number_format($this->totalNet, 2, ',', '.') }}</span>
         </div>
         @if($fund_enabled && $this->fundAmount > 0)
             <div class="flex justify-between text-sm">
@@ -40,7 +40,7 @@
 
         <div class="flex justify-between font-bold text-lg">
             <span>{{ __('app.invoices.grand_total') }}</span>
-            <span>€ {{ number_format($this->totalDue, 2, ',', '.') }}</span>
+            <span class="tabular-nums font-bold">€ {{ number_format($this->totalDue, 2, ',', '.') }}</span>
         </div>
 
         @if($withholding_tax_enabled)

@@ -41,7 +41,7 @@
         {{-- Total revenue --}}
         <div class="bg-base-100 rounded-xl border border-base-200 p-4">
             <div class="text-xs text-base-content/50 uppercase tracking-wide">{{ __('app.invoices.stat_total_amount') }}</div>
-            <div class="text-2xl font-bold mt-1">€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}</div>
+            <div class="text-2xl font-bold mt-1 tabular-nums">€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}</div>
         </div>
 
         {{-- Unpaid --}}

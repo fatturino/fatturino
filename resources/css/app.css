@@ -4,6 +4,15 @@
 @theme {
     --font-sans: 'Outfit', sans-serif;
 
+    /* Type scale — ratio ~1.2, defined in rem for user preference respect */
+    --text-caption: 0.75rem;    /* 12px — labels, badges, metadata */
+    --text-body: 0.875rem;      /* 14px — body in data-dense UI */
+    --text-body-lg: 1rem;       /* 16px — body in prose/descriptions */
+    --text-title: 1.125rem;     /* 18px — card titles, section headings */
+    --text-heading: 1.25rem;    /* 20px — page section headings */
+    --text-display: 1.5rem;     /* 24px — page titles */
+    --text-display-lg: 1.875rem;/* 30px — hero/error pages */
+
     /* Neutral color palette (Tailwind-native) */
     --color-base-100: white;
     --color-base-200: #f9fafb;
