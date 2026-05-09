@@ -259,7 +259,7 @@ return [
         'download_pdf' => 'Download PDF',
         'pdf_generation_error' => 'PDF generation error: :error',
         'download_xml' => 'Download XML',
-        'sending_to_sdi' => 'Sending to SDI…',
+        'sending_to_sdi' => 'Sending to SDI...',
         'sending_to_sdi_desc' => 'Generating the XML file and submitting it to the Italian Exchange System. This usually takes a few seconds.',
         'duplicated' => 'Invoice duplicated. You can now edit and save it.',
         'duplicate' => 'Duplicate',
@@ -297,7 +297,7 @@ return [
         'xml_invalid' => 'The invoice is not valid for SDI: :errors. Fix the indicated fields and try again.',
         'confirm_send_sdi' => 'Confirm sending this invoice to SDI?',
         'sent_success' => 'Invoice sent to SDI. You will be notified when it is processed.',
-        'send_error' => 'SDI send error: :error',
+        'send_error' => 'SDI submission failed. Check the invoice data and try again.',
         'generation_error' => 'A technical error occurred while generating the file. Please try again or contact support.',
 
         'sdi_not_configured_hint' => 'Enable Electronic Invoicing in settings to validate and send to SDI.',
