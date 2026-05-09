@@ -11,11 +11,11 @@ use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\Sequence;
 use App\Settings\InvoiceSettings;
+use App\Traits\Toast;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use App\Traits\Toast;
 
 class Create extends Component
 {
@@ -136,7 +136,7 @@ class Create extends Component
         }
 
         // Restore draft if one exists
-        $draft = Cache::get('invoice_draft_' . auth()->id());
+        $draft = Cache::get('invoice_draft_'.auth()->id());
         if ($draft) {
             foreach ($draft as $key => $value) {
                 if (property_exists($this, $key)) {
@@ -196,7 +196,7 @@ class Create extends Component
         // Recalculate totals
         $invoice->calculateTotals();
 
-        Cache::forget('invoice_draft_' . auth()->id());
+        Cache::forget('invoice_draft_'.auth()->id());
         $this->success(__('app.invoices.created'));
         $this->redirect('/sell-invoices', navigate: true);
     }
@@ -204,7 +204,7 @@ class Create extends Component
     public function saveDraft(): void
     {
         // Only save if the user has started filling the form (at least a contact selected or a line added)
-        $hasContent = $this->contact_id || !empty(array_filter($this->lines, fn ($l) => !empty($l['description'])));
+        $hasContent = $this->contact_id || ! empty(array_filter($this->lines, fn ($l) => ! empty($l['description'])));
         if (! $hasContent) {
             return;
         }
@@ -222,7 +222,7 @@ class Create extends Component
             $draft[$name] = $this->{$name};
         }
 
-        Cache::put('invoice_draft_' . auth()->id(), $draft, now()->addHours(24));
+        Cache::put('invoice_draft_'.auth()->id(), $draft, now()->addHours(24));
         $this->draftSavedAt = now()->format('H:i');
     }
 

@@ -3,8 +3,8 @@
 namespace App\Livewire\Settings;
 
 use App\Services\PluginRegistry;
-use Livewire\Component;
 use App\Traits\Toast;
+use Livewire\Component;
 
 class Plugins extends Component
 {

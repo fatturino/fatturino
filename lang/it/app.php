@@ -100,7 +100,7 @@ return [
         'setup_step_contacts' => 'Aggiungi il tuo primo cliente',
         'setup_step_contacts_done' => 'Clienti importati',
         'setup_step_invoice' => 'Crea la tua prima fattura',
-                'welcome_cta' => 'Crea la prima fattura',
+        'welcome_cta' => 'Crea la prima fattura',
         'welcome_contacts' => 'Importa contatti',
         'title' => 'Dashboard',
         'recent_invoices' => 'Fatture Recenti',
@@ -262,7 +262,7 @@ return [
         'draft_saved' => 'Bozza salvata alle',
         'no_lines' => 'Aggiungi la prima riga della fattura.',
 
-'tax_options_section' => 'Opzioni Fiscali',
+        'tax_options_section' => 'Opzioni Fiscali',
         'no_tax_options_active' => 'Nessuna opzione fiscale',
         'totals_section' => 'Totali',
         'net_total' => 'Imponibile',
@@ -405,7 +405,7 @@ return [
         'line_discount' => 'Sconto %',
 
         // Payment details section
-'payment_details_section' => 'Dettagli Pagamento',
+        'payment_details_section' => 'Dettagli Pagamento',
         'no_payment_details' => 'Dettagli pagamento non impostati',
         'payment_terms_label' => 'Termini di Pagamento',
         'payment_method_label' => 'Metodo di Pagamento',
@@ -443,7 +443,7 @@ return [
         'draft_saved' => 'Bozza salvata alle',
         'no_lines' => 'Aggiungi la prima riga della fattura.',
 
-'tax_options_section' => 'Opzioni Fiscali',
+        'tax_options_section' => 'Opzioni Fiscali',
         'no_tax_options_active' => 'Nessuna opzione fiscale',
         'totals_section' => 'Totali',
         'net_total' => 'Imponibile',

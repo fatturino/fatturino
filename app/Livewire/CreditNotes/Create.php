@@ -8,10 +8,10 @@ use App\Models\Contact;
 use App\Models\CreditNote;
 use App\Models\Sequence;
 use App\Settings\InvoiceSettings;
+use App\Traits\Toast;
 use Carbon\Carbon;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use App\Traits\Toast;
 
 class Create extends Component
 {

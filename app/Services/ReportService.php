@@ -186,7 +186,7 @@ class ReportService
 
         for ($q = 1; $q <= 4; $q++) {
             $start = sprintf('%04d-%02d-01', $year, ($q - 1) * 3 + 1);
-            $end = sprintf('%04d-%02d-%02d', $year, $q * 3, (new \DateTime("$year-".($q*3)."-01"))->format('t'));
+            $end = sprintf('%04d-%02d-%02d', $year, $q * 3, (new \DateTime("$year-".($q * 3).'-01'))->format('t'));
 
             $collected = (int) Invoice::whereBetween('date', [$start, $end])->sum('total_vat');
             $purchases = (int) PurchaseInvoice::betweenDates($start, $end)->sum('total_vat');
@@ -219,7 +219,7 @@ class ReportService
             $current[] = (int) Invoice::whereBetween('date', [$start, $end])->sum('total_gross');
 
             $prevStart = sprintf('%04d-%02d-01', $year - 1, $m);
-            $prevEnd = sprintf('%04d-%02d-%02d', $year - 1, $m, (new \DateTime(($year-1)."-$m-01"))->format('t'));
+            $prevEnd = sprintf('%04d-%02d-%02d', $year - 1, $m, (new \DateTime(($year - 1)."-$m-01"))->format('t'));
             $previous[] = (int) Invoice::whereBetween('date', [$prevStart, $prevEnd])->sum('total_gross');
         }
 

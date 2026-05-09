@@ -6,9 +6,9 @@ use App\Models\Sequence;
 use App\Services\Fattura24ContactImporter;
 use App\Services\InvoiceXmlImportService;
 use App\Settings\InvoiceSettings;
+use App\Traits\Toast;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Traits\Toast;
 
 class Index extends Component
 {

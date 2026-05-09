@@ -6,10 +6,10 @@ use App\Models\Invoice;
 use App\Models\InvoiceLine;
 use App\Models\Payment;
 use App\Models\User;
+use App\Traits\Toast;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Traits\Toast;
 use OwenIt\Auditing\Models\Audit;
 
 /**

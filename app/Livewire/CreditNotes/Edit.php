@@ -13,10 +13,10 @@ use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
 use App\Services\CreditNoteXmlService;
 use App\Services\DocumentStorageService;
+use App\Traits\Toast;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use App\Traits\Toast;
 
 class Edit extends Component
 {

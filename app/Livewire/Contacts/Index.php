@@ -3,9 +3,9 @@
 namespace App\Livewire\Contacts;
 
 use App\Models\Contact;
+use App\Traits\Toast;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Traits\Toast;
 
 class Index extends Component
 {

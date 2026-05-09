@@ -12,9 +12,9 @@ use App\Services\CourtesyPdfService;
 use App\Services\DocumentMailer;
 use App\Services\InvoiceXmlService;
 use App\Support\InvoiceAuditDispatcher;
+use App\Traits\Toast;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Traits\Toast;
 use Throwable;
 
 class Index extends Component
@@ -260,10 +260,10 @@ class Index extends Component
     public function headers(): array
     {
         return [
-            ['key' => 'number', 'label' => __('app.invoices.col_number'), 'class' => 'w-40', 'render' => fn($row) => '<span class="font-semibold whitespace-nowrap">' . e($row->number) . '</span>'],
-            ['key' => 'date', 'label' => __('app.invoices.col_date'), 'class' => 'w-32', 'render' => fn($row) => '<span class="text-sm">' . $row->date->format('d/m/Y') . '</span>'],
-            ['key' => 'contact.name', 'label' => __('app.invoices.col_customer'), 'sortable' => false, 'render' => fn($row) => '<span class="font-medium">' . e($row->contact?->name) . '</span>'],
-            ['key' => 'total_gross', 'label' => __('app.invoices.col_total'), 'class' => 'w-36 text-right', 'render' => fn($row) => '<div class="text-right font-semibold">€ ' . number_format($row->total_gross / 100, 2, ',', '.') . '</div>'],
+            ['key' => 'number', 'label' => __('app.invoices.col_number'), 'class' => 'w-40', 'render' => fn ($row) => '<span class="font-semibold whitespace-nowrap">'.e($row->number).'</span>'],
+            ['key' => 'date', 'label' => __('app.invoices.col_date'), 'class' => 'w-32', 'render' => fn ($row) => '<span class="text-sm">'.$row->date->format('d/m/Y').'</span>'],
+            ['key' => 'contact.name', 'label' => __('app.invoices.col_customer'), 'sortable' => false, 'render' => fn ($row) => '<span class="font-medium">'.e($row->contact?->name).'</span>'],
+            ['key' => 'total_gross', 'label' => __('app.invoices.col_total'), 'class' => 'w-36 text-right', 'render' => fn ($row) => '<div class="text-right font-semibold">€ '.number_format($row->total_gross / 100, 2, ',', '.').'</div>'],
             ['key' => 'status', 'label' => __('app.invoices.col_status'), 'class' => 'w-32', 'view' => 'partials.invoice-status-cell'],
             ['key' => 'payment_status', 'label' => __('app.invoices.col_payment'), 'sortable' => false, 'class' => 'w-36', 'view' => 'partials.payment-status-cell'],
             ['key' => 'actions', 'label' => '', 'class' => 'w-1', 'view' => 'partials.invoice-actions'],
@@ -274,6 +274,7 @@ class Index extends Component
     {
         if (! $invoice->isSdiEditable()) {
             $this->error(__('app.invoices.readonly_error'));
+
             return;
         }
 
@@ -299,7 +300,7 @@ class Index extends Component
         $clone->calculateTotals();
 
         $this->success(__('app.invoices.duplicated'));
-        $this->redirect('/sell-invoices/' . $clone->id . '/edit', navigate: true);
+        $this->redirect('/sell-invoices/'.$clone->id.'/edit', navigate: true);
     }
 
     public function render()

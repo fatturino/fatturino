@@ -3,11 +3,11 @@
 namespace App\Livewire\Sequences;
 
 use App\Models\Sequence;
+use App\Traits\Toast;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Traits\Toast;
 
 class Index extends Component
 {

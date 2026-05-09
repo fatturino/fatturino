@@ -6,8 +6,8 @@ use App\Contracts\EnvironmentCapabilities;
 use App\Enums\Capability;
 use App\Services\DocumentMailer;
 use App\Settings\EmailSettings;
-use Livewire\Component;
 use App\Traits\Toast;
+use Livewire\Component;
 
 class Email extends Component
 {

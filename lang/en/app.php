@@ -101,7 +101,7 @@ return [
         'setup_step_contacts' => 'Add your first customer',
         'setup_step_contacts_done' => 'Customers added',
         'setup_step_invoice' => 'Create your first invoice',
-                'welcome_cta' => 'Create your first invoice',
+        'welcome_cta' => 'Create your first invoice',
         'welcome_contacts' => 'Import contacts',
         'title' => 'Dashboard',
         'recent_invoices' => 'Recent Invoices',
@@ -244,7 +244,7 @@ return [
         'draft_saved' => 'Draft saved at',
         'no_lines' => 'Add the first invoice line.',
 
-'tax_options_section' => 'Tax Options',
+        'tax_options_section' => 'Tax Options',
         'no_tax_options_active' => 'No tax options',
         'totals_section' => 'Totals',
         'net_total' => 'Net Total',
@@ -393,7 +393,7 @@ return [
         'draft_saved' => 'Draft saved at',
         'no_lines' => 'No lines. Add a line to get started.',
 
-'tax_options_section' => 'Tax Options',
+        'tax_options_section' => 'Tax Options',
         'no_tax_options_active' => 'No tax options',
         'totals_section' => 'Totals',
         'net_total' => 'Net Total',
@@ -482,7 +482,7 @@ return [
         'line_discount' => 'Discount %',
 
         // Payment details section
-'payment_details_section' => 'Payment Details',
+        'payment_details_section' => 'Payment Details',
         'no_payment_details' => 'Payment details not set',
         'payment_terms_label' => 'Payment Terms',
         'payment_method_label' => 'Payment Method',

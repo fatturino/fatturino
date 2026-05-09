@@ -8,11 +8,11 @@ use App\Enums\Capability;
 use App\Rules\ItalianTaxCode;
 use App\Rules\ItalianVatNumber;
 use App\Settings\CompanySettings;
+use App\Traits\Toast;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Traits\Toast;
 
 class Company extends Component
 {

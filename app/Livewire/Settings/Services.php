@@ -6,9 +6,9 @@ use App\Contracts\EnvironmentCapabilities;
 use App\Enums\Capability;
 use App\Settings\BackupSettings;
 use App\Settings\MonitoringSettings;
+use App\Traits\Toast;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
-use App\Traits\Toast;
 
 class Services extends Component
 {

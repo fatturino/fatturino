@@ -6,8 +6,8 @@ use App\Enums\FundType;
 use App\Enums\VatRate;
 use App\Models\Sequence;
 use App\Settings\InvoiceSettings;
-use Livewire\Component;
 use App\Traits\Toast;
+use Livewire\Component;
 
 class Invoice extends Component
 {

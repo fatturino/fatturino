@@ -5,9 +5,9 @@ namespace App\Livewire\Contacts;
 use App\Models\Contact;
 use App\Rules\ItalianTaxCode;
 use App\Rules\ItalianVatNumber;
+use App\Traits\Toast;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use App\Traits\Toast;
 
 class Edit extends Component
 {
