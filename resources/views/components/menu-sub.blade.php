@@ -19,7 +19,7 @@ $isActive = $active || request()->url() === url($attributes->get('link', ''));
         @if($icon)
             <x-icon :name="$icon" class="w-5 h-5 shrink-0" />
         @endif
-        <span class="flex-1 text-left">{{ $title }}</span>
+        <span class="flex-1 text-left truncate">{{ $title }}</span>
         <x-icon name="o-chevron-down" class="w-4 h-4 shrink-0 transition-transform" ::class="open ? 'rotate-180' : ''" />
     </button>
 
