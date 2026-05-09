@@ -13,7 +13,7 @@ $bgMap = [
 ];
 @endphp
 
-<div
+<div role="status" aria-live="polite"
     x-data
     x-show="$store.toast.show"
     x-transition:enter="transition ease-out duration-300"

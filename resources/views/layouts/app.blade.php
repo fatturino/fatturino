@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ isset($title) ? $title.' - '.config('app.name') : config('app.name') }}</title>
 
@@ -18,14 +18,17 @@
         @include($__view)
     @endforeach
 </head>
-<body class="min-h-screen font-sans antialiased bg-base-200/50"
+<body class="min-h-screen font-sans antialiased bg-base-200/50">
+    {{-- Skip to content link for keyboard/screen reader users --}}
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-content focus:rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">{{ __('app.common.skip_to_content') }}</a>
+    <div
       x-data="{ sidebarOpen: false }"
       @keydown.window.escape="sidebarOpen = false">
 
     {{-- Mobile navbar --}}
-    <div class="lg:hidden fixed top-0 inset-x-0 z-40 bg-accent text-accent-content shadow-lg">
+    <div class="lg:hidden fixed top-0 inset-x-0 z-40 bg-primary text-primary-content shadow-lg">
         <div class="flex items-center justify-between px-4 h-14">
-            <button @click="sidebarOpen = true" class="p-1 -ml-1">
+            <button @click="sidebarOpen = true" class="p-1 -ml-1" aria-label="{{ __('app.nav.open_menu') }}">
                 <x-icon name="o-bars-3" class="w-6 h-6" />
             </button>
             <div class="w-40">
@@ -58,7 +61,7 @@
             </div>
 
             {{-- Close button (mobile) --}}
-            <button @click="sidebarOpen = false" class="lg:hidden absolute top-3 right-3 p-1 text-white/70 hover:text-white">
+            <button @click="sidebarOpen = false" class="lg:hidden absolute top-3 right-3 p-1 text-white/70 hover:text-white" aria-label="{{ __('app.common.close') }}">
                 <x-icon name="o-x-mark" class="w-5 h-5" />
             </button>
 
@@ -67,7 +70,7 @@
                 @if($user = auth()->user())
                     <div class="px-1 pb-2 mb-1 border-b border-white/10">
                         <div class="text-xs text-white/70 font-medium truncate">{{ $user->name }}</div>
-                        <div class="text-[11px] text-white/40 truncate">{{ $user->email }}</div>
+                        <div class="text-[11px] text-white/60 truncate">{{ $user->email }}</div>
                     </div>
                 @endif
 
@@ -107,7 +110,7 @@
                 </form>
                 <a href="{{ route('logout') }}"
                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-                   class="flex items-center gap-2 px-4 py-2 text-sm text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                   class="flex items-center gap-2 px-4 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                     <x-icon name="o-power" class="w-4 h-4" />
                     <span>{{ __('app.common.logoff') }}</span>
                 </a>
@@ -115,7 +118,7 @@
 
             {{-- Documentation --}}
             <a href="https://fatturino.it/docs/intro" target="_blank"
-               class="flex items-center gap-2 px-4 py-2 text-sm text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+               class="flex items-center gap-2 px-4 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                 <x-icon name="o-book-open" class="w-4 h-4" />
                 <span>Documentazione</span>
                 <x-icon name="o-arrow-top-right-on-square" class="w-3 h-3 ml-auto" />
@@ -123,12 +126,12 @@
 
             {{-- Version --}}
             <div class="mt-auto px-5 pb-5 pt-3">
-                <span class="text-xs text-white/25 font-sans">v{{ config('app.version') }}</span>
+                <span class="text-xs text-white/40 font-sans">v{{ config('app.version') }}</span>
             </div>
         </aside>
 
         {{-- Main content --}}
-        <main class="flex-1 flex flex-col min-w-0">
+        <main id="main-content" class="flex-1 flex flex-col min-w-0">
             <div class="flex flex-col min-h-[calc(100vh-4rem)]">
                 <div class="flex-1 p-5 lg:p-8">
                     {{-- Plugin injection point --}}

@@ -11,6 +11,7 @@
     'tooltipRight' => null,
     'tooltipBottom' => null,
     'tooltipTop' => null,
+    'ariaLabel' => null,
 ])
 
 @php

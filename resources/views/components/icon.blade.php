@@ -202,4 +202,4 @@ foreach ($sizeMap as $w => $fs) {
 }
 @endphp
 
-<i {{ $attributes->merge(['class' => 'ph ph-' . $phosphorName . $extraClasses . ' inline-flex items-center justify-center']) }}></i>
+<i {{ $attributes->merge(['class' => 'ph ph-' . $phosphorName . $extraClasses . ' inline-flex items-center justify-center', 'aria-hidden' => 'true']) }}></i>

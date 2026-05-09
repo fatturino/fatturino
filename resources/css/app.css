@@ -10,24 +10,25 @@
     --color-base-300: #e5e7eb;
     --color-base-content: #1f2937;
 
-    --color-primary: #2563eb;
+    /* Brand palette: Indigo Velvet + Amber Flame (see media kit) */
+    --color-primary: #3D348B;
     --color-primary-content: white;
 
-    --color-secondary: #6b7280;
+    --color-secondary: #7678ED;
     --color-secondary-content: white;
 
-    --color-accent: #3D348B;
-    --color-accent-content: white;
+    --color-accent: #F7B801;
+    --color-accent-content: #1f2937;
 
-    --color-neutral: #1f2937;
+    --color-neutral: #2D2A6E;
     --color-neutral-content: #e5e7eb;
 
     --color-info: #3b82f6;
     --color-info-content: white;
     --color-success: #16a34a;
     --color-success-content: white;
-    --color-warning: #d97706;
-    --color-warning-content: white;
+    --color-warning: #F7B801;
+    --color-warning-content: #1f2937;
     --color-error: #dc2626;
     --color-error-content: white;
 }
@@ -43,8 +44,8 @@
  */
 
 .fatturino-sidebar {
-    background: var(--color-accent);
-    color: var(--color-accent-content);
+    background: var(--color-primary);
+    color: var(--color-primary-content);
 }
 
 /* Separators */
@@ -166,5 +167,5 @@
 
 /* Wizard step connector — solid primary color */
 .wizard-connector-fill {
-    background: oklch(38.81% 0.139 282.45);
+    background: var(--color-primary);
 }
