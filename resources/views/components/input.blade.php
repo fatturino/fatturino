@@ -23,11 +23,11 @@ if ($error) {
 @endphp
 
 <div class="{{ $wrapperClasses }}">
+    @php $inputId = 'input-' . uniqid(); @endphp
+
     @if($label)
         <label for="{{ $inputId }}" class="text-sm font-medium text-base-content/70 mb-1 block">{{ $label }}</label>
     @endif
-
-    @php $inputId = 'input-' . uniqid(); @endphp
 
     <div class="relative w-full">
         @if($icon)

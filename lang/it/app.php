@@ -244,7 +244,8 @@ return [
         'add_line' => 'Aggiungi Riga',
         'no_lines' => 'Nessuna riga. Aggiungi una riga per iniziare.',
 
-        'tax_options_section' => 'Opzioni Fiscali',
+'tax_options_section' => 'Opzioni Fiscali',
+        'no_tax_options_active' => 'Nessuna opzione fiscale attiva',
         'totals_section' => 'Totali',
         'net_total' => 'Imponibile',
         'vat_total' => 'IVA',
@@ -381,7 +382,8 @@ return [
         'line_discount' => 'Sconto %',
 
         // Payment details section
-        'payment_details_section' => 'Dati Pagamento',
+'payment_details_section' => 'Dettagli Pagamento',
+        'no_payment_details' => 'Nessun dettaglio pagamento',
         'payment_terms_label' => 'Termini di Pagamento',
         'payment_method_label' => 'Metodo di Pagamento',
         'bank_name_label' => 'Banca',
@@ -417,7 +419,8 @@ return [
         'add_line' => 'Aggiungi Riga',
         'no_lines' => 'Nessuna riga. Aggiungi una riga per iniziare.',
 
-        'tax_options_section' => 'Opzioni Fiscali',
+'tax_options_section' => 'Opzioni Fiscali',
+        'no_tax_options_active' => 'Nessuna opzione fiscale attiva',
         'totals_section' => 'Totali',
         'net_total' => 'Imponibile',
         'vat_total' => 'IVA',

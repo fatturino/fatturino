@@ -2,6 +2,9 @@
     Collapsible "Opzioni fiscali" sidebar section: withholding, fund, stamp duty,
     VAT payability, split payment.
 
+    Shows a summary of active options when collapsed, so the user rarely
+    needs to expand unless overriding defaults for this specific invoice.
+
     Required vars (bound from host component state):
       $withholding_tax_enabled, $withholding_tax_percent
       $fund_enabled, $fund_type, $fund_percent, $fund_vat_rate
@@ -15,12 +18,37 @@
 @php
     $isReadOnly     = $isReadOnly     ?? false;
     $showVatOptions = $showVatOptions ?? true;
+
+    // Build summary of active tax options for the collapsed state
+    $summaryParts = [];
+    if ($withholding_tax_enabled) {
+        $summaryParts[] = __('app.invoices.withholding_tax_label') . ' ' . rtrim(rtrim($withholding_tax_percent, '0'), '.') . '%';
+    }
+    if ($fund_enabled) {
+        $summaryParts[] = __('app.invoices.fund_label') . ' ' . rtrim(rtrim($fund_percent, '0'), '.') . '%';
+    }
+    if ($stamp_duty_applied) {
+        $summaryParts[] = __('app.invoices.stamp_duty_label');
+    }
+    $hasActiveOptions = !empty($summaryParts);
 @endphp
 
 <div x-data="{ open: false }" class="bg-base-100 rounded-xl border border-base-200">
     <button type="button" @click="open = !open" class="flex items-center justify-between w-full p-4 cursor-pointer">
-        <span class="text-sm font-medium">{{ __('app.invoices.tax_options_section') }}</span>
-        <x-icon name="o-chevron-down" class="w-4 h-4 transition-transform duration-200" ::class="open && 'rotate-180'" />
+        <div class="flex-1 min-w-0">
+            <span class="text-sm font-medium">{{ __('app.invoices.tax_options_section') }}</span>
+            {{-- Summary badges visible when collapsed --}}
+            <div x-show="!open" class="mt-1.5 flex flex-wrap gap-1">
+                @if($hasActiveOptions)
+                    @foreach($summaryParts as $part)
+                        <span class="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-primary/10 text-primary">{{ $part }}</span>
+                    @endforeach
+                @else
+                    <span class="text-xs text-base-content/40">{{ __('app.invoices.no_tax_options_active') }}</span>
+                @endif
+            </div>
+        </div>
+        <x-icon name="o-chevron-down" class="w-4 h-4 shrink-0 transition-transform duration-200 ml-2" ::class="open && 'rotate-180'" />
     </button>
     <div x-show="open" x-collapse>
         <div @class(['px-4 pb-4 space-y-3', 'pointer-events-none' => $isReadOnly])>

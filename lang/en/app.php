@@ -226,7 +226,8 @@ return [
         'add_line' => 'Add Line',
         'no_lines' => 'No lines yet. Add a line to get started.',
 
-        'tax_options_section' => 'Tax Options',
+'tax_options_section' => 'Tax Options',
+        'no_tax_options_active' => 'No active tax options',
         'totals_section' => 'Totals',
         'net_total' => 'Net Total',
         'vat_total' => 'VAT',
@@ -368,7 +369,8 @@ return [
         'add_line' => 'Add Line',
         'no_lines' => 'No lines. Add a line to get started.',
 
-        'tax_options_section' => 'Tax Options',
+'tax_options_section' => 'Tax Options',
+        'no_tax_options_active' => 'No active tax options',
         'totals_section' => 'Totals',
         'net_total' => 'Net Total',
         'vat_total' => 'VAT',
@@ -456,7 +458,8 @@ return [
         'line_discount' => 'Discount %',
 
         // Payment details section
-        'payment_details_section' => 'Payment Details',
+'payment_details_section' => 'Payment Details',
+        'no_payment_details' => 'No payment details set',
         'payment_terms_label' => 'Payment Terms',
         'payment_method_label' => 'Payment Method',
         'bank_name_label' => 'Bank',
