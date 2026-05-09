@@ -7,6 +7,7 @@ return [
         'create' => 'Crea',
         'reset' => 'Azzera',
         'done' => 'Fatto',
+        'back' => 'Indietro',
         'cancel' => 'Annulla',
         'save' => 'Salva',
         'confirm_delete' => 'Eliminare? L\'operazione non puo essere annullata.',
@@ -671,6 +672,7 @@ return [
     'contacts' => [
         'title' => 'Clienti & Fornitori',
         'create_title' => 'Crea Cliente',
+        'stat_total' => 'Totale contatti',
 
         'main_data' => 'Dati Principali',
         'full_name' => 'Denominazione / Nome Cognome',

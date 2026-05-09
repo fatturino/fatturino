@@ -22,7 +22,7 @@
         <x-stat :title="__('app.proforma.stat_total')" icon="o-clipboard-document-list" :value="$this->stats['total_count']" />
         <x-stat :title="__('app.proforma.stat_total_amount')" icon="o-banknotes" value="€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}" />
         <x-stat :title="__('app.proforma.stat_converted')" icon="o-arrow-right-end-on-rectangle" :value="$this->stats['converted_count']" />
-        <x-stat :title="__('app.proforma.stat_cancelled')" icon="o-x-circle" :value="$this->stats['cancelled_count']" />
+        <x-stat :title="__('app.proforma.stat_unpaid')" icon="o-exclamation-triangle" :value="$this->stats['unpaid_count']" :color="$this->stats['unpaid_count'] > 0 ? 'text-warning' : ''" />
     </div>
 
         <!-- TABLE -->

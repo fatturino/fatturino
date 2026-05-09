@@ -8,6 +8,7 @@ return [
         'create' => 'Create',
         'reset' => 'Reset',
         'done' => 'Done',
+        'back' => 'Back',
         'cancel' => 'Cancel',
         'save' => 'Save',
         'confirm_delete' => 'Delete? This action cannot be undone.',
