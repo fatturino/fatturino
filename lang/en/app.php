@@ -10,21 +10,25 @@ return [
         'done' => 'Done',
         'cancel' => 'Cancel',
         'save' => 'Save',
-        'confirm_delete' => 'Are you sure?',
+        'confirm_delete' => 'Delete? This action cannot be undone.',
         'confirm_title' => 'Confirm',
         'confirm' => 'Confirm',
         'filters_cleared' => 'Filters cleared.',
         'logoff' => 'Log off',
-        'goodbye' => 'Good bye!',
+        'goodbye' => 'Item removed',
         'unknown' => 'Unknown',
         'delete' => 'Delete',
         'collapse' => 'Collapse',
         'select' => 'Select...',
         'all' => 'All',
         'close' => 'Close',
+        'empty_table' => 'No items yet. Create your first one.',
+        'skip_to_content' => 'Skip to main content',
+        'home' => 'Home',
     ],
 
     'nav' => [
+        'open_menu' => 'Open menu',
         'dashboard' => 'Dashboard',
         'sales' => 'Sales',
         'sell_invoices' => 'Invoices',
@@ -57,9 +61,9 @@ return [
         'tab_details' => 'Details',
         'tab_history' => 'History',
         'events' => [
-            'created' => 'Document created',
-            'updated' => 'Document updated',
-            'deleted' => 'Document deleted',
+            'created' => 'Invoice created and saved as draft.',
+            'updated' => 'Invoice updated.',
+            'deleted' => 'Invoice permanently deleted.',
             'restored' => 'Document restored',
             'email_sent' => 'Email sent',
             'sdi_sent' => 'Sent to SDI',
@@ -167,7 +171,7 @@ return [
         'line_vat' => 'VAT',
         'add_line' => 'Add Line',
         'draft_saved' => 'Draft saved at',
-        'no_lines' => 'No lines yet. Add a line to get started.',
+        'no_lines' => 'Add the first invoice line.',
 
         'totals_section' => 'Totals',
         'net_total' => 'Net Total',
@@ -226,10 +230,10 @@ return [
         'line_vat' => 'VAT',
         'add_line' => 'Add Line',
         'draft_saved' => 'Draft saved at',
-        'no_lines' => 'No lines yet. Add a line to get started.',
+        'no_lines' => 'Add the first invoice line.',
 
 'tax_options_section' => 'Tax Options',
-        'no_tax_options_active' => 'No active tax options',
+        'no_tax_options_active' => 'No tax options',
         'totals_section' => 'Totals',
         'net_total' => 'Net Total',
         'vat_total' => 'VAT',
@@ -256,8 +260,8 @@ return [
         'pdf_generation_error' => 'PDF generation error: :error',
         'download_xml' => 'Download XML',
         'sending_to_sdi' => 'Sending to SDI…',
-        'sending_to_sdi_desc' => 'Generating XML and submitting to the Italian Exchange System. Please wait.',
-        'duplicated' => 'Invoice duplicated successfully.',
+        'sending_to_sdi_desc' => 'Generating the XML file and submitting it to the Italian Exchange System. This usually takes a few seconds.',
+        'duplicated' => 'Invoice duplicated. You can now edit and save it.',
         'duplicate' => 'Duplicate',
         'send_to_sdi' => 'Send to SDI',
         'sent_to_sdi' => 'Sent to SDI',
@@ -290,11 +294,11 @@ return [
         'sdi_locked_banner' => 'Invoice submitted to SDI — read only',
         'save_before_send' => 'Save your changes before sending.',
         'openapi_not_configured' => 'OpenAPI SDI not configured. Go to Settings > OpenAPI.',
-        'xml_invalid' => 'Invalid XML: :errors',
+        'xml_invalid' => 'The invoice is not valid for SDI: :errors. Fix the indicated fields and try again.',
         'confirm_send_sdi' => 'Confirm sending this invoice to SDI?',
-        'sent_success' => 'Invoice sent to SDI successfully!',
+        'sent_success' => 'Invoice sent to SDI. You will be notified when it is processed.',
         'send_error' => 'SDI send error: :error',
-        'generation_error' => 'Error during generation/sending: :error',
+        'generation_error' => 'A technical error occurred while generating the file. Please try again or contact support.',
 
         'sdi_not_configured_hint' => 'Enable Electronic Invoicing in settings to validate and send to SDI.',
 
@@ -377,7 +381,7 @@ return [
         'no_lines' => 'No lines. Add a line to get started.',
 
 'tax_options_section' => 'Tax Options',
-        'no_tax_options_active' => 'No active tax options',
+        'no_tax_options_active' => 'No tax options',
         'totals_section' => 'Totals',
         'net_total' => 'Net Total',
         'vat_total' => 'VAT',
@@ -466,7 +470,7 @@ return [
 
         // Payment details section
 'payment_details_section' => 'Payment Details',
-        'no_payment_details' => 'No payment details set',
+        'no_payment_details' => 'Payment details not set',
         'payment_terms_label' => 'Payment Terms',
         'payment_method_label' => 'Payment Method',
         'bank_name_label' => 'Bank',
@@ -510,7 +514,7 @@ return [
         'line_vat' => 'VAT',
         'add_line' => 'Add Line',
         'draft_saved' => 'Draft saved at',
-        'no_lines' => 'No lines yet. Add a line to get started.',
+        'no_lines' => 'Add the first invoice line.',
 
         'totals_section' => 'Totals',
         'net_total' => 'Net Total',
@@ -549,7 +553,7 @@ return [
         'filters_cleared' => 'Filters cleared.',
         'readonly_error' => 'This fiscal year is closed. Self-invoices cannot be modified.',
         'cannot_delete_sdi' => 'Cannot delete a self-invoice already processed by SDI.',
-        'generation_error' => 'Error during generation/sending: :error',
+        'generation_error' => 'A technical error occurred while generating the file. Please try again or contact support.',
     ],
 
     'credit_notes' => [
@@ -609,7 +613,7 @@ return [
         'filters_cleared' => 'Filters cleared.',
         'readonly_error' => 'This fiscal year is closed. Credit notes cannot be modified.',
         'cannot_delete_sdi' => 'Cannot delete a credit note already processed by SDI.',
-        'generation_error' => 'Error during generation/sending: :error',
+        'generation_error' => 'A technical error occurred while generating the file. Please try again or contact support.',
     ],
 
     'contacts' => [
