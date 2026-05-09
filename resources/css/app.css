@@ -110,6 +110,15 @@
     }
 }
 
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .guest-fade-in,
+    .wizard-connector-fill {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
 /* Fade-in entrance animation */
 @keyframes fade-in-up {
     from {

@@ -119,7 +119,8 @@
                         icon="o-scale"
                     />
 
-                    <div <hr class="border-base-300 my-2" />text-sm text-accent font-medium">{{ __('app.setup.invoice_defaults') }}</div>
+                    <hr class="border-base-300 my-2" />
+                    <div class="text-sm text-accent font-medium">{{ __('app.setup.invoice_defaults') }}</div>
 
                     <x-toggle
                         wire:model="auto_stamp_duty"
@@ -188,7 +189,8 @@
                         />
                     </div>
 
-                    <div <hr class="border-base-300 my-2" />text-sm text-accent font-medium">{{ __('app.settings.company.electronic_invoicing') }}</div>
+                    <hr class="border-base-300 my-2" />
+                    <div class="text-sm text-accent font-medium">{{ __('app.settings.company.electronic_invoicing') }}</div>
 
                     <x-input
                         wire:model="company_pec"
@@ -203,7 +205,8 @@
                         placeholder="0000000"
                     />
 
-                    <div <hr class="border-base-300 my-2" />text-sm text-accent font-medium">{{ __('app.conservation.section_title') }}</div>
+                    <hr class="border-base-300 my-2" />
+                    <div class="text-sm text-accent font-medium">{{ __('app.conservation.section_title') }}</div>
 
                     <x-alert
                         :description="__('app.conservation.setup_description')"
