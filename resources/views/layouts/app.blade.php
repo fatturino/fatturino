@@ -88,13 +88,7 @@
                         @if(count($visibleChildren))
                             <x-menu-sub :title="$item['title']" :icon="$item['icon']" :active="$hasActiveChild">
                                 @foreach($visibleChildren as $child)
-                                    <x-menu-item :title="$child['title']" :icon="$child['icon']" :link="$child['link']">
-                                        @if(($child['id'] ?? '') === 'purchase-invoices')
-                                            <x-slot:badgeSlot>
-                                                <livewire:purchase-invoice-badge wire:poll.60s />
-                                            </x-slot:badgeSlot>
-                                        @endif
-                                    </x-menu-item>
+                                    <x-menu-item :title="$child['title']" :icon="$child['icon']" :link="$child['link']" />
                                 @endforeach
                             </x-menu-sub>
                         @endif
