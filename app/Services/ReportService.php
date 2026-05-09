@@ -430,6 +430,7 @@ class ReportService
             'revenueTrend' => $this->monthlyRevenueTrend($year),
             'draftCount' => Invoice::where('status', 'draft')->whereYear('date', $year)->count(),
             'readyForSdiCount' => Invoice::whereIn('status', ['generated', 'xml_validated'])->whereYear('date', $year)->count(),
+            'hasInvoices' => $invoicesYtd > 0,
         ];
     }
 
