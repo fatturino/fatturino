@@ -27,8 +27,6 @@ RUN bun install --frozen-lockfile
 COPY vite.config.js ./
 COPY resources/ resources/
 
-COPY --from=composer /app/vendor/fatturino/ vendor/fatturino/
-
 RUN bun run build
 
 # ==============================================================================
