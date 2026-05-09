@@ -132,6 +132,7 @@ return [
         'readonly_year_title' => 'Anno fiscale :year, sola visualizzazione',
         'quick_actions' => 'Azioni Rapide',
         'quick_invoice' => 'Nuova Fattura',
+        'quick_credit_note' => 'Nota di credito',
         'quick_self_invoice' => 'Autofattura',
         'quick_contact' => 'Nuovo Cliente',
         'quick_import' => 'Importa XML',

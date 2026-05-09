@@ -1,18 +1,4 @@
 <div>
-    {{-- HEADER --}}
-    <x-header :title="__('app.dashboard.title')" separator progress-indicator>
-        <x-slot:actions>
-            @if($isCurrentYear)
-                <x-button
-                    icon="o-plus"
-                    variant="primary"
-                    :label="__('app.invoices.create_title')"
-                    link="{{ route('sell-invoices.create') }}"
-                />
-            @endif
-        </x-slot:actions>
-    </x-header>
-
     {{-- Read-only banner for concluded fiscal years --}}
     @unless($isCurrentYear)
         <x-alert
