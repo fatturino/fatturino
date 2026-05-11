@@ -19,7 +19,7 @@ class Dashboard extends Component
             'fiscalYear' => $fiscalYear,
             'isCurrentYear' => $fiscalYear === now()->year,
             'hasInvoices' => Invoice::whereYear('date', $fiscalYear)->exists(),
-            'hasSdi' => app(SdiProvider::class)->isConfigured(),
+            'hasSdi' => app(SdiProvider::class)->isActivated(),
             'hasContacts' => Contact::exists(),
         ]));
     }
