@@ -1,6 +1,10 @@
 <div>
     <x-header :title="__('app.invoices.edit_title', ['number' => $invoice->number])" separator>
         <x-slot:actions>
+            <x-button :label="__('app.common.back')" link="/sell-invoices" icon="o-arrow-left" variant="ghost" />
+            @unless($isReadOnly)
+                <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
+            @endunless
             <x-button :label="__('app.invoices.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" variant="outline" size="sm" />
             @unless($isReadOnly)
                 <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" variant="outline" size="sm" />
