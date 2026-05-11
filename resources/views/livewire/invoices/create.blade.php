@@ -2,6 +2,7 @@
     <x-header :title="__('app.invoices.create_title')" separator>
         <x-slot:actions>
             <x-button :label="__('app.common.back')" link="/sell-invoices" icon="o-arrow-left" variant="ghost" />
+            <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" variant="outline" size="sm" />
             <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
         </x-slot:actions>
     </x-header>
@@ -40,9 +41,6 @@
                     @include('livewire.invoices.partials._payment-details-section')
 
                     @include('livewire.invoices.partials._totals-sidebar')
-
-                    {{-- Reverse calculation shortcut --}}
-                    <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" variant="ghost" size="sm" class="w-full" />
 
                     {{-- Autosave indicator --}}
                     <div class="text-center"

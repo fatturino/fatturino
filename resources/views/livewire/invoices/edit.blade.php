@@ -2,12 +2,12 @@
     <x-header :title="__('app.invoices.edit_title', ['number' => $invoice->number])" separator>
         <x-slot:actions>
             <x-button :label="__('app.common.back')" link="/sell-invoices" icon="o-arrow-left" variant="ghost" />
-            @unless($isReadOnly)
-                <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
-            @endunless
             <x-button :label="__('app.invoices.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" variant="outline" size="sm" />
             @unless($isReadOnly)
                 <x-button :label="__('app.invoices.reverse_calc_title')" wire:click="openReverseCalcModal" icon="o-calculator" variant="outline" size="sm" />
+            @endunless
+            @unless($isReadOnly)
+                <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
             @endunless
         </x-slot:actions>
     </x-header>
@@ -91,35 +91,31 @@
 
                     @include('livewire.invoices.partials._totals-sidebar')
 
-                    {{-- Action buttons --}}
-                    <div class="flex flex-col gap-2">
-                        {{-- Primary actions --}}
-                        @unless($isReadOnly)
-                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
-                        @endunless
+                    {{-- Workflow step: validate XML OR send to SDI (same slot, never both visible) --}}
+                    @if(!$isReadOnly && $invoice->isSdiEditable() && $invoice->status->canValidateXml())
+                        <x-button :label="__('app.invoices.validate_xml')" wire:click="validateXml" wire:confirm="{{ __('app.invoices.confirm_validate_xml') }}" icon="o-shield-check" variant="accent" class="w-full" spinner="validateXml" :disabled="!$sdiConfigured" />
+                    @endif
+                    @if(!$isReadOnly && $invoice->isSdiEditable() && $invoice->status->canSendToSdi())
+                        <x-button :label="__('app.invoices.send_to_sdi')" wire:click="sendToSdi" wire:confirm="{{ __('app.invoices.confirm_send_sdi') }}" icon="o-paper-airplane" variant="warning" class="w-full" spinner="sendToSdi" :disabled="!$sdiConfigured" />
+                    @endif
+                    @if(!$sdiConfigured && !$isReadOnly && $invoice->isSdiEditable())
+                        <p class="text-xs text-base-content/50 text-center">{{ __('app.invoices.sdi_not_configured_hint') }}</p>
+                    @endif
 
-                        {{-- SDI actions --}}
-                        @if(!$isReadOnly && $invoice->isSdiEditable() && $invoice->status->canValidateXml())
-                            <x-button :label="__('app.invoices.validate_xml')" wire:click="validateXml" wire:confirm="{{ __('app.invoices.confirm_validate_xml') }}" icon="o-shield-check" variant="accent" class="w-full" spinner="validateXml" :disabled="!$sdiConfigured" />
+                    {{-- Document actions --}}
+                    <div class="flex items-center gap-1 pt-1">
+                        <x-button :label="__('app.invoices.download_pdf')" wire:click="downloadPdf" icon="o-document-text" variant="ghost" size="sm" spinner="downloadPdf" />
+                        <x-button :label="__('app.invoices.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" variant="ghost" size="sm" spinner="downloadXml" />
+                        @if($invoice->contact?->email)
+                            @allowed('send-document-email')
+                                <x-button :label="__('app.email.send_email')" wire:click="openEmailModal" icon="o-envelope" variant="ghost" size="sm" spinner="openEmailModal" />
+                            @endallowed
                         @endif
-                        @if(!$isReadOnly && $invoice->isSdiEditable() && $invoice->status->canSendToSdi())
-                            <x-button :label="__('app.invoices.send_to_sdi')" wire:click="sendToSdi" wire:confirm="{{ __('app.invoices.confirm_send_sdi') }}" icon="o-paper-airplane" variant="warning" class="w-full" spinner="sendToSdi" :disabled="!$sdiConfigured" />
-                        @endif
-                        @if(!$sdiConfigured && !$isReadOnly && $invoice->isSdiEditable())
-                            <p class="text-xs text-base-content/50 text-center">{{ __('app.invoices.sdi_not_configured_hint') }}</p>
-                        @endif
+                    </div>
 
-                        {{-- Secondary actions: downloads + email + cancel in a 2-column grid --}}
-                        <div class="grid grid-cols-2 gap-2 pt-1">
-                            <x-button :label="__('app.invoices.download_pdf')" wire:click="downloadPdf" icon="o-document-text" variant="ghost" size="sm" spinner="downloadPdf" />
-                            <x-button :label="__('app.invoices.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" variant="ghost" size="sm" spinner="downloadXml" />
-                            @if($invoice->contact?->email)
-                                @allowed('send-document-email')
-                                    <x-button :label="__('app.email.send_email')" wire:click="openEmailModal" icon="o-envelope" variant="ghost" size="sm" spinner="openEmailModal" />
-                                @endallowed
-                            @endif
-                            <x-button :label="__('app.common.cancel')" link="{{ route('sell-invoices.index') }}" icon="o-x-mark" variant="ghost" size="sm" />
-                        </div>
+                    {{-- Cancel --}}
+                    <div class="text-center pt-2">
+                        <x-button :label="__('app.common.cancel')" link="{{ route('sell-invoices.index') }}" icon="o-x-mark" variant="ghost" size="sm" />
                     </div>
 
                     {{-- Recent activity summary (latest SDI status + last email sent) --}}
