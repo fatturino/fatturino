@@ -26,7 +26,7 @@ enum PaymentStatus: string
     {
         return match ($this) {
             self::Unpaid => 'warning',
-            self::Partial => 'info',
+            self::Partial => 'secondary',
             self::Paid => 'success',
             self::Overdue => 'danger',
         };

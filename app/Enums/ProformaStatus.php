@@ -26,7 +26,7 @@ enum ProformaStatus: string
     {
         return match ($this) {
             self::Draft => 'warning',
-            self::Sent => 'info',
+            self::Sent => 'secondary',
             self::Converted => 'success',
             self::Cancelled => 'neutral',
         };

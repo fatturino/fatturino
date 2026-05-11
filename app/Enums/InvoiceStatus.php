@@ -29,8 +29,8 @@ enum InvoiceStatus: string
     {
         return match ($this) {
             self::Draft => 'warning',
-            self::Generated => 'info',
-            self::XmlValidated => 'accent',
+            self::Generated => 'secondary',
+            self::XmlValidated => 'info',
             self::Sent => 'success',
         };
     }

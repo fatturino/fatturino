@@ -61,8 +61,8 @@
                         @php
                             $sdiColor = match($selfInvoice->sdi_status) {
                                 'sent'  => 'success',
-                                'error' => 'error',
-                                default => 'ghost',
+                                'error' => 'danger',
+                                default => 'neutral',
                             };
                         @endphp
                         <div class="flex items-center gap-2">
