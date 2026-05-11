@@ -1,7 +1,11 @@
 <div>
     <x-header :title="__('app.self_invoices.edit_title', ['number' => $selfInvoice->number])" separator>
         <x-slot:actions>
+            <x-button :label="__('app.common.back')" link="/self-invoices" icon="o-arrow-left" variant="ghost" />
             <x-button :label="__('app.invoices.payment_section')" wire:click="openPaymentModal" icon="o-credit-card" variant="outline" size="sm" />
+            @unless($isReadOnly)
+                <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" spinner="save" />
+            @endunless
         </x-slot:actions>
     </x-header>
 
@@ -102,22 +106,24 @@
                         @endif
                     </div>
 
-                    {{-- Action buttons --}}
-                    <div class="flex flex-col gap-2">
-                        @unless($isReadOnly)
-                            <x-button :label="__('app.common.save')" wire:click="save" icon="o-check" variant="primary" class="w-full" spinner="save" />
-                            <x-button :label="__('app.self_invoices.send_sdi')" wire:click="sendToSdi" icon="o-paper-airplane" variant="secondary" class="w-full" spinner="sendToSdi" :disabled="!$sdiConfigured" />
-                        @endunless
-                        @if(!$sdiConfigured && !$isReadOnly)
-                            <p class="text-xs text-base-content/50 text-center">{{ __('app.invoices.sdi_not_configured_hint') }}</p>
-                        @endif
+                    {{-- Workflow step: send to SDI --}}
+                    @unless($isReadOnly)
+                        <x-button :label="__('app.self_invoices.send_sdi')" wire:click="sendToSdi" icon="o-paper-airplane" variant="warning" class="w-full" spinner="sendToSdi" :disabled="!$sdiConfigured" />
+                    @endunless
+                    @if(!$sdiConfigured && !$isReadOnly)
+                        <p class="text-xs text-base-content/50 text-center">{{ __('app.invoices.sdi_not_configured_hint') }}</p>
+                    @endif
 
-                        <div class="flex gap-2">
-                            @unless($isReadOnly)
-                                <x-button :label="__('app.self_invoices.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" variant="ghost" size="sm" class="flex-1" spinner="downloadXml" />
-                            @endunless
-                            <x-button :label="__('app.common.cancel')" link="{{ route('self-invoices.index') }}" icon="o-x-mark" variant="ghost" size="sm" class="flex-1" />
-                        </div>
+                    {{-- Document actions --}}
+                    <div class="flex items-center gap-1 pt-1">
+                        @unless($isReadOnly)
+                            <x-button :label="__('app.self_invoices.download_xml')" wire:click="downloadXml" icon="o-arrow-down-tray" variant="ghost" size="sm" spinner="downloadXml" />
+                        @endunless
+                    </div>
+
+                    {{-- Cancel --}}
+                    <div class="text-center pt-2">
+                        <x-button :label="__('app.common.cancel')" link="{{ route('self-invoices.index') }}" icon="o-x-mark" variant="ghost" size="sm" />
                     </div>
                 </div>
             </div>

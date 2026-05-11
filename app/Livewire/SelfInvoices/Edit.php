@@ -54,6 +54,14 @@ class Edit extends Component
 
     public array $lines = [];
 
+    public function updatedSequenceId(): void
+    {
+        $sequence = Sequence::find($this->sequence_id);
+        if ($sequence) {
+            $this->number = $sequence->getFormattedNumber();
+        }
+    }
+
     public function mount(SelfInvoice $selfInvoice): void
     {
         $this->selfInvoice = $selfInvoice;
