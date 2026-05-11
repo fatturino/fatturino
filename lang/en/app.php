@@ -988,13 +988,16 @@ return [
         'completed_with_errors' => 'Import completed with some errors.',
 
         'stat_invoices_imported' => 'Invoices imported',
+        'stat_lines_imported' => 'Lines imported',
         'stat_contacts_created' => 'Contacts created',
+        'stat_contacts_imported' => 'Contacts imported',
         'stat_total' => 'Total rows',
         'stat_imported' => 'Imported',
         'stat_updated' => 'Updated',
         'stat_skipped' => 'Skipped',
         'stat_errors' => 'Errors',
 
+        'errors_found' => 'Errors found',
         'error_details' => 'Error details',
         'no_sequence_available' => 'No sequence available for this category. Configure one in Settings > Sequences.',
         'zip_open_error' => 'Unable to open the ZIP file.',

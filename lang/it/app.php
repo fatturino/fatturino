@@ -1042,13 +1042,16 @@ return [
         'completed_with_errors' => 'Importazione completata con alcuni errori.',
 
         'stat_invoices_imported' => 'Fatture importate',
+        'stat_lines_imported' => 'Righe importate',
         'stat_contacts_created' => 'Contatti creati',
+        'stat_contacts_imported' => 'Contatti importati',
         'stat_total' => 'Totale righe',
         'stat_imported' => 'Importati',
         'stat_updated' => 'Aggiornati',
         'stat_skipped' => 'Saltati',
         'stat_errors' => 'Errori',
 
+        'errors_found' => 'Errori riscontrati',
         'error_details' => 'Dettaglio errori',
         'no_sequence_available' => 'Nessun sezionale disponibile per questa categoria. Configurane uno in Impostazioni > Sezionali.',
         'zip_open_error' => 'Impossibile aprire il file ZIP.',

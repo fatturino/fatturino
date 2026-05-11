@@ -146,8 +146,12 @@
                         @endif
                     @elseif(in_array($importResult['type'], ['fattura24_contacts']))
                         <div class="bg-base-200 rounded-box p-4 text-center">
-                            <div class="text-2xl font-bold">{{ $importResult['stats']['contacts_imported'] }}</div>
+                            <div class="text-2xl font-bold">{{ $importResult['stats']['imported'] }}</div>
                             <div class="text-xs text-base-content/60 mt-1">{{ __('app.imports.stat_contacts_imported') }}</div>
+                        </div>
+                        <div class="bg-base-200 rounded-box p-4 text-center">
+                            <div class="text-2xl font-bold">{{ $importResult['stats']['updated'] }}</div>
+                            <div class="text-xs text-base-content/60 mt-1">{{ __('app.imports.stat_updated') }}</div>
                         </div>
                     @endif
                 </div>
@@ -166,15 +170,18 @@
         @else
             {{-- Upload Form --}}
             <div class="space-y-4">
-                <p class="text-sm text-base-content/60">{{ __('app.imports.select_file') }}</p>
-                <x-file wire:model="importFile" accept=".xml,.zip" :label="__('app.imports.file_label')" />
+                @if(in_array($importType, ['xml_sales', 'xml_purchase', 'xml_self_invoice']))
+                    <x-file wire:model="xmlFile" accept=".xml,.p7m,.zip" :label="__('app.imports.xml_file_label')" :hint="__('app.imports.xml_file_hint')" />
+                @elseif($importType === 'fattura24_contacts')
+                    <x-file wire:model="csvFile" accept=".csv,.txt" :label="__('app.imports.csv_file_label')" :hint="__('app.imports.csv_file_hint')" />
+                @endif
             </div>
         @endif
 
         <x-slot:actions>
             <x-button :label="__('app.common.done')" @click="$wire.showModal = false" variant="primary" />
             @if(!$importResult)
-                <x-button :label="__('app.imports.start_import')" wire:click="processImport" icon="o-arrow-down-tray" variant="primary" spinner="processImport" />
+                <x-button :label="__('app.imports.run_import')" wire:click="runImport" icon="o-arrow-down-tray" variant="primary" spinner="runImport" />
             @endif
         </x-slot:actions>
     </x-modal>
