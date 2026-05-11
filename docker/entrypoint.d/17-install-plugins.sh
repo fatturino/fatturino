@@ -21,6 +21,13 @@ cd /var/www/html
 
 for plugin in $FATTURINO_PLUGINS; do
     echo "[fatturino][17-install-plugins] installing ${plugin}..."
+
+    pluginPath="/var/www/html/plugins/${plugin}"
+    if [ -d "$pluginPath/.git" ]; then
+        echo "[fatturino][17-install-plugins] pulling latest changes for ${plugin}..."
+        git -C "$pluginPath" pull origin main
+    fi
+
     php artisan plugin:install "$plugin" --no-interaction
 done
 
