@@ -13,9 +13,6 @@
   <a href="https://php.net"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php" alt="PHP"></a>
 </p>
 
-> [!WARNING]
-> **Active development, not production-ready.** Fatturino is still under active development. APIs, database schema, and features may change without notice. Use for testing and development purposes only.
-
 Fatturino is an open source web application for managing Italian electronic invoicing, fully compliant with the XML standard of the Sistema di Interscambio (SDI). Available as self-hosted or managed Cloud.
 
 > **Italiano?** Leggi il [README in italiano](README.md).
@@ -153,4 +150,4 @@ Contributions are welcome!
 
 **Daniele Lenares** · [daniele.lenares.me](https://daniele.lenares.me)
 
-**Made with ❤️ in Italy** 🇮🇹
+**Made in Italy** 🇮🇹
