@@ -62,43 +62,43 @@ test('plain {SEQ} pattern returns bare number without padding', function () {
     expect($sequence->getFormattedNumber())->toBe('1');
 });
 
-test('pattern with prefix pads {SEQ} to 4 digits', function () {
+test('pattern with prefix does not zero-pad {SEQ}', function () {
     $sequence = Sequence::create(['name' => 'Prefixed', 'type' => 'electronic_invoice', 'pattern' => 'FE-{SEQ}']);
 
-    expect($sequence->getFormattedNumber())->toBe('FE-0001');
+    expect($sequence->getFormattedNumber())->toBe('FE-1');
 });
 
-test('pattern with suffix pads {SEQ} to 4 digits', function () {
+test('pattern with suffix does not zero-pad {SEQ}', function () {
     $sequence = Sequence::create(['name' => 'Suffixed', 'type' => 'electronic_invoice', 'pattern' => '{SEQ}-2026']);
 
-    expect($sequence->getFormattedNumber())->toBe('0001-2026');
+    expect($sequence->getFormattedNumber())->toBe('1-2026');
 });
 
 test('{ANNO} token is replaced with the current year', function () {
     $sequence = Sequence::create(['name' => 'Anno', 'type' => 'electronic_invoice', 'pattern' => 'FE-{SEQ}-{ANNO}']);
 
-    expect($sequence->getFormattedNumber())->toBe('FE-0001-'.now()->year);
+    expect($sequence->getFormattedNumber())->toBe('FE-1-'.now()->year);
 });
 
 test('arbitrary pattern text is preserved', function () {
     $sequence = Sequence::create(['name' => 'Custom', 'type' => 'electronic_invoice', 'pattern' => 'Fatt{SEQ}']);
 
-    expect($sequence->getFormattedNumber())->toBe('Fatt0001');
+    expect($sequence->getFormattedNumber())->toBe('Fatt1');
 });
 
 test('getFormattedNumber increments correctly', function () {
     $sequence = Sequence::create(['name' => 'Test', 'type' => 'electronic_invoice', 'pattern' => 'FAT-{SEQ}']);
     $contact = Contact::create(['name' => 'Test Client']);
 
-    expect($sequence->getFormattedNumber())->toBe('FAT-0001');
+    expect($sequence->getFormattedNumber())->toBe('FAT-1');
 
     Invoice::create(['number' => 1, 'sequential_number' => 1, 'date' => now(), 'contact_id' => $contact->id, 'sequence_id' => $sequence->id]);
-    expect($sequence->getFormattedNumber())->toBe('FAT-0002');
+    expect($sequence->getFormattedNumber())->toBe('FAT-2');
 
     for ($i = 2; $i <= 9; $i++) {
         Invoice::create(['number' => $i, 'sequential_number' => $i, 'date' => now(), 'contact_id' => $contact->id, 'sequence_id' => $sequence->id]);
     }
-    expect($sequence->getFormattedNumber())->toBe('FAT-0010');
+    expect($sequence->getFormattedNumber())->toBe('FAT-10');
 });
 
 test('getFormattedNumber handles numbers larger than 4 digits', function () {
@@ -133,8 +133,8 @@ test('multiple sequences maintain separate numbering', function () {
 
     expect($seq1->getNextNumber())->toBe(3);
     expect($seq2->getNextNumber())->toBe(2);
-    expect($seq1->getFormattedNumber())->toBe('SEQ1-0003');
-    expect($seq2->getFormattedNumber())->toBe('SEQ2-0002');
+    expect($seq1->getFormattedNumber())->toBe('SEQ1-3');
+    expect($seq2->getFormattedNumber())->toBe('SEQ2-2');
 });
 
 test('sequence can be deleted', function () {
@@ -150,18 +150,18 @@ test('complete sequence lifecycle works correctly', function () {
 
     expect($sequence->invoices()->count())->toBe(0);
     expect($sequence->getNextNumber())->toBe(1);
-    expect($sequence->getFormattedNumber())->toBe('COMP-0001');
+    expect($sequence->getFormattedNumber())->toBe('COMP-1');
 
     Invoice::create(['number' => 1, 'sequential_number' => 1, 'date' => now(), 'contact_id' => $contact->id, 'sequence_id' => $sequence->id]);
 
-    expect($sequence->getFormattedNumber())->toBe('COMP-0002');
+    expect($sequence->getFormattedNumber())->toBe('COMP-2');
 
     for ($i = 2; $i <= 5; $i++) {
         Invoice::create(['number' => $i, 'sequential_number' => $i, 'date' => now(), 'contact_id' => $contact->id, 'sequence_id' => $sequence->id]);
     }
 
     expect($sequence->invoices()->count())->toBe(5);
-    expect($sequence->getFormattedNumber())->toBe('COMP-0006');
+    expect($sequence->getFormattedNumber())->toBe('COMP-6');
 });
 
 // --- Year-based numbering ---
@@ -191,8 +191,8 @@ test('getNextNumber resets to 1 for a new year', function () {
 test('getFormattedNumber uses correct year', function () {
     $sequence = Sequence::create(['name' => 'AF', 'type' => 'self_invoice', 'pattern' => '{SEQ}-{ANNO}-AF']);
 
-    expect($sequence->getFormattedNumber(2026))->toBe('0001-2026-AF');
-    expect($sequence->getFormattedNumber(2025))->toBe('0001-2025-AF');
+    expect($sequence->getFormattedNumber(2026))->toBe('1-2026-AF');
+    expect($sequence->getFormattedNumber(2025))->toBe('1-2025-AF');
 });
 
 // --- System sequence protection ---

@@ -38,7 +38,7 @@ class InvoiceTest extends TestCase
             ->test(Create::class)
             ->set('contact_id', $contact->id)
             ->set('sequence_id', $sequence->id)
-            ->set('number', 'INV-0001')
+            ->set('number', 'INV-1')
             ->set('lines', [
                 [
                     'description' => 'Item 1',
@@ -53,7 +53,7 @@ class InvoiceTest extends TestCase
             ->assertRedirect('/sell-invoices');
 
         $this->assertDatabaseHas('invoices', [
-            'number' => 'INV-0001',
+            'number' => 'INV-1',
             'contact_id' => $contact->id,
             'total_net' => 20000, // 2 * 100 * 100 cents
             'total_vat' => 4400, // 200 * 0.22 * 100 cents
