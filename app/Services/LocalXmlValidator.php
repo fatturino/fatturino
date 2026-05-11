@@ -91,14 +91,15 @@ class LocalXmlValidator
             }
         }
 
-        // Check customer fiscal ID in the first body
-        if (! empty($bodies)) {
-            $body = $bodies[0];
-            $idFiscaleIva = $body->xpath('DatiGenerali/DatiGeneraliDocumento/DatiCessionarioCommittente/DatiAnagrafici/IdFiscaleIVA');
-            $codiceFiscale = $body->xpath('DatiGenerali/DatiGeneraliDocumento/DatiCessionarioCommittente/DatiAnagrafici/CodiceFiscale');
+        // Check customer fiscal ID (CessionarioCommittente is in the Header, not the Body)
+        $cessionario = $xml->xpath('/p:FatturaElettronica/FatturaElettronicaHeader/CessionarioCommittente/DatiAnagrafici');
+        $hasCustomerFiscalId = false;
 
-            $hasCustomerFiscalId = false;
+        if (! empty($cessionario)) {
+            $datiAnag = $cessionario[0];
 
+            // IdFiscaleIVA
+            $idFiscaleIva = $datiAnag->xpath('IdFiscaleIVA');
             if (! empty($idFiscaleIva)) {
                 $idPaese = (string) ($idFiscaleIva[0]->IdPaese ?? '');
                 $idCodice = (string) ($idFiscaleIva[0]->IdCodice ?? '');
@@ -111,17 +112,21 @@ class LocalXmlValidator
                 }
             }
 
-            if (! $hasCustomerFiscalId && ! empty($codiceFiscale) && (string) $codiceFiscale[0] !== '') {
-                $cf = (string) $codiceFiscale[0];
-                $len = strlen($cf);
-                if ($len >= 11 && $len <= 16) {
-                    $hasCustomerFiscalId = true;
+            // CodiceFiscale
+            if (! $hasCustomerFiscalId) {
+                $codiceFiscale = $datiAnag->xpath('CodiceFiscale');
+                if (! empty($codiceFiscale) && (string) $codiceFiscale[0] !== '') {
+                    $cf = (string) $codiceFiscale[0];
+                    $len = strlen($cf);
+                    if ($len >= 11 && $len <= 16) {
+                        $hasCustomerFiscalId = true;
+                    }
                 }
             }
+        }
 
-            if (! $hasCustomerFiscalId) {
-                $errors[] = __('app.invoices.xml_errors.missing_customer_fiscal_id');
-            }
+        if (! $hasCustomerFiscalId) {
+            $errors[] = __('app.invoices.xml_errors.missing_customer_fiscal_id');
         }
 
         libxml_clear_errors();
