@@ -53,15 +53,9 @@ class Sequence extends Model
         $number = $this->getNextNumber($year);
         $pattern = $this->pattern ?? '{SEQ}';
 
-        // Use zero-padding (4 digits) only when the pattern contains more than just {SEQ}
-        $needsPadding = $pattern !== '{SEQ}';
-        $formattedNumber = $needsPadding
-            ? str_pad($number, 4, '0', STR_PAD_LEFT)
-            : (string) $number;
-
         return str_replace(
             ['{SEQ}', '{ANNO}'],
-            [$formattedNumber, $year],
+            [(string) $number, $year],
             $pattern
         );
     }
@@ -80,14 +74,10 @@ class Sequence extends Model
 
             $nextNumber = $this->getNextNumber($year);
             $pattern = $this->pattern ?? '{SEQ}';
-            $needsPadding = $pattern !== '{SEQ}';
-            $formattedNumber = $needsPadding
-                ? str_pad($nextNumber, 4, '0', STR_PAD_LEFT)
-                : (string) $nextNumber;
 
             $formatted = str_replace(
                 ['{SEQ}', '{ANNO}'],
-                [$formattedNumber, $year],
+                [(string) $nextNumber, $year],
                 $pattern
             );
 
