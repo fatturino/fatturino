@@ -1,6 +1,11 @@
 <?php
 
 return [
+
+    'landing' => [
+        'tagline' => 'Piattaforma Open Source per la Fatturazione Elettronica Italiana',
+    ],
+
     'common' => [
         'search' => 'Cerca...',
         'filters' => 'Filtri',

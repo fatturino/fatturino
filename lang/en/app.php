@@ -2,6 +2,10 @@
 
 return [
 
+    'landing' => [
+        'tagline' => 'Open Source Italian Electronic Invoicing Platform',
+    ],
+
     'common' => [
         'search' => 'Search...',
         'filters' => 'Filters',
