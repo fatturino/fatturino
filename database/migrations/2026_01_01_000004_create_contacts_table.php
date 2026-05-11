@@ -20,7 +20,7 @@ return new class extends Migration
 
             // Basic information
             $table->string('name');
-            $table->string('vat_number')->nullable();
+            $table->string('vat_number')->index()->nullable();
             $table->string('tax_code')->nullable();
 
             // Address details

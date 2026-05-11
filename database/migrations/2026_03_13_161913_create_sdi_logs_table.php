@@ -13,14 +13,12 @@ return new class extends Migration
     {
         Schema::create('sdi_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('invoice_id')->index()->constrained()->cascadeOnDelete();
             $table->string('event_type');       // NS, RC, MC, DT, NE, AT, EC, sent, error
             $table->string('status');           // SdiStatus enum value
             $table->text('message')->nullable();
             $table->json('raw_payload')->nullable(); // Full webhook payload for debugging
             $table->timestamps();
-
-            $table->index('invoice_id');
         });
     }
 

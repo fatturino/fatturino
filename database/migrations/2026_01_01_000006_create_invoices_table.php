@@ -46,7 +46,7 @@ return new class extends Migration
             // SDI tracking (outbound — our invoices sent to SDI)
             $table->string('sdi_id')->nullable();
             $table->string('sdi_status')->nullable();
-            $table->string('sdi_uuid')->nullable();
+            $table->string('sdi_uuid')->index()->nullable();
             $table->text('sdi_message')->nullable();
             $table->timestamp('sdi_sent_at')->nullable();
             $table->string('xml_path')->nullable()->comment('Relative path from storage/app/private to the persisted XML file');
