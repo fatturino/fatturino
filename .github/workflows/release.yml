@@ -1,38 +1,21 @@
 name: Create Release
 
 on:
-  pull_request:
-    branches: [main]
-    types: [closed]
+  push:
+    tags: ['v*']
 
 jobs:
   release:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read version from VERSION file
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Create git tag and GitHub Release
+      - name: Create GitHub Release
         env:
-          VERSION: ${{ steps.version.outputs.version }}
-          # Must be a PAT, not GITHUB_TOKEN, so the tag push triggers build.yml
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}"
-
-          gh release create "v${VERSION}" \
-            --title "v${VERSION}" \
-            --generate-notes \
-            --target main
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes
