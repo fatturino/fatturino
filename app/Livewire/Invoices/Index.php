@@ -11,6 +11,7 @@ use App\Models\SdiLog;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentMailer;
 use App\Services\InvoiceXmlService;
+use App\Services\LocalXmlValidator;
 use App\Support\InvoiceAuditDispatcher;
 use App\Traits\Toast;
 use Livewire\Component;
@@ -151,22 +152,27 @@ class Index extends Component
         }
     }
 
-    public function validateXml(Invoice $invoice, InvoiceXmlService $xmlService, SdiProvider $sdiService): void
+    public function validateXml(Invoice $invoice, InvoiceXmlService $xmlService, SdiProvider $sdiService, LocalXmlValidator $localValidator): void
     {
-        if (! $sdiService->isConfigured()) {
-            $this->error(__('app.invoices.openapi_not_configured'));
-
-            return;
-        }
-
         try {
             $xml = $xmlService->generate($invoice);
-            $validation = $sdiService->validateXml($xml);
 
-            if (! $validation['valid']) {
-                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $validation['errors'])]));
+            // Local structural validation (always runs)
+            $localResult = $localValidator->validate($xml);
+            if (! $localResult['valid']) {
+                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $localResult['errors'])]));
 
                 return;
+            }
+
+            // Remote validation via SDI provider (only if configured)
+            if ($sdiService->isConfigured()) {
+                $remoteResult = $sdiService->validateXml($xml);
+                if (! $remoteResult['valid']) {
+                    $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $remoteResult['errors'])]));
+
+                    return;
+                }
             }
 
             $invoice->update(['status' => InvoiceStatus::XmlValidated]);

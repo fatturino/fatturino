@@ -11,6 +11,7 @@ use App\Models\Contact;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Services\DocumentStorageService;
+use App\Services\LocalXmlValidator;
 use App\Services\SelfInvoiceXmlService;
 use App\Traits\Toast;
 use Illuminate\Database\Eloquent\Model;
@@ -191,7 +192,7 @@ class Edit extends Component
         }
     }
 
-    public function sendToSdi(SelfInvoiceXmlService $xmlService, SdiProvider $sdiService, DocumentStorageService $documentStorage): void
+    public function sendToSdi(SelfInvoiceXmlService $xmlService, SdiProvider $sdiService, DocumentStorageService $documentStorage, LocalXmlValidator $localValidator): void
     {
         if (! $sdiService->isConfigured()) {
             $this->error(__('app.invoices.openapi_not_configured'));
@@ -202,10 +203,18 @@ class Edit extends Component
         try {
             $xml = $xmlService->generate($this->selfInvoice);
 
-            // Validate XML locally before sending
-            $validation = $sdiService->validateXml($xml);
-            if (! $validation['valid']) {
-                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $validation['errors'])]));
+            // Local structural validation (always runs)
+            $localResult = $localValidator->validate($xml);
+            if (! $localResult['valid']) {
+                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $localResult['errors'])]));
+
+                return;
+            }
+
+            // Remote validation via SDI provider
+            $remoteResult = $sdiService->validateXml($xml);
+            if (! $remoteResult['valid']) {
+                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $remoteResult['errors'])]));
 
                 return;
             }

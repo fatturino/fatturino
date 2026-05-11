@@ -13,6 +13,7 @@ use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
 use App\Services\CreditNoteXmlService;
 use App\Services\DocumentStorageService;
+use App\Services\LocalXmlValidator;
 use App\Traits\Toast;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Validate;
@@ -189,7 +190,7 @@ class Edit extends Component
         }
     }
 
-    public function sendToSdi(CreditNoteXmlService $xmlService, SdiProvider $sdiService, DocumentStorageService $documentStorage, CourtesyPdfService $pdfService): void
+    public function sendToSdi(CreditNoteXmlService $xmlService, SdiProvider $sdiService, DocumentStorageService $documentStorage, CourtesyPdfService $pdfService, LocalXmlValidator $localValidator): void
     {
         if (! $sdiService->isConfigured()) {
             $this->error(__('app.invoices.openapi_not_configured'));
@@ -200,9 +201,18 @@ class Edit extends Component
         try {
             $xml = $xmlService->generate($this->creditNote);
 
-            $validation = $sdiService->validateXml($xml);
-            if (! $validation['valid']) {
-                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $validation['errors'])]));
+            // Local structural validation (always runs)
+            $localResult = $localValidator->validate($xml);
+            if (! $localResult['valid']) {
+                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $localResult['errors'])]));
+
+                return;
+            }
+
+            // Remote validation via SDI provider
+            $remoteResult = $sdiService->validateXml($xml);
+            if (! $remoteResult['valid']) {
+                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $remoteResult['errors'])]));
 
                 return;
             }

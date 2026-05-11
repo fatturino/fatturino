@@ -18,6 +18,7 @@ use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentStorageService;
 use App\Services\InvoiceXmlService;
+use App\Services\LocalXmlValidator;
 use App\Settings\InvoiceSettings;
 use App\Support\InvoiceAuditDispatcher;
 use App\Traits\Toast;
@@ -250,7 +251,7 @@ class Edit extends Component
         }
     }
 
-    public function validateXml(InvoiceXmlService $xmlService, SdiProvider $sdiService, DocumentStorageService $documentStorage)
+    public function validateXml(InvoiceXmlService $xmlService, SdiProvider $sdiService, DocumentStorageService $documentStorage, LocalXmlValidator $localValidator)
     {
         if ($this->isReadOnly) {
             $this->error(__('app.invoices.readonly_error'));
@@ -258,20 +259,25 @@ class Edit extends Component
             return;
         }
 
-        if (! $sdiService->isConfigured()) {
-            $this->error(__('app.invoices.openapi_not_configured'));
-
-            return;
-        }
-
         try {
             $xml = $xmlService->generate($this->invoice);
-            $validation = $sdiService->validateXml($xml);
 
-            if (! $validation['valid']) {
-                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $validation['errors'])]));
+            // Local structural validation (always runs)
+            $localResult = $localValidator->validate($xml);
+            if (! $localResult['valid']) {
+                $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $localResult['errors'])]));
 
                 return;
+            }
+
+            // Remote validation via SDI provider (only if configured)
+            if ($sdiService->isConfigured()) {
+                $remoteResult = $sdiService->validateXml($xml);
+                if (! $remoteResult['valid']) {
+                    $this->error(__('app.invoices.xml_invalid', ['errors' => implode(', ', $remoteResult['errors'])]));
+
+                    return;
+                }
             }
 
             // Persist the validated XML — this is exactly the version that will be sent to SDI
