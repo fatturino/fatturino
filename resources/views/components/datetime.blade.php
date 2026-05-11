@@ -42,8 +42,10 @@ if ($error) {
         },
 
         select(day) {
-            const d = new Date(this.year, this.month, day);
-            this.value = d.toISOString().split('T')[0];
+            // Build YYYY-MM-DD manually to avoid timezone offset shifting the day
+            const m = String(this.month + 1).padStart(2, '0');
+            const d = String(day).padStart(2, '0');
+            this.value = `${this.year}-${m}-${d}`;
             this.open = false;
         },
 
