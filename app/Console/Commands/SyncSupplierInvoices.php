@@ -79,7 +79,10 @@ class SyncSupplierInvoices extends Command
                     $contact = $this->findOrCreateContact($invoiceData);
                     $invoice = PurchaseInvoice::createOrUpdateFromSdiData($invoiceData, $contact);
 
-                    if ($invoice->wasRecentlyCreated) {
+                    // null = matched a self-invoice, already updated to Delivered
+                    if ($invoice === null) {
+                        $skippedCount++;
+                    } elseif ($invoice->wasRecentlyCreated) {
                         $syncedCount++;
                     } else {
                         $skippedCount++;

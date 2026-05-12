@@ -144,8 +144,12 @@ class PurchaseInvoice extends Model
     /**
      * Create or update a PurchaseInvoice from raw OpenAPI SDI payload data.
      * Deduplicates by sdi_uuid (the OpenAPI unique identifier for the invoice).
+     *
+     * Returns null when the incoming SDI document matches a self-invoice
+     * (autofattura) that was already sent by us — the self-invoice is updated
+     * to Delivered status instead of creating a duplicate purchase record.
      */
-    public static function createOrUpdateFromSdiData(array $invoiceData, Contact $contact): self
+    public static function createOrUpdateFromSdiData(array $invoiceData, Contact $contact): ?self
     {
         $payload = $invoiceData['payload'] ?? [];
         $body = $payload['fattura_elettronica_body'][0] ?? [];
@@ -167,6 +171,7 @@ class PurchaseInvoice extends Model
         $totalVat = (int) round($vatAmount * 100);
         $totalGross = (int) round((float) $totalAmount * 100);
 
+        // Check if this document is already registered as a purchase invoice
         $existing = self::withoutGlobalScopes()
             ->where('type', 'purchase')
             ->where('sdi_uuid', $invoiceData['uuid'])
@@ -176,6 +181,31 @@ class PurchaseInvoice extends Model
             $existing->update(['sdi_synced_at' => now()]);
 
             return $existing;
+        }
+
+        // Check if this document matches a self-invoice we previously sent.
+        // When a self-invoice is sent to SDI and then received back as a
+        // purchase (since we are also the recipient), we should NOT create a
+        // duplicate purchase row — instead mark the self-invoice as delivered.
+        //
+        // Match by file_id: the SDI assigns the same file_id to both the
+        // outbound (customer-invoice) and inbound (supplier-invoice) events
+        // for the same XML document. sdi_uuid differs between the two events.
+        $incomingFileId = $invoiceData['file_id'] ?? null;
+
+        if ($incomingFileId) {
+            $selfInvoice = \App\Models\SelfInvoice::withoutGlobalScopes()
+                ->where('sdi_file_id', $incomingFileId)
+                ->first();
+
+            if ($selfInvoice) {
+                $selfInvoice->update([
+                    'sdi_status' => \App\Enums\SdiStatus::Delivered,
+                    'sdi_message' => 'Consegnata (ricevuta come acquisto)',
+                ]);
+
+                return null;
+            }
         }
 
         return self::create([

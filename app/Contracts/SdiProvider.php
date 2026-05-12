@@ -32,7 +32,7 @@ interface SdiProvider
      *
      * @param  string  $xmlContent  The FatturaPA XML content
      * @param  string  $fileName  SDI-compliant filename (e.g. IT04826950166_00001.xml)
-     * @return array{success: bool, uuid?: string, message?: string, error_code?: string, error_message?: string}
+     * @return array{success: bool, uuid?: string, file_id?: string, message?: string, error_code?: string, error_message?: string}
      */
     public function sendInvoice(string $xmlContent, string $fileName = ''): array;
 

@@ -255,6 +255,8 @@ class Edit extends Component
                 $this->selfInvoice->update([
                     'sdi_status' => SdiStatus::Sent,
                     'sdi_uuid' => $result['uuid'] ?? null,
+                    'sdi_file_id' => $result['file_id'] ?? null,
+                    'sdi_filename' => $fileName,
                     'sdi_message' => $result['message'] ?? 'Inviata',
                     'sdi_sent_at' => now(),
                     'status' => InvoiceStatus::Sent,
