@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Models\Invoice;
+use App\Contracts\HasTimeline;
 use App\Models\InvoiceLine;
 use App\Models\SdiLog;
 use Illuminate\Support\Collection;
@@ -22,7 +22,7 @@ class InvoiceTimelineBuilder
      *
      * @return array<int, array{key: string, items: array<int, array<string, mixed>>}>
      */
-    public function build(Invoice $invoice): array
+    public function build(HasTimeline $invoice): array
     {
         $entries = $this->loadEntries($invoice)
             ->sortByDesc('at')
@@ -31,7 +31,7 @@ class InvoiceTimelineBuilder
         return $this->clusterAdjacentLineAudits($entries);
     }
 
-    private function loadEntries(Invoice $invoice): Collection
+    private function loadEntries(HasTimeline $invoice): Collection
     {
         $lineIds = $invoice->lines()->pluck('id');
 
@@ -39,7 +39,7 @@ class InvoiceTimelineBuilder
             ->with('user')
             ->where(function ($q) use ($invoice, $lineIds) {
                 $q->where(function ($sub) use ($invoice) {
-                    $sub->where('auditable_type', Invoice::class)
+                    $sub->where('auditable_type', get_class($invoice))
                         ->where('auditable_id', $invoice->id);
                 });
 

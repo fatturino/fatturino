@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Invoices;
 
-use App\Models\Invoice;
+use App\Contracts\HasTimeline;
 use App\Support\InvoiceTimelineBuilder;
 use Livewire\Attributes\Lazy;
 use Livewire\Component;
@@ -14,7 +14,7 @@ use Livewire\Component;
 #[Lazy]
 class InvoiceTimeline extends Component
 {
-    public Invoice $invoice;
+    public HasTimeline $invoice;
 
     /** @var array<string, bool> */
     public array $expanded = [];

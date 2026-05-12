@@ -10,15 +10,28 @@
     </x-header>
 
     {{-- Read-only banner --}}
-    @if($isReadOnly)
+    @if($isSdiLocked)
         <x-alert
-            :title="__('app.invoices.readonly_error')"
+            :title="__('app.invoices.sdi_locked_banner')"
+            icon="o-lock-closed"
+            variant="info" class="mb-4"
+        />
+    @elseif($isReadOnly)
+        <x-alert
+            :title="__('app.invoices.readonly_banner', ['year' => $selfInvoice->date->year])"
             icon="o-lock-closed"
             variant="warning" class="mb-4"
         />
     @endif
 
-    <form wire:submit="save">
+    <x-tabs wire:model="activeTab">
+        <x-slot:tabs>
+            <x-tab name="details" :label="__('app.audit.tab_details')" icon="o-document-text" />
+            <x-tab name="history" :label="__('app.audit.tab_history')" icon="o-clock" />
+        </x-slot:tabs>
+
+        <x-tabs.panel name="details">
+            <form wire:submit="save">
         <div class="bg-base-100 rounded-xl border border-base-200 p-5 lg:p-6">
         <div class="grid lg:grid-cols-3 gap-6">
 
@@ -125,11 +138,57 @@
                     <div class="text-center pt-2">
                         <x-button :label="__('app.common.cancel')" link="{{ route('self-invoices.index') }}" icon="o-x-mark" variant="ghost" size="sm" />
                     </div>
+
+                    {{-- Recent activity summary (latest SDI status + last email sent) --}}
+                    @if($sdiLogs->isNotEmpty() || $latestEmailAudit)
+                        <div class="bg-base-100 rounded-xl border border-base-200 overflow-hidden">
+                            @if($sdiLogs->isNotEmpty())
+                                @php $latestLog = $sdiLogs->first(); @endphp
+                                <div class="p-4 flex items-center gap-3">
+                                    <div class="rounded-xl p-2.5 shrink-0 {{ $latestLog->status->iconBgClass() }}">
+                                        <x-icon :name="$latestLog->status->icon()" class="w-5 h-5 {{ $latestLog->status->iconColorClass() }}" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-[10px] font-semibold uppercase tracking-wider opacity-40">{{ __('app.invoices.sdi_log_title') }}</p>
+                                        <p class="font-semibold text-sm mt-0.5">{{ $latestLog->status->label() }}</p>
+                                    </div>
+                                    <time class="text-xs opacity-30 shrink-0 self-start">{{ $latestLog->created_at->format('d/m H:i') }}</time>
+                                </div>
+                            @endif
+
+                            @if($latestEmailAudit)
+                                <div @class([
+                                    'p-4 flex items-center gap-3',
+                                    'border-t border-base-200' => $sdiLogs->isNotEmpty(),
+                                ])>
+                                    <div class="rounded-xl p-2.5 shrink-0 bg-base-200">
+                                        <x-icon name="o-envelope" class="w-5 h-5" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-[10px] font-semibold uppercase tracking-wider opacity-40">{{ __('app.audit.events.email_sent') }}</p>
+                                        <p class="text-xs opacity-50 mt-0.5">{{ $latestEmailAudit->created_at->translatedFormat('d M Y H:i') }}</p>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="border-t border-base-200 p-2 text-center">
+                                <button type="button" wire:click="$set('activeTab', 'history')" class="text-xs text-base-content/60 hover:text-primary">
+                                    {{ __('app.audit.tab_history') }} →
+                                </button>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
         </div>
-    </form>
+            </form>
+        </x-tabs.panel>
+
+        <x-tabs.panel name="history">
+            @livewire('invoices.invoice-timeline', ['invoice' => $selfInvoice], key('timeline-'.$selfInvoice->id))
+        </x-tabs.panel>
+    </x-tabs>
 
     {{-- Payment modal --}}
     <x-payment-modal />

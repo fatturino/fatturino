@@ -24,6 +24,9 @@ class Edit extends Component
 
     public SelfInvoice $selfInvoice;
 
+    // Active tab in the edit view ('details' or 'history')
+    public string $activeTab = 'details';
+
     // True when the invoice cannot be modified (past year or SDI locked)
     public bool $isReadOnly = false;
 
@@ -279,6 +282,11 @@ class Edit extends Component
             'documentTypeOptions' => $this->documentTypeOptions(),
             'isReadOnly' => $this->isReadOnly,
             'sdiConfigured' => app(SdiProvider::class)->isConfigured(),
+            'sdiLogs' => $this->selfInvoice->sdiLogs()->latest()->get(),
+            'latestEmailAudit' => $this->selfInvoice->audits()
+                ->where('event', 'email_sent')
+                ->latest()
+                ->first(),
         ]);
     }
 }

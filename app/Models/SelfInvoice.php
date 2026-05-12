@@ -2,22 +2,46 @@
 
 namespace App\Models;
 
+use App\Contracts\HasTimeline;
 use App\Enums\InvoiceStatus;
+use App\Models\SdiLog;
 use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Models\Traits\HasPayments;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Auditable;
 
-class SelfInvoice extends Model
+class SelfInvoice extends Model implements HasTimeline
 {
+    use Auditable;
     use HasFactory;
     use HasPayments;
 
     protected $table = 'invoices';
 
     protected $guarded = [];
+
+    /**
+     * Columns excluded from audit: recalculated by calculateTotals() cascade
+     * when an InvoiceLine is saved/deleted.
+     */
+    protected $auditExclude = [
+        'total_net',
+        'total_vat',
+        'total_gross',
+        'total_paid',
+        'withholding_tax_amount',
+        'updated_at',
+    ];
+
+    protected $auditEvents = [
+        'created',
+        'updated',
+        'deleted',
+        'sdi_sent',
+    ];
 
     protected $attributes = [
         'status' => 'draft',
@@ -72,6 +96,11 @@ class SelfInvoice extends Model
     public function lines()
     {
         return $this->hasMany(InvoiceLine::class, 'invoice_id');
+    }
+
+    public function sdiLogs()
+    {
+        return $this->hasMany(SdiLog::class, 'invoice_id');
     }
 
     /**

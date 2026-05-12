@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Contracts\HasTimeline;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
@@ -13,9 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Auditable;
-use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
-class Invoice extends Model implements AuditableContract
+class Invoice extends Model implements HasTimeline
 {
     use Auditable;
     use HasFactory;
