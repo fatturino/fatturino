@@ -59,7 +59,7 @@
 
                     {{-- Status badge --}}
                     <div class="flex items-center gap-2">
-                        <x-badge :value="$proformaInvoice->status->label()" variant="$proformaInvoice->status->badgeVariant()" type="soft"" />
+                        <x-badge :value="$proformaInvoice->status->label()" :variant="$proformaInvoice->status->badgeVariant()" type="soft"" />
                     </div>
 
                     @include('livewire.invoices.partials._tax-options-section', [

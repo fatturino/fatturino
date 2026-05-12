@@ -70,7 +70,7 @@
                     {{-- SDI status badge --}}
                     @if($creditNote->sdi_status)
                         <div class="flex items-center gap-2">
-                            <x-badge :value="$creditNote->sdi_status->label()" variant="$creditNote->sdi_status->badgeVariant()" type="soft"" />
+                            <x-badge :value="$creditNote->sdi_status->label()" :variant="$creditNote->sdi_status->badgeVariant()" type="soft"" />
                             @if($creditNote->sdi_message)
                                 <span class="text-sm text-base-content/60">{{ $creditNote->sdi_message }}</span>
                             @endif

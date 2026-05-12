@@ -73,9 +73,9 @@
                     {{-- Status badge --}}
                     <div class="flex items-center gap-2">
                         @if($invoice->sdi_status)
-                            <x-badge :value="$invoice->sdi_status->label()" variant="$invoice->sdi_status->badgeVariant()" type="soft"" />
+                            <x-badge :value="$invoice->sdi_status->label()" :variant="$invoice->sdi_status->badgeVariant()" type="soft"" />
                         @else
-                            <x-badge :value="$invoice->status->label()" variant="$invoice->status->badgeVariant()" type="soft"" />
+                            <x-badge :value="$invoice->status->label()" :variant="$invoice->status->badgeVariant()" type="soft"" />
                         @endif
                     </div>
 
