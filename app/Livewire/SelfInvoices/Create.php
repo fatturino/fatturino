@@ -90,6 +90,16 @@ class Create extends Component
         $this->lines = array_values($this->lines);
     }
 
+    /**
+     * Livewire hook called after $lines is updated via wire:model.
+     * Ensures computed totals are recalculated during render.
+     */
+    public function updatedLines(): void
+    {
+        // Computed properties (totalNet, totalVat, totalGross) are recalculated during render.
+        // This hook exists to guarantee Livewire detects the change and re-renders.
+    }
+
     public function getTotalNetProperty(): float
     {
         $total = 0;

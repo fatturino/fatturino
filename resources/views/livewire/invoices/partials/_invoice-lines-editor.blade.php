@@ -29,9 +29,9 @@
                 <div @class(['flex-1 bg-base-100 rounded-lg border border-base-200 p-3 space-y-2', 'pointer-events-none' => $isReadOnly])>
                     <x-input :label="__('app.invoices.line_description')" wire:model.blur="lines.{{ $index }}.description" />
                     <div @class(['grid grid-cols-2 gap-3', 'lg:grid-cols-5' => $showDiscount, 'lg:grid-cols-4' => !$showDiscount])>
-                        <x-input :label="__('app.invoices.line_quantity')" wire:model.blur="lines.{{ $index }}.quantity" type="number" step="0.01" />
+                        <x-input :label="__('app.invoices.line_quantity')" wire:model.live.debounce.300ms="lines.{{ $index }}.quantity" type="number" step="0.01" />
                         <x-input :label="__('app.invoices.line_unit_of_measure')" wire:model.blur="lines.{{ $index }}.unit_of_measure" list="uom-options" placeholder="pz" />
-                        <x-input :label="__('app.invoices.line_price')" wire:model.blur="lines.{{ $index }}.unit_price" type="number" step="0.01" prefix="€" />
+                        <x-input :label="__('app.invoices.line_price')" wire:model.live.debounce.300ms="lines.{{ $index }}.unit_price" type="number" step="0.01" prefix="€" />
                         @if($showDiscount)
                             <x-input :label="__('app.invoices.line_discount')" wire:model.blur="lines.{{ $index }}.discount_percent" type="number" step="0.01" suffix="%" />
                         @endif
