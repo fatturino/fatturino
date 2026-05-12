@@ -134,7 +134,10 @@ class Index extends Component
             ))
             ->when($this->filterStatus, fn ($q) => $q->where('status', $this->filterStatus))
             ->when($this->filterPayment, fn ($q) => $q->where('payment_status', $this->filterPayment))
-            ->orderBy(...array_values($this->sortBy))
+            ->orderBy(
+                $this->sortBy['column'] === 'number' ? 'sequential_number' : $this->sortBy['column'],
+                $this->sortBy['direction']
+            )
             ->paginate(10);
 
         return view('livewire.purchase-invoices.index', [

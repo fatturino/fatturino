@@ -108,7 +108,10 @@ class Index extends Component
                     ->orWhereHas('contact', fn ($q) => $q->where('name', 'like', "%{$this->search}%"))
             ))
             ->when($this->filterStatus, fn ($q) => $q->where('status', $this->filterStatus))
-            ->orderBy(...array_values($this->sortBy))
+            ->orderBy(
+                $this->sortBy['column'] === 'number' ? 'sequential_number' : $this->sortBy['column'],
+                $this->sortBy['direction']
+            )
             ->paginate(10);
 
         return view('livewire.self-invoices.index', [
