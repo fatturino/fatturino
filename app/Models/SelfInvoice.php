@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Contracts\HasTimeline;
 use App\Enums\InvoiceStatus;
-use App\Models\SdiLog;
 use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Models\Traits\HasPayments;
