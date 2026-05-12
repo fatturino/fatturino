@@ -4,14 +4,14 @@
 @theme {
     --font-sans: 'Outfit', sans-serif;
 
-    /* Type scale — ratio ~1.2, defined in rem for user preference respect */
-    --text-caption: 0.75rem;    /* 12px — labels, badges, metadata */
-    --text-body: 0.875rem;      /* 14px — body in data-dense UI */
-    --text-body-lg: 1rem;       /* 16px — body in prose/descriptions */
-    --text-title: 1.125rem;     /* 18px — card titles, section headings */
-    --text-heading: 1.25rem;    /* 20px — page section headings */
-    --text-display: 1.5rem;     /* 24px — page titles */
-    --text-display-lg: 1.875rem;/* 30px — hero/error pages */
+    /* Type scale -- ratio ~1.2, defined in rem for user preference respect */
+    --text-caption: 0.75rem;    /* 12px -- labels, badges, metadata */
+    --text-body: 0.875rem;      /* 14px -- body in data-dense UI */
+    --text-body-lg: 1rem;       /* 16px -- body in prose/descriptions */
+    --text-title: 1.125rem;     /* 18px -- card titles, section headings */
+    --text-heading: 1.25rem;    /* 20px -- page section headings */
+    --text-display: 1.5rem;     /* 24px -- page titles */
+    --text-display-lg: 1.875rem;/* 30px -- hero/error pages */
 
     /* Neutral color palette (Tailwind-native) */
     --color-base-100: white;
@@ -47,6 +47,16 @@
 
 /* ─── Plugins (symlinks not followed by Tailwind v4) ─── */
 @source "../../../plugin-demo-mode/resources/views/**/*.blade.php";
+
+/*
+ * Badge color safelist -- Tailwind v4 only generates utilities for classes it can statically discover.
+ * The badge component (components/badge.blade.php) builds these dynamically via PHP match(),
+ * so Tailwind cannot see them. The comment below forces Tailwind to generate all needed utilities.
+ * Keep in sync with the variants in components/badge.blade.php.
+ */
+/* bg-primary/10 text-primary bg-secondary/10 text-secondary bg-success/10 text-success bg-warning/10 text-warning bg-error/10 text-error bg-info/10 text-info bg-accent/10 text-accent */
+/* bg-primary text-primary-content bg-secondary text-secondary-content bg-success text-success-content bg-warning text-warning-content bg-error text-error-content bg-info text-info-content bg-accent text-accent-content bg-neutral text-neutral-content */
+/* border-primary border-secondary border-success border-warning border-error border-info border-accent */
 
 /*
  * ─── Sidebar ───
@@ -135,7 +145,7 @@
     animation: fade-in-up 0.4s ease-out both;
 }
 
-/* Wizard step connector — solid primary color */
+/* Wizard step connector -- solid primary color */
 .wizard-connector-fill {
     background: var(--color-primary);
 }

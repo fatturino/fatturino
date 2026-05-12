@@ -6,24 +6,30 @@
 ])
 
 @php
-$baseClasses = 'inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap';
-
-$colors = match($variant) {
-    'primary' => ['soft' => 'bg-primary/10 text-primary', 'solid' => 'bg-primary text-primary-content', 'outline' => 'bg-transparent text-primary border border-primary'],
-    'secondary' => ['soft' => 'bg-secondary/10 text-secondary', 'solid' => 'bg-secondary text-secondary-content', 'outline' => 'bg-transparent text-secondary border border-secondary'],
-    'success' => ['soft' => 'bg-success/10 text-success', 'solid' => 'bg-success text-success-content', 'outline' => 'bg-transparent text-success border border-success'],
-    'warning' => ['soft' => 'bg-warning/10 text-warning', 'solid' => 'bg-warning text-warning-content', 'outline' => 'bg-transparent text-warning border border-warning'],
-    'danger' => ['soft' => 'bg-error/10 text-error', 'solid' => 'bg-error text-error-content', 'outline' => 'bg-transparent text-error border border-error'],
-    'info' => ['soft' => 'bg-info/10 text-info', 'solid' => 'bg-info text-info-content', 'outline' => 'bg-transparent text-info border border-info'],
-    'neutral' => ['soft' => 'bg-base-200 text-base-content/70', 'solid' => 'bg-neutral text-neutral-content', 'outline' => 'bg-transparent text-base-content/70 border border-base-300'],
-    'accent' => ['soft' => 'bg-accent/10 text-accent', 'solid' => 'bg-accent text-accent-content', 'outline' => 'bg-transparent text-accent border border-accent'],
-    default => ['soft' => 'bg-base-200 text-base-content/70', 'solid' => 'bg-neutral text-neutral-content', 'outline' => 'bg-transparent text-base-content/70 border border-base-300'],
+// Map variant to CSS variable suffix. 'danger' uses 'error' (the CSS var name).
+$colorVar = match($variant) {
+    'danger' => 'error',
+    default => $variant,
 };
 
-$classes = $baseClasses . ' ' . ($colors[$type] ?? 'bg-base-200 text-base-content/70');
+// Neutral / default fallback uses base tokens, not semantic colors.
+$isNeutral = in_array($variant, ['neutral', 'default']);
+
+// Build style attribute matching the requested type.
+$style = match($type) {
+    'solid' => $isNeutral
+        ? 'background-color: var(--color-neutral); color: var(--color-neutral-content)'
+        : 'background-color: var(--color-' . $colorVar . '); color: var(--color-' . $colorVar . '-content)',
+    'outline' => $isNeutral
+        ? 'border: 1px solid var(--color-base-300); color: var(--color-base-content); opacity: 0.7'
+        : 'border: 1px solid var(--color-' . $colorVar . '); color: var(--color-' . $colorVar . ')',
+    default => $isNeutral
+        ? 'background-color: var(--color-base-200); color: color-mix(in oklab, var(--color-base-content) 70%, transparent)'
+        : 'background-color: color-mix(in oklab, var(--color-' . $colorVar . ') 10%, transparent); color: var(--color-' . $colorVar . ')',
+};
 @endphp
 
-<span {{ $attributes->merge(['class' => $classes]) }}>
+<span {{ $attributes->merge(['style' => $style, 'class' => 'inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap']) }}>
     @if($icon)
         <x-icon :name="$icon" class="w-3.5 h-3.5" />
     @endif

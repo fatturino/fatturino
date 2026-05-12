@@ -35,7 +35,7 @@ enum SdiStatus: string
     public function badgeVariant(): string
     {
         return match ($this) {
-            self::Sent => 'info',
+            self::Sent => 'secondary',
             self::Rejected => 'danger',
             self::Delivered => 'success',
             self::NotDelivered => 'warning',
@@ -43,7 +43,7 @@ enum SdiStatus: string
             self::Accepted => 'success',
             self::Refused => 'danger',
             self::Error => 'danger',
-            self::Received => 'accent',
+            self::Received => 'info',
         };
     }
 
