@@ -194,13 +194,13 @@ class PurchaseInvoice extends Model
         $incomingFileId = $invoiceData['file_id'] ?? null;
 
         if ($incomingFileId) {
-            $selfInvoice = \App\Models\SelfInvoice::withoutGlobalScopes()
+            $selfInvoice = SelfInvoice::withoutGlobalScopes()
                 ->where('sdi_file_id', $incomingFileId)
                 ->first();
 
             if ($selfInvoice) {
                 $selfInvoice->update([
-                    'sdi_status' => \App\Enums\SdiStatus::Delivered,
+                    'sdi_status' => SdiStatus::Delivered,
                     'sdi_message' => 'Consegnata (ricevuta come acquisto)',
                 ]);
 
