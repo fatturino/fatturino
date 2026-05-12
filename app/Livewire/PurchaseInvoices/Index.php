@@ -18,7 +18,7 @@ class Index extends Component
 
     public bool $drawer = false;
 
-    public array $sortBy = ['column' => 'date', 'direction' => 'desc'];
+    public array $sortBy = ['column' => 'number', 'direction' => 'desc'];
 
     public int $fiscalYear;
 
