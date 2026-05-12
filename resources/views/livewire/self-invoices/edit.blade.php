@@ -59,14 +59,14 @@
                     {{-- SDI status badge --}}
                     @if($selfInvoice->sdi_status)
                         @php
-                            $sdiColor = match($selfInvoice->sdi_status) {
+                            $sdiColor = match($selfInvoice->sdi_status->value) {
                                 'sent'  => 'success',
                                 'error' => 'danger',
                                 default => 'neutral',
                             };
                         @endphp
                         <div class="flex items-center gap-2">
-                            <x-badge :value="'SDI: ' . $selfInvoice->sdi_status" :variant="$sdiColor" />
+                            <x-badge :value="'SDI: ' . $selfInvoice->sdi_status->value" :variant="$sdiColor" />
                             @if($selfInvoice->sdi_message)
                                 <span class="text-sm text-base-content/60">{{ $selfInvoice->sdi_message }}</span>
                             @endif
