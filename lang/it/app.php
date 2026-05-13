@@ -491,6 +491,7 @@ return [
         'col_date' => 'Data',
         'col_customer' => 'Cliente',
         'col_total' => 'Totale',
+        'col_net_due' => 'Netto a Pagare',
         'col_status' => 'Stato',
         'col_payment' => 'Pagamento',
 

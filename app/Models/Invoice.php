@@ -197,6 +197,26 @@ class Invoice extends Model implements HasTimeline
         return $summary;
     }
 
+    /**
+     * Net amount the client must pay (total_gross + stamp_duty - withholding_tax - split_payment VAT).
+     * All amounts in cents. Mirrors {@see \App\Livewire\Traits\CalculatesInvoiceTotals::getNetDueProperty()}.
+     */
+    public function getNetDueAttribute(): int
+    {
+        $netDue = $this->total_gross + ($this->stamp_duty_amount ?? 0) - ($this->withholding_tax_amount ?? 0);
+
+        // Split payment: customer pays fund VAT but not line VAT
+        if ($this->split_payment) {
+            $fundVat = 0;
+            if ($this->fund_enabled && $this->fund_amount > 0 && $this->fund_vat_rate) {
+                $fundVat = (int) round($this->fund_amount * ($this->fund_vat_rate->percent() / 100));
+            }
+            $netDue -= ($this->total_vat - $fundVat);
+        }
+
+        return $netDue;
+    }
+
     public function calculateTotals()
     {
         $net = 0; // Line totals in cents

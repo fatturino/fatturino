@@ -228,6 +228,177 @@ test('invoice without fund has unchanged totals', function () {
     expect($invoice->fund_amount)->toEqual(0);
 });
 
+test('net_due equals total_gross when no withholding or split payment', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = Invoice::create([
+        'number' => '001',
+        'date' => now(),
+        'contact_id' => $contact->id,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 100000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 100000,
+    ]);
+
+    $invoice->refresh();
+
+    // No withholding, no stamp duty, no split payment: net_due === total_gross
+    expect($invoice->net_due)->toEqual($invoice->total_gross);
+    expect($invoice->net_due)->toEqual(122000); // 100000 + 22000 VAT
+});
+
+test('net_due subtracts withholding tax', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = Invoice::create([
+        'number' => '001',
+        'date' => now(),
+        'contact_id' => $contact->id,
+        'withholding_tax_enabled' => true,
+        'withholding_tax_percent' => 20,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 100000, // 1000.00 EUR
+        'vat_rate' => VatRate::R22->value,
+        'total' => 100000,
+    ]);
+
+    $invoice->refresh();
+
+    // Net: 100000, VAT: 22000, Gross: 122000, Withholding: 20000
+    // net_due = 122000 - 20000 = 102000 (1020.00 EUR)
+    expect($invoice->total_gross)->toEqual(122000);
+    expect($invoice->withholding_tax_amount)->toEqual(20000);
+    expect($invoice->net_due)->toEqual(102000);
+});
+
+test('net_due includes stamp duty and subtracts withholding tax', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = Invoice::create([
+        'number' => '001',
+        'date' => now(),
+        'contact_id' => $contact->id,
+        'withholding_tax_enabled' => true,
+        'withholding_tax_percent' => 20,
+        'stamp_duty_applied' => true,
+        'stamp_duty_amount' => 200, // 2.00 EUR
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 100000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 100000,
+    ]);
+
+    $invoice->refresh();
+
+    // Gross: 122000, Stamp duty: 200, Withholding: 20000
+    // net_due = 122000 + 200 - 20000 = 102200 (1022.00 EUR)
+    expect($invoice->total_gross)->toEqual(122000);
+    expect($invoice->net_due)->toEqual(102200);
+});
+
+test('net_due subtracts vat when split payment is active', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = Invoice::create([
+        'number' => '001',
+        'date' => now(),
+        'contact_id' => $contact->id,
+        'split_payment' => true,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 100000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 100000,
+    ]);
+
+    $invoice->refresh();
+
+    // Gross: 122000, VAT: 22000
+    // net_due = 122000 - 22000 = 100000 (net only, VAT goes to tax authority)
+    expect($invoice->total_gross)->toEqual(122000);
+    expect($invoice->total_vat)->toEqual(22000);
+    expect($invoice->net_due)->toEqual(100000);
+});
+
+test('net_due with split payment and fund keeps fund vat', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = Invoice::create([
+        'number' => '001',
+        'date' => now(),
+        'contact_id' => $contact->id,
+        'split_payment' => true,
+        'fund_enabled' => true,
+        'fund_type' => 'TC22',
+        'fund_percent' => 4,
+        'fund_vat_rate' => VatRate::R22->value,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 100000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 100000,
+    ]);
+
+    $invoice->refresh();
+
+    // Net: 100000, Fund: 4000, Line VAT: 22000, Fund VAT: 880, Total VAT: 22880, Gross: 126880
+    // Split payment subtracts line VAT only (22000), keeps fund VAT (880)
+    // net_due = 126880 - (22880 - 880) = 126880 - 22000 = 104880
+    expect($invoice->total_gross)->toEqual(126880);
+    expect($invoice->total_vat)->toEqual(22880);
+    expect($invoice->fund_amount)->toEqual(4000);
+    expect($invoice->net_due)->toEqual(104880);
+});
+
+test('net_due with withholding, stamp duty and split payment combined', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = Invoice::create([
+        'number' => '001',
+        'date' => now(),
+        'contact_id' => $contact->id,
+        'withholding_tax_enabled' => true,
+        'withholding_tax_percent' => 20,
+        'stamp_duty_applied' => true,
+        'stamp_duty_amount' => 200,
+        'split_payment' => true,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 100000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 100000,
+    ]);
+
+    $invoice->refresh();
+
+    // Net: 100000, VAT: 22000, Gross: 122000, Stamp: 200, Withholding: 20000
+    // net_due = 122000 + 200 - 20000 - 22000 = 80200 (802.00 EUR)
+    expect($invoice->total_gross)->toEqual(122000);
+    expect($invoice->net_due)->toEqual(80200);
+});
+
 test('invoice does not apply stamp duty when total is below threshold', function () {
     // Create necessary data
     $contact = Contact::create(['name' => 'Test Client']);

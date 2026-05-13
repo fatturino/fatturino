@@ -434,6 +434,7 @@ return [
         'col_date' => 'Date',
         'col_customer' => 'Customer',
         'col_total' => 'Total',
+        'col_net_due' => 'Net Due',
         'col_status' => 'Status',
         'col_payment' => 'Payment',
 

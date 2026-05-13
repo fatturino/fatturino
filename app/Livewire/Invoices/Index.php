@@ -270,6 +270,7 @@ class Index extends Component
             ['key' => 'date', 'label' => __('app.invoices.col_date'), 'class' => 'w-32', 'render' => fn ($row) => '<span class="text-sm">'.$row->date->format('d/m/Y').'</span>'],
             ['key' => 'contact.name', 'label' => __('app.invoices.col_customer'), 'sortable' => false, 'render' => fn ($row) => '<span class="font-medium">'.e($row->contact?->name).'</span>'],
             ['key' => 'total_gross', 'label' => __('app.invoices.col_total'), 'class' => 'w-36 text-right', 'render' => fn ($row) => '<div class="text-right font-semibold">€ '.number_format($row->total_gross / 100, 2, ',', '.').'</div>'],
+            ['key' => 'net_due', 'label' => __('app.invoices.col_net_due'), 'class' => 'w-36 text-right', 'render' => fn ($row) => '<div class="text-right font-semibold">€ '.number_format($row->net_due / 100, 2, ',', '.').'</div>'],
             ['key' => 'status', 'label' => __('app.invoices.col_status'), 'class' => 'w-32', 'view' => 'partials.invoice-status-cell'],
             ['key' => 'payment_status', 'label' => __('app.invoices.col_payment'), 'sortable' => false, 'class' => 'w-36', 'view' => 'partials.payment-status-cell'],
             ['key' => 'actions', 'label' => '', 'class' => 'w-1', 'view' => 'partials.invoice-actions'],
