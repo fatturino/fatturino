@@ -54,7 +54,7 @@ trait HasPaymentTracking
     {
         $this->validate([
             'newPaymentAmount' => 'required|numeric|min:0.01',
-            'newPaymentDate' => 'required|date',
+            'newPaymentDate' => 'nullable|date',
         ]);
 
         $invoice = $this->getPayableInvoice();
@@ -63,7 +63,7 @@ trait HasPaymentTracking
         Payment::create([
             'invoice_id' => $invoice->id,
             'amount' => $amountCents,
-            'paid_at' => $this->newPaymentDate,
+            'paid_at' => $this->newPaymentDate ?: null,
             'payment_method' => $this->newPaymentMethod ?: null,
             'reference' => $this->newPaymentReference ?: null,
             'notes' => $this->newPaymentNotes ?: null,
