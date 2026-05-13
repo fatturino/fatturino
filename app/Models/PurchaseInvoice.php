@@ -193,7 +193,7 @@ class PurchaseInvoice extends Model
         $documentNumber = $documentData['numero'] ?? null;
 
         if ($documentNumber) {
-            $selfInvoice = \App\Models\SelfInvoice::withoutGlobalScopes()
+            $selfInvoice = SelfInvoice::withoutGlobalScopes()
                 ->where('number', $documentNumber)
                 ->first();
 
@@ -201,7 +201,7 @@ class PurchaseInvoice extends Model
                 $selfInvoice->update([
                     'sdi_file_id' => $selfInvoice->sdi_file_id ?: ($invoiceData['file_id'] ?? null),
                     'sdi_filename' => $selfInvoice->sdi_filename ?: ($invoiceData['filename'] ?? null),
-                    'sdi_status' => \App\Enums\SdiStatus::Delivered,
+                    'sdi_status' => SdiStatus::Delivered,
                     'sdi_message' => 'Consegnata (ricevuta come acquisto)',
                 ]);
 
