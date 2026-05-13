@@ -98,17 +98,44 @@ class InvoiceXmlImportService
                     $selfInvoiceTypes = ['TD17', 'TD18', 'TD19', 'TD28', 'TD29'];
 
                     if (in_array($documentType, $selfInvoiceTypes, true)) {
-                        // Already exists? Skip duplicate
-                        if ($number && SelfInvoice::where('number', $number)->exists()) {
-                            $this->stats['skipped']++;
+                        // Already exists? Mark Delivered+Paid and skip duplicate
+                        if ($number) {
+                            $existing = \App\Models\SelfInvoice::where('number', $number)->first();
 
-                            return;
+                            if ($existing) {
+                                if ($existing->sdi_status !== SdiStatus::Delivered) {
+                                    $existing->update([
+                                        'sdi_status' => SdiStatus::Delivered,
+                                        'sdi_message' => 'Consegnata (ricevuta come acquisto)',
+                                    ]);
+                                }
+
+                                if ($existing->payment_status !== \App\Enums\PaymentStatus::Paid) {
+                                    $documentDate = $this->extractText($datiGeneraliDoc->Data);
+                                    $alreadyPaid = $existing->payments()
+                                        ->where('paid_at', $documentDate)
+                                        ->exists();
+
+                                    if (! $alreadyPaid && $documentDate) {
+                                        $existing->payments()->create([
+                                            'amount' => $existing->total_gross,
+                                            'paid_at' => $documentDate,
+                                        ]);
+
+                                        $existing->recalculatePaymentStatus();
+                                    }
+                                }
+
+                                $this->stats['skipped']++;
+
+                                return;
+                            }
                         }
 
                         // Redirect: import as self_invoice instead of purchase
                         $isSelfInvoice = true;
                         $isPurchase = false;
-                        $modelClass = SelfInvoice::class;
+                        $modelClass = \App\Models\SelfInvoice::class;
                         $status = InvoiceStatus::Sent;
                         $sdiStatus = SdiStatus::Delivered;
                     }
