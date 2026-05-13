@@ -145,11 +145,11 @@ class PurchaseInvoice extends Model
      * Create or update a PurchaseInvoice from raw OpenAPI SDI payload data.
      * Deduplicates by sdi_uuid (the OpenAPI unique identifier for the invoice).
      *
-     * Returns null when the incoming SDI document matches a self-invoice
-     * (autofattura) that was already sent by us — the self-invoice is updated
-     * to Delivered status instead of creating a duplicate purchase record.
+     * If the document matches a self-invoice we sent, the self-invoice is
+     * marked as Delivered but the purchase is still created — both records
+     * coexist, matching fiscal reality.
      */
-    public static function createOrUpdateFromSdiData(array $invoiceData, Contact $contact): ?self
+    public static function createOrUpdateFromSdiData(array $invoiceData, Contact $contact): self
     {
         $payload = $invoiceData['payload'] ?? [];
         $body = $payload['fattura_elettronica_body'][0] ?? [];
@@ -183,21 +183,18 @@ class PurchaseInvoice extends Model
             return $existing;
         }
 
-        // Check if this document matches a self-invoice we previously sent.
-        // When a self-invoice is sent to SDI and then received back as a
-        // purchase (since we are also the recipient), we should NOT create a
-        // duplicate purchase row — instead mark the self-invoice as delivered.
-        //
-        // Match by document number: the self-invoice number is preserved in
-        // the XML and returned unchanged by SDI.
+        // If this document matches a self-invoice we previously sent,
+        // mark it as Delivered and paid. The purchase is still created.
+        // Both records coexist, matching fiscal reality.
         $documentNumber = $documentData['numero'] ?? null;
+        $documentDate = $documentData['data'] ?? null;
 
         if ($documentNumber) {
             $selfInvoice = SelfInvoice::withoutGlobalScopes()
                 ->where('number', $documentNumber)
                 ->first();
 
-            if ($selfInvoice) {
+            if ($selfInvoice && $selfInvoice->sdi_status !== SdiStatus::Delivered) {
                 $selfInvoice->update([
                     'sdi_file_id' => $selfInvoice->sdi_file_id ?: ($invoiceData['file_id'] ?? null),
                     'sdi_filename' => $selfInvoice->sdi_filename ?: ($invoiceData['filename'] ?? null),
@@ -205,7 +202,22 @@ class PurchaseInvoice extends Model
                     'sdi_message' => 'Consegnata (ricevuta come acquisto)',
                 ]);
 
-                return null;
+                // Mark as paid — the self-invoice is fulfilled when it
+                // comes back as a purchase (no real payment flow)
+                if ($documentDate && $selfInvoice->payment_status !== PaymentStatus::Paid) {
+                    $alreadyPaid = $selfInvoice->payments()
+                        ->where('paid_at', $documentDate)
+                        ->exists();
+
+                    if (! $alreadyPaid) {
+                        $selfInvoice->payments()->create([
+                            'amount' => $selfInvoice->total_gross,
+                            'paid_at' => $documentDate,
+                        ]);
+
+                        $selfInvoice->recalculatePaymentStatus();
+                    }
+                }
             }
         }
 
