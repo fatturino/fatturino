@@ -145,11 +145,11 @@ class PurchaseInvoice extends Model
      * Create or update a PurchaseInvoice from raw OpenAPI SDI payload data.
      * Deduplicates by sdi_uuid (the OpenAPI unique identifier for the invoice).
      *
-     * If the document matches a self-invoice we sent, the self-invoice is
-     * marked as Delivered but the purchase is still created — both records
-     * coexist, matching fiscal reality.
+     * Returns null when the incoming SDI document matches a self-invoice
+     * (autofattura) that was already sent by us — the self-invoice is updated
+     * to Delivered+Paid instead of creating a duplicate purchase record.
      */
-    public static function createOrUpdateFromSdiData(array $invoiceData, Contact $contact): self
+    public static function createOrUpdateFromSdiData(array $invoiceData, Contact $contact): ?self
     {
         $payload = $invoiceData['payload'] ?? [];
         $body = $payload['fattura_elettronica_body'][0] ?? [];
@@ -183,11 +183,16 @@ class PurchaseInvoice extends Model
             return $existing;
         }
 
-        // If this document matches a self-invoice we previously sent,
-        // mark it as Delivered and paid. The purchase is still created.
-        // Both records coexist, matching fiscal reality.
+        // If this document is a self-invoice type (TD17-TD29), match by number
+        // against existing self-invoices. Mark Delivered+Paid, skip purchase.
+        $selfInvoiceTypes = ['TD17', 'TD18', 'TD19', 'TD28', 'TD29'];
+        $documentType = $documentData['tipo_documento'] ?? null;
         $documentNumber = $documentData['numero'] ?? null;
         $documentDate = $documentData['data'] ?? null;
+
+        if ($documentType && ! in_array($documentType, $selfInvoiceTypes, true)) {
+            $documentNumber = null; // Skip self-invoice matching for non-self-invoice types
+        }
 
         if ($documentNumber) {
             $selfInvoice = SelfInvoice::withoutGlobalScopes()
@@ -218,6 +223,8 @@ class PurchaseInvoice extends Model
                         $selfInvoice->recalculatePaymentStatus();
                     }
                 }
+
+                return null;
             }
         }
 

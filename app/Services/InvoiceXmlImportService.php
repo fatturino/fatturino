@@ -89,6 +89,31 @@ class InvoiceXmlImportService
                     return;
                 }
 
+                // When importing as purchase, check if the XML is actually a
+                // self-invoice (TD17/TD18/TD19/TD28/TD29 document types).
+                // If so, redirect to self_invoice import to avoid polluting
+                // the purchases section with autofatture.
+                if ($isPurchase) {
+                    $documentType = $this->extractText($datiGeneraliDoc->TipoDocumento);
+                    $selfInvoiceTypes = ['TD17', 'TD18', 'TD19', 'TD28', 'TD29'];
+
+                    if (in_array($documentType, $selfInvoiceTypes, true)) {
+                        // Already exists? Skip duplicate
+                        if ($number && SelfInvoice::where('number', $number)->exists()) {
+                            $this->stats['skipped']++;
+
+                            return;
+                        }
+
+                        // Redirect: import as self_invoice instead of purchase
+                        $isSelfInvoice = true;
+                        $isPurchase = false;
+                        $modelClass = SelfInvoice::class;
+                        $status = InvoiceStatus::Sent;
+                        $sdiStatus = SdiStatus::Delivered;
+                    }
+                }
+
                 $invoice = $this->createInvoice($body, $contact, $sequenceId, $status, $sdiStatus, $modelClass);
 
                 // Self-invoice: persist document type and related invoice reference
