@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
@@ -100,7 +101,7 @@ class InvoiceXmlImportService
                     if (in_array($documentType, $selfInvoiceTypes, true)) {
                         // Already exists? Mark Delivered+Paid and skip duplicate
                         if ($number) {
-                            $existing = \App\Models\SelfInvoice::where('number', $number)->first();
+                            $existing = SelfInvoice::where('number', $number)->first();
 
                             if ($existing) {
                                 if ($existing->sdi_status !== SdiStatus::Delivered) {
@@ -110,7 +111,7 @@ class InvoiceXmlImportService
                                     ]);
                                 }
 
-                                if ($existing->payment_status !== \App\Enums\PaymentStatus::Paid) {
+                                if ($existing->payment_status !== PaymentStatus::Paid) {
                                     $documentDate = $this->extractText($datiGeneraliDoc->Data);
                                     $alreadyPaid = $existing->payments()
                                         ->where('paid_at', $documentDate)
@@ -135,7 +136,7 @@ class InvoiceXmlImportService
                         // Redirect: import as self_invoice instead of purchase
                         $isSelfInvoice = true;
                         $isPurchase = false;
-                        $modelClass = \App\Models\SelfInvoice::class;
+                        $modelClass = SelfInvoice::class;
                         $status = InvoiceStatus::Sent;
                         $sdiStatus = SdiStatus::Delivered;
                     }
