@@ -188,38 +188,25 @@ class PurchaseInvoice extends Model
         // purchase (since we are also the recipient), we should NOT create a
         // duplicate purchase row — instead mark the self-invoice as delivered.
         //
-        // Primary match: by file_id (assigned by SDI, same for both events).
-        // Fallback: by document number + date (for self-invoices sent before
-        // this fix that don't have sdi_file_id populated yet).
-        $incomingFileId = $invoiceData['file_id'] ?? null;
+        // Match by document number: the self-invoice number is preserved in
+        // the XML and returned unchanged by SDI.
         $documentNumber = $documentData['numero'] ?? null;
-        $documentDate = $documentData['data'] ?? null;
 
-        $selfInvoice = null;
-
-        if ($incomingFileId) {
-            $selfInvoice = SelfInvoice::withoutGlobalScopes()
-                ->where('sdi_file_id', $incomingFileId)
-                ->first();
-        }
-
-        // Fallback: match by document number + date for pre-fix self-invoices
-        if (! $selfInvoice && $documentNumber && $documentDate) {
-            $selfInvoice = SelfInvoice::withoutGlobalScopes()
+        if ($documentNumber) {
+            $selfInvoice = \App\Models\SelfInvoice::withoutGlobalScopes()
                 ->where('number', $documentNumber)
-                ->where('date', $documentDate)
-                ->where('sdi_status', SdiStatus::Sent)
                 ->first();
-        }
 
-        if ($selfInvoice) {
-            $selfInvoice->update([
-                'sdi_file_id' => $selfInvoice->sdi_file_id ?: $incomingFileId,
-                'sdi_status' => SdiStatus::Delivered,
-                'sdi_message' => 'Consegnata (ricevuta come acquisto)',
-            ]);
+            if ($selfInvoice) {
+                $selfInvoice->update([
+                    'sdi_file_id' => $selfInvoice->sdi_file_id ?: ($invoiceData['file_id'] ?? null),
+                    'sdi_filename' => $selfInvoice->sdi_filename ?: ($invoiceData['filename'] ?? null),
+                    'sdi_status' => \App\Enums\SdiStatus::Delivered,
+                    'sdi_message' => 'Consegnata (ricevuta come acquisto)',
+                ]);
 
-            return null;
+                return null;
+            }
         }
 
         return self::create([
