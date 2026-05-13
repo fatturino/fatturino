@@ -244,6 +244,26 @@ test('partial payment on invoice with withholding tax has correct remaining bala
     expect($invoice->payment_status)->toBe(PaymentStatus::Partial);
 });
 
+test('payment can be recorded without a date (paid_at is null)', function () {
+    $invoice = createInvoiceWithLine(10000);
+
+    Payment::create([
+        'invoice_id' => $invoice->id,
+        'amount' => 10000,
+        'paid_at' => null,
+    ]);
+
+    $invoice->refresh();
+    $invoice->recalculatePaymentStatus();
+    $invoice->refresh();
+
+    expect($invoice->total_paid)->toBe(10000);
+    expect($invoice->payment_status)->toBe(PaymentStatus::Paid);
+
+    $payment = Payment::first();
+    expect($payment->paid_at)->toBeNull();
+});
+
 test('overpaying net_due still sets paid and remaining balance to zero', function () {
     $contact = Contact::create(['name' => 'Test Client']);
 
