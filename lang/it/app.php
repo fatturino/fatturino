@@ -1056,7 +1056,7 @@ return [
         'error_details' => 'Dettaglio errori',
         'no_sequence_available' => 'Nessun sezionale disponibile per questa categoria. Configurane uno in Impostazioni > Sezionali.',
         'zip_open_error' => 'Impossibile aprire il file ZIP.',
-        'zip_no_xml' => 'Il file ZIP non contiene file XML o P7M validi.',
+        'zip_no_xml' => 'Il file ZIP non contiene file XML validi.',
     ],
 
     'wip' => [

@@ -4,12 +4,15 @@ namespace Tests\Feature;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\VatRate;
+use App\Livewire\Imports\Index;
 use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\PurchaseInvoice;
 use App\Models\Sequence;
 use App\Services\InvoiceXmlImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class InvoiceXmlImportTest extends TestCase
@@ -277,6 +280,42 @@ class InvoiceXmlImportTest extends TestCase
         // PurchaseInvoice model should only return purchase invoices
         $this->assertEquals(1, PurchaseInvoice::count());
         $this->assertEquals('purchase', PurchaseInvoice::first()->type);
+    }
+
+    public function test_zip_import_filters_out_p7m_and_metadata_files()
+    {
+        // Create a temp ZIP simulating Agenzia delle Entrate bulk export.
+        // It contains: plain .xml, .p7m, _metaDato.xml, and .p7m_metaDato.xml.
+        // Only the plain .xml files should be imported.
+
+        $xmlInvoice1 = $this->buildSampleXml();
+        $xmlInvoice2 = $this->buildSampleXmlWithPec();
+
+        $tempZip = tempnam(sys_get_temp_dir(), 'fatturino_test_zip_');
+        $zip = new \ZipArchive;
+        $zip->open($tempZip, \ZipArchive::CREATE);
+        $zip->addFromString('IT01641790702_ABC123.xml', $xmlInvoice1);
+        $zip->addFromString('IT01879020517_DEF456.xml', $xmlInvoice2);
+        // These should be skipped by the filtering logic
+        $zip->addFromString('IT01879020517_GHI789.xml.p7m', 'fake-p7m-content');
+        $zip->addFromString('IT01641790702_ABC123.xml_metaDato.xml', '<meta>fake</meta>');
+        $zip->addFromString('IT01879020517_GHI789.xml.p7m_metaDato.xml', '<meta>fake</meta>');
+        $zip->close();
+
+        $zipContent = file_get_contents($tempZip);
+        unlink($tempZip);
+
+        $uploadedFile = UploadedFile::fake()->createWithContent('fatture.zip', $zipContent);
+
+        Livewire::test(Index::class)
+            ->set('importType', 'xml_sales')
+            ->set('xmlFile', $uploadedFile)
+            ->call('runImport')
+            ->assertSet('importResult.type', 'xml_sales')
+            ->assertSet('importResult.stats.invoices_imported', 2)
+            ->assertSet('importResult.stats.errors', 0);
+
+        $this->assertEquals(2, Invoice::count());
     }
 
     /**

@@ -1002,7 +1002,7 @@ return [
         'error_details' => 'Error details',
         'no_sequence_available' => 'No sequence available for this category. Configure one in Settings > Sequences.',
         'zip_open_error' => 'Unable to open the ZIP file.',
-        'zip_no_xml' => 'The ZIP archive contains no valid XML or P7M files.',
+        'zip_no_xml' => 'The ZIP archive contains no valid XML files.',
     ],
 
     'wip' => [
