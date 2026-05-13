@@ -76,7 +76,8 @@ class Index extends Component
         $totalCount = (clone $base)->count();
         $totalGross = (clone $base)->sum('total_gross');
         $unpaidCount = (clone $base)->where('payment_status', PaymentStatus::Unpaid)->count();
-        $unpaidAmount = (clone $base)->where('payment_status', PaymentStatus::Unpaid)->sum('total_gross');
+        $unpaidInvoices = (clone $base)->where('payment_status', PaymentStatus::Unpaid)->get();
+        $unpaidAmount = $unpaidInvoices->sum(fn ($i) => $i->net_due - $i->total_paid);
         $overdueCount = (clone $base)->where('payment_status', PaymentStatus::Overdue)->count();
 
         return [

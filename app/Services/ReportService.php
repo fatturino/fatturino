@@ -318,7 +318,7 @@ class ReportService
      * Each bucket contains:
      *   - key:      YYYY-MM string (or 'overdue')
      *   - label:    human-readable label in Italian
-     *   - inflows:  balance due on unpaid/partial sales invoices (total_gross - total_paid) in cents
+     *   - inflows:  balance due on unpaid/partial sales invoices (net_due - total_paid) in cents
      *   - outflows: balance due on unpaid/partial purchase invoices in cents
      *   - net:      inflows - outflows in cents
      *
@@ -371,13 +371,11 @@ class ReportService
                 $purchaseQuery->whereBetween('due_date', [$bucketDef['start'], $bucketDef['end']]);
             }
 
-            $inflows = (int) $salesQuery
-                ->selectRaw('COALESCE(SUM(total_gross - total_paid), 0) as balance_due')
-                ->value('balance_due');
+            $salesInvoices = $salesQuery->get();
+            $inflows = (int) $salesInvoices->sum(fn ($i) => max(0, $i->net_due - $i->total_paid));
 
-            $outflows = (int) $purchaseQuery
-                ->selectRaw('COALESCE(SUM(total_gross - total_paid), 0) as balance_due')
-                ->value('balance_due');
+            $purchaseInvoices = $purchaseQuery->get();
+            $outflows = (int) $purchaseInvoices->sum(fn ($i) => max(0, $i->total_gross - $i->total_paid));
 
             $buckets[] = [
                 'key' => $bucketDef['key'],
