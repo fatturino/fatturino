@@ -165,3 +165,118 @@ test('payment is cascade deleted when the invoice is deleted', function () {
 
     expect(Payment::where('invoice_id', $invoice->id)->count())->toBe(0);
 });
+
+test('full payment on invoice with withholding tax sets status to paid', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = Invoice::create([
+        'number' => uniqid('INV-'),
+        'date' => now(),
+        'contact_id' => $contact->id,
+        'withholding_tax_enabled' => true,
+        'withholding_tax_percent' => 20,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 100000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 100000,
+    ]);
+
+    $invoice->refresh();
+
+    // total_gross = 122000, withholding = 20000, net_due = 102000
+    expect($invoice->total_gross)->toEqual(122000);
+    expect($invoice->net_due)->toEqual(102000);
+
+    // Pay exactly net_due (what the client actually transfers)
+    Payment::create([
+        'invoice_id' => $invoice->id,
+        'amount' => 102000,
+        'paid_at' => now()->format('Y-m-d'),
+    ]);
+
+    $invoice->refresh();
+    $invoice->recalculatePaymentStatus();
+    $invoice->refresh();
+
+    expect($invoice->total_paid)->toBe(102000);
+    expect($invoice->remainingBalance())->toBe(0);
+    expect($invoice->payment_status)->toBe(PaymentStatus::Paid);
+});
+
+test('partial payment on invoice with withholding tax has correct remaining balance', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = Invoice::create([
+        'number' => uniqid('INV-'),
+        'date' => now(),
+        'contact_id' => $contact->id,
+        'withholding_tax_enabled' => true,
+        'withholding_tax_percent' => 20,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 100000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 100000,
+    ]);
+
+    $invoice->refresh();
+
+    // net_due = 102000, client pays 50000 → still partial
+    Payment::create([
+        'invoice_id' => $invoice->id,
+        'amount' => 50000,
+        'paid_at' => now()->format('Y-m-d'),
+    ]);
+
+    $invoice->refresh();
+    $invoice->recalculatePaymentStatus();
+    $invoice->refresh();
+
+    expect($invoice->total_paid)->toBe(50000);
+    expect($invoice->remainingBalance())->toBe(52000);
+    expect($invoice->payment_status)->toBe(PaymentStatus::Partial);
+});
+
+test('overpaying net_due still sets paid and remaining balance to zero', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = Invoice::create([
+        'number' => uniqid('INV-'),
+        'date' => now(),
+        'contact_id' => $contact->id,
+        'withholding_tax_enabled' => true,
+        'withholding_tax_percent' => 20,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 100000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 100000,
+    ]);
+
+    $invoice->refresh();
+
+    // net_due = 102000, but client pays the full total_gross (122000)
+    Payment::create([
+        'invoice_id' => $invoice->id,
+        'amount' => 122000,
+        'paid_at' => now()->format('Y-m-d'),
+    ]);
+
+    $invoice->refresh();
+    $invoice->recalculatePaymentStatus();
+    $invoice->refresh();
+
+    expect($invoice->total_paid)->toBe(122000);
+    expect($invoice->remainingBalance())->toBe(0);
+    expect($invoice->payment_status)->toBe(PaymentStatus::Paid);
+});

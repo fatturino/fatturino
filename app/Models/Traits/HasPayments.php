@@ -15,10 +15,11 @@ trait HasPayments
 
     /**
      * The amount still owed after all registered payments, in cents.
+     * Uses net_due (gross - withholding - split payment VAT) as the expected amount.
      */
     public function remainingBalance(): int
     {
-        return max(0, $this->total_gross - $this->total_paid);
+        return max(0, $this->net_due - $this->total_paid);
     }
 
     /**
@@ -30,9 +31,9 @@ trait HasPayments
         $totalPaid = $this->payments()->sum('amount');
 
         $status = match (true) {
-            $totalPaid >= $this->total_gross && $this->total_gross > 0 => PaymentStatus::Paid,
-            $totalPaid > 0 && $this->due_date?->isPast() => PaymentStatus::Overdue,
-            $totalPaid > 0 => PaymentStatus::Partial,
+            $totalPaid >= $this->net_due && $this->net_due > 0 => PaymentStatus::Paid,
+            $totalPaid > 0 && $totalPaid < $this->net_due && $this->due_date?->isPast() => PaymentStatus::Overdue,
+            $totalPaid > 0 && $totalPaid < $this->net_due => PaymentStatus::Partial,
             $this->due_date?->isPast() => PaymentStatus::Overdue,
             default => PaymentStatus::Unpaid,
         };
