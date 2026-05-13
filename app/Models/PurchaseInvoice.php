@@ -198,24 +198,24 @@ class PurchaseInvoice extends Model
         $selfInvoice = null;
 
         if ($incomingFileId) {
-            $selfInvoice = \App\Models\SelfInvoice::withoutGlobalScopes()
+            $selfInvoice = SelfInvoice::withoutGlobalScopes()
                 ->where('sdi_file_id', $incomingFileId)
                 ->first();
         }
 
         // Fallback: match by document number + date for pre-fix self-invoices
         if (! $selfInvoice && $documentNumber && $documentDate) {
-            $selfInvoice = \App\Models\SelfInvoice::withoutGlobalScopes()
+            $selfInvoice = SelfInvoice::withoutGlobalScopes()
                 ->where('number', $documentNumber)
                 ->where('date', $documentDate)
-                ->where('sdi_status', \App\Enums\SdiStatus::Sent)
+                ->where('sdi_status', SdiStatus::Sent)
                 ->first();
         }
 
         if ($selfInvoice) {
             $selfInvoice->update([
                 'sdi_file_id' => $selfInvoice->sdi_file_id ?: $incomingFileId,
-                'sdi_status' => \App\Enums\SdiStatus::Delivered,
+                'sdi_status' => SdiStatus::Delivered,
                 'sdi_message' => 'Consegnata (ricevuta come acquisto)',
             ]);
 
