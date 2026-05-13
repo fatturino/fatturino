@@ -44,6 +44,11 @@ class InvoiceXmlImportService
         $this->stats['total']++;
 
         try {
+            // Auto-detect P7M signed content and extract the XML payload
+            if ($this->isP7m($xmlContent)) {
+                $xmlContent = $this->extractXmlFromP7m($xmlContent);
+            }
+
             $xml = $this->parseXml($xmlContent);
             $header = $xml->FatturaElettronicaHeader;
             $body = $xml->FatturaElettronicaBody;

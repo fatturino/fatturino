@@ -296,8 +296,10 @@ class InvoiceXmlImportTest extends TestCase
         $zip->open($tempZip, \ZipArchive::CREATE);
         $zip->addFromString('IT01641790702_ABC123.xml', $xmlInvoice1);
         $zip->addFromString('IT01879020517_DEF456.xml', $xmlInvoice2);
-        // These should be skipped by the filtering logic
+        // .p7m files are now imported (service auto-detects and extracts P7M)
+        // This fake content will fail parsing → 1 error
         $zip->addFromString('IT01879020517_GHI789.xml.p7m', 'fake-p7m-content');
+        // Metadata files are still skipped by the ZIP filter
         $zip->addFromString('IT01641790702_ABC123.xml_metaDato.xml', '<meta>fake</meta>');
         $zip->addFromString('IT01879020517_GHI789.xml.p7m_metaDato.xml', '<meta>fake</meta>');
         $zip->close();
@@ -313,7 +315,7 @@ class InvoiceXmlImportTest extends TestCase
             ->call('runImport')
             ->assertSet('importResult.type', 'xml_sales')
             ->assertSet('importResult.stats.invoices_imported', 2)
-            ->assertSet('importResult.stats.errors', 0);
+            ->assertSet('importResult.stats.errors', 1);
 
         $this->assertEquals(2, Invoice::count());
     }

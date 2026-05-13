@@ -110,10 +110,10 @@ class Index extends Component
     }
 
     /**
-     * Open a ZIP archive and import every .xml entry found inside.
+     * Open a ZIP archive and import every .xml or .p7m entry found inside.
      *
-     * P7M files (signed duplicates) and metadata files are skipped
-     * so that the bulk export from Agenzia delle Entrate can be imported directly.
+     * Metadata companion files (_metaDato.xml) are skipped.
+     * P7M signed files are auto-detected and extracted by InvoiceXmlImportService.
      *
      * Stats are accumulated on the same service instance across all files.
      */
@@ -131,8 +131,8 @@ class Index extends Component
             $entryName = $zip->getNameIndex($i);
             $entryExtension = strtolower(pathinfo($entryName, PATHINFO_EXTENSION));
 
-            // Only accept plain .xml files
-            if ($entryExtension !== 'xml') {
+            // Accept .xml and .p7m files
+            if (! in_array($entryExtension, ['xml', 'p7m'], true)) {
                 continue;
             }
 
