@@ -9,6 +9,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PaymentTerms;
 use App\Enums\SdiStatus;
 use App\Enums\VatRate;
+use App\Livewire\Traits\CalculatesInvoiceTotals;
 use App\Models\Traits\HasPayments;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -199,7 +200,7 @@ class Invoice extends Model implements HasTimeline
 
     /**
      * Net amount the client must pay (total_gross + stamp_duty - withholding_tax - split_payment VAT).
-     * All amounts in cents. Mirrors {@see \App\Livewire\Traits\CalculatesInvoiceTotals::getNetDueProperty()}.
+     * All amounts in cents. Mirrors {@see CalculatesInvoiceTotals::getNetDueProperty()}.
      */
     public function getNetDueAttribute(): int
     {

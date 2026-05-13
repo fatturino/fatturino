@@ -40,10 +40,16 @@ class BackfillSelfInvoiceDelivery extends Command
 
         $this->info("Updated sdi_status to 'delivered' and sdi_file_id to '{$fileId}'.");
 
-        // 3. Find and delete duplicate purchase invoice (if any)
+        // 3. Find and delete duplicate purchase invoice (if any).
+        // Try multiple fields: purchases created before this fix lack sdi_file_id,
+        // but they share the same document number as the self-invoice.
         $duplicatePurchase = PurchaseInvoice::withoutGlobalScopes()
             ->where('type', 'purchase')
-            ->where('sdi_file_id', $fileId)
+            ->where(function ($q) use ($fileId, $number, $selfInvoice) {
+                $q->where('sdi_file_id', $fileId)
+                    ->orWhere('number', $number)
+                    ->orWhere('sdi_filename', $selfInvoice->sdi_filename);
+            })
             ->first();
 
         if ($duplicatePurchase) {
