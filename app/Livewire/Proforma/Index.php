@@ -208,9 +208,9 @@ class Index extends Component
             return;
         }
 
-        $count = \App\Models\ProformaInvoice::whereIn('id', $this->selectedIds)
-            ->where('payment_status', '!=', \App\Enums\PaymentStatus::Paid->value)
-            ->update(['payment_status' => \App\Enums\PaymentStatus::Paid]);
+        $count = ProformaInvoice::whereIn('id', $this->selectedIds)
+            ->where('payment_status', '!=', PaymentStatus::Paid->value)
+            ->update(['payment_status' => PaymentStatus::Paid]);
 
         $this->selectedIds = [];
         $this->success(__('app.invoices.bulk_marked_as_paid', ['count' => $count]));
@@ -224,9 +224,9 @@ class Index extends Component
             return;
         }
 
-        $count = \App\Models\ProformaInvoice::whereIn('id', $this->selectedIds)
-            ->where('payment_status', '!=', \App\Enums\PaymentStatus::Unpaid->value)
-            ->update(['payment_status' => \App\Enums\PaymentStatus::Unpaid]);
+        $count = ProformaInvoice::whereIn('id', $this->selectedIds)
+            ->where('payment_status', '!=', PaymentStatus::Unpaid->value)
+            ->update(['payment_status' => PaymentStatus::Unpaid]);
 
         $this->selectedIds = [];
         $this->success(__('app.invoices.bulk_marked_as_unpaid', ['count' => $count]));
