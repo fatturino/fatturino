@@ -15,8 +15,8 @@ $rowLink = $buildLink(is_array($row) ? $row : $row->toArray());
 @endphp
 
 <tr wire:key="row-{{ $rowId }}"
-    class="text-base-content transition-colors {{ $rowLink && !$selectable ? 'cursor-pointer hover:bg-base-100' : '' }}"
-    @if($rowLink && !$selectable) onclick="window.location='{{ $rowLink }}'" @endif>
+    class="text-base-content transition-colors {{ $rowLink ? 'cursor-pointer hover:bg-base-100' : '' }}"
+    @if($rowLink) onclick="window.location='{{ $rowLink }}'" @endif>
     @if($selectable)
         @php
             $isSelected = in_array((string) $rowId, $selectedIds);
