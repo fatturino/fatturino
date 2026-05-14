@@ -18,6 +18,15 @@ class Index extends Component
 
     public array $sortBy = ['column' => 'name', 'direction' => 'asc'];
 
+    public array $selectedIds = [];
+
+    // Reset page and selection on search change
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+        $this->selectedIds = [];
+    }
+
     // Clear filters
     public function clear(): void
     {
@@ -50,6 +59,18 @@ class Index extends Component
             ['key' => 'city', 'label' => __('app.contacts.col_city')],
             ['key' => 'actions', 'label' => '', 'class' => 'w-1', 'view' => 'partials.contact-actions'],
         ];
+    }
+
+    // Bulk selection
+
+    public function getSelectedCountProperty(): int
+    {
+        return count($this->selectedIds);
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedIds = [];
     }
 
     public function render()

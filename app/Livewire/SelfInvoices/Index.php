@@ -17,6 +17,8 @@ class Index extends Component
 
     public bool $drawer = false;
 
+    public array $selectedIds = [];
+
     public array $sortBy = ['column' => 'number', 'direction' => 'desc'];
 
     public int $fiscalYear;
@@ -35,16 +37,18 @@ class Index extends Component
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->selectedIds = [];
     }
 
     public function updatedFilterStatus(): void
     {
         $this->resetPage();
+        $this->selectedIds = [];
     }
 
     public function clear(): void
     {
-        $this->reset(['search', 'drawer', 'sortBy', 'filterStatus']);
+        $this->reset(['search', 'drawer', 'sortBy', 'filterStatus', 'selectedIds']);
         $this->resetPage();
         $this->success(__('app.self_invoices.filters_cleared'), position: 'toast-bottom');
     }
@@ -96,6 +100,18 @@ class Index extends Component
             ['key' => 'status', 'label' => __('app.self_invoices.col_status'), 'class' => 'w-32', 'view' => 'partials.invoice-status-cell'],
             ['key' => 'actions', 'label' => '', 'class' => 'w-1', 'view' => 'partials.self-invoice-actions'],
         ];
+    }
+
+    // Bulk selection
+
+    public function getSelectedCountProperty(): int
+    {
+        return count($this->selectedIds);
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedIds = [];
     }
 
     public function render()

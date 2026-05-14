@@ -30,6 +30,8 @@ class Index extends Component
     #[Validate('required')]
     public string $pattern = '{SEQ}';
 
+    public array $selectedIds = [];
+
     public function create(): void
     {
         $this->reset(['sequence_id', 'name', 'type', 'pattern']);
@@ -91,6 +93,18 @@ class Index extends Component
         } catch (\Exception $e) {
             $this->error($e->getMessage());
         }
+    }
+
+    // Bulk selection
+
+    public function getSelectedCountProperty(): int
+    {
+        return count($this->selectedIds);
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedIds = [];
     }
 
     public function render()

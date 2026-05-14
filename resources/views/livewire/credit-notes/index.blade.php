@@ -23,37 +23,54 @@
         <x-stat :title="__('app.credit_notes.stat_total_amount')" icon="o-banknotes" value="€ {{ number_format($this->stats['total_gross'] / 100, 2, ',', '.') }}" />
     </div>
 
+    {{-- Toolbar with search and filters --}}
+    @unless($isReadOnly)
+        <x-table-toolbar :selected-count="$this->selectedCount" class="mb-4">
+            <x-slot:search>
+                <x-input
+                    :placeholder="__('app.common.search')"
+                    wire:model.live.debounce="search"
+                    icon="o-magnifying-glass"
+                    class="w-full max-w-sm"
+                />
+            </x-slot:search>
+            <x-slot:filters>
+                <x-select
+                    :options="$this->statusOptions"
+                    wire:model.live="filterStatus"
+                    :placeholder="__('app.invoices.filter_status')"
+                    option-value="id"
+                    option-label="name"
+                    class="w-40"
+                />
+                <x-button
+                    :label="__('app.common.reset')"
+                    icon="o-x-mark"
+                    variant="ghost"
+                    size="sm"
+                    wire:click="clear"
+                    spinner="clear"
+                />
+            </x-slot:filters>
+        </x-table-toolbar>
+    @else
+        <div class="flex items-center gap-3 px-5 py-3 border border-base-300 rounded-lg bg-base-200/50 mb-4">
+            <x-input
+                :placeholder="__('app.common.search')"
+                wire:model.live.debounce="search"
+                icon="o-magnifying-glass"
+                class="w-full max-w-sm"
+            />
+        </div>
+    @endunless
+
     <!-- TABLE -->
-    
-        <x-table :headers="$headers" :rows="$creditNotes" :sort-by="$sortBy" with-pagination link="/credit-notes/{id}/edit">
+    <x-table :headers="$headers" :rows="$creditNotes" :sort-by="$sortBy" with-pagination link="/credit-notes/{id}/edit" :selectable="!$isReadOnly" :selected-ids="$selectedIds">
             <x-slot:empty>
                 <div class="py-8 flex flex-col items-center gap-2">
                     <x-icon name="o-inbox" class="w-8 h-8" />
                     <p class="text-sm">{{ __('app.common.empty_table') }}</p>
                 </div>
             </x-slot:empty>
-
-</x-table>
-    
-
-    <!-- FILTER DRAWER -->
-    <x-drawer wire:model="drawer" :title="__('app.common.filters')" right separator with-close-button class="lg:w-1/3">
-        <div class="space-y-4">
-            <x-input :placeholder="__('app.common.search')" wire:model.live.debounce="search" icon="o-magnifying-glass" @keydown.enter="$wire.drawer = false" />
-
-            <x-select
-                :label="__('app.credit_notes.filter_status')"
-                :options="$this->statusOptions"
-                wire:model.live="filterStatus"
-                :placeholder="__('app.common.all')"
-                option-value="id"
-                option-label="name"
-            />
-        </div>
-
-        <x-slot:actions>
-            <x-button :label="__('app.common.reset')" icon="o-x-mark" wire:click="clear" spinner="clear" />
-            <x-button :label="__('app.common.done')" icon="o-check" variant="primary" @click="$wire.drawer = false" />
-        </x-slot:actions>
-    </x-drawer>
+    </x-table>
 </div>

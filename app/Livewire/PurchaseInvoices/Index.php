@@ -16,13 +16,14 @@ class Index extends Component
 
     public string $search = '';
 
-    public bool $drawer = false;
-
     public array $sortBy = ['column' => 'number', 'direction' => 'desc'];
 
     public int $fiscalYear;
 
     public bool $isReadOnly;
+
+    // Bulk selection
+    public array $selectedIds = [];
 
     // Filters
     public string $filterStatus = '';
@@ -39,21 +40,24 @@ class Index extends Component
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->selectedIds = [];
     }
 
     public function updatedFilterStatus(): void
     {
         $this->resetPage();
+        $this->selectedIds = [];
     }
 
     public function updatedFilterPayment(): void
     {
         $this->resetPage();
+        $this->selectedIds = [];
     }
 
     public function clear(): void
     {
-        $this->reset(['search', 'drawer', 'sortBy', 'filterStatus', 'filterPayment']);
+        $this->reset(['search', 'sortBy', 'filterStatus', 'filterPayment', 'selectedIds']);
         $this->resetPage();
         $this->success(__('app.purchase_invoices.filters_cleared'), position: 'toast-bottom');
     }
@@ -121,6 +125,50 @@ class Index extends Component
             ['key' => 'payment_status', 'label' => __('app.invoices.col_payment'), 'sortable' => false, 'class' => 'w-36', 'view' => 'partials.payment-status-cell'],
             ['key' => 'actions', 'label' => '', 'class' => 'w-1', 'view' => 'partials.purchase-invoice-actions'],
         ];
+    }
+
+    // Bulk actions
+
+    public function getSelectedCountProperty(): int
+    {
+        return count($this->selectedIds);
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedIds = [];
+    }
+
+    public function markSelectedAsPaid(): void
+    {
+        if (empty($this->selectedIds)) {
+            $this->error(__('app.invoices.bulk_no_selection'));
+
+            return;
+        }
+
+        $count = \App\Models\PurchaseInvoice::whereIn('id', $this->selectedIds)
+            ->where('payment_status', '!=', \App\Enums\PaymentStatus::Paid->value)
+            ->update(['payment_status' => \App\Enums\PaymentStatus::Paid]);
+
+        $this->selectedIds = [];
+        $this->success(__('app.invoices.bulk_marked_as_paid', ['count' => $count]));
+    }
+
+    public function markSelectedAsUnpaid(): void
+    {
+        if (empty($this->selectedIds)) {
+            $this->error(__('app.invoices.bulk_no_selection'));
+
+            return;
+        }
+
+        $count = \App\Models\PurchaseInvoice::whereIn('id', $this->selectedIds)
+            ->where('payment_status', '!=', \App\Enums\PaymentStatus::Unpaid->value)
+            ->update(['payment_status' => \App\Enums\PaymentStatus::Unpaid]);
+
+        $this->selectedIds = [];
+        $this->success(__('app.invoices.bulk_marked_as_unpaid', ['count' => $count]));
     }
 
     public function render()

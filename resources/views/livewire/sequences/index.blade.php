@@ -18,6 +18,8 @@
             :rows="$sequences"
             :headers="$seqHeaders"
             with-pagination
+            :selectable="true"
+            :selected-ids="$selectedIds"
         >
             <x-slot:empty>
                 <div class="py-8 flex flex-col items-center gap-2">

@@ -25,8 +25,6 @@ class Index extends Component
 
     public string $search = '';
 
-    public bool $drawer = false;
-
     public array $sortBy = ['column' => 'number', 'direction' => 'desc'];
 
     public int $fiscalYear;
@@ -69,7 +67,7 @@ class Index extends Component
     // Clear filters
     public function clear(): void
     {
-        $this->reset(['search', 'drawer', 'sortBy', 'filterStatus', 'filterPayment', 'selectedIds']);
+        $this->reset(['search', 'sortBy', 'filterStatus', 'filterPayment', 'selectedIds']);
         $this->resetPage();
         $this->success(__('app.invoices.filters_cleared'), position: 'toast-bottom');
     }

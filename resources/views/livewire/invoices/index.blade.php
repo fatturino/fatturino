@@ -45,35 +45,85 @@
 
     <!-- TABLE -->
 
-    {{-- Bulk actions bar --}}
-    @if(!$isReadOnly && $this->selectedCount > 0)
-        <div class="flex items-center gap-3 mb-4 p-3 bg-primary/10 border border-primary/30 rounded-lg">
-            <span class="text-sm font-medium">{{ __('app.invoices.bulk_selected', ['count' => $this->selectedCount]) }}</span>
-            <div class="flex-1"></div>
-            <x-button
-                :label="__('app.invoices.bulk_mark_paid')"
-                icon="o-check-circle"
-                variant="success"
-                wire:click="markSelectedAsPaid"
-                wire:confirm="{{ __('app.invoices.bulk_confirm_mark_paid') }}"
-                spinner
-            />
-            <x-button
-                :label="__('app.invoices.bulk_mark_unpaid')"
-                icon="o-clock"
-                variant="warning"
-                wire:click="markSelectedAsUnpaid"
-                wire:confirm="{{ __('app.invoices.bulk_confirm_mark_unpaid') }}"
-                spinner
-            />
-            <x-button
-                :label="__('app.common.cancel')"
-                icon="o-x-mark"
-                variant="ghost"
-                wire:click="clearSelection"
+    {{-- Toolbar with search, filters, and bulk actions --}}
+    @unless($isReadOnly)
+        <x-table-toolbar :selected-count="$this->selectedCount" class="mb-4">
+            <x-slot:search>
+                <x-input
+                    :placeholder="__('app.common.search')"
+                    wire:model.live.debounce="search"
+                    icon="o-magnifying-glass"
+                    class="w-full max-w-sm"
+                />
+            </x-slot:search>
+
+            <x-slot:filters>
+                <x-select
+                    :options="$this->statusOptions"
+                    wire:model.live="filterStatus"
+                    :placeholder="__('app.invoices.filter_status')"
+                    option-value="id"
+                    option-label="name"
+                    class="w-40"
+                />
+                <x-select
+                    :options="$this->paymentOptions"
+                    wire:model.live="filterPayment"
+                    :placeholder="__('app.invoices.filter_payment')"
+                    option-value="id"
+                    option-label="name"
+                    class="w-44"
+                />
+                <x-button
+                    :label="__('app.common.reset')"
+                    icon="o-x-mark"
+                    variant="ghost"
+                    size="sm"
+                    wire:click="clear"
+                    spinner="clear"
+                />
+            </x-slot:filters>
+
+            <x-slot:bulk>
+                <span class="text-sm font-medium whitespace-nowrap">{{ __('app.invoices.bulk_selected', ['count' => $this->selectedCount]) }}</span>
+                <x-button
+                    :label="__('app.invoices.bulk_mark_paid')"
+                    icon="o-check-circle"
+                    variant="success"
+                    size="sm"
+                    wire:click="markSelectedAsPaid"
+                    wire:confirm="{{ __('app.invoices.bulk_confirm_mark_paid') }}"
+                    spinner
+                />
+                <x-button
+                    :label="__('app.invoices.bulk_mark_unpaid')"
+                    icon="o-clock"
+                    variant="warning"
+                    size="sm"
+                    wire:click="markSelectedAsUnpaid"
+                    wire:confirm="{{ __('app.invoices.bulk_confirm_mark_unpaid') }}"
+                    spinner
+                />
+                <x-button
+                    :label="__('app.common.done')"
+                    icon="o-x-mark"
+                    variant="ghost"
+                    size="sm"
+                    wire:click="clearSelection"
+                />
+            </x-slot:bulk>
+        </x-table-toolbar>
+    @else
+        {{-- Read-only: search only, no bulk actions --}}
+        <div class="flex items-center gap-3 px-5 py-3 border border-base-300 rounded-lg bg-base-200/50 mb-4">
+            <x-input
+                :placeholder="__('app.common.search')"
+                wire:model.live.debounce="search"
+                icon="o-magnifying-glass"
+                class="w-full max-w-sm"
             />
         </div>
-    @endif
+    @endunless
 
     <x-table :headers="$headers" :rows="$invoices" :sort-by="$sortBy" with-pagination link="/sell-invoices/{id}/edit" containerClass="overflow-visible" :selectable="!$isReadOnly" :selected-ids="$selectedIds">
         <x-slot:empty>
@@ -84,35 +134,4 @@
         </x-slot:empty>
 
 </x-table>
-    
-
-    <!-- FILTER DRAWER -->
-    <x-drawer wire:model="drawer" :title="__('app.common.filters')" right separator with-close-button class="lg:w-1/3">
-        <div class="space-y-4">
-            <x-input :placeholder="__('app.common.search')" wire:model.live.debounce="search" icon="o-magnifying-glass" @keydown.enter="$wire.drawer = false" />
-
-            <x-select
-                :label="__('app.invoices.filter_status')"
-                :options="$this->statusOptions"
-                wire:model.live="filterStatus"
-                :placeholder="__('app.common.all')"
-                option-value="id"
-                option-label="name"
-            />
-
-            <x-select
-                :label="__('app.invoices.filter_payment')"
-                :options="$this->paymentOptions"
-                wire:model.live="filterPayment"
-                :placeholder="__('app.common.all')"
-                option-value="id"
-                option-label="name"
-            />
-        </div>
-
-        <x-slot:actions>
-            <x-button :label="__('app.common.reset')" icon="o-x-mark" wire:click="clear" spinner="clear" />
-            <x-button :label="__('app.common.done')" icon="o-check" variant="primary" @click="$wire.drawer = false" />
-        </x-slot:actions>
-    </x-drawer>
 </div>

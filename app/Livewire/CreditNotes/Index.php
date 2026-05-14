@@ -25,6 +25,8 @@ class Index extends Component
 
     public string $filterStatus = '';
 
+    public array $selectedIds = [];
+
     public function mount(): void
     {
         $this->fiscalYear = session('fiscal_year', now()->year);
@@ -34,16 +36,18 @@ class Index extends Component
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->selectedIds = [];
     }
 
     public function updatedFilterStatus(): void
     {
         $this->resetPage();
+        $this->selectedIds = [];
     }
 
     public function clear(): void
     {
-        $this->reset(['search', 'drawer', 'sortBy', 'filterStatus']);
+        $this->reset(['search', 'drawer', 'sortBy', 'filterStatus', 'selectedIds']);
         $this->resetPage();
         $this->success(__('app.credit_notes.filters_cleared'), position: 'toast-bottom');
     }
@@ -91,6 +95,18 @@ class Index extends Component
             ['key' => 'status', 'label' => __('app.credit_notes.col_status'), 'class' => 'w-32', 'view' => 'partials.invoice-status-cell'],
             ['key' => 'actions', 'label' => '', 'class' => 'w-1', 'view' => 'partials.credit-note-actions'],
         ];
+    }
+
+    // Bulk selection
+
+    public function getSelectedCountProperty(): int
+    {
+        return count($this->selectedIds);
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedIds = [];
     }
 
     public function render()
