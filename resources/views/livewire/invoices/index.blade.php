@@ -45,9 +45,9 @@
 
     <!-- TABLE -->
 
-    {{-- Toolbar with search, filters, and bulk actions --}}
+    {{-- Toolbar with search and filters --}}
     @unless($isReadOnly)
-        <x-table-toolbar :selected-count="$this->selectedCount" class="mb-4">
+        <x-table-toolbar class="mb-4">
             <x-slot:search>
                 <x-input
                     :placeholder="__('app.common.search')"
@@ -83,9 +83,13 @@
                     spinner="clear"
                 />
             </x-slot:filters>
+        </x-table-toolbar>
 
-            <x-slot:bulk>
+        {{-- Bulk actions bar (only visible when rows are selected) --}}
+        @if($this->selectedCount > 0)
+            <div class="flex items-center gap-3 px-5 py-3 mb-4 border border-primary/30 rounded-lg bg-primary/10">
                 <span class="text-sm font-medium whitespace-nowrap">{{ __('app.invoices.bulk_selected', ['count' => $this->selectedCount]) }}</span>
+                <div class="flex-1"></div>
                 <x-button
                     :label="__('app.invoices.bulk_mark_paid')"
                     icon="o-check-circle"
@@ -105,16 +109,15 @@
                     spinner
                 />
                 <x-button
-                    :label="__('app.common.done')"
                     icon="o-x-mark"
                     variant="ghost"
                     size="sm"
                     wire:click="clearSelection"
                 />
-            </x-slot:bulk>
-        </x-table-toolbar>
+            </div>
+        @endif
     @else
-        {{-- Read-only: search only, no bulk actions --}}
+        {{-- Read-only: search only --}}
         <div class="flex items-center gap-3 px-5 py-3 border border-base-300 rounded-lg bg-base-200/50 mb-4">
             <x-input
                 :placeholder="__('app.common.search')"
