@@ -44,8 +44,38 @@
     </div>
 
     <!-- TABLE -->
-    
-    <x-table :headers="$headers" :rows="$invoices" :sort-by="$sortBy" with-pagination link="/sell-invoices/{id}/edit" containerClass="overflow-visible">
+
+    {{-- Bulk actions bar --}}
+    @if(!$isReadOnly && $this->selectedCount > 0)
+        <div class="flex items-center gap-3 mb-4 p-3 bg-primary/10 border border-primary/30 rounded-lg">
+            <span class="text-sm font-medium">{{ __('app.invoices.bulk_selected', ['count' => $this->selectedCount]) }}</span>
+            <div class="flex-1"></div>
+            <x-button
+                :label="__('app.invoices.bulk_mark_paid')"
+                icon="o-check-circle"
+                variant="success"
+                wire:click="markSelectedAsPaid"
+                wire:confirm="{{ __('app.invoices.bulk_confirm_mark_paid') }}"
+                spinner
+            />
+            <x-button
+                :label="__('app.invoices.bulk_mark_unpaid')"
+                icon="o-clock"
+                variant="warning"
+                wire:click="markSelectedAsUnpaid"
+                wire:confirm="{{ __('app.invoices.bulk_confirm_mark_unpaid') }}"
+                spinner
+            />
+            <x-button
+                :label="__('app.common.cancel')"
+                icon="o-x-mark"
+                variant="ghost"
+                wire:click="clearSelection"
+            />
+        </div>
+    @endif
+
+    <x-table :headers="$headers" :rows="$invoices" :sort-by="$sortBy" with-pagination link="/sell-invoices/{id}/edit" containerClass="overflow-visible" :selectable="!$isReadOnly" :selected-ids="$selectedIds">
         <x-slot:empty>
             <div class="py-8 flex flex-col items-center gap-2">
                 <x-icon name="o-inbox" class="w-8 h-8" />

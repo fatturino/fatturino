@@ -1,4 +1,4 @@
-@props(['headers' => [], 'row' => null, 'link' => null, 'index' => 0])
+@props(['headers' => [], 'row' => null, 'link' => null, 'index' => 0, 'selectable' => false, 'selectedIds' => []])
 
 @php
 $rowId = data_get($row, 'id', $index);
@@ -15,8 +15,21 @@ $rowLink = $buildLink(is_array($row) ? $row : $row->toArray());
 @endphp
 
 <tr wire:key="row-{{ $rowId }}"
-    class="text-base-content transition-colors {{ $rowLink ? 'cursor-pointer hover:bg-base-100' : '' }}"
-    @if($rowLink) onclick="window.location='{{ $rowLink }}'" @endif>
+    class="text-base-content transition-colors {{ $rowLink && !$selectable ? 'cursor-pointer hover:bg-base-100' : '' }}"
+    @if($rowLink && !$selectable) onclick="window.location='{{ $rowLink }}'" @endif>
+    @if($selectable)
+        @php
+            $isSelected = in_array((string) $rowId, $selectedIds);
+        @endphp
+        <td class="px-5 py-4" onclick="event.stopPropagation()">
+            <input
+                            type="checkbox"
+                            class="w-4 h-4 text-primary rounded border-base-300 focus:ring-primary cursor-pointer"
+                wire:model.live="selectedIds"
+                value="{{ $rowId }}"
+            />
+        </td>
+    @endif
     @foreach($headers as $header)
         @php $key = $header['key'] ?? null; @endphp
         <td class="px-5 py-4 text-sm {{ $header['class'] ?? '' }} {{ $key === 'actions' ? 'text-right' : 'whitespace-nowrap' }}">

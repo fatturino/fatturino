@@ -346,6 +346,16 @@ return [
         'confirm_validate_xml' => 'Confirm XML validation?',
         'cannot_send_not_validated' => 'XML must be validated before sending to SDI.',
 
+        // Bulk actions
+        'bulk_selected' => ':count selected',
+        'bulk_no_selection' => 'No invoices selected.',
+        'bulk_mark_paid' => 'Mark as Paid',
+        'bulk_mark_unpaid' => 'Mark as Unpaid',
+        'bulk_confirm_mark_paid' => 'Mark selected invoices as paid?',
+        'bulk_confirm_mark_unpaid' => 'Mark selected invoices as unpaid?',
+        'bulk_marked_as_paid' => ':count invoices marked as paid.',
+        'bulk_marked_as_unpaid' => ':count invoices marked as unpaid.',
+
         // XML validation error messages
         'xml_errors' => [
             'missing_header' => 'Electronic invoice header is missing',

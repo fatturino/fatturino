@@ -378,6 +378,16 @@ return [
         ],
         'cannot_send_not_validated' => 'L\'XML deve essere validato prima di poter inviare allo SDI.',
 
+        // Bulk actions
+        'bulk_selected' => ':count selezionate',
+        'bulk_no_selection' => 'Nessuna fattura selezionata.',
+        'bulk_mark_paid' => 'Segna come pagate',
+        'bulk_mark_unpaid' => 'Segna come non pagate',
+        'bulk_confirm_mark_paid' => 'Segnare le fatture selezionate come pagate?',
+        'bulk_confirm_mark_unpaid' => 'Segnare le fatture selezionate come non pagate?',
+        'bulk_marked_as_paid' => ':count fatture segnate come pagate.',
+        'bulk_marked_as_unpaid' => ':count fatture segnate come non pagate.',
+
         // SDI status labels
         'sdi_sent' => 'Inviata',
         'sdi_rejected' => 'Scartata',
