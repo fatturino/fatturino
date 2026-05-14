@@ -1011,13 +1011,13 @@ return [
         'platforms_section_desc' => 'Importa dati da software di fatturazione di terze parti',
 
         'xml_sales_title' => 'XML Fatture Vendite',
-        'xml_sales_desc' => 'Importa fatture attive da file XML Fattura Elettronica (.xml, .p7m)',
+        'xml_sales_desc' => 'Importa fatture attive da file XML Fattura Elettronica (.xml, .p7m, .zip)',
 
         'xml_purchase_title' => 'XML Fatture Acquisti',
-        'xml_purchase_desc' => 'Importa fatture passive da file XML Fattura Elettronica (.xml, .p7m)',
+        'xml_purchase_desc' => 'Importa fatture passive da file XML Fattura Elettronica (.xml, .p7m, .zip)',
 
         'xml_self_invoice_title' => 'XML Autofatture',
-        'xml_self_invoice_desc' => 'Importa autofatture (TD17, TD18, TD19, TD28) da file XML Fattura Elettronica (.xml, .p7m)',
+        'xml_self_invoice_desc' => 'Importa autofatture (TD17, TD18, TD19, TD28) da file XML Fattura Elettronica (.xml, .p7m, .zip)',
 
         'fattura24_contacts_title' => 'Fattura24: Rubrica',
         'fattura24_contacts_desc' => 'Importa clienti e fornitori dall\'esportazione CSV della rubrica di Fattura24',
@@ -1031,7 +1031,7 @@ return [
         'import_another' => 'Importa un altro',
 
         'xml_file_label' => 'File Fattura Elettronica',
-        'xml_file_hint' => 'Formati supportati: .xml, .p7m (con firma digitale), .zip (archivio con più file XML)',
+        'xml_file_hint' => 'Formati supportati: .xml, .p7m (con firma digitale), .zip (archivio con più file XML, scarta automaticamente p7m e metadata)',
         'csv_file_label' => 'File CSV Fattura24',
         'csv_file_hint' => 'Esporta la rubrica da Fattura24 in formato CSV',
         'select_sequence' => 'Sezionale',

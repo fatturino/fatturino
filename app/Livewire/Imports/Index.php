@@ -71,7 +71,7 @@ class Index extends Component
     protected function runXmlImport(string $category): void
     {
         $this->validate([
-            'xmlFile' => 'required|file|mimetypes:application/xml,text/xml,application/pkcs7-mime,application/zip,application/x-zip-compressed|max:10240',
+            'xmlFile' => 'required|file|mimes:xml,p7m,zip|max:10240',
         ]);
 
         $sequenceId = $this->resolveDefaultSequenceId($category);

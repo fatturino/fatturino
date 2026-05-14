@@ -957,13 +957,13 @@ return [
         'platforms_section_desc' => 'Import data from third-party invoicing software',
 
         'xml_sales_title' => 'XML Sales Invoices',
-        'xml_sales_desc' => 'Import active invoices from Fattura Elettronica XML files (.xml, .p7m)',
+        'xml_sales_desc' => 'Import active invoices from Fattura Elettronica XML files (.xml, .p7m, .zip)',
 
         'xml_purchase_title' => 'XML Purchase Invoices',
-        'xml_purchase_desc' => 'Import passive invoices from Fattura Elettronica XML files (.xml, .p7m)',
+        'xml_purchase_desc' => 'Import passive invoices from Fattura Elettronica XML files (.xml, .p7m, .zip)',
 
         'xml_self_invoice_title' => 'XML Self-Invoices',
-        'xml_self_invoice_desc' => 'Import self-invoices (TD17, TD18, TD19, TD28) from Fattura Elettronica XML files (.xml, .p7m)',
+        'xml_self_invoice_desc' => 'Import self-invoices (TD17, TD18, TD19, TD28) from Fattura Elettronica XML files (.xml, .p7m, .zip)',
 
         'fattura24_contacts_title' => 'Fattura24 — Contacts',
         'fattura24_contacts_desc' => 'Import customers and suppliers from a Fattura24 CSV address book export',
@@ -977,7 +977,7 @@ return [
         'import_another' => 'Import Another',
 
         'xml_file_label' => 'Fattura Elettronica File',
-        'xml_file_hint' => 'Supported formats: .xml, .p7m (with digital signature), .zip (archive with multiple XML files)',
+        'xml_file_hint' => 'Supported formats: .xml, .p7m (with digital signature), .zip (archive with multiple XML files, automatically skips p7m and metadata)',
         'csv_file_label' => 'Fattura24 CSV File',
         'csv_file_hint' => 'Export the address book from Fattura24 as a CSV file',
         'select_sequence' => 'Sequence',
