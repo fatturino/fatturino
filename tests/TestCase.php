@@ -13,6 +13,7 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withoutVite();
 
         // Seed company settings only if settings table exists
         // (i.e., only for tests using RefreshDatabase)
