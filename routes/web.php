@@ -33,6 +33,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login')->defaults('title', 'Accedi');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
     Route::get('/setup', [SetupController::class, 'show'])->name('setup')->defaults('title', 'Configurazione');
+    Route::post('/setup/step', [\App\Http\Controllers\Api\SetupWizardController::class, 'store'])->name('setup.step');
 });
 
 // Authenticated routes

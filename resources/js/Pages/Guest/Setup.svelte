@@ -68,7 +68,7 @@
         submitting = true
         errors = {}
         try {
-            const response = await fetch('/api/setup/step', {
+            const response = await fetch('/setup/step', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
