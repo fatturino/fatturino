@@ -32,6 +32,8 @@ class OpenApiController extends Controller
     public function activate(Request $request, OpenApiSettings $settings, CompanySettings $companySettings): JsonResponse
     {
         $vat = $companySettings->company_vat_number;
+        $webhookUrl = (string) ($request->input('webhook_url') ?? '');
+
         if (empty($vat)) {
             return response()->json(['success' => false, 'error' => __('fe-openapi::settings.vat_missing')]);
         }
@@ -41,7 +43,7 @@ class OpenApiController extends Controller
             $settings->api_token = $request->input('api_token');
             $settings->sandbox = $request->boolean('sandbox');
             $settings->company_sdi_code = $request->input('company_sdi_code', '');
-            $settings->webhook_url = $request->input('webhook_url', '');
+            $settings->webhook_url = $webhookUrl;
         }
         $settings->save();
 
@@ -49,7 +51,7 @@ class OpenApiController extends Controller
             'vat' => $vat,
             'sandbox' => (bool) $settings->sandbox,
             'has_token' => ! empty($settings->api_token),
-            'webhook_url' => $request->input('webhook_url', ''),
+            'webhook_url' => $webhookUrl,
         ]);
 
         $service = new OpenApiSdiService($settings);
@@ -57,7 +59,7 @@ class OpenApiController extends Controller
         Log::channel('fe-openapi')->info('OpenAPI activate initial status', $statusResult);
 
         if ($statusResult['activated']) {
-            return $this->finalizeActivation($service, $settings, $vat, $request->input('webhook_url', ''));
+            return $this->finalizeActivation($service, $settings, $vat, $webhookUrl);
         }
 
         if (isset($statusResult['registration_required']) && $statusResult['registration_required']) {
@@ -72,7 +74,7 @@ class OpenApiController extends Controller
                 $recheckResult = $service->checkActivationStatus($vat);
                 Log::channel('fe-openapi')->info('OpenAPI activate status recheck', $recheckResult);
                 if ($recheckResult['activated']) {
-                    return $this->finalizeActivation($service, $settings, $vat, $request->input('webhook_url', ''));
+                    return $this->finalizeActivation($service, $settings, $vat, $webhookUrl);
                 }
 
                 $settings->activated = false;
@@ -85,7 +87,7 @@ class OpenApiController extends Controller
             if ($isAlreadyConfigured) {
                 $recheckResult = $service->checkActivationStatus($vat);
                 if ($recheckResult['activated']) {
-                    return $this->finalizeActivation($service, $settings, $vat, $request->input('webhook_url', ''));
+                    return $this->finalizeActivation($service, $settings, $vat, $webhookUrl);
                 }
 
                 $settings->activated = false;
