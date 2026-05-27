@@ -1,0 +1,23 @@
+query PurchaseInvoicesList($page: Int!, $first: Int!) {
+  purchaseInvoices(page: $page, first: $first) {
+    data {
+      id
+      number
+      date
+      status
+      payment_status
+      total_gross
+      total_paid
+      net_due
+      contact { id name }
+    }
+    paginatorInfo {
+      currentPage
+      lastPage
+      total
+      firstItem
+      lastItem
+      hasMorePages
+    }
+  }
+}

@@ -1,0 +1,3 @@
+mutation CreatePurchaseInvoice($input: FiscalDocumentCreateInput!) {
+  createPurchaseInvoice(input: $input) { id }
+}

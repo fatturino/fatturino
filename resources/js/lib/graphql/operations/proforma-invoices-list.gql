@@ -1,0 +1,20 @@
+query ProformaInvoicesList($page: Int!, $first: Int!) {
+  proformaInvoices(page: $page, first: $first) {
+    data {
+      id
+      number
+      date
+      status
+      total_gross
+      contact { id name }
+    }
+    paginatorInfo {
+      currentPage
+      lastPage
+      total
+      firstItem
+      lastItem
+      hasMorePages
+    }
+  }
+}

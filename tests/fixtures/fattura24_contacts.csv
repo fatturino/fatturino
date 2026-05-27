@@ -1,0 +1,5 @@
+Cod.;Rag. Sociale;P.IVA;Cod. fiscale;Indirizzo;CAP;Città;Provincia;Paese;Telefono;Cellulare;Email;Pec;Cod. Destinatario;Tipo
+1;Azienda Test Srl;IT12345678903;12345678903;Via Roma 1;00100;Roma;RM;ITALIA;06123456;;test@azienda.it;test@pec.it;1234567;CLIENTE
+2;Fornitore Tedesco GmbH;DE987654321;;Hauptstrasse 5;10115;Berlin;;GERMANY;+4930123456;;;;XXXXXXX;FORNITORE
+3;;IT11111111111;11111111111;Via Vuota;00200;Milano;MI;IT;;;vuoto@test.it;;0000000;CLIENTE
+4;Cliente Senza IVA;;;Via Senza 1;00300;Napoli;NA;IT;081123456;;nosdi@test.it;;;CLIENTE

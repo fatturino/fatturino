@@ -1,0 +1,213 @@
+<script>
+    import Authenticated from '$layouts/Authenticated.svelte'
+    import Button from '$lib/components/ui/Button.svelte'
+    import Input from '$lib/components/ui/Input.svelte'
+
+    let {
+        invoices = { data: [], current_page: 1, last_page: 1, from: 0, to: 0, total: 0, links: [] },
+        fiscalYear = new Date().getFullYear(),
+        stats = {},
+        search: initialSearch = '',
+        filterStatus: initialStatus = '',
+        statusOptions = [],
+    } = $props()
+
+    let searchValue = $state(initialSearch)
+    let statusFilter = $state(initialStatus)
+    let listState = $state({ invoices, stats, statusOptions, paymentOptions: [] })
+
+    const statusTabs = $derived([
+        { label: 'Tutte', value: '', count: listState.invoices.total ?? 0 },
+        { label: 'Bozze', value: 'draft', count: listState.stats.draft_count ?? 0 },
+        { label: 'Inviate', value: 'sent', count: listState.stats.sent_count ?? 0 },
+        { label: 'Convertite', value: 'converted', count: listState.stats.converted_count ?? 0 },
+    ])
+
+    function submitSearch() {
+        const url = new URL(window.location.href)
+        if (searchValue) url.searchParams.set('search', searchValue)
+        else url.searchParams.delete('search')
+        url.searchParams.delete('page')
+        window.location.href = url.toString()
+    }
+
+    function clearFilters() {
+        window.location.href = '/proforma'
+    }
+
+    function applyStatusTab(statusValue) {
+        const url = new URL(window.location.href)
+        if (statusValue) url.searchParams.set('status', statusValue)
+        else url.searchParams.delete('status')
+        url.searchParams.delete('page')
+        window.location.href = url.toString()
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format((value || 0) / 100)
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '—'
+        return new Date(dateStr).toLocaleDateString('it-IT')
+    }
+
+    function statusLabel(value) {
+        const opt = listState.statusOptions.find((o) => o.value === value)
+        return opt ? opt.label : value
+    }
+
+    function statusBadgeClass(value) {
+        switch (value) {
+            case 'draft': return 'badge-draft'
+            case 'sent': return 'badge-neutral'
+            case 'converted': return 'badge-sent'
+            case 'cancelled': return 'badge-overdue'
+            default: return 'badge-neutral'
+        }
+    }
+
+    function hasActiveFilters() {
+        return statusFilter || searchValue
+    }
+
+    function isTabActive(tabValue) {
+        if (tabValue === '') return !statusFilter
+        return statusFilter === tabValue
+    }
+
+</script>
+
+<Authenticated>
+    {#snippet headerActions()}
+        <a href="/proforma/create" class="btn-brand text-sm">Nuova proforma</a>
+    {/snippet}
+
+    <div class="page-shell pb-24 sm:pb-6 w-full">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <div class="card-brand p-4 sm:p-5">
+                <p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Totale</p>
+                <p class="text-2xl font-semibold text-brand-deep">{formatCurrency(listState.stats.total_gross)}</p>
+                <p class="text-xs text-brand-secondary/70 mt-1">{listState.stats.total_count ?? 0} proforma</p>
+            </div>
+            <div class="card-brand p-4 sm:p-5">
+                <p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Convertite</p>
+                <p class="text-2xl font-semibold text-brand-deep">{listState.stats.converted_count ?? 0}</p>
+                <p class="text-xs text-brand-secondary/70 mt-1">in fattura</p>
+            </div>
+            <div class="card-brand p-4 sm:p-5">
+                <p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Valore medio</p>
+                <p class="text-2xl font-semibold text-brand-deep">{listState.stats.total_count > 0 ? formatCurrency(listState.stats.total_gross / listState.stats.total_count) : '—'}</p>
+                <p class="text-xs text-brand-secondary/70 mt-1">per proforma</p>
+            </div>
+            <div class="card-brand p-4 sm:p-5">
+                <p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Bozze</p>
+                <p class="text-2xl font-semibold text-brand-deep">{listState.stats.draft_count ?? 0}</p>
+                <p class="text-xs text-brand-secondary/70 mt-1">da completare</p>
+            </div>
+        </div>
+
+        <section class="card-brand p-4 sm:p-5 mb-6">
+            <div class="mb-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
+                {#each statusTabs as tab}
+                    <button
+                        type="button"
+                        class="rounded-lg border px-3 py-2 text-left text-sm transition-colors {isTabActive(tab.value) ? 'border-brand-deep bg-brand-deep text-white' : 'border-border-light bg-white text-brand-deep hover:bg-surface-muted'}"
+                        onclick={() => applyStatusTab(tab.value)}
+                    >
+                        <span class="font-medium">{tab.label}</span>
+                        <span class="ml-2 text-xs opacity-80">{tab.count}</span>
+                    </button>
+                {/each}
+            </div>
+            <div class="flex flex-col gap-3 lg:flex-row">
+                <div class="flex-1 min-w-0">
+                    <label class="sr-only" for="proforma-search">Cerca proforma</label>
+                    <Input
+                        id="proforma-search"
+                        type="text"
+                        class="block w-full rounded-lg border border-border px-3 py-2 text-sm"
+                        placeholder="Cerca per numero o cliente"
+                        bind:value={searchValue}
+                        onkeydown={(e) => { if (e.key === 'Enter') submitSearch() }}
+                    />
+                </div>
+                <div class="flex items-center gap-2">
+                    <Button class="btn-outline text-sm" onclick={submitSearch}>Cerca</Button>
+                    {#if hasActiveFilters()}
+                        <Button class="text-sm text-brand-secondary hover:text-brand-deep" onclick={clearFilters}>Reset</Button>
+                    {/if}
+                </div>
+            </div>
+        </section>
+
+        <section class="card-brand overflow-hidden hidden md:block">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-border-light bg-surface-muted text-left">
+                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Numero</th>
+                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Data</th>
+                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Cliente</th>
+                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale</th>
+                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th>
+                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {#each listState.invoices.data as invoice}
+                        <tr class="border-b border-border-light hover:bg-surface-muted/70 transition-colors">
+                            <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{invoice.number ?? '#' + invoice.id}</td>
+                            <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.date)}</td>
+                            <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
+                            <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
+                            <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span></td>
+                            <td class="px-4 py-3 text-right"><a href={`/proforma/${invoice.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></td>
+                        </tr>
+                    {:else}
+                        <tr><td colspan="6" class="px-4 py-12 text-center text-brand-secondary/60">{hasActiveFilters() ? 'Nessuna proforma trovata con questi filtri.' : 'Nessuna proforma ancora creata.'}</td></tr>
+                    {/each}
+                </tbody>
+            </table>
+        </section>
+
+        <section class="md:hidden space-y-3">
+            {#each listState.invoices.data as invoice}
+                <article class="card-brand p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <a href={`/proforma/${invoice.id}/edit`} class="text-sm font-semibold text-brand-deep hover:underline">{invoice.number ?? '#' + invoice.id}</a>
+                            <p class="text-sm text-brand-secondary/80 mt-0.5">{invoice.contact?.name ?? '—'}</p>
+                        </div>
+                        <span class="text-xs text-brand-secondary">{formatDate(invoice.date)}</span>
+                    </div>
+                    <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                        <p class="text-brand-secondary">Totale</p>
+                        <p class="text-right font-semibold text-brand-deep tabular-nums">{formatCurrency(invoice.total_gross)}</p>
+                    </div>
+                    <div class="mt-3 flex items-center gap-2 flex-wrap">
+                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span>
+                    </div>
+                    <div class="mt-3 flex items-center gap-3 text-xs">
+                        <a href={`/proforma/${invoice.id}/edit`} class="font-medium text-brand-accent">Modifica</a>
+                    </div>
+                </article>
+            {:else}
+                <div class="card-brand p-8 text-center text-sm text-brand-secondary/60">{hasActiveFilters() ? 'Nessuna proforma trovata con questi filtri.' : 'Nessuna proforma ancora creata.'}</div>
+            {/each}
+        </section>
+
+        {#if listState.invoices.last_page > 1}
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 text-sm">
+                <p class="text-brand-secondary/70">{listState.invoices.from}–{listState.invoices.to} di {listState.invoices.total} proforma</p>
+                <div class="flex gap-1 flex-wrap">
+                    {#each listState.invoices.links as link}
+                        {#if link.url}
+                            <a href={link.url} class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {link.active ? 'bg-brand-deep text-white' : 'text-brand-secondary hover:bg-surface-muted'}">{@html link.label}</a>
+                        {/if}
+                    {/each}
+                </div>
+            </div>
+        {/if}
+
+    </div>
+</Authenticated>

@@ -1,0 +1,3 @@
+mutation CreateProformaInvoice($input: FiscalDocumentCreateInput!) {
+  createProformaInvoice(input: $input) { id }
+}

@@ -1,0 +1,3 @@
+mutation UpdateSalesInvoice($id: ID!, $input: FiscalDocumentUpdateInput!) {
+  updateSalesInvoice(id: $id, input: $input) { id }
+}

@@ -1,0 +1,3 @@
+mutation CreateCreditNote($input: FiscalDocumentCreateInput!) {
+  createCreditNote(input: $input) { id }
+}

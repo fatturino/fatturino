@@ -1,0 +1,173 @@
+<?php
+
+namespace App\Models;
+
+use App\Contracts\HasTimeline;
+use App\Enums\InvoiceStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\SdiStatus;
+use App\Models\Traits\HasPayments;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Parental\HasParent;
+
+class SelfInvoice extends FiscalDocument implements HasTimeline
+{
+    use HasFactory;
+    use HasParent;
+    use HasPayments;
+
+    protected $guarded = [];
+
+    /**
+     * Columns excluded from audit: recalculated by calculateTotals() cascade
+     * when an FiscalDocumentLine is saved/deleted.
+     */
+    protected $auditExclude = [
+        'total_net',
+        'total_vat',
+        'total_gross',
+        'total_paid',
+        'withholding_tax_amount',
+        'updated_at',
+    ];
+
+    protected $auditEvents = [
+        'created',
+        'updated',
+        'deleted',
+        'sdi_sent',
+    ];
+
+    protected $attributes = [
+        'status' => 'draft',
+        'payment_status' => 'unpaid',
+    ];
+
+    protected $appends = [
+        'net_due',
+        'is_sdi_editable',
+    ];
+
+    protected $casts = [
+        'date' => 'date',
+        'related_invoice_date' => 'date',
+        'due_date' => 'date',
+        'status' => InvoiceStatus::class,
+        'payment_status' => PaymentStatus::class,
+        'sdi_status' => SdiStatus::class,
+        'total_net' => 'integer',
+        'total_vat' => 'integer',
+        'total_gross' => 'integer',
+        'total_paid' => 'integer',
+        'withholding_tax_enabled' => 'boolean',
+        'withholding_tax_percent' => 'decimal:2',
+        'withholding_tax_amount' => 'integer',
+        'split_payment' => 'boolean',
+        'stamp_duty_applied' => 'boolean',
+        'stamp_duty_amount' => 'integer',
+        'metadata' => 'array',
+    ];
+
+    protected static function booted(): void
+    {
+        parent::booted();
+
+        // Auto-set fiscal_year on creation
+        static::creating(function (self $invoice) {
+            $invoice->type = 'self_invoice';
+            if ($invoice->date && ! $invoice->fiscal_year) {
+                $invoice->fiscal_year = $invoice->date->year;
+            }
+        });
+    }
+
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class);
+    }
+
+    public function sequence(): BelongsTo
+    {
+        return $this->belongsTo(Sequence::class);
+    }
+
+    public function lines(): HasMany
+    {
+        return $this->hasMany(FiscalDocumentLine::class, 'fiscal_document_id');
+    }
+
+    public function sdiLogs(): HasMany
+    {
+        return $this->hasMany(EiOutboundLog::class, 'fiscal_document_id');
+    }
+
+    /**
+     * Whether the invoice payment is overdue based on due_date and payment status.
+     * Considers both unpaid and partially paid invoices past their due date.
+     */
+    public function isOverdue(): bool
+    {
+        $isUnpaidOrPartial = in_array($this->payment_status, [PaymentStatus::Unpaid, PaymentStatus::Partial]);
+
+        return $isUnpaidOrPartial && $this->due_date?->isPast();
+    }
+
+    /**
+     * Whether the invoice can be edited (not locked by SDI).
+     * Editable when: never sent, rejected (NS), or error.
+     */
+    public function isSdiEditable(): bool
+    {
+        if ($this->sdi_status === null) {
+            return true;
+        }
+
+        return $this->sdi_status->isEditable();
+    }
+
+    /**
+     * Accessor for serialization via $appends.
+     */
+    public function getIsSdiEditableAttribute(): bool
+    {
+        return $this->isSdiEditable();
+    }
+
+    /**
+     * Net amount due (gross - withholding tax). All amounts in cents.
+     */
+    public function getNetDueAttribute(): int
+    {
+        return $this->total_gross - ($this->withholding_tax_amount ?? 0);
+    }
+
+    /**
+     * Recalculate totals from line items.
+     */
+    public function calculateTotals(): void
+    {
+        $net = 0;
+        $vat = 0;
+
+        foreach ($this->lines as $line) {
+            $lineNet = $line->total;
+            $lineVat = (int) round($lineNet * ($line->vat_rate->percent() / 100));
+            $net += $lineNet;
+            $vat += $lineVat;
+        }
+
+        $withholdingTaxAmount = 0;
+        if ($this->withholding_tax_enabled && $this->withholding_tax_percent) {
+            $withholdingTaxAmount = (int) round($net * ($this->withholding_tax_percent / 100));
+        }
+
+        $this->update([
+            'total_net' => $net,
+            'total_vat' => $vat,
+            'total_gross' => $net + $vat,
+            'withholding_tax_amount' => $withholdingTaxAmount,
+        ]);
+    }
+}

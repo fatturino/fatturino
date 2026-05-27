@@ -1,0 +1,151 @@
+@import 'tailwindcss';
+
+/* Outfit font via Bunny Fonts */
+@theme {
+    --font-sans: 'Outfit', sans-serif;
+
+    /* Type scale -- ratio ~1.2, defined in rem for user preference respect */
+    --text-caption: 0.75rem;    /* 12px -- labels, badges, metadata */
+    --text-body: 0.875rem;      /* 14px -- body in data-dense UI */
+    --text-body-lg: 1rem;       /* 16px -- body in prose/descriptions */
+    --text-title: 1.125rem;     /* 18px -- card titles, section headings */
+    --text-heading: 1.25rem;    /* 20px -- page section headings */
+    --text-display: 1.5rem;     /* 24px -- page titles */
+    --text-display-lg: 1.875rem;/* 30px -- hero/error pages */
+
+    /* Neutral color palette (Tailwind-native) */
+    --color-base-100: white;
+    --color-base-200: #f9fafb;
+    --color-base-300: #e5e7eb;
+    --color-base-content: #1f2937;
+
+    /* Brand palette: Indigo Velvet + Amber Flame (see media kit) */
+    --color-primary: #3D348B;
+    --color-primary-content: white;
+
+    --color-secondary: #7678ED;
+    --color-secondary-content: white;
+
+    --color-accent: #F7B801;
+    --color-accent-content: #1f2937;
+
+    --color-neutral: #2D2A6E;
+    --color-neutral-content: #e5e7eb;
+
+    --color-info: #3b82f6;
+    --color-info-content: white;
+    --color-success: #16a34a;
+    --color-success-content: white;
+    --color-warning: #F7B801;
+    --color-warning-content: #1f2937;
+    --color-error: #dc2626;
+    --color-error-content: white;
+}
+
+/* ─── Phosphor Icons ─── */
+@source "../../vendor/fatturino/*/resources/views/**/*.blade.php";
+
+/* ─── Plugins (symlinks not followed by Tailwind v4) ─── */
+@source "../../../plugin-demo-mode/resources/views/**/*.blade.php";
+
+/*
+ * Badge color safelist -- Tailwind v4 only generates utilities for classes it can statically discover.
+ * The badge component (components/badge.blade.php) builds these dynamically via PHP match(),
+ * so Tailwind cannot see them. The comment below forces Tailwind to generate all needed utilities.
+ * Keep in sync with the variants in components/badge.blade.php.
+ */
+/* bg-primary/10 text-primary bg-secondary/10 text-secondary bg-success/10 text-success bg-warning/10 text-warning bg-error/10 text-error bg-info/10 text-info bg-accent/10 text-accent */
+/* bg-primary text-primary-content bg-secondary text-secondary-content bg-success text-success-content bg-warning text-warning-content bg-error text-error-content bg-info text-info-content bg-accent text-accent-content bg-neutral text-neutral-content */
+/* border-primary border-secondary border-success border-warning border-error border-info border-accent */
+
+/*
+ * ─── Sidebar ───
+ */
+
+.fatturino-sidebar {
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+}
+
+/* Separators */
+.fatturino-sidebar hr {
+    border-color: rgba(255 255 255 / 0.12);
+}
+
+/* Select / input inside sidebar (fiscal year selector) */
+.fatturino-sidebar select,
+.fatturino-sidebar input {
+    background: rgba(255 255 255 / 0.1);
+    border-color: rgba(255 255 255 / 0.15);
+    color: white;
+}
+
+/* All icons and muted text inside sidebar */
+.fatturino-sidebar svg {
+    color: rgba(255 255 255 / 0.6);
+}
+
+.fatturino-sidebar .text-base-content\/40 {
+    color: rgba(255 255 255 / 0.5) !important;
+}
+
+.fatturino-sidebar .text-base-content\/50,
+.fatturino-sidebar .text-base-content\/60,
+.fatturino-sidebar .text-base-content\/70 {
+    color: rgba(255 255 255 / 0.6) !important;
+}
+
+.fatturino-sidebar .text-base-content {
+    color: white !important;
+}
+
+.fatturino-sidebar .bg-base-content\/5 {
+    background-color: rgba(255 255 255 / 0.05) !important;
+}
+
+.fatturino-sidebar .bg-base-content\/10 {
+    background-color: rgba(255 255 255 / 0.1) !important;
+}
+
+.fatturino-sidebar .hover\:bg-base-content\/5:hover {
+    background-color: rgba(255 255 255 / 0.08) !important;
+}
+
+
+/* Windows High Contrast Mode: restore visible focus when box-shadow is stripped */
+@media (forced-colors: active) {
+    .focus\\outline-none:focus-visible {
+        outline: 2px solid CanvasText;
+        outline-offset: 2px;
+    }
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .guest-fade-in,
+    .wizard-connector-fill {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* Fade-in entrance animation */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.guest-fade-in {
+    animation: fade-in-up 0.4s ease-out both;
+}
+
+/* Wizard step connector -- solid primary color */
+.wizard-connector-fill {
+    background: var(--color-primary);
+}

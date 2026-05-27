@@ -1,0 +1,11 @@
+<svg viewBox="0 0 32 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Dark background for visibility on any tab bar -->
+    <rect width="32" height="38" rx="6" fill="#2D2A6E"/>
+    <!-- White receipt silhouette with zigzag bottom -->
+    <path d="M4 6C4 4.34 5.34 3 7 3H25C26.66 3 28 4.34 28 6V32L25 30L22 32L19 30L16 32L13 30L10 32L7 30L4 32V6Z"
+          fill="white" fill-opacity="0.95"/>
+    <!-- Dark "F" inside -->
+    <path d="M10 9H22V12.5H14.5V16.5H20.5V20H14.5V27H10V9Z" fill="#2D2A6E"/>
+    <!-- Amber accent dot -->
+    <circle cx="24" cy="8.5" r="2.5" fill="#F7B801"/>
+</svg>
