@@ -9,9 +9,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Daily check for gaps in invoice numbering sequences. Reports to Sentry when gaps found.
-Schedule::command('invoices:check-sequences')->dailyAt('04:00');
-
 if (config('demo.enabled')) {
     $interval = max(1, min(60, (int) config('demo.reset_interval_minutes', 60)));
     Schedule::command('demo:refresh')
