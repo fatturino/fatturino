@@ -9,6 +9,8 @@
 
     const props = $props()
     const openApiManagedByEnv = props.openApiManagedByEnv ?? false
+    const isDemoMode = props.isDemoMode ?? false
+    const managedService = openApiManagedByEnv || isDemoMode
     const initialToken = props.apiToken ?? ''
     const webhookCallbackUrl = props.webhookCallbackUrl ?? ''
     let conservationAcknowledged = $state(props.conservationAcknowledged ?? false)
@@ -37,6 +39,8 @@
         const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
         return match ? decodeURIComponent(match[1]) : ''
     }
+
+    const isServiceActive = $derived(isDemoMode || active)
 
     async function execAction(url, msg, body = null) {
         loading = true
@@ -123,34 +127,51 @@
 
     {#if activeTab === 'service'}
         <div class="flex items-center gap-3">
-            {#if active}
+            {#if isServiceActive}
                 <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium badge-sent">Attivo</span>
-                <Button class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors" onclick={() => askConfirm('Disattiva servizio', 'Sei sicuro di voler disattivare il servizio OpenAPI?', '/api/openapi/deactivate', 'Servizio disattivato.')}>Disattiva</Button>
+                {#if !isDemoMode}
+                    <Button class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors" onclick={() => askConfirm('Disattiva servizio', 'Sei sicuro di voler disattivare il servizio OpenAPI?', '/api/openapi/deactivate', 'Servizio disattivato.')}>Disattiva</Button>
+                {/if}
             {:else}
                 <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium badge-draft">Non attivo</span>
             {/if}
         </div>
 
         <div class="card-brand p-4 sm:p-5 max-w-2xl">
-            <div class="space-y-4">
-                <label class="block"><span class="text-sm font-medium text-brand-deep">API Token</span>
-                    <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="password" bind:value={apiToken} disabled={active || openApiManagedByEnv} />
-                    <span class="text-xs text-brand-secondary/60 mt-0.5 block">Token API fornito da OpenAPI.it</span>
-                </label>
-                <label class="flex items-center gap-2"><Switch bind:checked={sandbox} disabled={active || openApiManagedByEnv} /><span class="text-sm text-brand-deep">Modalità sandbox</span></label>
-                <label class="block"><span class="text-sm font-medium text-brand-deep">Codice SDI</span>
-                    <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={sdiCode} disabled={active || openApiManagedByEnv} />
-                </label>
-            </div>
+            {#if managedService}
+                <p class="text-sm text-brand-secondary/70">
+                    {#if isDemoMode}
+                        Modalita demo - servizio sempre attivo e non disattivabile.
+                    {:else}
+                        Configurazione OpenAPI gestita via variabili environment.
+                    {/if}
+                </p>
 
-            {#if openApiManagedByEnv}
-                <p class="mt-4 text-xs text-brand-secondary/70">Configurazione OpenAPI gestita via variabili environment.</p>
-            {:else if !active}
+                {#if !isServiceActive}
+                    <div class="flex flex-wrap items-center gap-2 mt-4">
+                        <Button class="btn-outline text-sm" onclick={() => postData('/api/openapi/check-connection', 'Connessione verificata.')}>Verifica connessione</Button>
+                        <Button class="btn-brand text-sm" onclick={() => askConfirm('Attiva servizio', 'Sei sicuro di voler attivare il servizio OpenAPI?', '/api/openapi/activate', 'Servizio attivato.')}>Attiva</Button>
+                    </div>
+                {/if}
+            {:else}
+                <div class="space-y-4">
+                    <label class="block"><span class="text-sm font-medium text-brand-deep">API Token</span>
+                        <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="password" bind:value={apiToken} disabled={active} />
+                        <span class="text-xs text-brand-secondary/60 mt-0.5 block">Token API fornito da OpenAPI.it</span>
+                    </label>
+                    <label class="flex items-center gap-2"><Switch bind:checked={sandbox} disabled={active} /><span class="text-sm text-brand-deep">Modalità sandbox</span></label>
+                    <label class="block"><span class="text-sm font-medium text-brand-deep">Codice SDI</span>
+                        <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={sdiCode} disabled={active} />
+                    </label>
+                </div>
+
+                {#if !active}
                 <div class="flex flex-wrap items-center gap-2 mt-4">
                     <Button class="btn-outline text-sm" onclick={() => postData('/api/openapi/check-connection', 'Connessione verificata.')}>Verifica connessione</Button>
                     <Button class="btn-outline text-sm" onclick={() => postData('/api/openapi/save', 'Impostazioni salvate.')}>Salva</Button>
                     <Button class="btn-brand text-sm" onclick={() => askConfirm('Attiva servizio', 'Sei sicuro di voler attivare il servizio OpenAPI?', '/api/openapi/activate', 'Servizio attivato.')}>Attiva</Button>
                 </div>
+                {/if}
             {/if}
         </div>
     {:else}

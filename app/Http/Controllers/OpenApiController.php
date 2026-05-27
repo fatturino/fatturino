@@ -125,6 +125,14 @@ class OpenApiController extends Controller
      */
     public function deactivate(OpenApiSettings $settings): JsonResponse
     {
+        if (config('demo.enabled')) {
+            return response()->json([
+                'success' => false,
+                'error' => 'In modalita demo il servizio rimane sempre attivo.',
+                'activated' => true,
+            ]);
+        }
+
         $settings->activated = false;
         $settings->save();
 

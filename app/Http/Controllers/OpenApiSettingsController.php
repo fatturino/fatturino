@@ -21,6 +21,7 @@ class OpenApiSettingsController extends Controller
             'companySdiCode' => $settings->company_sdi_code,
             'webhookUrl' => $settings->webhook_url,
             'openApiManagedByEnv' => (bool) config('fe-openapi.managed_by_env'),
+            'isDemoMode' => (bool) config('demo.enabled'),
             'activated' => $settings->activated,
             'hasWebhookSecret' => ! empty($settings->webhook_secret),
             'webhookCallbackUrl' => $baseUrl.'/api/openapi/webhook',
