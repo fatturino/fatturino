@@ -13,7 +13,6 @@ use App\Enums\VatRate;
 use App\Http\Controllers\Concerns\HandlesDocumentPayments;
 use App\Http\Controllers\Concerns\HandlesXmlSdiWorkflow;
 use App\Models\Contact;
-use App\Models\FiscalDocument;
 use App\Models\Payment;
 use App\Models\SalesInvoice;
 use App\Models\Sequence;
@@ -127,7 +126,7 @@ class SalesInvoicesController extends Controller
         $year = Carbon::parse($normalized['date'])->year;
         $reserved = $sequence->reserveNextNumber($year);
 
-        $invoice = FiscalDocument::create([
+        $invoice = SalesInvoice::create([
             'number' => $reserved['formatted_number'],
             'sequential_number' => $reserved['sequential_number'],
             'date' => $normalized['date'],
@@ -166,7 +165,7 @@ class SalesInvoicesController extends Controller
         return redirect()->route('sell-invoices.index');
     }
 
-    public function edit(FiscalDocument $invoice): Response
+    public function edit(SalesInvoice $invoice): Response
     {
         $invoice->load('lines');
 
@@ -176,7 +175,7 @@ class SalesInvoicesController extends Controller
         ]);
     }
 
-    public function update(Request $request, FiscalDocument $invoice): RedirectResponse
+    public function update(Request $request, SalesInvoice $invoice): RedirectResponse
     {
         if (! $invoice->isSdiEditable()) {
             return back()->withErrors(['invoice' => 'Questa fattura non è più modificabile.']);
@@ -438,7 +437,7 @@ class SalesInvoicesController extends Controller
 
     private function stats(int $fiscalYear): array
     {
-        $base = FiscalDocument::query()->whereYear('date', $fiscalYear);
+        $base = SalesInvoice::query()->whereYear('date', $fiscalYear);
 
         $totalCount = (clone $base)->count();
         $totalGross = (int) (clone $base)->sum('total_gross');

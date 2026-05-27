@@ -29,9 +29,11 @@ function makeInvoice(string $date, int $totalGross, array $extra = []): FiscalDo
 {
     static $seq = 0;
 
+    $parsedDate = Carbon::parse($date);
+
     return FiscalDocument::create(array_merge([
         'number' => 'TEST-'.++$seq,
-        'date' => $date,
+        'date' => $parsedDate,
         'contact_id' => Contact::first()->id,
         'total_gross' => $totalGross,
         'total_net' => $totalGross,
@@ -257,6 +259,19 @@ test('recent invoices respects the limit parameter', function () {
     }
 
     expect($this->service->recentInvoices(5))->toHaveCount(5);
+});
+
+test('recent invoices includes only sales invoices', function () {
+    $salesInvoice = makeInvoice('2026-06-12', 1000, ['type' => 'sales']);
+    makeInvoice('2026-06-13', 1000, [
+        'type' => 'purchase',
+        'date' => Carbon::parse('2026-06-13'),
+    ]);
+
+    $recent = $this->service->recentInvoices();
+
+    expect($recent)->toHaveCount(1);
+    expect($recent->first()->id)->toBe($salesInvoice->id);
 });
 
 // ---------------------------------------------------------------------------

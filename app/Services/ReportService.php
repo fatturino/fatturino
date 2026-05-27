@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Contact;
 use App\Models\FiscalDocument;
 use App\Models\PurchaseInvoice;
+use App\Models\SalesInvoice;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -29,7 +30,7 @@ class ReportService
         $year = $year ?: now()->year;
         $referenceMonth = $this->referenceMonth($year);
 
-        return (int) FiscalDocument::whereBetween('date', [
+        return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
         ])->sum('total_gross');
@@ -45,7 +46,7 @@ class ReportService
         $year = $year ?: now()->year;
         $referenceMonth = $this->referenceMonth($year)->subMonth();
 
-        return (int) FiscalDocument::whereBetween('date', [
+        return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
         ])->sum('total_gross');
@@ -61,7 +62,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return (int) FiscalDocument::whereBetween('date', [$start, $end])->sum('total_gross');
+        return (int) SalesInvoice::whereBetween('date', [$start, $end])->sum('total_gross');
     }
 
     /**
@@ -74,7 +75,7 @@ class ReportService
         $year = $year ?: now()->year;
         $referenceMonth = $this->referenceMonth($year);
 
-        return FiscalDocument::whereBetween('date', [
+        return SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
         ])->count();
@@ -88,7 +89,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return FiscalDocument::whereBetween('date', [$start, $end])->count();
+        return SalesInvoice::whereBetween('date', [$start, $end])->count();
     }
 
     /**
@@ -99,7 +100,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return FiscalDocument::whereBetween('date', [$start, $end])
+        return SalesInvoice::whereBetween('date', [$start, $end])
             ->distinct('contact_id')
             ->count('contact_id');
     }
@@ -148,7 +149,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return (int) FiscalDocument::whereBetween('date', [$start, $end])
+        return (int) SalesInvoice::whereBetween('date', [$start, $end])
             ->where('withholding_tax_enabled', true)
             ->sum('withholding_tax_amount');
     }
@@ -259,7 +260,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return FiscalDocument::whereBetween('date', [$start, $end])
+        return SalesInvoice::whereBetween('date', [$start, $end])
             ->with('contact')
             ->orderByDesc('date')
             ->orderByDesc('id')
@@ -275,13 +276,13 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        $statuses = FiscalDocument::whereBetween('date', [$start, $end])
+        $statuses = SalesInvoice::whereBetween('date', [$start, $end])
             ->selectRaw('payment_status, COUNT(*) as count, COALESCE(SUM(total_gross), 0) as total')
             ->groupBy('payment_status')
             ->pluck('total', 'payment_status')
             ->toArray();
 
-        $counts = FiscalDocument::whereBetween('date', [$start, $end])
+        $counts = SalesInvoice::whereBetween('date', [$start, $end])
             ->selectRaw('payment_status, COUNT(*) as count')
             ->groupBy('payment_status')
             ->pluck('count', 'payment_status')
@@ -307,7 +308,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return FiscalDocument::whereBetween('date', [$start, $end])
+        return SalesInvoice::whereBetween('date', [$start, $end])
             ->whereNotNull('due_date')
             ->whereIn('payment_status', [PaymentStatus::Unpaid, PaymentStatus::Partial, PaymentStatus::Overdue])
             ->with('contact')
@@ -361,7 +362,7 @@ class ReportService
         $buckets = [];
 
         foreach ($bucketDefs as $bucketDef) {
-            $salesQuery = FiscalDocument::whereIn('payment_status', $unpaidStatuses)
+            $salesQuery = SalesInvoice::whereIn('payment_status', $unpaidStatuses)
                 ->whereNotNull('due_date');
 
             $purchaseQuery = PurchaseInvoice::whereIn('payment_status', $unpaidStatuses)

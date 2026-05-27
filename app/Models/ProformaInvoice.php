@@ -86,7 +86,7 @@ class ProformaInvoice extends FiscalDocument
      */
     public function convertedInvoice()
     {
-        return $this->hasOne(FiscalDocument::class, 'proforma_id');
+        return $this->hasOne(SalesInvoice::class, 'proforma_id');
     }
 
     /**
