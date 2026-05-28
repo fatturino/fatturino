@@ -494,7 +494,7 @@ Controlla prima di confermare:
                     {#snippet children({ triggerProps })}
                         <tr {...triggerProps} class="border-b border-border-light hover:bg-surface-muted/70 transition-colors cursor-context-menu">
                             <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{invoice.number ?? '#' + invoice.id}</td>
-                            <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.date)}</td>
+                            <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.created_at ?? invoice.date)}</td>
                             <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
                             <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
                             <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.net_due - invoice.total_paid)}</td>
@@ -526,7 +526,7 @@ Controlla prima di confermare:
                             <a href={`/sell-invoices/${invoice.id}/edit`} class="text-sm font-semibold text-brand-deep hover:underline">{invoice.number ?? '#' + invoice.id}</a>
                             <p class="text-sm text-brand-secondary/80 mt-0.5">{invoice.contact?.name ?? '—'}</p>
                         </div>
-                        <span class="text-xs text-brand-secondary">{formatDate(invoice.date)}</span>
+                        <span class="text-xs text-brand-secondary">{formatDate(invoice.created_at ?? invoice.date)}</span>
                     </div>
                     <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
                         <p class="text-brand-secondary">Totale</p>
