@@ -23,6 +23,11 @@
     const xmlImportTypes = $derived(selfInvoiceImportEnabled
         ? ['xml_sales', 'xml_purchase', 'xml_self_invoice']
         : ['xml_sales', 'xml_purchase'])
+    const csrfToken = $derived(
+        typeof document !== 'undefined'
+            ? (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '')
+            : ''
+    )
 
     function openModal(type) {
         importType = type
@@ -230,6 +235,7 @@
             </div>
 
             <form action="/imports" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="_token" value={csrfToken} />
                 <Input type="hidden" name="import_type" value={importType} />
 
                 <label class="block mb-4">
