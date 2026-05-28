@@ -2,6 +2,7 @@
     import Authenticated from '$layouts/Authenticated.svelte'
     import Button from '$lib/components/ui/Button.svelte'
     import Input from '$lib/components/ui/Input.svelte'
+    import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
 
     let {
         invoices = { data: [], current_page: 1, last_page: 1, from: 0, to: 0, total: 0, links: [] },
@@ -9,11 +10,15 @@
         stats = {},
         search: initialSearch = '',
         filterStatus: initialStatus = '',
+        sort: initialSort = 'created_at',
+        direction: initialDirection = 'desc',
         statusOptions = [],
     } = $props()
 
     let searchValue = $state(initialSearch)
     let statusFilter = $state(initialStatus)
+    let sort = $state(initialSort)
+    let direction = $state(initialDirection)
     let listState = $state({ invoices, stats, statusOptions, paymentOptions: [] })
 
     const statusTabs = $derived([
@@ -22,7 +27,6 @@
         { label: 'Inviate', value: 'sent', count: listState.stats.sent_count ?? 0 },
         { label: 'Convertite', value: 'converted', count: listState.stats.converted_count ?? 0 },
     ])
-
     function submitSearch() {
         const url = new URL(window.location.href)
         if (searchValue) url.searchParams.set('search', searchValue)
@@ -141,37 +145,32 @@
             </div>
         </section>
 
-        <section class="card-brand overflow-hidden hidden md:block">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-border-light bg-surface-muted text-left">
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Numero</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Data</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Cliente</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each listState.invoices.data as invoice}
-                        <tr class="border-b border-border-light hover:bg-surface-muted/70 transition-colors">
-                            <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{invoice.number ?? '#' + invoice.id}</td>
-                            <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.date)}</td>
-                            <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
-                            <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
-                            <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span></td>
-                            <td class="px-4 py-3 text-right"><a href={`/proforma/${invoice.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></td>
-                        </tr>
-                    {:else}
-                        <tr><td colspan="6" class="px-4 py-12 text-center text-brand-secondary/60">{hasActiveFilters() ? 'Nessuna proforma trovata con questi filtri.' : 'Nessuna proforma ancora creata.'}</td></tr>
-                    {/each}
-                </tbody>
-            </table>
-        </section>
-
-        <section class="md:hidden space-y-3">
-            {#each listState.invoices.data as invoice}
+        <SortableInvoiceTable
+            invoices={listState.invoices.data}
+            {sort}
+            {direction}
+            contactLabel="Cliente"
+            hasActiveFilters={hasActiveFilters()}
+            emptyFilteredMessage="Nessuna proforma trovata con questi filtri."
+            emptyMessage="Nessuna proforma ancora creata."
+            desktopColspan={6}
+        >
+            {#snippet desktopHeaders()}
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
+            {/snippet}
+            {#snippet desktopRow({ invoice, formatDate })}
+                <tr class="border-b border-border-light hover:bg-surface-muted/70 transition-colors">
+                    <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{invoice.number ?? '#' + invoice.id}</td>
+                    <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.date)}</td>
+                    <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
+                    <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
+                    <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span></td>
+                    <td class="px-4 py-3 text-right"><a href={`/proforma/${invoice.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></td>
+                </tr>
+            {/snippet}
+            {#snippet mobileRow({ invoice, formatDate })}
                 <article class="card-brand p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -191,10 +190,8 @@
                         <a href={`/proforma/${invoice.id}/edit`} class="font-medium text-brand-accent">Modifica</a>
                     </div>
                 </article>
-            {:else}
-                <div class="card-brand p-8 text-center text-sm text-brand-secondary/60">{hasActiveFilters() ? 'Nessuna proforma trovata con questi filtri.' : 'Nessuna proforma ancora creata.'}</div>
-            {/each}
-        </section>
+            {/snippet}
+        </SortableInvoiceTable>
 
         {#if listState.invoices.last_page > 1}
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 text-sm">

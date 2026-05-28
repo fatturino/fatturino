@@ -4,6 +4,7 @@
     import Input from '$lib/components/ui/Input.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
     import InvoiceDesktopContextMenu from '$lib/components/invoices/InvoiceDesktopContextMenu.svelte'
+    import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
     import { buildInvoiceContextActions, InvoiceContentType } from '$lib/invoices/context-menu-registry.js'
     import { showToast } from '$lib/toast.js'
 
@@ -14,6 +15,8 @@
         search: initialSearch = '',
         filterStatus: initialStatus = '',
         filterPayment: initialPayment = '',
+        sort: initialSort = 'created_at',
+        direction: initialDirection = 'desc',
         statusOptions = [],
         paymentOptions = [],
     } = $props()
@@ -21,6 +24,8 @@
     let searchValue = $state(initialSearch)
     let statusFilter = $state(initialStatus)
     let paymentFilter = $state(initialPayment)
+    let sort = $state(initialSort)
+    let direction = $state(initialDirection)
     let listState = $state({ invoices, stats, statusOptions, paymentOptions })
     let confirmOpen = $state(false)
     let confirmTitle = $state('')
@@ -431,62 +436,44 @@ Controlla prima di confermare:
         </section>
 
         <p class="hidden md:block mb-2 text-xs text-brand-secondary/80">Suggerimento: clic destro su una riga per aprire il menu contestuale.</p>
-        <section class="card-brand overflow-hidden hidden md:block">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-border-light bg-surface-muted text-left">
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Numero</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Data</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Fornitore</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Pagamento</th>
-                        <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each listState.invoices.data as invoice}
-                        <InvoiceDesktopContextMenu actions={contextActions(invoice)}>
-                            {#snippet children({ triggerProps })}
-                                    <tr {...triggerProps} class="border-b border-border-light hover:bg-surface-muted/70 transition-colors cursor-context-menu">
-                                        <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{invoice.number ?? '#' + invoice.id}</td>
-                                        <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.date)}</td>
-                                        <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
-                                        <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
-                                        <td class="px-4 py-3">
-                                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {paymentBadgeClass(invoice.payment_status)}">{paymentLabel(invoice.payment_status)}</span>
-                                        </td>
-                                        <td class="px-4 py-3 text-right">
-                                            <a
-                                                href={`/self-invoices/${invoice.id}/edit`}
-                                                class="inline-flex h-8 w-8 items-center justify-center rounded-md text-brand-secondary transition hover:bg-surface-muted hover:text-brand-deep"
-                                                aria-label="Modifica autofattura"
-                                                title="Modifica"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                    <path d="M13.586 2.586a2 2 0 0 1 2.828 2.828l-9.5 9.5a1 1 0 0 1-.447.263l-3 1a1 1 0 0 1-1.264-1.264l1-3a1 1 0 0 1 .263-.447l9.5-9.5ZM12.172 4 5.02 11.152l-.58 1.739 1.739-.58L13.33 5.16 12.172 4Z" />
-                                                </svg>
-                                            </a>
-                                        </td>
-                                    </tr>
-                            {/snippet}
-                        </InvoiceDesktopContextMenu>
-                    {:else}
-                        <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-brand-secondary/60">
-                                {hasActiveFilters() ? 'Nessuna autofattura trovata con questi filtri.' : 'Nessuna autofattura.'}
+        <SortableInvoiceTable
+            invoices={listState.invoices.data}
+            {sort}
+            {direction}
+            contactLabel="Fornitore"
+            hasActiveFilters={hasActiveFilters()}
+            emptyFilteredMessage="Nessuna autofattura trovata con questi filtri."
+            emptyMessage="Nessuna autofattura."
+            desktopColspan={7}
+        >
+            {#snippet desktopHeaders()}
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Pagamento</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
+            {/snippet}
+            {#snippet desktopRow({ invoice, formatDate })}
+                <InvoiceDesktopContextMenu actions={contextActions(invoice)}>
+                    {#snippet children({ triggerProps })}
+                        <tr {...triggerProps} class="border-b border-border-light hover:bg-surface-muted/70 transition-colors cursor-context-menu">
+                            <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{invoice.number ?? '#' + invoice.id}</td>
+                            <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.date)}</td>
+                            <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
+                            <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
+                            <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span></td>
+                            <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {paymentBadgeClass(invoice.payment_status)}">{paymentLabel(invoice.payment_status)}</span></td>
+                            <td class="px-4 py-3 text-right">
+                                <a href={`/self-invoices/${invoice.id}/edit`} class="inline-flex h-8 w-8 items-center justify-center rounded-md text-brand-secondary transition hover:bg-surface-muted hover:text-brand-deep" aria-label="Modifica autofattura" title="Modifica">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path d="M13.586 2.586a2 2 0 0 1 2.828 2.828l-9.5 9.5a1 1 0 0 1-.447.263l-3 1a1 1 0 0 1-1.264-1.264l1-3a1 1 0 0 1 .263-.447l9.5-9.5ZM12.172 4 5.02 11.152l-.58 1.739 1.739-.58L13.33 5.16 12.172 4Z" />
+                                    </svg>
+                                </a>
                             </td>
                         </tr>
-                    {/each}
-                </tbody>
-            </table>
-        </section>
-
-        <section class="md:hidden space-y-3">
-            {#each listState.invoices.data as invoice}
+                    {/snippet}
+                </InvoiceDesktopContextMenu>
+            {/snippet}
+            {#snippet mobileRow({ invoice, formatDate })}
                 <article class="card-brand p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -515,10 +502,8 @@ Controlla prima di confermare:
                         <a href={`/self-invoices/${invoice.id}/edit`} class="font-medium text-brand-accent">Modifica</a>
                     </div>
                 </article>
-            {:else}
-                <div class="card-brand p-8 text-center text-sm text-brand-secondary/60">{hasActiveFilters() ? 'Nessuna autofattura trovata con questi filtri.' : 'Nessuna autofattura.'}</div>
-            {/each}
-        </section>
+            {/snippet}
+        </SortableInvoiceTable>
 
         {#if listState.invoices.last_page > 1}<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 text-sm"><p class="text-brand-secondary/70">{listState.invoices.from}–{listState.invoices.to} di {listState.invoices.total} autofatture</p><div class="flex gap-1 flex-wrap">{#each listState.invoices.links as link}{#if link.url}<a href={link.url} class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {link.active ? 'bg-brand-deep text-white' : 'text-brand-secondary hover:bg-surface-muted'}">{@html link.label}</a>{/if}{/each}</div></div>{/if}
 

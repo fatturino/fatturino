@@ -3,6 +3,7 @@
     import Button from '$lib/components/ui/Button.svelte'
     import Input from '$lib/components/ui/Input.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
+    import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
     import { showToast } from '$lib/toast.js'
 
     let {
@@ -11,11 +12,15 @@
         stats = {},
         search: initialSearch = '',
         filterStatus: initialStatus = '',
+        sort: initialSort = 'created_at',
+        direction: initialDirection = 'desc',
         statusOptions = [],
     } = $props()
 
     let searchValue = $state(initialSearch)
     let statusFilter = $state(initialStatus)
+    let sort = $state(initialSort)
+    let direction = $state(initialDirection)
     let listState = $state({ invoices: creditNotes, stats, statusOptions, paymentOptions: [] })
     let confirmOpen = $state(false)
     let confirmTitle = $state('')
@@ -194,10 +199,32 @@ Controlla prima di confermare:
             </div>
         </section>
 
-        <section class="card-brand overflow-hidden hidden md:block"><table class="w-full text-sm"><thead><tr class="border-b border-border-light bg-surface-muted text-left"><th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Numero</th><th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Data</th><th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Cliente</th><th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale</th><th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th><th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th></tr></thead><tbody>{#each listState.invoices.data as creditNote}<tr class="border-b border-border-light hover:bg-surface-muted/70 transition-colors"><td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{creditNote.number ?? '#' + creditNote.id}</td><td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(creditNote.date)}</td><td class="px-4 py-3 font-medium text-brand-deep">{creditNote.contact?.name ?? '—'}</td><td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(creditNote.total_gross)}</td><td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(creditNote.status)}">{statusLabel(creditNote.status)}</span></td><td class="px-4 py-3 text-right"><div class="flex justify-end gap-2 flex-wrap"><a href={`/credit-notes/${creditNote.id}/xml`} class="text-xs font-medium text-brand-secondary hover:text-brand-deep">XML</a>{#if creditNote.is_sdi_editable && creditNote.status === 'draft'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => validateXml(creditNote)}>Verifica XML</Button>{/if}{#if creditNote.is_sdi_editable && creditNote.status === 'xml_validated'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => sendToSdi(creditNote)}>Invia SDI</Button>{/if}<a href={`/credit-notes/${creditNote.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></div></td></tr>{:else}<tr><td colspan="6" class="px-4 py-12 text-center text-brand-secondary/60">{hasActiveFilters() ? 'Nessuna nota di credito trovata con questi filtri.' : 'Nessuna nota di credito ancora emessa.'}</td></tr>{/each}</tbody></table></section>
-
-        <section class="md:hidden space-y-3">
-            {#each listState.invoices.data as creditNote}
+        <SortableInvoiceTable
+            invoices={listState.invoices.data}
+            {sort}
+            {direction}
+            contactLabel="Cliente"
+            hasActiveFilters={hasActiveFilters()}
+            emptyFilteredMessage="Nessuna nota di credito trovata con questi filtri."
+            emptyMessage="Nessuna nota di credito ancora emessa."
+            desktopColspan={6}
+        >
+            {#snippet desktopHeaders()}
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
+            {/snippet}
+            {#snippet desktopRow({ invoice: creditNote, formatDate })}
+                <tr class="border-b border-border-light hover:bg-surface-muted/70 transition-colors">
+                    <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{creditNote.number ?? '#' + creditNote.id}</td>
+                    <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(creditNote.date)}</td>
+                    <td class="px-4 py-3 font-medium text-brand-deep">{creditNote.contact?.name ?? '—'}</td>
+                    <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(creditNote.total_gross)}</td>
+                    <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(creditNote.status)}">{statusLabel(creditNote.status)}</span></td>
+                    <td class="px-4 py-3 text-right"><div class="flex justify-end gap-2 flex-wrap"><a href={`/credit-notes/${creditNote.id}/xml`} class="text-xs font-medium text-brand-secondary hover:text-brand-deep">XML</a>{#if creditNote.is_sdi_editable && creditNote.status === 'draft'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => validateXml(creditNote)}>Verifica XML</Button>{/if}{#if creditNote.is_sdi_editable && creditNote.status === 'xml_validated'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => sendToSdi(creditNote)}>Invia SDI</Button>{/if}<a href={`/credit-notes/${creditNote.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></div></td>
+                </tr>
+            {/snippet}
+            {#snippet mobileRow({ invoice: creditNote, formatDate })}
                 <article class="card-brand p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -224,10 +251,8 @@ Controlla prima di confermare:
                         <a href={`/credit-notes/${creditNote.id}/edit`} class="font-medium text-brand-accent">Modifica</a>
                     </div>
                 </article>
-            {:else}
-                <div class="card-brand p-8 text-center text-sm text-brand-secondary/60">{hasActiveFilters() ? 'Nessuna nota di credito trovata con questi filtri.' : 'Nessuna nota di credito ancora emessa.'}</div>
-            {/each}
-        </section>
+            {/snippet}
+        </SortableInvoiceTable>
 
         {#if listState.invoices.last_page > 1}<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 text-sm"><p class="text-brand-secondary/70">{listState.invoices.from}–{listState.invoices.to} di {listState.invoices.total} note di credito</p><div class="flex gap-1 flex-wrap">{#each listState.invoices.links as link}{#if link.url}<a href={link.url} class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {link.active ? 'bg-brand-deep text-white' : 'text-brand-secondary hover:bg-surface-muted'}">{@html link.label}</a>{/if}{/each}</div></div>{/if}
 

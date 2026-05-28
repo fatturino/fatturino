@@ -28,13 +28,13 @@ class CreditNotesController extends Controller
         $fiscalYear = (int) ($request->query('fiscal_year', now()->year));
         $search = $request->query('search', '');
         $filterStatus = $request->query('status', '');
+        $sort = $request->query('sort', 'created_at');
+        $direction = $request->query('direction', 'desc');
         $perPage = 15;
 
         $query = CreditNote::query()
             ->with('contact:id,name')
-            ->whereYear('date', $fiscalYear)
-            ->orderByDesc('date')
-            ->orderByDesc('id');
+            ->whereYear('date', $fiscalYear);
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -47,6 +47,8 @@ class CreditNotesController extends Controller
             $query->where('status', $filterStatus);
         }
 
+        $this->applySorting($query, $sort, $direction);
+
         $creditNotes = $query->paginate($perPage)->withQueryString();
 
         return Inertia::render('CreditNotes/Index', [
@@ -54,6 +56,8 @@ class CreditNotesController extends Controller
             'fiscalYear' => $fiscalYear,
             'search' => $search,
             'filterStatus' => $filterStatus,
+            'sort' => $sort,
+            'direction' => $direction,
             'stats' => $this->stats($fiscalYear),
             'statusOptions' => $this->statusOptions(),
         ]);
@@ -277,5 +281,28 @@ class CreditNotesController extends Controller
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();
+    }
+
+    private function applySorting($query, string $sort, string $direction): void
+    {
+        $sort = in_array($sort, ['number', 'created_at', 'contact'], true) ? $sort : 'created_at';
+        $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
+
+        if ($sort === 'number') {
+            $query->orderBy('number', $direction)->orderBy('id', $direction);
+            return;
+        }
+
+        if ($sort === 'contact') {
+            $query->orderBy(
+                Contact::select('name')
+                    ->whereColumn('contacts.id', 'fiscal_documents.contact_id')
+                    ->limit(1),
+                $direction
+            )->orderBy('id', $direction);
+            return;
+        }
+
+        $query->orderBy('created_at', $direction)->orderBy('id', $direction);
     }
 }
