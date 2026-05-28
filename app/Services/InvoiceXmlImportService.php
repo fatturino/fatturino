@@ -436,6 +436,10 @@ class InvoiceXmlImportService
             'business_fingerprint' => $businessFingerprint,
         ];
 
+        if (! empty($invoiceDate)) {
+            $attributes['created_at'] = $invoiceDate.' 00:00:00';
+        }
+
         if (($sdiContext['sdi_uuid'] ?? null) !== null && $sdiContext['sdi_uuid'] !== '') {
             $attributes['sdi_uuid'] = $sdiContext['sdi_uuid'];
         }
