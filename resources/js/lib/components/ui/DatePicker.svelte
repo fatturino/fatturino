@@ -11,9 +11,16 @@
         locale = "it-IT",
     } = $props();
 
+    function normalizeIsoDateInput(raw: string) {
+        if (!raw) return "";
+        const normalized = raw.trim().replace(" ", "T");
+        const match = normalized.match(/^(\d{4}-\d{2}-\d{2})/);
+        return match ? match[1] : normalized;
+    }
+
     function toDateValue(iso: string) {
         if (!iso) return undefined;
-        return parseDate(iso);
+        return parseDate(normalizeIsoDateInput(iso));
     }
 
     function toIsoDate(dateValue: any) {
@@ -35,7 +42,7 @@
 >
     <DatePickerPrimitive.Trigger class={`mt-1 flex w-full items-center justify-between rounded-lg border border-brand-secondary/20 bg-white px-3 py-2 text-sm form-focus ${className}`}>
         {#if value}
-            {new Date(`${value}T00:00:00`).toLocaleDateString(locale)}
+            {new Date(`${normalizeIsoDateInput(value)}T00:00:00`).toLocaleDateString(locale)}
         {:else}
             <span class="text-brand-secondary/50">{placeholder}</span>
         {/if}
