@@ -11,7 +11,7 @@ use App\Models\ProformaInvoice;
 use App\Models\Sequence;
 
 test('converts a Draft proforma to a sales invoice', function () {
-    Sequence::factory()->create(['type' => 'electronic_invoice', 'is_system' => true]);
+    Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
     $contact = Contact::factory()->create();
     $proforma = ProformaInvoice::factory()->create([
         'contact_id' => $contact->id,
@@ -27,7 +27,7 @@ test('converts a Draft proforma to a sales invoice', function () {
 });
 
 test('converts a Sent proforma to a sales invoice', function () {
-    Sequence::factory()->create(['type' => 'electronic_invoice', 'is_system' => true]);
+    Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
     $contact = Contact::factory()->create();
     $proforma = ProformaInvoice::factory()->sent()->create(['contact_id' => $contact->id]);
 
@@ -38,7 +38,7 @@ test('converts a Sent proforma to a sales invoice', function () {
 });
 
 test('returns null for a Converted proforma', function () {
-    Sequence::factory()->create(['type' => 'electronic_invoice', 'is_system' => true]);
+    Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
     $proforma = ProformaInvoice::factory()->converted()->create();
 
     $action = app(ConvertProformaToInvoice::class);
@@ -48,7 +48,7 @@ test('returns null for a Converted proforma', function () {
 });
 
 test('returns null for a Cancelled proforma', function () {
-    Sequence::factory()->create(['type' => 'electronic_invoice', 'is_system' => true]);
+    Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
     $proforma = ProformaInvoice::factory()->cancelled()->create();
 
     $action = app(ConvertProformaToInvoice::class);
@@ -57,7 +57,7 @@ test('returns null for a Cancelled proforma', function () {
     expect($result)->toBeNull();
 });
 
-test('returns null when no electronic_invoice sequence exists', function () {
+test('returns null when no sales sequence exists', function () {
     $proforma = ProformaInvoice::factory()->create(['status' => ProformaStatus::Draft]);
 
     $action = app(ConvertProformaToInvoice::class);
@@ -67,7 +67,7 @@ test('returns null when no electronic_invoice sequence exists', function () {
 });
 
 test('copies all lines from proforma to new invoice', function () {
-    Sequence::factory()->create(['type' => 'electronic_invoice', 'is_system' => true]);
+    Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
     $proforma = ProformaInvoice::factory()->create(['status' => ProformaStatus::Draft]);
 
     FiscalDocumentLine::create([
@@ -96,7 +96,7 @@ test('copies all lines from proforma to new invoice', function () {
 });
 
 test('copies tax options from proforma to invoice', function () {
-    Sequence::factory()->create(['type' => 'electronic_invoice', 'is_system' => true]);
+    Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
     $proforma = ProformaInvoice::factory()->create([
         'status' => ProformaStatus::Draft,
         'withholding_tax_enabled' => true,
@@ -115,7 +115,7 @@ test('copies tax options from proforma to invoice', function () {
 });
 
 test('sets proforma status to Converted after successful conversion', function () {
-    Sequence::factory()->create(['type' => 'electronic_invoice', 'is_system' => true]);
+    Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
     $proforma = ProformaInvoice::factory()->create(['status' => ProformaStatus::Draft]);
 
     $action = app(ConvertProformaToInvoice::class);
@@ -125,7 +125,7 @@ test('sets proforma status to Converted after successful conversion', function (
 });
 
 test('new invoice gets a sequence number via reserveNextNumber', function () {
-    $sequence = Sequence::factory()->create(['type' => 'electronic_invoice', 'is_system' => true, 'pattern' => '{SEQ}']);
+    $sequence = Sequence::factory()->create(['type' => 'sales', 'is_system' => true, 'pattern' => '{SEQ}']);
     $proforma = ProformaInvoice::factory()->create(['status' => ProformaStatus::Draft]);
 
     $action = app(ConvertProformaToInvoice::class);
@@ -136,7 +136,7 @@ test('new invoice gets a sequence number via reserveNextNumber', function () {
 });
 
 test('proforma_id is set on the new invoice', function () {
-    Sequence::factory()->create(['type' => 'electronic_invoice', 'is_system' => true]);
+    Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
     $proforma = ProformaInvoice::factory()->create(['status' => ProformaStatus::Draft]);
 
     $action = app(ConvertProformaToInvoice::class);

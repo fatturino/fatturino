@@ -14,7 +14,7 @@ class SequenceFactory extends Factory
     {
         return [
             'name' => $this->faker->word().' '.$this->faker->year(),
-            'type' => 'electronic_invoice',
+            'type' => 'sales',
             'pattern' => '{SEQ}',
             'is_system' => false,
         ];

@@ -21,14 +21,14 @@
 
     const form = useForm({
         name: '',
-        type: 'electronic_invoice',
+        type: 'sales',
         pattern: '{SEQ}',
     })
 
     function openCreate() {
         form.reset()
         form.clearErrors()
-        form.type = 'electronic_invoice'
+        form.type = 'sales'
         form.pattern = '{SEQ}'
         isEditing = false
         editingId = null

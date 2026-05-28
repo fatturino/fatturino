@@ -72,7 +72,7 @@ class SequencesController extends Controller
     private function typeOptions(): array
     {
         return [
-            ['value' => 'electronic_invoice', 'label' => __('app.sequences.type_electronic_invoice')],
+            ['value' => 'sales', 'label' => __('app.sequences.type_sales')],
             ['value' => 'purchase', 'label' => __('app.sequences.type_purchase')],
             ['value' => 'self_invoice', 'label' => __('app.sequences.type_self_invoice')],
             ['value' => 'proforma', 'label' => __('app.sequences.type_proforma')],

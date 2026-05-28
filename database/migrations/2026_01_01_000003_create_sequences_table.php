@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sequences', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('type')->default('electronic_invoice'); // electronic_invoice, purchase, quote, proforma, self_invoice
+            $table->string('type')->default('sales'); // sales, purchase, quote, proforma, self_invoice
             $table->string('pattern')->default('{SEQ}'); // Supports {SEQ} and {ANNO} tokens
             $table->boolean('is_system')->default(false)->index();
             $table->timestamps();

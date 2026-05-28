@@ -25,7 +25,7 @@ beforeEach(function () {
 test('rf19 normalizes withholding split and vat rate on sales invoices', function () {
     $user = User::factory()->create();
     $contact = Contact::factory()->create();
-    $sequence = Sequence::factory()->create(['type' => 'electronic_invoice']);
+    $sequence = Sequence::factory()->create(['type' => 'sales']);
 
     $response = $this->actingAs($user)->post('/sell-invoices', [
         'contact_id' => $contact->id,

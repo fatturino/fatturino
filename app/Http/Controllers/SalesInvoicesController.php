@@ -358,13 +358,13 @@ class SalesInvoicesController extends Controller
         $companySettings = app(CompanySettings::class);
         $isRf19 = $companySettings->company_fiscal_regime === 'RF19';
 
-        $defaultSequence = Sequence::where('type', 'electronic_invoice')
+        $defaultSequence = Sequence::where('type', 'sales')
             ->orderByDesc('is_system')
             ->first();
 
         return [
             'contacts' => Contact::orderBy('name')->get(['id', 'name']),
-            'sequences' => Sequence::where('type', 'electronic_invoice')
+            'sequences' => Sequence::where('type', 'sales')
                 ->get(['id', 'name', 'pattern'])
                 ->map(fn ($s) => [
                     'id' => $s->id,

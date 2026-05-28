@@ -90,16 +90,19 @@ class FiscalDocument extends Model
                 $document->public_id = (string) Str::ulid();
             }
 
-            // Backward-compatible default for legacy create() calls in tests and scripts.
-            if (empty($document->type)) {
-                $sequenceType = null;
-                if (! empty($document->sequence_id)) {
-                    $sequenceType = Sequence::query()
-                        ->whereKey($document->sequence_id)
-                        ->value('type');
-                }
+            $sequenceType = null;
+            if (! empty($document->sequence_id)) {
+                $sequenceType = Sequence::query()
+                    ->whereKey($document->sequence_id)
+                    ->value('type');
+            }
 
+            if (empty($document->type)) {
                 $document->type = $sequenceType ?: 'sales';
+            }
+
+            if ($document->type === 'sales') {
+                $document->type = 'sales';
             }
 
             if ($document->date && ! $document->fiscal_year) {

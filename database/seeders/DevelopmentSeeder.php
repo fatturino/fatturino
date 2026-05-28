@@ -280,7 +280,7 @@ class DevelopmentSeeder extends Seeder
     private function seedSalesInvoices(array $contacts, array $products): void
     {
         $year = now()->year;
-        $sequence = Sequence::where('type', 'electronic_invoice')->first();
+        $sequence = Sequence::where('type', 'sales')->first();
 
         if (! $sequence) {
             return;

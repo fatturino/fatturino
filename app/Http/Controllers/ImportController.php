@@ -33,7 +33,7 @@ class ImportController extends Controller
         $importType = $request->input('import_type');
 
         return match ($importType) {
-            'xml_sales' => $this->handleXmlImport($request, 'electronic_invoice'),
+            'xml_sales' => $this->handleXmlImport($request, 'sales'),
             'xml_purchase' => $this->handleXmlImport($request, 'purchase'),
             'xml_self_invoice' => $this->handleXmlImport($request, 'self_invoice'),
             'fattura24_contacts' => $this->handleFattura24Import($request),
@@ -152,7 +152,7 @@ class ImportController extends Controller
         $settings = app(InvoiceSettings::class);
 
         $settingKey = match ($category) {
-            'electronic_invoice' => 'default_sequence_sales',
+            'sales' => 'default_sequence_sales',
             'purchase' => 'default_sequence_purchase',
             'self_invoice' => 'default_sequence_self_invoice',
         };

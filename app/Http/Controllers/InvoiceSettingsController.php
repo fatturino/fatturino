@@ -26,7 +26,7 @@ class InvoiceSettingsController extends Controller
 
         return Inertia::render('Settings/Invoice', [
             'settings' => $settings->toArray(),
-            'sequences' => Sequence::where('type', 'electronic_invoice')->orderBy('name')->get(['id', 'name']),
+            'sequences' => Sequence::where('type', 'sales')->orderBy('name')->get(['id', 'name']),
             'vatRates' => $isRf19
                 ? array_values(array_filter(VatRate::options(), fn (array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
                 : VatRate::options(),

@@ -38,10 +38,10 @@ class InvoiceXmlImportService
      *
      * @param  string  $xmlContent  Raw XML string
      * @param  int  $sequenceId  Sequence ID chosen by user
-     * @param  string  $category  'electronic_invoice', 'purchase', or 'self_invoice' — determines which party becomes the contact
+     * @param  string  $category  'sales', 'purchase', or 'self_invoice' — determines which party becomes the contact
      * @param  array  $sdiContext  Optional SDI metadata (uuid, file_id, filename, payload, received_at)
      */
-    public function importXml(string $xmlContent, ?int $sequenceId, string $category = 'electronic_invoice', array $sdiContext = []): void
+    public function importXml(string $xmlContent, ?int $sequenceId, string $category = 'sales', array $sdiContext = []): void
     {
         $this->stats['total']++;
 

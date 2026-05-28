@@ -59,7 +59,7 @@ class DemoModeSeeder extends Seeder
         $company->company_fiscal_regime = 'RF19';
         $company->save();
 
-        $salesSequence = $this->resolveSequence('Fatture Elettroniche', 'electronic_invoice', '{SEQ}');
+        $salesSequence = $this->resolveSequence('Fatture Elettroniche', 'sales', '{SEQ}');
         $proformaSequence = $this->resolveSequence('ProForma', 'proforma', 'PRO-{SEQ}');
         $selfInvoiceSequence = $this->resolveSequence('Autofatture', 'self_invoice', 'AUTO-{SEQ}');
         $creditNoteSequence = $this->resolveSequence('Note di Credito', 'credit_note', 'NC-{SEQ}');
@@ -162,7 +162,7 @@ class DemoModeSeeder extends Seeder
 
     private function seedSalesInvoicesFor2025And2026(): void
     {
-        $sequence = $this->resolveSequence('Fatture Elettroniche', 'electronic_invoice', '{SEQ}');
+        $sequence = $this->resolveSequence('Fatture Elettroniche', 'sales', '{SEQ}');
         $contacts = Contact::query()->where('is_customer', true)->orderBy('id')->get()->values();
         $yearCounters = [];
 
@@ -234,7 +234,7 @@ class DemoModeSeeder extends Seeder
     private function seedProformaAndConvertedInvoices(): void
     {
         $proformaSequence = $this->resolveSequence('ProForma', 'proforma', 'PRO-{SEQ}');
-        $salesSequence = $this->resolveSequence('Fatture Elettroniche', 'electronic_invoice', '{SEQ}');
+        $salesSequence = $this->resolveSequence('Fatture Elettroniche', 'sales', '{SEQ}');
 
         $contact = Contact::query()->where('name', 'Studio Alfa S.r.l.')->firstOrFail();
 

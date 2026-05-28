@@ -23,7 +23,7 @@ class ConvertProformaToInvoice
 
         return DB::transaction(function () use ($proforma) {
             // Resolve the sales invoice sequence
-            $sequence = Sequence::where('type', 'electronic_invoice')
+            $sequence = Sequence::where('type', 'sales')
                 ->orderByDesc('is_system')
                 ->first();
 

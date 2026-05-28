@@ -8,13 +8,13 @@ use Database\Seeders\SequenceSeeder;
 test('sequence can be created with a pattern', function () {
     $sequence = Sequence::create([
         'name' => 'Test Sequence',
-        'type' => 'electronic_invoice',
+        'type' => 'sales',
         'pattern' => 'FE-{SEQ}',
     ]);
 
     expect($sequence->name)->toBe('Test Sequence');
     expect($sequence->pattern)->toBe('FE-{SEQ}');
-    expect($sequence->type)->toBe('electronic_invoice');
+    expect($sequence->type)->toBe('sales');
 });
 
 test('sequence defaults to plain {SEQ} pattern', function () {
@@ -33,7 +33,7 @@ test('getNextNumber returns 1 for sequence with no invoices', function () {
 });
 
 test('getNextNumber returns correct next number', function () {
-    $sequence = Sequence::create(['name' => 'Test', 'type' => 'electronic_invoice']);
+    $sequence = Sequence::create(['name' => 'Test', 'type' => 'sales']);
     $contact = Contact::create(['name' => 'Test Client']);
 
     FiscalDocument::create(['number' => 1, 'sequential_number' => 1, 'date' => now(), 'contact_id' => $contact->id, 'sequence_id' => $sequence->id]);
@@ -44,7 +44,7 @@ test('getNextNumber returns correct next number', function () {
 });
 
 test('getNextNumber handles gaps in invoice numbering', function () {
-    $sequence = Sequence::create(['name' => 'Test', 'type' => 'electronic_invoice']);
+    $sequence = Sequence::create(['name' => 'Test', 'type' => 'sales']);
     $contact = Contact::create(['name' => 'Test Client']);
 
     foreach ([1, 3, 7] as $number) {
@@ -57,37 +57,37 @@ test('getNextNumber handles gaps in invoice numbering', function () {
 // --- getFormattedNumber with token substitution ---
 
 test('plain {SEQ} pattern returns bare number without padding', function () {
-    $sequence = Sequence::create(['name' => 'Plain', 'type' => 'electronic_invoice', 'pattern' => '{SEQ}']);
+    $sequence = Sequence::create(['name' => 'Plain', 'type' => 'sales', 'pattern' => '{SEQ}']);
 
     expect($sequence->getFormattedNumber())->toBe('1');
 });
 
 test('pattern with prefix does not zero-pad {SEQ}', function () {
-    $sequence = Sequence::create(['name' => 'Prefixed', 'type' => 'electronic_invoice', 'pattern' => 'FE-{SEQ}']);
+    $sequence = Sequence::create(['name' => 'Prefixed', 'type' => 'sales', 'pattern' => 'FE-{SEQ}']);
 
     expect($sequence->getFormattedNumber())->toBe('FE-1');
 });
 
 test('pattern with suffix does not zero-pad {SEQ}', function () {
-    $sequence = Sequence::create(['name' => 'Suffixed', 'type' => 'electronic_invoice', 'pattern' => '{SEQ}-2026']);
+    $sequence = Sequence::create(['name' => 'Suffixed', 'type' => 'sales', 'pattern' => '{SEQ}-2026']);
 
     expect($sequence->getFormattedNumber())->toBe('1-2026');
 });
 
 test('{ANNO} token is replaced with the current year', function () {
-    $sequence = Sequence::create(['name' => 'Anno', 'type' => 'electronic_invoice', 'pattern' => 'FE-{SEQ}-{ANNO}']);
+    $sequence = Sequence::create(['name' => 'Anno', 'type' => 'sales', 'pattern' => 'FE-{SEQ}-{ANNO}']);
 
     expect($sequence->getFormattedNumber())->toBe('FE-1-'.now()->year);
 });
 
 test('arbitrary pattern text is preserved', function () {
-    $sequence = Sequence::create(['name' => 'Custom', 'type' => 'electronic_invoice', 'pattern' => 'Fatt{SEQ}']);
+    $sequence = Sequence::create(['name' => 'Custom', 'type' => 'sales', 'pattern' => 'Fatt{SEQ}']);
 
     expect($sequence->getFormattedNumber())->toBe('Fatt1');
 });
 
 test('getFormattedNumber increments correctly', function () {
-    $sequence = Sequence::create(['name' => 'Test', 'type' => 'electronic_invoice', 'pattern' => 'FAT-{SEQ}']);
+    $sequence = Sequence::create(['name' => 'Test', 'type' => 'sales', 'pattern' => 'FAT-{SEQ}']);
     $contact = Contact::create(['name' => 'Test Client']);
 
     expect($sequence->getFormattedNumber())->toBe('FAT-1');
@@ -102,7 +102,7 @@ test('getFormattedNumber increments correctly', function () {
 });
 
 test('getFormattedNumber handles numbers larger than 4 digits', function () {
-    $sequence = Sequence::create(['name' => 'Large', 'type' => 'electronic_invoice', 'pattern' => 'INV-{SEQ}']);
+    $sequence = Sequence::create(['name' => 'Large', 'type' => 'sales', 'pattern' => 'INV-{SEQ}']);
     $contact = Contact::create(['name' => 'Test Client']);
 
     FiscalDocument::create(['number' => 9999, 'sequential_number' => 9999, 'date' => now(), 'contact_id' => $contact->id, 'sequence_id' => $sequence->id]);
@@ -113,7 +113,7 @@ test('getFormattedNumber handles numbers larger than 4 digits', function () {
 // --- Relationship ---
 
 test('sequence has many invoices relationship', function () {
-    $sequence = Sequence::create(['name' => 'Test', 'type' => 'electronic_invoice']);
+    $sequence = Sequence::create(['name' => 'Test', 'type' => 'sales']);
     $contact = Contact::create(['name' => 'Test Client']);
 
     FiscalDocument::create(['number' => 1, 'sequential_number' => 1, 'date' => now(), 'contact_id' => $contact->id, 'sequence_id' => $sequence->id]);
@@ -123,7 +123,7 @@ test('sequence has many invoices relationship', function () {
 });
 
 test('multiple sequences maintain separate numbering', function () {
-    $seq1 = Sequence::create(['name' => 'Sequence 1', 'type' => 'electronic_invoice', 'pattern' => 'SEQ1-{SEQ}']);
+    $seq1 = Sequence::create(['name' => 'Sequence 1', 'type' => 'sales', 'pattern' => 'SEQ1-{SEQ}']);
     $seq2 = Sequence::create(['name' => 'Sequence 2', 'type' => 'purchase',           'pattern' => 'SEQ2-{SEQ}']);
     $contact = Contact::create(['name' => 'Test Client']);
 
@@ -145,7 +145,7 @@ test('sequence can be deleted', function () {
 });
 
 test('complete sequence lifecycle works correctly', function () {
-    $sequence = Sequence::create(['name' => 'Complete', 'type' => 'electronic_invoice', 'pattern' => 'COMP-{SEQ}']);
+    $sequence = Sequence::create(['name' => 'Complete', 'type' => 'sales', 'pattern' => 'COMP-{SEQ}']);
     $contact = Contact::create(['name' => 'Test Client']);
 
     expect($sequence->invoices()->count())->toBe(0);
@@ -167,7 +167,7 @@ test('complete sequence lifecycle works correctly', function () {
 // --- Year-based numbering ---
 
 test('getNextNumber resets to 1 for a new year', function () {
-    $sequence = Sequence::create(['name' => 'Yearly', 'type' => 'electronic_invoice', 'pattern' => '{SEQ}-{ANNO}']);
+    $sequence = Sequence::create(['name' => 'Yearly', 'type' => 'sales', 'pattern' => '{SEQ}-{ANNO}']);
     $contact = Contact::create(['name' => 'Test Client']);
 
     // Create invoices in 2025
@@ -198,13 +198,13 @@ test('getFormattedNumber uses correct year', function () {
 // --- System sequence protection ---
 
 test('sequence can be marked as system', function () {
-    $sequence = Sequence::create(['name' => 'Sistema', 'type' => 'electronic_invoice', 'is_system' => true]);
+    $sequence = Sequence::create(['name' => 'Sistema', 'type' => 'sales', 'is_system' => true]);
 
     expect($sequence->is_system)->toBeTrue();
 });
 
 test('system sequence cannot be deleted', function () {
-    $sequence = Sequence::create(['name' => 'Sistema', 'type' => 'electronic_invoice', 'is_system' => true]);
+    $sequence = Sequence::create(['name' => 'Sistema', 'type' => 'sales', 'is_system' => true]);
 
     expect(fn () => $sequence->delete())
         ->toThrow(Exception::class, 'Impossibile eliminare un sezionale di sistema');
@@ -228,7 +228,7 @@ test('unused non-system sequence can be deleted', function () {
 });
 
 test('system sequence type cannot be changed', function () {
-    $sequence = Sequence::create(['name' => 'Fatture', 'type' => 'electronic_invoice', 'is_system' => true]);
+    $sequence = Sequence::create(['name' => 'Fatture', 'type' => 'sales', 'is_system' => true]);
 
     expect(fn () => $sequence->update(['type' => 'purchase']))
         ->toThrow(Exception::class, 'Impossibile modificare il tipo');
@@ -237,7 +237,7 @@ test('system sequence type cannot be changed', function () {
 test('system sequence name and pattern can be updated', function () {
     $sequence = Sequence::create([
         'name' => 'Old Name',
-        'type' => 'electronic_invoice',
+        'type' => 'sales',
         'pattern' => '{SEQ}',
         'is_system' => true,
     ]);
@@ -248,7 +248,7 @@ test('system sequence name and pattern can be updated', function () {
     expect($sequence->name)->toBe('New Name');
     expect($sequence->pattern)->toBe('FE-{SEQ}-{ANNO}');
     // Type must remain unchanged
-    expect($sequence->type)->toBe('electronic_invoice');
+    expect($sequence->type)->toBe('sales');
 });
 
 // --- Seeder ---
@@ -268,7 +268,7 @@ test('seeder creates the six standard sequences', function () {
 test('seeder covers all six sequence types', function () {
     $this->seed(SequenceSeeder::class);
 
-    foreach (['electronic_invoice', 'purchase', 'self_invoice', 'proforma', 'credit_note', 'quote'] as $type) {
+    foreach (['sales', 'purchase', 'self_invoice', 'proforma', 'credit_note', 'quote'] as $type) {
         expect(Sequence::where('type', $type)->exists())->toBeTrue();
     }
 

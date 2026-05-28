@@ -18,7 +18,7 @@ class SequenceSeeder extends Seeder
             [
                 'name' => 'Fatture Elettroniche',
                 'pattern' => '{SEQ}',
-                'type' => 'electronic_invoice',
+                'type' => 'sales',
                 'is_system' => true,
             ],
             [
