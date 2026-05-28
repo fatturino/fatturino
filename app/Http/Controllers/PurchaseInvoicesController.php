@@ -211,6 +211,7 @@ class PurchaseInvoicesController extends Controller
 
         if ($sort === 'number') {
             $query->orderBy('number', $direction)->orderBy('id', $direction);
+
             return;
         }
 
@@ -221,6 +222,7 @@ class PurchaseInvoicesController extends Controller
                     ->limit(1),
                 $direction
             )->orderBy('id', $direction);
+
             return;
         }
 

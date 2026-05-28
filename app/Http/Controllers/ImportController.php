@@ -74,6 +74,7 @@ class ImportController extends Controller
 
                 if ($extension === 'zip') {
                     $this->importXmlFromZip($service, $filePath, $sequenceId, $category);
+
                     continue;
                 }
 

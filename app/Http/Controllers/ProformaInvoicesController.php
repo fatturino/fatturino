@@ -311,6 +311,7 @@ class ProformaInvoicesController extends Controller
 
         if ($sort === 'number') {
             $query->orderBy('number', $direction)->orderBy('id', $direction);
+
             return;
         }
 
@@ -321,6 +322,7 @@ class ProformaInvoicesController extends Controller
                     ->limit(1),
                 $direction
             )->orderBy('id', $direction);
+
             return;
         }
 

@@ -497,6 +497,7 @@ class SalesInvoicesController extends Controller
 
         if ($sort === 'number') {
             $query->orderBy('number', $direction)->orderBy('id', $direction);
+
             return;
         }
 
@@ -507,6 +508,7 @@ class SalesInvoicesController extends Controller
                     ->limit(1),
                 $direction
             )->orderBy('id', $direction);
+
             return;
         }
 
