@@ -55,7 +55,8 @@ class ImportController extends Controller
         }
 
         $request->validate([
-            'xml_file' => 'required|file|mimes:xml,p7m,zip|max:10240',
+            'xml_file' => 'required|array|min:1',
+            'xml_file.*' => 'required|file|mimes:xml,p7m,zip|max:10240',
         ]);
 
         $sequenceId = $this->resolveDefaultSequenceId($category);
@@ -65,13 +66,17 @@ class ImportController extends Controller
 
         try {
             $service = app(InvoiceXmlImportService::class);
-            $file = $request->file('xml_file');
-            $filePath = $file->getRealPath();
-            $extension = strtolower($file->getClientOriginalExtension());
+            $files = $request->file('xml_file', []);
 
-            if ($extension === 'zip') {
-                $this->importXmlFromZip($service, $filePath, $sequenceId, $category);
-            } else {
+            foreach ($files as $file) {
+                $filePath = $file->getRealPath();
+                $extension = strtolower($file->getClientOriginalExtension());
+
+                if ($extension === 'zip') {
+                    $this->importXmlFromZip($service, $filePath, $sequenceId, $category);
+                    continue;
+                }
+
                 $service->importXml(file_get_contents($filePath), $sequenceId, $category);
             }
 

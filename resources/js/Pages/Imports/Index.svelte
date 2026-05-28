@@ -241,8 +241,13 @@
                 <label class="block mb-4">
                     <span class="text-sm font-medium text-brand-deep">{importTypes[importType]?.fileLabel ?? 'File'}</span>
                     <Input class="mt-1 block w-full rounded-lg border border-brand-secondary/20 px-3 py-2 text-sm form-focus file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-secondary/5 file:text-brand-deep hover:file:bg-brand-secondary/10"
-                        type="file" name={importType.startsWith('xml') ? 'xml_file' : 'csv_file'} accept={importTypes[importType]?.accept ?? ''} required />
+                        type="file"
+                        name={importType.startsWith('xml') ? 'xml_file[]' : 'csv_file'}
+                        accept={importTypes[importType]?.accept ?? ''}
+                        multiple={importType.startsWith('xml')}
+                        required />
                     {#if errors.xml_file}<span class="text-red-600 text-xs mt-0.5 block">{errors.xml_file}</span>{/if}
+                    {#if errors['xml_file.0']}<span class="text-red-600 text-xs mt-0.5 block">{errors['xml_file.0']}</span>{/if}
                     {#if errors.csv_file}<span class="text-red-600 text-xs mt-0.5 block">{errors.csv_file}</span>{/if}
                 </label>
 
