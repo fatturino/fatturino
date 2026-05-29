@@ -2,6 +2,7 @@
     import Authenticated from '$layouts/Authenticated.svelte'
     import Button from '$lib/components/ui/Button.svelte'
     import Input from '$lib/components/ui/Input.svelte'
+    import Textarea from '$lib/components/ui/Textarea.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
     import PaymentModal from '$lib/components/invoices/PaymentModal.svelte'
     import KpiStats from '$lib/components/sales-invoices/KpiStats.svelte'
@@ -37,6 +38,11 @@
     let onConfirmAction = $state(() => {})
     let paymentModalOpen = $state(false)
     let paymentInvoice = $state(null)
+    let emailModalOpen = $state(false)
+    let emailModalLoading = $state(false)
+    let emailSending = $state(false)
+    let emailInvoice = $state(null)
+    let emailForm = $state({ recipient_email: '', cc: '', subject: '', body: '' })
     const statusTabs = $derived([
         { label: 'Tutte', value: '', count: listState.invoices.total ?? 0 },
         { label: 'Bozze', value: 'draft', count: listState.stats.draft_count ?? 0 },
@@ -163,7 +169,7 @@
         return match ? decodeURIComponent(match[1]) : ''
     }
 
-    async function postAction(url, successMessage) {
+    async function postAction(url, successMessage, payload = {}) {
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -171,6 +177,7 @@
                 'Accept': 'application/json',
                 'X-XSRF-TOKEN': csrfToken(),
             },
+            body: JSON.stringify(payload),
         })
 
         const data = await response.json()
@@ -178,11 +185,12 @@
         if (data.success) {
             showToast(successMessage)
             window.location.reload()
-            return
+            return true
         }
 
         const errors = Array.isArray(data.errors) ? data.errors.join('\n') : null
         showToast(errors || data.error || 'Operazione non riuscita.', 'error')
+        return false
     }
 
     async function validateXml(invoice) {
@@ -216,7 +224,51 @@ Controlla prima di confermare:
     }
 
     async function sendEmail(invoice) {
-        await postAction(`/sell-invoices/${invoice.id}/send-email`, 'Email inviata.')
+        emailInvoice = invoice
+        emailModalOpen = true
+        emailModalLoading = true
+
+        try {
+            const response = await fetch(`/sell-invoices/${invoice.id}/email-preview`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-XSRF-TOKEN': csrfToken(),
+                },
+            })
+            const data = await response.json()
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Anteprima email non disponibile.')
+            }
+
+            emailForm = {
+                recipient_email: data.preview?.recipient_email ?? '',
+                cc: data.preview?.cc ?? '',
+                subject: data.preview?.subject ?? '',
+                body: data.preview?.body ?? '',
+            }
+        } catch (error) {
+            showToast(error?.message || 'Anteprima email non disponibile.', 'error')
+            emailModalOpen = false
+            emailInvoice = null
+        } finally {
+            emailModalLoading = false
+        }
+    }
+
+    async function submitEmailModal() {
+        if (!emailInvoice) return false
+        if (!emailForm.recipient_email) {
+            showToast('Inserisci un destinatario email.', 'error')
+            return false
+        }
+
+        emailSending = true
+        try {
+            const sent = await postAction(`/sell-invoices/${emailInvoice.id}/send-email`, 'Email inviata.', emailForm)
+            return sent
+        } finally {
+            emailSending = false
+        }
     }
 
     function openPaymentModal(invoice) {
@@ -258,6 +310,37 @@ Controlla prima di confermare:
     variant={confirmVariant}
     onConfirm={onConfirmAction}
 />
+<Dialog
+    bind:open={emailModalOpen}
+    title={`Invia email ${emailInvoice?.number ?? (emailInvoice ? '#' + emailInvoice.id : '')}`}
+    confirmText="Invia email"
+    onConfirm={submitEmailModal}
+    isLoading={emailSending}
+    contentClass="max-w-2xl"
+>
+    {#if emailModalLoading}
+        <p class="text-sm text-brand-secondary">Caricamento anteprima email...</p>
+    {:else}
+        <div class="space-y-4">
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">Destinatario</span>
+                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.recipient_email} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">CC (opzionale)</span>
+                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.cc} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">Oggetto</span>
+                <Input class="mt-1 block w-full" type="text" bind:value={emailForm.subject} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">Messaggio</span>
+                <Textarea class="mt-1 block w-full min-h-48" bind:value={emailForm.body} />
+            </label>
+        </div>
+    {/if}
+</Dialog>
 <PaymentModal bind:open={paymentModalOpen} invoice={paymentInvoice} basePath="/sell-invoices" />
 
 <Authenticated>

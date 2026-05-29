@@ -308,10 +308,22 @@ class SalesInvoicesController extends Controller
     }
 
     public function sendEmail(
+        Request $request,
         SalesInvoice $invoice,
         DocumentMailer $mailer
     ): JsonResponse {
-        $recipientEmail = $invoice->contact?->email;
+        $validated = $request->validate([
+            'recipient_email' => 'nullable|email',
+            'cc' => 'nullable|email',
+            'subject' => 'nullable|string',
+            'body' => 'nullable|string',
+        ]);
+
+        $recipientEmail = $validated['recipient_email'] ?? $invoice->contact?->email;
+        $documentType = $invoice->getAttributes()['type'] ?? 'sales';
+        $subject = $validated['subject'] ?? $mailer->renderSubject($documentType, $invoice);
+        $body = $validated['body'] ?? $mailer->renderBody($documentType, $invoice);
+        $cc = $validated['cc'] ?? '';
 
         if (! $recipientEmail) {
             return response()->json([
@@ -321,7 +333,7 @@ class SalesInvoicesController extends Controller
         }
 
         try {
-            $mailer->send($invoice, $recipientEmail);
+            $mailer->sendWithOverrides($invoice, $recipientEmail, $subject, $body, true, $cc);
         } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -332,6 +344,24 @@ class SalesInvoicesController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Email inviata correttamente.',
+        ]);
+    }
+
+    public function emailPreview(
+        SalesInvoice $invoice,
+        DocumentMailer $mailer
+    ): JsonResponse {
+        $documentType = $invoice->getAttributes()['type'] ?? 'sales';
+        $metadata = is_array($invoice->metadata) ? $invoice->metadata : [];
+
+        return response()->json([
+            'success' => true,
+            'preview' => [
+                'recipient_email' => $invoice->contact?->email ?? '',
+                'cc' => (string) data_get($metadata, 'email.cc', ''),
+                'subject' => $mailer->renderSubject($documentType, $invoice),
+                'body' => $mailer->renderBody($documentType, $invoice),
+            ],
         ]);
     }
 

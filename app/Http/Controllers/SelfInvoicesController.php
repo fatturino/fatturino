@@ -280,12 +280,24 @@ class SelfInvoicesController extends Controller
     }
 
     public function sendEmail(
+        Request $request,
         SelfInvoice $selfInvoice,
         DocumentMailer $mailer
     ): JsonResponse {
         $this->ensureSelfInvoicesAllowed();
 
-        $recipientEmail = $selfInvoice->contact?->email;
+        $validated = $request->validate([
+            'recipient_email' => 'nullable|email',
+            'cc' => 'nullable|email',
+            'subject' => 'nullable|string',
+            'body' => 'nullable|string',
+        ]);
+
+        $recipientEmail = $validated['recipient_email'] ?? $selfInvoice->contact?->email;
+        $documentType = $selfInvoice->getAttributes()['type'] ?? 'self_invoice';
+        $subject = $validated['subject'] ?? $mailer->renderSubject($documentType, $selfInvoice);
+        $body = $validated['body'] ?? $mailer->renderBody($documentType, $selfInvoice);
+        $cc = $validated['cc'] ?? '';
 
         if (! $recipientEmail) {
             return response()->json([
@@ -295,7 +307,7 @@ class SelfInvoicesController extends Controller
         }
 
         try {
-            $mailer->send($selfInvoice, $recipientEmail);
+            $mailer->sendWithOverrides($selfInvoice, $recipientEmail, $subject, $body, true, $cc);
         } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -306,6 +318,26 @@ class SelfInvoicesController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Email inviata correttamente.',
+        ]);
+    }
+
+    public function emailPreview(
+        SelfInvoice $selfInvoice,
+        DocumentMailer $mailer
+    ): JsonResponse {
+        $this->ensureSelfInvoicesAllowed();
+
+        $documentType = $selfInvoice->getAttributes()['type'] ?? 'self_invoice';
+        $metadata = is_array($selfInvoice->metadata) ? $selfInvoice->metadata : [];
+
+        return response()->json([
+            'success' => true,
+            'preview' => [
+                'recipient_email' => $selfInvoice->contact?->email ?? '',
+                'cc' => (string) data_get($metadata, 'email.cc', ''),
+                'subject' => $mailer->renderSubject($documentType, $selfInvoice),
+                'body' => $mailer->renderBody($documentType, $selfInvoice),
+            ],
         ]);
     }
 

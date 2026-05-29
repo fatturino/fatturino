@@ -10,7 +10,7 @@
         confirmText = "Conferma",
         variant = "primary" as "primary" | "danger",
         isLoading = false,
-        onConfirm = undefined as (() => void) | undefined,
+        onConfirm = undefined as (() => void | boolean | Promise<void | boolean>) | undefined,
         contentClass = "",
         children,
         ...restProps
@@ -21,13 +21,15 @@
         confirmText?: string;
         variant?: "primary" | "danger";
         isLoading?: boolean;
-        onConfirm?: () => void;
+        onConfirm?: () => void | boolean | Promise<void | boolean>;
         contentClass?: string;
     } = $props();
 
-    function handleConfirm() {
-        onConfirm?.();
-        open = false;
+    async function handleConfirm() {
+        const shouldClose = (await onConfirm?.()) !== false;
+        if (shouldClose) {
+            open = false;
+        }
     }
 </script>
 

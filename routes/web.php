@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sell-invoices/{invoice}/pdf', [SalesInvoicesController::class, 'downloadPdf'])->name('sell-invoices.download-pdf');
     Route::post('/sell-invoices/{invoice}/validate-xml', [SalesInvoicesController::class, 'validateXml'])->name('sell-invoices.validate-xml');
     Route::post('/sell-invoices/{invoice}/send-sdi', [SalesInvoicesController::class, 'sendToSdi'])->name('sell-invoices.send-sdi');
+    Route::get('/sell-invoices/{invoice}/email-preview', [SalesInvoicesController::class, 'emailPreview'])->name('sell-invoices.email-preview');
     Route::post('/sell-invoices/{invoice}/send-email', [SalesInvoicesController::class, 'sendEmail'])->name('sell-invoices.send-email');
     Route::post('/sell-invoices/{invoice}/payments', [SalesInvoicesController::class, 'recordPayment'])->name('sell-invoices.record-payment');
     Route::put('/sell-invoices/{invoice}/payments/{payment}', [SalesInvoicesController::class, 'updatePayment'])
@@ -110,6 +111,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/self-invoices/{selfInvoice}/pdf', [SelfInvoicesController::class, 'downloadPdf'])->name('self-invoices.download-pdf');
     Route::post('/self-invoices/{selfInvoice}/validate-xml', [SelfInvoicesController::class, 'validateXml'])->name('self-invoices.validate-xml');
     Route::post('/self-invoices/{selfInvoice}/send-sdi', [SelfInvoicesController::class, 'sendToSdi'])->name('self-invoices.send-sdi');
+    Route::get('/self-invoices/{selfInvoice}/email-preview', [SelfInvoicesController::class, 'emailPreview'])->name('self-invoices.email-preview');
     Route::post('/self-invoices/{selfInvoice}/send-email', [SelfInvoicesController::class, 'sendEmail'])->name('self-invoices.send-email');
     Route::post('/self-invoices/{selfInvoice}/payments', [SelfInvoicesController::class, 'recordPayment'])->name('self-invoices.record-payment');
     Route::put('/self-invoices/{selfInvoice}/payments/{payment}', [SelfInvoicesController::class, 'updatePayment'])
