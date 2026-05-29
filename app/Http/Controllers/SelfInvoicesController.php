@@ -307,7 +307,7 @@ class SelfInvoicesController extends Controller
         }
 
         try {
-            $mailer->sendWithOverrides($selfInvoice, $recipientEmail, $subject, $body, true, $cc);
+            $mailer->sendNowWithOverrides($selfInvoice, $recipientEmail, $subject, $body, true, $cc);
         } catch (Throwable $e) {
             return response()->json([
                 'success' => false,

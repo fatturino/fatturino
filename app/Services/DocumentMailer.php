@@ -42,6 +42,15 @@ class DocumentMailer
     }
 
     /**
+     * Send immediately in the current request lifecycle.
+     * Use this for manual user-triggered sends so API success reflects real delivery attempt.
+     */
+    public function sendNowWithOverrides(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = ''): void
+    {
+        $this->deliver($recipientEmail, $subject, $body, $document, $attachPdf, $cc);
+    }
+
+    /**
      * Render the subject template for the given document type.
      */
     public function renderSubject(string $type, Model $document): string
