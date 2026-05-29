@@ -589,6 +589,13 @@
     box-shadow: var(--shadow-input-focus);
 }
 
+/* Textareas must not inherit fixed input height from legacy .form-focus */
+textarea.form-focus {
+    height: auto;
+    min-height: 10rem;
+    padding: 0.625rem 0.75rem;
+}
+
 .form-focus:disabled {
     opacity: 0.5;
     cursor: not-allowed;
