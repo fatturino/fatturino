@@ -510,7 +510,7 @@
                     <div class="section-title">{{ __('app.pdf.payment_info') }}</div>
                     <div class="payment-row">
                         <span class="payment-key">{{ __('app.pdf.payment_method') }}:</span>
-                        {{ $invoice->payment_method->label() }}
+                        {{ $invoice->payment_method instanceof \App\Enums\PaymentMethod ? $invoice->payment_method->label() : (\App\Enums\PaymentMethod::tryFrom($invoice->payment_method)?->label() ?? $invoice->payment_method) }}
                     </div>
                 @endif
                 @if ($invoice->bank_name)
