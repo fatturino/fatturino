@@ -20,6 +20,7 @@
     import UserCircle from 'phosphor-svelte/lib/UserCircle'
     import CaretDown from 'phosphor-svelte/lib/CaretDown'
     import BookOpenText from 'phosphor-svelte/lib/BookOpenText'
+    import TerminalWindow from 'phosphor-svelte/lib/TerminalWindow'
 
     let {
         sidebarOpen = $bindable(false),
@@ -46,6 +47,7 @@
         Envelope,
         Briefcase,
         ClipboardText,
+        TerminalWindow,
     }
 
     let openSections = $state({})

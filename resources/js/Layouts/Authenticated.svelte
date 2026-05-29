@@ -71,7 +71,8 @@
                     { label: 'Fatture', path: '/invoice-settings', icon: 'Gear' },
                     { label: 'Fatturazione elettronica', path: '/electronic-invoice-settings', icon: 'Lightning' },
                     { label: 'Email', path: '/email-settings', icon: 'Envelope' },
-                    { label: 'Servizi', path: '/services', icon: 'Briefcase' }
+                    { label: 'Servizi', path: '/services', icon: 'Briefcase' },
+                    { label: 'Avanzate', path: '/advanced', icon: 'TerminalWindow' }
                 ],
             },
         ]

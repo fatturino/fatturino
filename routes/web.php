@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\SetupWizardController;
+use App\Http\Controllers\AdvancedLogsController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\ContactsController;
 use App\Http\Controllers\CreditNotesController;
@@ -161,6 +162,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/email-settings', [EmailSettingsController::class, 'update'])->middleware('capability:edit-email-settings')->name('settings.email.update');
     Route::post('/email-settings/test', [EmailSettingsController::class, 'testConnection'])->name('settings.email.test');
     Route::get('/services', [ServicesController::class, 'index'])->name('settings.services')->defaults('title', 'Servizi');
+    Route::get('/advanced', [AdvancedLogsController::class, 'index'])->name('settings.advanced')->defaults('title', 'Avanzate');
     Route::put('/services/backup', [ServicesController::class, 'updateBackup'])->middleware('capability:manage-backup-settings')->name('settings.services.backup');
     Route::post('/services/test-connection', [ServicesController::class, 'testConnection'])->name('settings.services.test');
     Route::get('/imports', [ImportController::class, 'index'])->name('imports.index')->defaults('title', 'Import');
