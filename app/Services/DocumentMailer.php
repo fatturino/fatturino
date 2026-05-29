@@ -114,7 +114,7 @@ class DocumentMailer
         $replacements = [
             '{CLIENTE}' => $contact?->name ?? '',
             '{NUMERO_DOCUMENTO}' => $document->number ?? '',
-            '{DATA_DOCUMENTO}' => $document->date?->format('d/m/Y') ?? '',
+            '{DATA_DOCUMENTO}' => $this->formatDocumentDate($document->date ?? null),
             '{IMPORTO_NETTO}' => '€ '.number_format(($document->total_net ?? 0) / 100, 2, ',', '.'),
             '{IMPORTO_IVA}' => '€ '.number_format(($document->total_vat ?? 0) / 100, 2, ',', '.'),
             '{IMPORTO_TOTALE}' => '€ '.number_format(($document->total_gross ?? 0) / 100, 2, ',', '.'),
@@ -124,6 +124,23 @@ class DocumentMailer
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $template);
+    }
+
+    private function formatDocumentDate(mixed $value): string
+    {
+        if ($value instanceof Carbon) {
+            return $value->format('d/m/Y');
+        }
+
+        if (is_string($value) && $value !== '') {
+            try {
+                return Carbon::parse($value)->format('d/m/Y');
+            } catch (Throwable) {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     /**
