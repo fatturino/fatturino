@@ -133,6 +133,12 @@
         return discount > 0 ? gross * (1 - discount / 100) : gross
     }
 
+    function lineTotalGross(line) {
+        const net = lineTotal(line)
+        const vat = vatPercent(line.vat_rate)
+        return net + (net * vat / 100)
+    }
+
     let totalNet = $derived(lines.reduce((sum, line) => sum + lineTotal(line), 0))
     let withholdingTaxEnabled = $state(initialShowTaxOptions ? (initialInvoice?.withholding_tax_enabled ?? settings.withholding_tax_enabled ?? false) : false)
     let withholdingTaxPercent = $state(initialShowTaxOptions ? (initialInvoice?.withholding_tax_percent ?? settings.withholding_tax_percent ?? '20.00') : '20.00')
@@ -564,7 +570,7 @@ Controlla prima di confermare:
                                     <div>
                                         <span class="text-xs text-brand-secondary/80">Totale</span>
                                         <div class="mt-1 h-[34px] rounded border border-brand-secondary/10 bg-white px-2 py-1.5 text-sm font-semibold text-brand-deep tabular-nums text-right" aria-label={`Totale riga ${index + 1}`}>
-                                            {formatCurrency(lineTotal(line))}
+                                            {formatCurrency(lineTotalGross(line))}
                                         </div>
                                     </div>
                                 </div>
@@ -638,7 +644,7 @@ Controlla prima di confermare:
                                     </Select>
                                 </div>
                                 <div class="col-span-5 sm:col-span-1 flex items-center gap-1">
-                                    <span class="text-sm font-semibold text-brand-deep tabular-nums w-full text-right">{formatCurrency(lineTotal(line))}</span>
+                                    <span class="text-sm font-semibold text-brand-deep tabular-nums w-full text-right">{formatCurrency(lineTotalGross(line))}</span>
                                     {#if !isReadOnly && lines.length > 1}
                                         <Button class="text-brand-secondary/40 hover:text-red-600 transition-colors text-xs ml-1" onclick={() => removeLine(index)}>✕</Button>
                                     {/if}
