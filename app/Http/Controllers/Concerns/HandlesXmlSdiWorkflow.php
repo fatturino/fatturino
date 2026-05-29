@@ -10,6 +10,7 @@ use App\Services\SdiUuidLinkService;
 use App\Services\XmlWorkflowService;
 use App\Support\InvoiceAuditDispatcher;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 
 trait HandlesXmlSdiWorkflow
 {
@@ -29,13 +30,21 @@ trait HandlesXmlSdiWorkflow
         XmlWorkflowService $xmlWorkflow,
         string $notEditableMessage,
         string $invalidStateMessage
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         if (! $document->isSdiEditable()) {
-            return response()->json(['success' => false, 'error' => $notEditableMessage], 422);
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'error' => $notEditableMessage], 422);
+            }
+
+            return back()->withErrors(['action' => $notEditableMessage]);
         }
 
         if (! $document->status->canValidateXml()) {
-            return response()->json(['success' => false, 'error' => $invalidStateMessage], 422);
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'error' => $invalidStateMessage], 422);
+            }
+
+            return back()->withErrors(['action' => $invalidStateMessage]);
         }
 
         $document->loadMissing(['contact', 'lines']);
@@ -43,13 +52,28 @@ trait HandlesXmlSdiWorkflow
 
         $validationResult = $xmlWorkflow->validate($xml);
         if (! $validationResult['valid']) {
+            $errors = $validationResult['errors'] ?? ['Validazione XML fallita.'];
+
+            if (! request()->expectsJson()) {
+                return back()->withErrors(['action' => implode(' ', $errors)]);
+            }
+
             return response()->json([
                 'success' => false,
-                'errors' => $validationResult['errors'] ?? ['Validazione XML fallita.'],
+                'errors' => $errors,
             ], 422);
         }
 
         $document->update(['status' => InvoiceStatus::XmlValidated]);
+
+        if (! request()->expectsJson()) {
+            return back()->with('toast', [
+                'type' => 'success',
+                'title' => 'Operazione completata',
+                'message' => 'XML validato con successo.',
+                'duration' => 4500,
+            ]);
+        }
 
         return response()->json(['success' => true, 'message' => 'XML validato con successo.']);
     }
@@ -61,13 +85,21 @@ trait HandlesXmlSdiWorkflow
         string $notEditableMessage,
         string $invalidStateMessage,
         string $sentMessage
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         if (! $document->isSdiEditable()) {
-            return response()->json(['success' => false, 'error' => $notEditableMessage], 422);
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'error' => $notEditableMessage], 422);
+            }
+
+            return back()->withErrors(['action' => $notEditableMessage]);
         }
 
         if (! $document->status->canSendToSdi()) {
-            return response()->json(['success' => false, 'error' => $invalidStateMessage], 422);
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'error' => $invalidStateMessage], 422);
+            }
+
+            return back()->withErrors(['action' => $invalidStateMessage]);
         }
 
         $document->loadMissing(['contact', 'lines']);
@@ -86,7 +118,11 @@ trait HandlesXmlSdiWorkflow
                 'raw_payload' => $sendResult,
             ]);
 
-            return response()->json(['success' => false, 'error' => $errorMessage], 422);
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'error' => $errorMessage], 422);
+            }
+
+            return back()->withErrors(['action' => $errorMessage]);
         }
 
         $fingerprint = app(BusinessFingerprintService::class)->buildFromXml($xml);
@@ -120,6 +156,15 @@ trait HandlesXmlSdiWorkflow
             'provider' => $xmlWorkflow->providerId(),
             'uuid' => $document->sdi_uuid,
         ]);
+
+        if (! request()->expectsJson()) {
+            return back()->with('toast', [
+                'type' => 'success',
+                'title' => 'Operazione completata',
+                'message' => $sentMessage,
+                'duration' => 4500,
+            ]);
+        }
 
         return response()->json(['success' => true, 'message' => $sentMessage]);
     }

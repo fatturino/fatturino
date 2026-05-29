@@ -9,6 +9,7 @@
     import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
     import { buildInvoiceContextActions, InvoiceContentType } from '$lib/invoices/context-menu-registry.js'
     import { showToast } from '$lib/toast.js'
+    import { router } from '@inertiajs/svelte'
 
     let {
         invoices = { data: [], current_page: 1, last_page: 1, from: 0, to: 0, total: 0, links: [] },
@@ -128,32 +129,21 @@
         return statusFilter === tabValue
     }
 
-    function csrfToken() {
-        const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-        return match ? decodeURIComponent(match[1]) : ''
-    }
-
-    async function postAction(url, successMessage, payload = {}) {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': csrfToken(),
-            },
-            body: JSON.stringify(payload),
+    async function postAction(url, payload = {}) {
+        return await new Promise((resolve) => {
+            router.post(url, payload, {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['invoices', 'stats', 'statusOptions', 'paymentOptions'],
+                onError: (errors) => {
+                    const firstError = Object.values(errors ?? {})[0]
+                    const message = Array.isArray(firstError) ? firstError[0] : firstError
+                    showToast(message || 'Operazione non riuscita.', 'error')
+                    resolve(false)
+                },
+                onSuccess: () => resolve(true),
+            })
         })
-
-        const data = await response.json()
-        if (data.success) {
-            showToast(successMessage)
-            window.location.reload()
-            return true
-        }
-
-        const errors = Array.isArray(data.errors) ? data.errors.join('\n') : null
-        showToast(errors || data.error || 'Operazione non riuscita.', 'error')
-        return false
     }
 
     async function validateXml(invoice) {
@@ -162,7 +152,7 @@
         confirmText = 'Verifica XML'
         confirmVariant = 'primary'
         onConfirmAction = async () => {
-            await postAction(`/self-invoices/${invoice.id}/validate-xml`, 'XML validato.')
+            await postAction(`/self-invoices/${invoice.id}/validate-xml`)
         }
         confirmOpen = true
     }
@@ -181,7 +171,7 @@ Controlla prima di confermare:
         confirmText = 'Invia SDI'
         confirmVariant = 'danger'
         onConfirmAction = async () => {
-            await postAction(`/self-invoices/${invoice.id}/send-sdi`, 'Autofattura inviata allo SDI.')
+            await postAction(`/self-invoices/${invoice.id}/send-sdi`)
         }
         confirmOpen = true
     }
@@ -195,7 +185,6 @@ Controlla prima di confermare:
             const response = await fetch(`/self-invoices/${invoice.id}/email-preview`, {
                 headers: {
                     'Accept': 'application/json',
-                    'X-XSRF-TOKEN': csrfToken(),
                 },
             })
             const data = await response.json()
@@ -227,7 +216,7 @@ Controlla prima di confermare:
 
         emailSending = true
         try {
-            const sent = await postAction(`/self-invoices/${emailInvoice.id}/send-email`, 'Email inviata.', emailForm)
+            const sent = await postAction(`/self-invoices/${emailInvoice.id}/send-email`, emailForm)
             return sent
         } finally {
             emailSending = false

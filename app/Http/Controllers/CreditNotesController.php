@@ -197,7 +197,7 @@ class CreditNotesController extends Controller
         CreditNote $creditNote,
         CreditNoteXmlService $xmlService,
         XmlWorkflowService $xmlWorkflow
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         return $this->validateXmlDocument(
             $creditNote,
             $xmlService,
@@ -211,7 +211,7 @@ class CreditNotesController extends Controller
         CreditNote $creditNote,
         CreditNoteXmlService $xmlService,
         XmlWorkflowService $xmlWorkflow
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         return $this->sendXmlDocumentToSdi(
             $creditNote,
             $xmlService,

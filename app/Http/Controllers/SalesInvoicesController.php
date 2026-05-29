@@ -272,7 +272,7 @@ class SalesInvoicesController extends Controller
         SalesInvoice $invoice,
         InvoiceXmlService $xmlService,
         XmlWorkflowService $xmlWorkflow
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         return $this->validateXmlDocument(
             $invoice,
             $xmlService,
@@ -286,7 +286,7 @@ class SalesInvoicesController extends Controller
         SalesInvoice $invoice,
         InvoiceXmlService $xmlService,
         XmlWorkflowService $xmlWorkflow
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         return $this->sendXmlDocumentToSdi(
             $invoice,
             $xmlService,

@@ -253,7 +253,7 @@ class SelfInvoicesController extends Controller
         SelfInvoice $selfInvoice,
         SelfInvoiceXmlService $xmlService,
         XmlWorkflowService $xmlWorkflow
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         $this->ensureSelfInvoicesAllowed();
 
         return $this->validateXmlDocument(
@@ -269,7 +269,7 @@ class SelfInvoicesController extends Controller
         SelfInvoice $selfInvoice,
         SelfInvoiceXmlService $xmlService,
         XmlWorkflowService $xmlWorkflow
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         $this->ensureSelfInvoicesAllowed();
 
         return $this->sendXmlDocumentToSdi(

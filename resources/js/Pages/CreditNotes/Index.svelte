@@ -5,6 +5,7 @@
     import Dialog from '$lib/components/ui/Dialog.svelte'
     import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
     import { showToast } from '$lib/toast.js'
+    import { router } from '@inertiajs/svelte'
 
     let {
         creditNotes = { data: [], current_page: 1, last_page: 1, from: 0, to: 0, total: 0, links: [] },
@@ -88,31 +89,21 @@
         return statusFilter === tabValue
     }
 
-    function csrfToken() {
-        const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-        return match ? decodeURIComponent(match[1]) : ''
-    }
-
-    async function postAction(url, successMessage) {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': csrfToken(),
-            },
+    async function postAction(url) {
+        await new Promise((resolve) => {
+            router.post(url, {}, {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['creditNotes', 'stats', 'statusOptions'],
+                onError: (errors) => {
+                    const firstError = Object.values(errors ?? {})[0]
+                    const message = Array.isArray(firstError) ? firstError[0] : firstError
+                    showToast(message || 'Operazione non riuscita.', 'error')
+                    resolve(false)
+                },
+                onSuccess: () => resolve(true),
+            })
         })
-
-        const data = await response.json()
-
-        if (data.success) {
-            showToast(successMessage)
-            window.location.reload()
-            return
-        }
-
-        const errors = Array.isArray(data.errors) ? data.errors.join('\n') : null
-        showToast(errors || data.error || 'Operazione non riuscita.', 'error')
     }
 
     async function validateXml(creditNote) {
@@ -121,7 +112,7 @@
         confirmText = 'Verifica XML'
         confirmVariant = 'primary'
         onConfirmAction = async () => {
-            await postAction(`/credit-notes/${creditNote.id}/validate-xml`, 'XML validato.')
+            await postAction(`/credit-notes/${creditNote.id}/validate-xml`)
         }
         confirmOpen = true
     }
@@ -140,7 +131,7 @@ Controlla prima di confermare:
         confirmText = 'Invia SDI'
         confirmVariant = 'danger'
         onConfirmAction = async () => {
-            await postAction(`/credit-notes/${creditNote.id}/send-sdi`, 'Nota di credito inviata allo SDI.')
+            await postAction(`/credit-notes/${creditNote.id}/send-sdi`)
         }
         confirmOpen = true
     }

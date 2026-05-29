@@ -4,6 +4,7 @@
     import Sidebar from '$lib/components/Sidebar.svelte'
     import Button from '$lib/components/ui/Button.svelte'
     import { headerActionsStore } from '$lib/stores/header-actions.js'
+    import { showToast } from '$lib/toast.js'
     import List from 'phosphor-svelte/lib/List'
 
     let { children, headerActions } = $props()
@@ -16,10 +17,12 @@
     const availableYears = $derived(page.props.availableYears ?? [])
     const fiscalRegime = $derived(page.props.fiscalRegime ?? null)
     const rf19SelfInvoicesEnabled = $derived(!!page.props.rf19SelfInvoicesEnabled)
+    const flashToast = $derived(page.props.flash?.toast ?? null)
     const menuSections = $derived(buildSidebarSections(fiscalRegime, rf19SelfInvoicesEnabled))
     const headerActionsState = $derived($headerActionsStore)
 
     let sidebarOpen = $state(false)
+    let lastFlashToastKey = $state(null)
 
     function prettifyComponentName(componentName) {
         if (!componentName) return 'Dashboard'
@@ -84,6 +87,20 @@
     // Close sidebar on route change (mobile)
     $effect(() => {
         if (currentPath) sidebarOpen = false
+    })
+
+    $effect(() => {
+        if (!flashToast?.message) {
+            return
+        }
+
+        const toastKey = flashToast.id ?? `${flashToast.type ?? 'success'}:${flashToast.title ?? ''}:${flashToast.message}`
+        if (lastFlashToastKey === toastKey) {
+            return
+        }
+
+        lastFlashToastKey = toastKey
+        showToast(flashToast)
     })
 </script>
 

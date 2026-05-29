@@ -5,14 +5,20 @@
         actions = [],
         children,
     } = $props()
+    let pendingActionId = $state(null)
 
-    function executeAction(action) {
-        if (action.disabled) {
+    async function executeAction(action) {
+        if (action.disabled || pendingActionId) {
             return
         }
 
         if (typeof action.onSelect === 'function') {
-            action.onSelect()
+            pendingActionId = action.id
+            try {
+                await action.onSelect()
+            } finally {
+                pendingActionId = null
+            }
             return
         }
 
@@ -32,11 +38,11 @@
         <ContextMenu.Content class="z-30 min-w-[13rem] rounded-lg border border-border-light bg-white p-1 shadow-lg">
             {#each actions as action (action.id)}
                 <ContextMenu.Item
-                    disabled={action.disabled}
+                    disabled={action.disabled || pendingActionId !== null}
                     class="rounded-md px-3 py-2 text-xs font-medium text-brand-deep hover:bg-surface-muted data-[disabled]:text-brand-secondary/50"
                     onSelect={() => executeAction(action)}
                 >
-                    {action.label}
+                    {pendingActionId === action.id ? `${action.label} (in corso...)` : action.label}
                 </ContextMenu.Item>
             {/each}
         </ContextMenu.Content>

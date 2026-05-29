@@ -64,6 +64,9 @@ class HandleInertiaRequests extends Middleware
             'rf19SelfInvoicesEnabled' => $rf19SelfInvoicesEnabled,
             'title' => fn () => $request->route()?->defaults['title'] ?? null,
             'breadcrumbs' => fn () => $request->route()?->defaults['breadcrumbs'] ?? [],
+            'flash' => [
+                'toast' => fn () => $request->session()->get('toast'),
+            ],
         ];
     }
 }
