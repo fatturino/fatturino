@@ -28,5 +28,4 @@ return Application::configure(basePath: dirname(__DIR__))
         // Trust all proxies — required for correct URL generation behind reverse proxy (Uncloud/Caddy)
         $middleware->trustProxies(at: '*');
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
-    })->create();
+    ->withExceptions(function (Exceptions $exceptions): void {})->create();

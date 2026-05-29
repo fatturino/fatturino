@@ -112,6 +112,7 @@ class SelfInvoicesController extends Controller
         $validated = $request->validate([
             'contact_id' => 'required|exists:contacts,id',
             'sequence_id' => 'required|exists:sequences,id',
+            'number' => 'nullable|string',
             'date' => 'required|date',
             'due_date' => 'nullable|date',
             'document_type' => 'required|string|in:TD17,TD18,TD19,TD28,TD29',
@@ -128,7 +129,21 @@ class SelfInvoicesController extends Controller
 
         $sequence = Sequence::findOrFail($validated['sequence_id']);
         $year = Carbon::parse($validated['date'])->year;
-        $reserved = $sequence->reserveNextNumber($year);
+        $customNumber = trim((string) ($validated['number'] ?? ''));
+        $customSequentialNumber = $this->extractSequentialNumber($customNumber);
+
+        if ($customSequentialNumber !== null) {
+            $reserved = [
+                'formatted_number' => $customNumber,
+                'sequential_number' => $customSequentialNumber,
+            ];
+        } else {
+            $reserved = $sequence->reserveNextNumber($year);
+
+            if ($customNumber !== '') {
+                $reserved['formatted_number'] = $customNumber;
+            }
+        }
 
         $invoice = SelfInvoice::create([
             'number' => $reserved['formatted_number'],
@@ -402,6 +417,17 @@ class SelfInvoicesController extends Controller
             'vat_rate' => $line['vat_rate'],
             'total' => (int) round($gross * 100),
         ];
+    }
+
+    private function extractSequentialNumber(string $number): ?int
+    {
+        if (! preg_match('/^\s*(\d+)/', $number, $matches)) {
+            return null;
+        }
+
+        $parsed = (int) $matches[1];
+
+        return $parsed > 0 ? $parsed : null;
     }
 
     private function stats(int $fiscalYear): array

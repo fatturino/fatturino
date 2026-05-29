@@ -23,6 +23,7 @@
     contactLabel="Fornitore *"
     contactPlaceholder="Seleziona fornitore..."
     contactTypeLabel="fornitore"
+    numberEditable={true}
     showDocumentType={true}
     showDueDate={true}
     showRelatedInvoice={true}
