@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\SelfInvoice;
 use App\Services\Concerns\GeneratesSdiFilename;
 use App\Settings\CompanySettings;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use FatturaElettronicaPhp\FatturaElettronica\Address;
 use FatturaElettronicaPhp\FatturaElettronica\Customer;
 use FatturaElettronicaPhp\FatturaElettronica\DigitalDocument;
@@ -138,7 +140,10 @@ class SelfInvoiceXmlService
         if ($invoice->related_invoice_number && $invoice->related_invoice_date) {
             $relatedDocument = new RelatedDocument;
             $relatedDocument->setDocumentNumber($invoice->related_invoice_number);
-            $relatedDocument->setDocumentDate($invoice->related_invoice_date->toDateTime());
+            $relatedDate = $invoice->related_invoice_date instanceof CarbonInterface
+                ? $invoice->related_invoice_date
+                : Carbon::parse($invoice->related_invoice_date);
+            $relatedDocument->setDocumentDate($relatedDate->toDateTime());
             $instance->addRelatedInvoice($relatedDocument);
         }
 

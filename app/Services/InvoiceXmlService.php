@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\FiscalDocument;
 use App\Services\Concerns\GeneratesSdiFilename;
 use App\Settings\CompanySettings;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use FatturaElettronicaPhp\FatturaElettronica\Address;
 use FatturaElettronicaPhp\FatturaElettronica\Customer;
 use FatturaElettronicaPhp\FatturaElettronica\Deduction;
@@ -291,7 +293,10 @@ class InvoiceXmlService
 
             // Due date from tracking field, if set
             if ($invoice->due_date) {
-                $paymentDetails->setDueDate($invoice->due_date->toDateTime());
+                $dueDate = $invoice->due_date instanceof CarbonInterface
+                    ? $invoice->due_date
+                    : Carbon::parse($invoice->due_date);
+                $paymentDetails->setDueDate($dueDate->toDateTime());
             }
 
             // Bank details for wire transfer methods

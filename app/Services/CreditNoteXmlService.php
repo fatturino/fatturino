@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\CreditNote;
 use App\Services\Concerns\GeneratesSdiFilename;
 use App\Settings\CompanySettings;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use FatturaElettronicaPhp\FatturaElettronica\Address;
 use FatturaElettronicaPhp\FatturaElettronica\Customer;
 use FatturaElettronicaPhp\FatturaElettronica\Deduction;
@@ -149,7 +151,10 @@ class CreditNoteXmlService
         if ($creditNote->related_invoice_number && $creditNote->related_invoice_date) {
             $relatedDocument = new RelatedDocument;
             $relatedDocument->setDocumentNumber($creditNote->related_invoice_number);
-            $relatedDocument->setDocumentDate($creditNote->related_invoice_date->toDateTime());
+            $relatedDate = $creditNote->related_invoice_date instanceof CarbonInterface
+                ? $creditNote->related_invoice_date
+                : Carbon::parse($creditNote->related_invoice_date);
+            $relatedDocument->setDocumentDate($relatedDate->toDateTime());
             $instance->addRelatedInvoice($relatedDocument);
         }
 
@@ -234,7 +239,10 @@ class CreditNoteXmlService
             $paymentDetails->setAmount($documentTotal);
 
             if ($creditNote->due_date) {
-                $paymentDetails->setDueDate($creditNote->due_date->toDateTime());
+                $dueDate = $creditNote->due_date instanceof CarbonInterface
+                    ? $creditNote->due_date
+                    : Carbon::parse($creditNote->due_date);
+                $paymentDetails->setDueDate($dueDate->toDateTime());
             }
 
             if ($creditNote->bank_iban) {
