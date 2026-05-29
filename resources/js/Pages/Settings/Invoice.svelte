@@ -8,7 +8,7 @@
     import Switch from '$lib/components/ui/Switch.svelte'
     import { showToast } from '$lib/toast.js'
 
-    let { settings = {}, sequences = [], vatRates = [], paymentMethods = [], paymentTerms = [], fundTypes = [], vatPayabilityOptions = [], fiscalRegime = 'RF01', errors = {} } = $props()
+    let { settings = {}, vatRates = [], paymentMethods = [], paymentTerms = [], fundTypes = [], vatPayabilityOptions = [], fiscalRegime = 'RF01', errors = {} } = $props()
     const isRf19 = $derived(fiscalRegime === 'RF19')
 
     let withholdingTaxEnabled = $state(settings.withholding_tax_enabled ?? false)
@@ -16,7 +16,6 @@
     let autoStampDuty = $state(settings.auto_stamp_duty ?? false)
     let splitPayment = $state(settings.default_split_payment ?? false)
     const form = useForm({
-        default_sequence_sales: settings.default_sequence_sales ?? '',
         default_vat_rate: settings.default_vat_rate?.value ?? settings.default_vat_rate ?? '',
         withholding_tax_enabled: withholdingTaxEnabled,
         withholding_tax_percent: settings.withholding_tax_percent ?? '20.00',
@@ -66,12 +65,6 @@
             <div class="card-brand p-4 sm:p-5">
                 <h2 class="text-base font-semibold text-brand-deep mb-4">Predefiniti</h2>
                 <div class="space-y-4">
-                    <label class="block"><span class="text-sm font-medium text-brand-deep">Sezionale vendite</span>
-                        <Select useNative class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" bind:value={form.default_sequence_sales}>
-                            <option value="">—</option>
-                            {#each sequences as s}<option value={s.id}>{s.name}</option>{/each}
-                        </Select>
-                    </label>
                     <label class="block"><span class="text-sm font-medium text-brand-deep">Aliquota IVA predefinita</span>
                         <Select useNative class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" bind:value={form.default_vat_rate}>
                             <option value="">—</option>

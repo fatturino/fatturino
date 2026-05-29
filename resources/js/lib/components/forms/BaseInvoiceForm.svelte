@@ -31,7 +31,6 @@
         showDocumentType = false,
         showDueDate = false,
         showRelatedInvoice = false,
-        showSequence = true,
         numberEditable = false,
         showPaidSummary = false,
         numberReadonlyText = 'Assegnato automaticamente al salvataggio',
@@ -443,17 +442,6 @@ Controlla prima di confermare:
                                 <span class="text-red-600 text-xs mt-0.5 block">{displayErrors.contact_id}</span>
                             {/if}
                         </label>
-
-                        {#if showSequence}
-                            <label class="block col-span-2 sm:col-span-1">
-                                <span class="text-sm font-medium text-brand-deep">Sequenza *</span>
-                                <Select useNative class="mt-1 block w-full rounded-lg border border-brand-secondary/20 px-3 py-2 text-sm form-focus bg-white" bind:value={form.sequence_id} disabled={isReadOnly}>
-                                    {#each (formData.sequences ?? []) as sequence}
-                                        <option value={sequence.id}>{sequence.name}</option>
-                                    {/each}
-                                </Select>
-                            </label>
-                        {/if}
 
                         <label class="block col-span-2 sm:col-span-1">
                             <span class="text-sm font-medium text-brand-deep">Numero</span>
