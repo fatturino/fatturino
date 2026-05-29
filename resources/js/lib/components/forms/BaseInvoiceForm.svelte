@@ -104,6 +104,13 @@
         return value.includes('T') ? value.slice(0, 10) : value
     }
 
+    function normalizeSelectCode(value) {
+        if (value == null) return ''
+        const normalized = String(value).trim()
+        if (normalized === '') return ''
+        return normalized.includes(' - ') ? normalized.split(' - ')[0] : normalized
+    }
+
     let lines = $state(
         initialInvoice?.lines?.map((line) => ({
             id: line.id,
@@ -198,8 +205,8 @@
         related_invoice_number: initialInvoice?.related_invoice_number ?? '',
         related_invoice_date: normalizeDateForPicker(initialInvoice?.related_invoice_date ?? ''),
         notes: initialInvoice?.notes ?? (initialUseSettingsDefaults ? (settings.default_notes ?? '') : ''),
-        payment_method: initialInvoice?.payment_method ?? (initialUseSettingsDefaults ? (settings.default_payment_method ?? '') : ''),
-        payment_terms: initialInvoice?.payment_terms ?? (initialUseSettingsDefaults ? (settings.default_payment_terms ?? '') : ''),
+        payment_method: normalizeSelectCode(initialInvoice?.payment_method ?? (initialUseSettingsDefaults ? (settings.default_payment_method ?? '') : '')),
+        payment_terms: normalizeSelectCode(initialInvoice?.payment_terms ?? (initialUseSettingsDefaults ? (settings.default_payment_terms ?? '') : '')),
         bank_name: initialInvoice?.bank_name ?? (initialUseSettingsDefaults ? (settings.default_bank_name ?? '') : ''),
         bank_iban: initialInvoice?.bank_iban ?? (initialUseSettingsDefaults ? (settings.default_bank_iban ?? '') : ''),
         withholding_tax_enabled: initialShowTaxOptions ? (initialInvoice?.withholding_tax_enabled ?? settings.withholding_tax_enabled ?? false) : false,
@@ -516,7 +523,7 @@ Controlla prima di confermare:
                             <Select useNative class="mt-1 block w-full rounded-lg border border-brand-secondary/20 px-3 py-2 text-sm form-focus bg-white" bind:value={form.payment_method} disabled={isReadOnly}>
                                 <option value="">Seleziona...</option>
                                 {#each (formData.payment_methods ?? []) as method}
-                                    <option value={method.value}>{method.label}</option>
+                                    <option value={method.value ?? method.id}>{method.label ?? method.name}</option>
                                 {/each}
                             </Select>
                         </label>
@@ -526,7 +533,7 @@ Controlla prima di confermare:
                             <Select useNative class="mt-1 block w-full rounded-lg border border-brand-secondary/20 px-3 py-2 text-sm form-focus bg-white" bind:value={form.payment_terms} disabled={isReadOnly}>
                                 <option value="">Seleziona...</option>
                                 {#each (formData.payment_terms ?? []) as term}
-                                    <option value={term.value}>{term.label}</option>
+                                    <option value={term.value ?? term.id}>{term.label ?? term.name}</option>
                                 {/each}
                             </Select>
                         </label>
