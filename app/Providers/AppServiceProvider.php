@@ -12,11 +12,11 @@ use App\Services\OpenApiSdiProvider;
 use App\Services\OpenApiSdiService;
 use App\Services\UnrestrictedCapabilities;
 use App\Settings\BackupSettings;
-use App\Settings\MonitoringSettings;
 use App\Settings\OpenApiSettings;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use PostHog\PostHog;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -56,7 +56,7 @@ class AppServiceProvider extends ServiceProvider
         Blade::if('allowed', fn (string $action = '') => $action !== '' && app(EnvironmentCapabilities::class)->can($action));
 
         $this->applyBackupCredentials();
-        $this->applyMonitoringCredentials();
+        $this->initializePostHog();
 
         $this->loadViewsFrom(resource_path('views/vendor/fe-openapi'), 'fe-openapi');
         $this->loadTranslationsFrom(lang_path('vendor/fe-openapi'), 'fe-openapi');
@@ -75,29 +75,6 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(EnvironmentCapabilities::class, UnrestrictedCapabilities::class);
         $this->app->singleton(LoginCustomizer::class, NullLoginCustomizer::class);
-    }
-
-    private function applyMonitoringCredentials(): void
-    {
-        if (config('monitoring.managed_by_env')) {
-            return;
-        }
-
-        try {
-            $monitoring = app(MonitoringSettings::class);
-
-            if (! $monitoring->isConfigured()) {
-                return;
-            }
-
-            config([
-                'sentry.dsn' => $monitoring->dsn,
-                'sentry.environment' => $monitoring->environment,
-                'sentry.traces_sample_rate' => $monitoring->traces_sample_rate,
-            ]);
-        } catch (\Throwable) {
-            // Settings table not yet created (first migration run) - skip silently.
-        }
     }
 
     private function applyBackupCredentials(): void
@@ -124,5 +101,17 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable) {
             // Settings table not yet created (first migration run) - skip silently.
         }
+    }
+
+    private function initializePostHog(): void
+    {
+        $apiKey = (string) config('services.posthog.api_key', '');
+        if ($apiKey === '' || ! class_exists(PostHog::class)) {
+            return;
+        }
+
+        PostHog::init($apiKey, [
+            'host' => (string) config('services.posthog.host', 'https://eu.i.posthog.com'),
+        ]);
     }
 }

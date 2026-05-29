@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Settings\BackupSettings;
-use App\Settings\MonitoringSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,13 +11,11 @@ use Inertia\Response;
 
 class ServicesController extends Controller
 {
-    public function index(BackupSettings $backup, MonitoringSettings $monitoring): Response
+    public function index(BackupSettings $backup): Response
     {
         return Inertia::render('Settings/Services', [
             'backup' => $backup->toArray(),
-            'monitoring' => $monitoring->toArray(),
             'backupManagedByEnv' => (bool) config('backup.managed_by_env'),
-            'monitoringManagedByEnv' => (bool) config('monitoring.managed_by_env'),
             'frequencyOptions' => [
                 ['value' => 'daily', 'label' => 'Giornaliero'],
                 ['value' => 'weekly', 'label' => 'Settimanale'],
@@ -44,26 +41,6 @@ class ServicesController extends Controller
             $rules['aws_secret_access_key'] = 'required|string';
             $rules['aws_default_region'] = 'required|string';
             $rules['aws_bucket'] = 'required|string';
-        }
-
-        $validated = $request->validate($rules);
-
-        $settings->fill($validated);
-        $settings->save();
-
-        return redirect()->route('settings.services');
-    }
-
-    public function updateMonitoring(Request $request, MonitoringSettings $settings): RedirectResponse
-    {
-        $rules = [
-            'enabled' => 'boolean',
-            'environment' => 'nullable|string',
-            'traces_sample_rate' => 'nullable|numeric|between:0,1',
-        ];
-
-        if ($request->boolean('enabled')) {
-            $rules['dsn'] = 'required|string';
         }
 
         $validated = $request->validate($rules);

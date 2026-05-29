@@ -27,6 +27,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "league/flysystem-aws-s3-v3": "^3.32",
+        "posthog/posthog-php": "^4.4",
         "sentry/sentry-laravel": "^4.14",
         "spatie/laravel-backup": "^10.2",
         "spatie/laravel-settings": "^3.7",

@@ -7,11 +7,10 @@
     import Switch from '$lib/components/ui/Switch.svelte'
     import { showToast } from '$lib/toast.js'
 
-    let { backup = {}, monitoring = {}, backupManagedByEnv = false, monitoringManagedByEnv = false, frequencyOptions = [], errors = {} } = $props()
+    let { backup = {}, backupManagedByEnv = false, frequencyOptions = [], errors = {} } = $props()
 
     let backupEnabled = $state(backup.enabled ?? false)
     let backupFrequency = $state(backup.frequency ?? 'daily')
-    let monitoringEnabled = $state(monitoring.enabled ?? false)
     let pathStyle = $state(backup.aws_use_path_style_endpoint ?? false)
 
     const backupForm = useForm({
@@ -28,23 +27,11 @@
         aws_use_path_style_endpoint: pathStyle,
     })
 
-    const monitoringForm = useForm({
-        enabled: monitoringEnabled,
-        dsn: monitoring.dsn ?? '',
-        environment: monitoring.environment ?? 'production',
-        traces_sample_rate: monitoring.traces_sample_rate ?? 0.0,
-    })
-
     function saveBackup() {
         backupForm.enabled = backupEnabled
         backupForm.frequency = backupFrequency
         backupForm.aws_use_path_style_endpoint = pathStyle
         backupForm.put('/services/backup', { preserveScroll: true, onSuccess: () => showToast('Impostazioni backup salvate.') })
-    }
-
-    function saveMonitoring() {
-        monitoringForm.enabled = monitoringEnabled
-        monitoringForm.put('/services/monitoring', { preserveScroll: true, onSuccess: () => showToast('Impostazioni monitoring salvate.') })
     }
 
     function testConnection() {
@@ -129,41 +116,6 @@
                 {/if}
             </div>
 
-            <!-- Monitoring -->
-            <div class="card-brand p-4 sm:p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-base font-semibold text-brand-deep">Monitoring</h2>
-                    {#if !monitoringManagedByEnv}
-                        <Button class="btn-brand text-sm" onclick={saveMonitoring} disabled={monitoringForm.processing}>
-                            {monitoringForm.processing ? 'Salvataggio...' : 'Salva monitoring'}
-                        </Button>
-                    {/if}
-                </div>
-
-                {#if monitoringManagedByEnv}
-                    <div class="opacity-50 pointer-events-none">
-                        <div class="space-y-4">
-                            <p class="text-sm text-brand-secondary/40">Gestito dall'infrastruttura.</p>
-                        </div>
-                    </div>
-                {:else}
-                    <div class="space-y-4">
-                        <label class="flex items-center gap-2"><Switch bind:checked={monitoringEnabled} /><span class="text-sm text-brand-deep">Abilita monitoring (Sentry)</span></label>
-
-                        {#if monitoringEnabled}
-                            <label class="block"><span class="text-sm font-medium text-brand-deep">DSN *</span>
-                                <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={monitoringForm.dsn} />
-                            </label>
-                            <label class="block"><span class="text-sm font-medium text-brand-deep">Environment</span>
-                                <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={monitoringForm.environment} />
-                            </label>
-                            <label class="block"><span class="text-sm font-medium text-brand-deep">Traces Sample Rate</span>
-                                <Input class="mt-1 block w-24 rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="number" min="0" max="1" step="0.1" bind:value={monitoringForm.traces_sample_rate} />
-                            </label>
-                        {/if}
-                    </div>
-                {/if}
-            </div>
         </div>
     </div>
 </Authenticated>

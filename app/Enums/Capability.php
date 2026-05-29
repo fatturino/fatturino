@@ -35,5 +35,4 @@ enum Capability: string
 
     // Services
     case ManageBackupSettings = 'manage-backup-settings';
-    case ManageMonitoringSettings = 'manage-monitoring-settings';
 }

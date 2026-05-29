@@ -25,7 +25,6 @@ class DemoCapabilities implements EnvironmentCapabilities
             Capability::EditEmailSettings->value,
             Capability::ManageSequences->value,
             Capability::ManageBackupSettings->value,
-            Capability::ManageMonitoringSettings->value,
         ], true);
     }
 }

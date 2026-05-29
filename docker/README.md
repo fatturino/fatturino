@@ -76,8 +76,10 @@ All'avvio il container esegue automaticamente:
 | `MAIL_FROM_ADDRESS` | No | `hello@example.com` | Indirizzo mittente di default |
 | `MAIL_FROM_NAME` | No | `Fatturino` | Nome mittente di default |
 | `BACKUP_MANAGED_BY_ENV` | No | `false` | Se `true`, UI e scheduler backup disabilitati. Le credenziali S3 vanno impostate via `AWS_*` env (modalita managed). Se `false` (default), la configurazione S3 si fa da UI in Impostazioni > Servizi |
-| `MONITORING_MANAGED_BY_ENV` | No | `false` | Se `true`, la UI monitoring e' nascosta e si usa `SENTRY_LARAVEL_DSN` da env |
-| `SENTRY_LARAVEL_DSN` | No | - | DSN Sentry per error tracking |
+| `VITE_POSTHOG_KEY` | No | - | API key PostHog. Se vuota, PostHog non viene inizializzato |
+| `VITE_POSTHOG_HOST` | No | `https://eu.i.posthog.com` | Endpoint PostHog |
+| `POSTHOG_API_KEY` | No | - | API key PostHog backend. Se vuota, SDK PHP non inizializzato |
+| `POSTHOG_HOST` | No | `https://eu.i.posthog.com` | Endpoint PostHog backend |
 | `AWS_ACCESS_KEY_ID` | No | - | Access key S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |
 | `AWS_SECRET_ACCESS_KEY` | No | - | Secret key S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |
 | `AWS_DEFAULT_REGION` | No | `us-east-1` | Regione S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |

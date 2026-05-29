@@ -8,8 +8,8 @@ test('each case has a non-empty string value', function () {
     }
 });
 
-test('has exactly 15 capabilities', function () {
-    expect(Capability::cases())->toHaveCount(15);
+test('has exactly 14 capabilities', function () {
+    expect(Capability::cases())->toHaveCount(14);
 });
 
 test('EditCompanySettings has the correct string value', function () {

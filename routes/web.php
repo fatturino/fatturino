@@ -162,7 +162,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/email-settings/test', [EmailSettingsController::class, 'testConnection'])->name('settings.email.test');
     Route::get('/services', [ServicesController::class, 'index'])->name('settings.services')->defaults('title', 'Servizi');
     Route::put('/services/backup', [ServicesController::class, 'updateBackup'])->middleware('capability:manage-backup-settings')->name('settings.services.backup');
-    Route::put('/services/monitoring', [ServicesController::class, 'updateMonitoring'])->middleware('capability:manage-monitoring-settings')->name('settings.services.monitoring');
     Route::post('/services/test-connection', [ServicesController::class, 'testConnection'])->name('settings.services.test');
     Route::get('/imports', [ImportController::class, 'index'])->name('imports.index')->defaults('title', 'Import');
     Route::post('/imports', [ImportController::class, 'store'])->name('imports.store');

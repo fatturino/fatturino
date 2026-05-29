@@ -22,6 +22,7 @@
         "bits-ui": "^2.18.1",
         "layercake": "^10.0.2",
         "phosphor-icons": "^1.4.2",
+        "posthog-js": "^1.376.4",
         "svelte": "^5.55.7"
     }
 }
