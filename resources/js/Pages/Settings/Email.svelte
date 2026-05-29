@@ -106,7 +106,7 @@
                         <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.template_sales_subject} />
                     </label>
                     <label class="block"><span class="text-sm font-medium text-brand-deep">Corpo</span>
-                        <Textarea class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" rows="4" bind:value={form.template_sales_body}></Textarea>
+                        <Textarea class="mt-1 block w-full min-h-64 resize-y rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" rows="10" bind:value={form.template_sales_body}></Textarea>
                     </label>
                     <label class="flex items-center gap-2"><Switch bind:checked={autoSendSales} /><span class="text-sm text-brand-deep">Invio automatico</span></label>
                 </div>
@@ -120,7 +120,7 @@
                         <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.template_proforma_subject} />
                     </label>
                     <label class="block"><span class="text-sm font-medium text-brand-deep">Corpo</span>
-                        <Textarea class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" rows="4" bind:value={form.template_proforma_body}></Textarea>
+                        <Textarea class="mt-1 block w-full min-h-64 resize-y rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" rows="10" bind:value={form.template_proforma_body}></Textarea>
                     </label>
                     <label class="flex items-center gap-2"><Switch bind:checked={autoSendProforma} /><span class="text-sm text-brand-deep">Invio automatico</span></label>
                 </div>

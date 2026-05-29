@@ -336,7 +336,7 @@ Controlla prima di confermare:
             </label>
             <label class="block">
                 <span class="text-sm font-medium text-brand-deep">Messaggio</span>
-                <Textarea class="mt-1 block w-full min-h-48" bind:value={emailForm.body} />
+                <Textarea class="mt-1 block w-full min-h-64 resize-y" bind:value={emailForm.body} />
             </label>
         </div>
     {/if}
