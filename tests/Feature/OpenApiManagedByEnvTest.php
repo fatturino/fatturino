@@ -18,7 +18,7 @@ it('does not overwrite openapi settings from request when managed by env is enab
 
     $this->withoutMiddleware(RequireCapability::class)
         ->actingAs($user)
-        ->postJson('/api/openapi/save', [
+        ->postJson('/api/v1/openapi/save', [
             'api_token' => 'request-token',
             'sandbox' => false,
             'company_sdi_code' => 'BBBBBBB',
