@@ -11,8 +11,8 @@
 
     let atecoCodesState = $state(atecoCodes.map(c => ({ code: c.code, label: c.label })))
     let atecoSearchQuery = $state('')
+    let atecoInputValue = $state('')
     let atecoResults = $state([])
-    let atecoOpen = $state(false)
     let atecoLoading = $state(false)
     let removeLogo = $state(false)
     let atecoTimer = null
@@ -21,27 +21,63 @@
         const q = atecoSearchQuery.trim()
         if (q.length < 2) { atecoResults = []; return }
         atecoLoading = true
-        const res = await fetch(`/ateco/search?q=${encodeURIComponent(q)}`)
+        const res = await fetch(`/api/v1/ateco/search?q=${encodeURIComponent(q)}`)
+        if (!res.ok) {
+            atecoResults = []
+            atecoLoading = false
+            return
+        }
         const data = await res.json()
-        atecoResults = data.filter(r => !atecoCodesState.some(c => c.code === r.id))
+        atecoResults = data.filter(r => !atecoCodesState.some(c => c.code === r.code))
         atecoLoading = false
     }
 
     function onAtecoInput() {
-        atecoOpen = true
+        atecoInputValue = atecoInputValue.trim()
+        atecoSearchQuery = atecoInputValue
         clearTimeout(atecoTimer)
+        if (atecoInputValue.length < 2) {
+            atecoResults = []
+            return
+        }
         atecoTimer = setTimeout(searchAteco, 200)
     }
 
     function selectAteco(code, label) {
+        if (atecoCodesState.some((current) => current.code === code)) {
+            return
+        }
         atecoCodesState = [...atecoCodesState, { code, label }]
+        form.company_ateco_codes = atecoCodesState.map(c => c.code)
+        atecoInputValue = ''
         atecoSearchQuery = ''
         atecoResults = []
-        atecoOpen = false
+    }
+
+    function onAtecoChange() {
+        const selectedCode = atecoInputValue.trim()
+        if (selectedCode === '') {
+            return
+        }
+
+        const selected = atecoResults.find((result) => result.code === selectedCode)
+        if (selected) {
+            selectAteco(selected.code, selected.description)
+            return
+        }
+
+        const fallbackLabel = atecoCodes.find((code) => code.code === selectedCode)?.label
+        if (fallbackLabel) {
+            selectAteco(selectedCode, fallbackLabel)
+            return
+        }
+
+        atecoInputValue = ''
     }
 
     function removeAtecoCode(code) {
         atecoCodesState = atecoCodesState.filter(c => c.code !== code)
+        form.company_ateco_codes = atecoCodesState.map(c => c.code)
     }
 
     function handleSubmit() {
@@ -168,26 +204,39 @@
             <div class="space-y-6">
                 <div class="card-brand p-4 sm:p-5">
                     <h2 class="text-base font-semibold text-brand-deep mb-4">Codici ATECO</h2>
-                    <div class="relative mb-3">
-                        <Input class="w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" placeholder="Cerca codice ATECO..." bind:value={atecoSearchQuery} oninput={onAtecoInput} onfocus={() => { if (atecoResults.length > 0) atecoOpen = true }} onblur={() => setTimeout(() => { atecoOpen = false }, 200)} />
-                        {#if atecoOpen && (atecoResults.length > 0 || atecoLoading)}
-                            <div class="absolute z-10 mt-1 w-full bg-white border border-border-light rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                {#if atecoLoading}
-                                    <p class="px-3 py-2 text-sm text-brand-secondary/60">Caricamento...</p>
-                                {:else}
-                                    {#each atecoResults as r}
-                                        <Button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-surface-muted transition-colors border-b border-border-light last:border-0" onclick={() => selectAteco(r.id, r.name)}>{r.name}</Button>
-                                    {/each}
-                                {/if}
-                            </div>
-                        {/if}
+                    <div class="mb-2">
+                        <input
+                            class="w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus"
+                            type="text"
+                            list="ateco-results"
+                            placeholder="Cerca codice ATECO e seleziona il numero..."
+                            bind:value={atecoInputValue}
+                            oninput={onAtecoInput}
+                            onchange={onAtecoChange}
+                        />
+                        <datalist id="ateco-results">
+                            {#each atecoResults as result}
+                                <option value={result.code} label={result.description}></option>
+                            {/each}
+                        </datalist>
                     </div>
-                    <div class="flex flex-wrap gap-2">
+                    {#if atecoLoading}
+                        <p class="mb-3 text-xs text-brand-secondary/60">Caricamento codici...</p>
+                    {/if}
+                    <div class="mb-3">
+                        <p class="text-xs text-brand-secondary/70">
+                            In combobox selezioni solo il codice. Sotto trovi codice e descrizione completa.
+                        </p>
+                    </div>
+                    <div class="space-y-2">
                         {#each atecoCodesState as c}
-                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-muted text-xs font-medium text-brand-deep">
-                                {c.label}
-                                <Button class="text-brand-secondary/60 hover:text-red-600 transition-colors ml-0.5" onclick={() => removeAtecoCode(c.code)}>✕</Button>
-                            </span>
+                            <div class="flex items-start justify-between gap-3 rounded-lg border border-border-light bg-surface-muted px-3 py-2">
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-brand-deep">{c.code}</p>
+                                    <p class="text-xs text-brand-secondary/80 break-words">{c.label}</p>
+                                </div>
+                                <Button class="text-xs text-brand-secondary/60 hover:text-red-600 transition-colors" onclick={() => removeAtecoCode(c.code)}>Rimuovi</Button>
+                            </div>
                         {/each}
                         {#if atecoCodesState.length === 0}
                             <p class="text-xs text-brand-secondary/60">Nessun codice ATECO selezionato.</p>

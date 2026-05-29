@@ -24,7 +24,7 @@ class OpenApiSettingsController extends Controller
             'isDemoMode' => (bool) config('demo.enabled'),
             'activated' => $settings->activated,
             'hasWebhookSecret' => ! empty($settings->webhook_secret),
-            'webhookCallbackUrl' => $baseUrl.'/api/openapi/webhook',
+            'webhookCallbackUrl' => $baseUrl.'/api/v1/openapi/webhook',
             'codiceDestinatario' => OpenApiSdiService::CODICE_DESTINATARIO,
             'conservationAcknowledged' => $companySettings->conservation_acknowledged ?? false,
         ]);

@@ -189,7 +189,7 @@
         apiErrors = {}
 
         try {
-            const response = await fetch('/api/sales-invoices', {
+            const response = await fetch('/api/v1/sales-invoices', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

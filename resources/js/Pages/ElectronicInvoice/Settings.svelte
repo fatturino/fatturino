@@ -92,7 +92,7 @@
     }
 
     function simulateWebhook() {
-        execAction('/api/openapi/simulate-webhook', 'Webhook simulato inviato.', {
+        execAction('/api/v1/openapi/simulate-webhook', 'Webhook simulato inviato.', {
             type: simulationType,
             notification_type: simulationNotificationType,
             invoice_uuid: simulationInvoiceUuid,
@@ -113,7 +113,7 @@
             <p class="text-xs text-brand-secondary/80 mb-3">Le fatture elettroniche devono essere conservate per 10 anni. La conservazione è a carico del contribuente.</p>
             <div class="flex flex-wrap items-center gap-2">
                 <a href="https://ivaservizi.agenziaentrate.gov.it" target="_blank" class="btn-outline text-xs">Apri Agenzia Entrate</a>
-                <Button class="btn-brand text-xs" onclick={() => execAction('/api/openapi/acknowledge-conservation', 'Obbligo di conservazione preso in carico.')}>Ho preso visione</Button>
+                <Button class="btn-brand text-xs" onclick={() => execAction('/api/v1/openapi/acknowledge-conservation', 'Obbligo di conservazione preso in carico.')}>Ho preso visione</Button>
             </div>
         </div>
     {/if}
@@ -130,7 +130,7 @@
             {#if isServiceActive}
                 <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium badge-sent">Attivo</span>
                 {#if !isDemoMode}
-                    <Button class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors" onclick={() => askConfirm('Disattiva servizio', 'Sei sicuro di voler disattivare il servizio OpenAPI?', '/api/openapi/deactivate', 'Servizio disattivato.')}>Disattiva</Button>
+                    <Button class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors" onclick={() => askConfirm('Disattiva servizio', 'Sei sicuro di voler disattivare il servizio OpenAPI?', '/api/v1/openapi/deactivate', 'Servizio disattivato.')}>Disattiva</Button>
                 {/if}
             {:else}
                 <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium badge-draft">Non attivo</span>
@@ -149,8 +149,8 @@
 
                 {#if !isServiceActive}
                     <div class="flex flex-wrap items-center gap-2 mt-4">
-                        <Button class="btn-outline text-sm" onclick={() => postData('/api/openapi/check-connection', 'Connessione verificata.')}>Verifica connessione</Button>
-                        <Button class="btn-brand text-sm" onclick={() => askConfirm('Attiva servizio', 'Sei sicuro di voler attivare il servizio OpenAPI?', '/api/openapi/activate', 'Servizio attivato.')}>Attiva</Button>
+                        <Button class="btn-outline text-sm" onclick={() => postData('/api/v1/openapi/check-connection', 'Connessione verificata.')}>Verifica connessione</Button>
+                        <Button class="btn-brand text-sm" onclick={() => askConfirm('Attiva servizio', 'Sei sicuro di voler attivare il servizio OpenAPI?', '/api/v1/openapi/activate', 'Servizio attivato.')}>Attiva</Button>
                     </div>
                 {/if}
             {:else}
@@ -167,9 +167,9 @@
 
                 {#if !active}
                 <div class="flex flex-wrap items-center gap-2 mt-4">
-                    <Button class="btn-outline text-sm" onclick={() => postData('/api/openapi/check-connection', 'Connessione verificata.')}>Verifica connessione</Button>
-                    <Button class="btn-outline text-sm" onclick={() => postData('/api/openapi/save', 'Impostazioni salvate.')}>Salva</Button>
-                    <Button class="btn-brand text-sm" onclick={() => askConfirm('Attiva servizio', 'Sei sicuro di voler attivare il servizio OpenAPI?', '/api/openapi/activate', 'Servizio attivato.')}>Attiva</Button>
+                    <Button class="btn-outline text-sm" onclick={() => postData('/api/v1/openapi/check-connection', 'Connessione verificata.')}>Verifica connessione</Button>
+                    <Button class="btn-outline text-sm" onclick={() => postData('/api/v1/openapi/save', 'Impostazioni salvate.')}>Salva</Button>
+                    <Button class="btn-brand text-sm" onclick={() => askConfirm('Attiva servizio', 'Sei sicuro di voler attivare il servizio OpenAPI?', '/api/v1/openapi/activate', 'Servizio attivato.')}>Attiva</Button>
                 </div>
                 {/if}
             {/if}
@@ -180,7 +180,7 @@
                 <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={webhookUrl} placeholder="https://mio-dominio.com" disabled={openApiManagedByEnv} />
             </label>
             {#if !openApiManagedByEnv}
-                <Button class="mt-4 btn-outline text-sm" onclick={() => postData('/api/openapi/save', 'Impostazioni salvate.')}>Salva</Button>
+                <Button class="mt-4 btn-outline text-sm" onclick={() => postData('/api/v1/openapi/save', 'Impostazioni salvate.')}>Salva</Button>
             {/if}
         </div>
 

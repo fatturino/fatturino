@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\AtecoCode;
 use App\Enums\FiscalRegime;
 use App\Settings\CompanySettings;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -83,14 +82,6 @@ class CompanySettingsController extends Controller
         }
 
         return redirect()->route('settings.company');
-    }
-
-    public function atecoSearch(Request $request): JsonResponse
-    {
-        $q = $request->query('q', '');
-        $results = AtecoCode::options($q);
-
-        return response()->json(array_slice($results, 0, 50));
     }
 
     private function countries(): array

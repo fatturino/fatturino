@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/login');
 
 // Webhook (no auth)
-Route::post('/api/openapi/webhook', [OpenApiWebhookController::class, 'handle'])->name('openapi.webhook');
+Route::post('/api/v1/openapi/webhook', [OpenApiWebhookController::class, 'handle'])->name('openapi.webhook');
 
 // Guest-only routes
 Route::middleware('guest')->group(function () {
@@ -153,7 +153,6 @@ Route::middleware('auth')->group(function () {
     // Settings
     Route::get('/company-settings', [CompanySettingsController::class, 'index'])->name('settings.company')->defaults('title', 'Dati Azienda');
     Route::put('/company-settings', [CompanySettingsController::class, 'update'])->middleware('capability:edit-company-settings')->name('settings.company.update');
-    Route::get('/ateco/search', [CompanySettingsController::class, 'atecoSearch'])->name('ateco.search');
     Route::get('/invoice-settings', [InvoiceSettingsController::class, 'index'])->name('settings.invoice')->defaults('title', 'Impostazioni Fatture');
     Route::put('/invoice-settings', [InvoiceSettingsController::class, 'update'])->middleware('capability:edit-invoice-settings')->name('settings.invoice.update');
     Route::get('/email-settings', [EmailSettingsController::class, 'index'])->name('settings.email')->defaults('title', 'Template Email');
@@ -170,12 +169,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/electronic-invoice-settings', [OpenApiSettingsController::class, 'index'])->name('settings.openapi')->defaults('title', 'Fatturazione Elettronica');
 
     // OpenAPI API endpoints (JSON responses for SPA)
-    Route::post('/api/openapi/save', [OpenApiController::class, 'save'])->middleware('capability:edit-sdi-settings');
-    Route::post('/api/openapi/activate', [OpenApiController::class, 'activate'])->middleware('capability:edit-sdi-settings');
-    Route::post('/api/openapi/deactivate', [OpenApiController::class, 'deactivate'])->middleware('capability:edit-sdi-settings');
-    Route::post('/api/openapi/check-connection', [OpenApiController::class, 'checkConnection']);
-    Route::post('/api/openapi/simulate-webhook', [OpenApiController::class, 'simulateWebhook']);
-    Route::post('/api/openapi/acknowledge-conservation', [OpenApiController::class, 'acknowledgeConservation']);
+    Route::post('/api/v1/openapi/save', [OpenApiController::class, 'save'])->middleware('capability:edit-sdi-settings');
+    Route::post('/api/v1/openapi/activate', [OpenApiController::class, 'activate'])->middleware('capability:edit-sdi-settings');
+    Route::post('/api/v1/openapi/deactivate', [OpenApiController::class, 'deactivate'])->middleware('capability:edit-sdi-settings');
+    Route::post('/api/v1/openapi/check-connection', [OpenApiController::class, 'checkConnection']);
+    Route::post('/api/v1/openapi/simulate-webhook', [OpenApiController::class, 'simulateWebhook']);
+    Route::post('/api/v1/openapi/acknowledge-conservation', [OpenApiController::class, 'acknowledgeConservation']);
 
     // Logout
     Route::post('/logout', function () {

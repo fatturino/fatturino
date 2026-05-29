@@ -232,7 +232,7 @@ class OpenApiController extends Controller
     {
         $secret = Str::random(64);
         $baseUrl = ! empty($webhookUrl) ? rtrim($webhookUrl, '/') : rtrim(config('app.url'), '/');
-        $callbackUrl = $baseUrl.'/api/openapi/webhook';
+        $callbackUrl = $baseUrl.'/api/v1/openapi/webhook';
         $authHeader = "Bearer {$secret}";
 
         $result = $service->configureApiCallbacks($fiscalId, $callbackUrl, $authHeader);
