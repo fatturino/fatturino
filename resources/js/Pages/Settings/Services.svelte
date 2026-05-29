@@ -59,9 +59,11 @@
             <div class="card-brand p-4 sm:p-5">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-base font-semibold text-brand-deep">Backup</h2>
-                    <Button class="btn-brand text-sm" onclick={saveBackup} disabled={backupForm.processing}>
-                        {backupForm.processing ? 'Salvataggio...' : 'Salva backup'}
-                    </Button>
+                    {#if !backupManagedByEnv}
+                        <Button class="btn-brand text-sm" onclick={saveBackup} disabled={backupForm.processing}>
+                            {backupForm.processing ? 'Salvataggio...' : 'Salva backup'}
+                        </Button>
+                    {/if}
                 </div>
 
                 {#if backupManagedByEnv}
@@ -131,9 +133,11 @@
             <div class="card-brand p-4 sm:p-5">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-base font-semibold text-brand-deep">Monitoring</h2>
-                    <Button class="btn-brand text-sm" onclick={saveMonitoring} disabled={monitoringForm.processing}>
-                        {monitoringForm.processing ? 'Salvataggio...' : 'Salva monitoring'}
-                    </Button>
+                    {#if !monitoringManagedByEnv}
+                        <Button class="btn-brand text-sm" onclick={saveMonitoring} disabled={monitoringForm.processing}>
+                            {monitoringForm.processing ? 'Salvataggio...' : 'Salva monitoring'}
+                        </Button>
+                    {/if}
                 </div>
 
                 {#if monitoringManagedByEnv}
