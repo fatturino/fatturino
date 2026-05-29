@@ -41,6 +41,7 @@
     }
 
     const isServiceActive = $derived(isDemoMode || active)
+    const isSandboxMode = $derived(openApiManagedByEnv ? (props.sandbox ?? false) : sandbox)
 
     async function execAction(url, msg, body = null) {
         loading = true
@@ -62,7 +63,7 @@
 
                 // Keep server-backed status in sync without full page reload.
                 router.reload({
-                    only: ['activated', 'hasWebhookSecret', 'conservationAcknowledged', 'webhookCallbackUrl'],
+                    only: ['activated', 'hasWebhookSecret', 'conservationAcknowledged', 'webhookCallbackUrl', 'sandbox'],
                     preserveScroll: true,
                     preserveState: true,
                 })
@@ -198,7 +199,7 @@
                 {/if}
             </div>
 
-            {#if sandbox}
+            {#if isSandboxMode}
                 <div class="card-brand p-4 sm:p-5 max-w-2xl">
                     <h3 class="text-sm font-semibold text-brand-deep mb-3">Simulazione Webhook (Sandbox)</h3>
                     <div class="space-y-3">

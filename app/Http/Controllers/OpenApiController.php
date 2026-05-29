@@ -44,6 +44,8 @@ class OpenApiController extends Controller
             $settings->sandbox = $request->boolean('sandbox');
             $settings->company_sdi_code = $request->input('company_sdi_code', '');
             $settings->webhook_url = $webhookUrl;
+        } else {
+            $webhookUrl = (string) $settings->webhook_url;
         }
         $settings->save();
 

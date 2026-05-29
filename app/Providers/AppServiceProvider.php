@@ -38,10 +38,10 @@ class AppServiceProvider extends ServiceProvider
         // In managed environments OpenAPI settings are sourced from env only.
         $this->app->afterResolving(OpenApiSettings::class, function (OpenApiSettings $settings) {
             if ((bool) config('fe-openapi.managed_by_env')) {
-                $settings->api_token = (string) env('OPENAPI_SDI_API_TOKEN', '');
-                $settings->sandbox = (bool) env('OPENAPI_SDI_SANDBOX', false);
-                $settings->company_sdi_code = (string) env('OPENAPI_SDI_COMPANY_SDI_CODE', $settings->company_sdi_code);
-                $settings->webhook_url = (string) env('OPENAPI_SDI_WEBHOOK_URL', $settings->webhook_url);
+                $settings->api_token = (string) config('fe-openapi.api_token', '');
+                $settings->sandbox = (bool) config('fe-openapi.sandbox', false);
+                $settings->company_sdi_code = (string) config('fe-openapi.company_sdi_code', $settings->company_sdi_code);
+                $settings->webhook_url = (string) config('fe-openapi.webhook_url', $settings->webhook_url);
             }
         });
 

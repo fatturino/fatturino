@@ -6,8 +6,8 @@ use App\Settings\OpenApiSettings;
 
 it('does not overwrite openapi settings from request when managed by env is enabled', function () {
     config()->set('fe-openapi.managed_by_env', true);
-    putenv('OPENAPI_SDI_API_TOKEN=env-token-123');
-    putenv('OPENAPI_SDI_SANDBOX=1');
+    config()->set('fe-openapi.api_token', 'env-token-123');
+    config()->set('fe-openapi.sandbox', true);
 
     $user = User::factory()->create();
     $settings = app(OpenApiSettings::class);
