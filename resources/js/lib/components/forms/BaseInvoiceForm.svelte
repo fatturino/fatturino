@@ -58,6 +58,8 @@
     const isEdit = initialInvoice !== null
     const settings = bootstrap.formData?.settings ?? {}
     const resolvedDefaultSequenceId = bootstrap.formData?.default_sequence_id ?? bootstrap.formData?.sequences?.[0]?.id ?? ''
+    const initialSequence = bootstrap.formData?.sequences?.find((s) => s.id === Number(resolvedDefaultSequenceId))
+    const initialNextNumber = initialSequence?.next_number ?? ''
 
     let activeDocumentTab = $state('dati')
     let confirmOpen = $state(false)
@@ -200,7 +202,7 @@
         sequence_id: initialInvoice?.sequence_id ?? resolvedDefaultSequenceId,
         date: normalizeDateForPicker(initialInvoice?.date ?? ''),
         due_date: normalizeDateForPicker(initialInvoice?.due_date ?? ''),
-        number: initialInvoice?.number ?? '',
+        number: initialInvoice?.number ?? (!isEdit && numberEditable ? initialNextNumber : ''),
         document_type: initialInvoice?.document_type ?? (bootstrap.defaultDocumentType ?? 'TD01'),
         related_invoice_number: initialInvoice?.related_invoice_number ?? '',
         related_invoice_date: normalizeDateForPicker(initialInvoice?.related_invoice_date ?? ''),
@@ -225,6 +227,12 @@
     let numberPreview = $derived.by(() => {
         const sequence = bootstrap.formData?.sequences?.find((s) => s.id === Number(form.sequence_id))
         return sequence?.next_number ?? ''
+    })
+
+    $effect(() => {
+        if (!isEdit && numberEditable && !form.number && numberPreview) {
+            form.number = numberPreview
+        }
     })
 
     let displayErrors = $derived({ ...errors, ...form.errors })
