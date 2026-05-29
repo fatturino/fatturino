@@ -35,7 +35,23 @@ class AtecoCode
     {
         if (self::$cache === null) {
             $path = resource_path('data/ateco-2025.json');
-            self::$cache = json_decode(file_get_contents($path), true);
+
+            if (! is_file($path) || ! is_readable($path)) {
+                logger()->error('ATECO dataset unavailable', ['path' => $path]);
+                self::$cache = [];
+
+                return self::$cache;
+            }
+
+            $decoded = json_decode((string) file_get_contents($path), true);
+            if (! is_array($decoded)) {
+                logger()->error('ATECO dataset is invalid JSON', ['path' => $path]);
+                self::$cache = [];
+
+                return self::$cache;
+            }
+
+            self::$cache = $decoded;
         }
 
         return self::$cache;

@@ -223,11 +223,6 @@
                     {#if atecoLoading}
                         <p class="mb-3 text-xs text-brand-secondary/60">Caricamento codici...</p>
                     {/if}
-                    <div class="mb-3">
-                        <p class="text-xs text-brand-secondary/70">
-                            In combobox selezioni solo il codice. Sotto trovi codice e descrizione completa.
-                        </p>
-                    </div>
                     <div class="space-y-2">
                         {#each atecoCodesState as c}
                             <div class="flex items-start justify-between gap-3 rounded-lg border border-border-light bg-surface-muted px-3 py-2">
