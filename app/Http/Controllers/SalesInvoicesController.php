@@ -311,7 +311,7 @@ class SalesInvoicesController extends Controller
         Request $request,
         SalesInvoice $invoice,
         DocumentMailer $mailer
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         $validated = $request->validate([
             'recipient_email' => 'nullable|email',
             'cc' => 'nullable|email',
@@ -326,6 +326,10 @@ class SalesInvoicesController extends Controller
         $cc = $validated['cc'] ?? '';
 
         if (! $recipientEmail) {
+            if (! $request->expectsJson()) {
+                return back()->withErrors(['recipient_email' => 'Il cliente non ha un indirizzo email configurato.']);
+            }
+
             return response()->json([
                 'success' => false,
                 'error' => 'Il cliente non ha un indirizzo email configurato.',
@@ -335,10 +339,23 @@ class SalesInvoicesController extends Controller
         try {
             $mailer->sendWithOverrides($invoice, $recipientEmail, $subject, $body, true, $cc);
         } catch (Throwable $e) {
+            if (! $request->expectsJson()) {
+                return back()->withErrors(['action' => 'Invio email non riuscito: '.$e->getMessage()]);
+            }
+
             return response()->json([
                 'success' => false,
                 'error' => 'Invio email non riuscito: '.$e->getMessage(),
             ], 500);
+        }
+
+        if (! $request->expectsJson()) {
+            return back()->with('toast', [
+                'type' => 'success',
+                'title' => 'Operazione completata',
+                'message' => 'Email accodata correttamente.',
+                'duration' => 4500,
+            ]);
         }
 
         return response()->json([
