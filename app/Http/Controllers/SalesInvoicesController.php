@@ -333,7 +333,7 @@ class SalesInvoicesController extends Controller
         }
 
         try {
-            $mailer->sendNowWithOverrides($invoice, $recipientEmail, $subject, $body, true, $cc);
+            $mailer->sendWithOverrides($invoice, $recipientEmail, $subject, $body, true, $cc);
         } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -343,7 +343,7 @@ class SalesInvoicesController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Email inviata correttamente.',
+            'message' => 'Email accodata correttamente.',
         ]);
     }
 
