@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\SetupWizardController;
 use App\Http\Controllers\AdvancedLogsController;
+use App\Http\Controllers\Api\SetupWizardController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\ContactsController;
 use App\Http\Controllers\CreditNotesController;
