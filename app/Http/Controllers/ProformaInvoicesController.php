@@ -6,13 +6,16 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentTerms;
 use App\Enums\ProformaStatus;
 use App\Enums\VatRate;
+use App\Http\Controllers\Concerns\HandlesDocumentEmail;
 use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\Sequence;
+use App\Services\DocumentMailer;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,6 +23,8 @@ use Inertia\Response;
 
 class ProformaInvoicesController extends Controller
 {
+    use HandlesDocumentEmail;
+
     public function index(Request $request): Response
     {
         $fiscalYear = (int) ($request->query('fiscal_year', now()->year));
@@ -30,7 +35,7 @@ class ProformaInvoicesController extends Controller
         $perPage = 15;
 
         $query = ProformaInvoice::query()
-            ->with('contact:id,name')
+            ->with('contact:id,name,email')
             ->whereYear('date', $fiscalYear);
 
         if ($search !== '') {
@@ -212,6 +217,26 @@ class ProformaInvoicesController extends Controller
         $proformaInvoice->calculateTotals();
 
         return redirect()->route('proforma.index');
+    }
+
+    public function sendEmail(
+        Request $request,
+        ProformaInvoice $proformaInvoice,
+        DocumentMailer $mailer
+    ): JsonResponse|RedirectResponse {
+        return $this->sendDocumentEmail(
+            $request,
+            $proformaInvoice,
+            $mailer,
+            'Il cliente non ha un indirizzo email configurato.'
+        );
+    }
+
+    public function emailPreview(
+        ProformaInvoice $proformaInvoice,
+        DocumentMailer $mailer
+    ): JsonResponse {
+        return $this->documentEmailPreview($proformaInvoice, $mailer);
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────

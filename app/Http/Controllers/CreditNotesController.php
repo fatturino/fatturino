@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\VatRate;
+use App\Http\Controllers\Concerns\HandlesDocumentEmail;
 use App\Http\Controllers\Concerns\HandlesXmlSdiWorkflow;
 use App\Models\Contact;
 use App\Models\CreditNote;
 use App\Models\Sequence;
 use App\Services\CreditNoteXmlService;
+use App\Services\DocumentMailer;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
@@ -21,6 +23,7 @@ use Inertia\Response;
 
 class CreditNotesController extends Controller
 {
+    use HandlesDocumentEmail;
     use HandlesXmlSdiWorkflow;
 
     public function index(Request $request): Response
@@ -33,7 +36,7 @@ class CreditNotesController extends Controller
         $perPage = 15;
 
         $query = CreditNote::query()
-            ->with('contact:id,name')
+            ->with('contact:id,name,email')
             ->whereYear('date', $fiscalYear);
 
         if ($search !== '') {
@@ -220,6 +223,26 @@ class CreditNotesController extends Controller
             'La nota di credito deve essere validata prima dell\'invio.',
             'Nota di credito inviata allo SDI.'
         );
+    }
+
+    public function sendEmail(
+        Request $request,
+        CreditNote $creditNote,
+        DocumentMailer $mailer
+    ): JsonResponse|RedirectResponse {
+        return $this->sendDocumentEmail(
+            $request,
+            $creditNote,
+            $mailer,
+            'Il cliente non ha un indirizzo email configurato.'
+        );
+    }
+
+    public function emailPreview(
+        CreditNote $creditNote,
+        DocumentMailer $mailer
+    ): JsonResponse {
+        return $this->documentEmailPreview($creditNote, $mailer);
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────

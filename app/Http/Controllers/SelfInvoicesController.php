@@ -12,7 +12,6 @@ use App\Models\Payment;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
-use App\Services\DocumentMailer;
 use App\Services\SelfInvoiceXmlService;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
@@ -23,7 +22,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Throwable;
 
 class SelfInvoicesController extends Controller
 {
@@ -292,85 +290,6 @@ class SelfInvoicesController extends Controller
         $filename = $pdfService->generateFileName($selfInvoice);
 
         return $pdf->download($filename);
-    }
-
-    public function sendEmail(
-        Request $request,
-        SelfInvoice $selfInvoice,
-        DocumentMailer $mailer
-    ): JsonResponse|RedirectResponse {
-        $this->ensureSelfInvoicesAllowed();
-
-        $validated = $request->validate([
-            'recipient_email' => 'nullable|email',
-            'cc' => 'nullable|email',
-            'subject' => 'nullable|string',
-            'body' => 'nullable|string',
-        ]);
-
-        $recipientEmail = $validated['recipient_email'] ?? $selfInvoice->contact?->email;
-        $documentType = $selfInvoice->getAttributes()['type'] ?? 'self_invoice';
-        $subject = $validated['subject'] ?? $mailer->renderSubject($documentType, $selfInvoice);
-        $body = $validated['body'] ?? $mailer->renderBody($documentType, $selfInvoice);
-        $cc = $validated['cc'] ?? '';
-
-        if (! $recipientEmail) {
-            if (! $request->expectsJson()) {
-                return back()->withErrors(['recipient_email' => 'Il fornitore non ha un indirizzo email configurato.']);
-            }
-
-            return response()->json([
-                'success' => false,
-                'error' => 'Il fornitore non ha un indirizzo email configurato.',
-            ], 422);
-        }
-
-        try {
-            $mailer->sendWithOverrides($selfInvoice, $recipientEmail, $subject, $body, true, $cc);
-        } catch (Throwable $e) {
-            if (! $request->expectsJson()) {
-                return back()->withErrors(['action' => 'Invio email non riuscito: '.$e->getMessage()]);
-            }
-
-            return response()->json([
-                'success' => false,
-                'error' => 'Invio email non riuscito: '.$e->getMessage(),
-            ], 500);
-        }
-
-        if (! $request->expectsJson()) {
-            return back()->with('toast', [
-                'type' => 'success',
-                'title' => 'Operazione completata',
-                'message' => 'Email accodata correttamente.',
-                'duration' => 4500,
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Email accodata correttamente.',
-        ]);
-    }
-
-    public function emailPreview(
-        SelfInvoice $selfInvoice,
-        DocumentMailer $mailer
-    ): JsonResponse {
-        $this->ensureSelfInvoicesAllowed();
-
-        $documentType = $selfInvoice->getAttributes()['type'] ?? 'self_invoice';
-        $metadata = is_array($selfInvoice->metadata) ? $selfInvoice->metadata : [];
-
-        return response()->json([
-            'success' => true,
-            'preview' => [
-                'recipient_email' => $selfInvoice->contact?->email ?? '',
-                'cc' => (string) data_get($metadata, 'email.cc', ''),
-                'subject' => $mailer->renderSubject($documentType, $selfInvoice),
-                'body' => $mailer->renderBody($documentType, $selfInvoice),
-            ],
-        ]);
     }
 
     public function recordPayment(Request $request, SelfInvoice $selfInvoice): JsonResponse

@@ -2,7 +2,11 @@
     import Authenticated from '$layouts/Authenticated.svelte'
     import Button from '$lib/components/ui/Button.svelte'
     import Input from '$lib/components/ui/Input.svelte'
+    import Textarea from '$lib/components/ui/Textarea.svelte'
+    import Dialog from '$lib/components/ui/Dialog.svelte'
     import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
+    import { showToast } from '$lib/toast.js'
+    import { router } from '@inertiajs/svelte'
 
     let {
         invoices = { data: [], current_page: 1, last_page: 1, from: 0, to: 0, total: 0, links: [] },
@@ -20,6 +24,11 @@
     let sort = $state(initialSort)
     let direction = $state(initialDirection)
     let listState = $state({ invoices, stats, statusOptions, paymentOptions: [] })
+    let emailModalOpen = $state(false)
+    let emailModalLoading = $state(false)
+    let emailSending = $state(false)
+    let emailInvoice = $state(null)
+    let emailForm = $state({ recipient_email: '', cc: '', subject: '', body: '' })
 
     const statusTabs = $derived([
         { label: 'Tutte', value: '', count: listState.invoices.total ?? 0 },
@@ -80,7 +89,103 @@
         return statusFilter === tabValue
     }
 
+    async function postAction(url, payload = {}) {
+        return await new Promise((resolve) => {
+            router.post(url, payload, {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['invoices', 'stats', 'statusOptions'],
+                onError: (errors) => {
+                    const firstError = Object.values(errors ?? {})[0]
+                    const message = Array.isArray(firstError) ? firstError[0] : firstError
+                    showToast(message || 'Operazione non riuscita.', 'error')
+                    resolve(false)
+                },
+                onSuccess: () => resolve(true),
+            })
+        })
+    }
+
+    async function sendEmail(invoice) {
+        emailInvoice = invoice
+        emailModalOpen = true
+        emailModalLoading = true
+
+        try {
+            const response = await fetch(`/proforma/${invoice.id}/email-preview`, {
+                headers: {
+                    'Accept': 'application/json',
+                },
+            })
+            const data = await response.json()
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Anteprima email non disponibile.')
+            }
+
+            emailForm = {
+                recipient_email: data.preview?.recipient_email ?? '',
+                cc: data.preview?.cc ?? '',
+                subject: data.preview?.subject ?? '',
+                body: data.preview?.body ?? '',
+            }
+        } catch (error) {
+            showToast(error?.message || 'Anteprima email non disponibile.', 'error')
+            emailModalOpen = false
+            emailInvoice = null
+        } finally {
+            emailModalLoading = false
+        }
+    }
+
+    async function submitEmailModal() {
+        if (!emailInvoice) return false
+        if (!emailForm.recipient_email) {
+            showToast('Inserisci un destinatario email.', 'error')
+            return false
+        }
+
+        emailSending = true
+        try {
+            const sent = await postAction(`/proforma/${emailInvoice.id}/send-email`, emailForm)
+            return sent
+        } finally {
+            emailSending = false
+        }
+    }
+
 </script>
+
+<Dialog
+    bind:open={emailModalOpen}
+    title={`Invia email ${emailInvoice?.number ?? (emailInvoice ? '#' + emailInvoice.id : '')}`}
+    confirmText="Invia email"
+    onConfirm={submitEmailModal}
+    isLoading={emailSending}
+    contentClass="max-w-2xl"
+>
+    {#if emailModalLoading}
+        <p class="text-sm text-brand-secondary">Caricamento anteprima email...</p>
+    {:else}
+        <div class="space-y-4">
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">Destinatario</span>
+                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.recipient_email} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">CC (opzionale)</span>
+                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.cc} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">Oggetto</span>
+                <Input class="mt-1 block w-full" type="text" bind:value={emailForm.subject} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">Messaggio</span>
+                <Textarea class="mt-1 block w-full min-h-64 resize-y" bind:value={emailForm.body} />
+            </label>
+        </div>
+    {/if}
+</Dialog>
 
 <Authenticated>
     {#snippet headerActions()}
@@ -167,7 +272,7 @@
                     <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
                     <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
                     <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span></td>
-                    <td class="px-4 py-3 text-right"><a href={`/proforma/${invoice.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></td>
+                    <td class="px-4 py-3 text-right"><div class="flex justify-end gap-2 flex-wrap"><Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => sendEmail(invoice)}>Email</Button><a href={`/proforma/${invoice.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></div></td>
                 </tr>
             {/snippet}
             {#snippet mobileRow({ invoice, formatDate })}
@@ -187,6 +292,7 @@
                         <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span>
                     </div>
                     <div class="mt-3 flex items-center gap-3 text-xs">
+                        <Button class="font-medium text-brand-secondary" onclick={() => sendEmail(invoice)}>Email</Button>
                         <a href={`/proforma/${invoice.id}/edit`} class="font-medium text-brand-accent">Modifica</a>
                     </div>
                 </article>

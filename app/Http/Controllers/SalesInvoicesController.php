@@ -11,6 +11,7 @@ use App\Enums\SalesDocumentType;
 use App\Enums\VatPayability;
 use App\Enums\VatRate;
 use App\Http\Controllers\Concerns\HandlesDocumentPayments;
+use App\Http\Controllers\Concerns\HandlesDocumentEmail;
 use App\Http\Controllers\Concerns\HandlesXmlSdiWorkflow;
 use App\Models\Contact;
 use App\Models\Payment;
@@ -30,11 +31,11 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use Throwable;
 
 class SalesInvoicesController extends Controller
 {
     use HandlesDocumentPayments;
+    use HandlesDocumentEmail;
     use HandlesXmlSdiWorkflow;
 
     public function index(Request $request): Response
@@ -312,74 +313,19 @@ class SalesInvoicesController extends Controller
         SalesInvoice $invoice,
         DocumentMailer $mailer
     ): JsonResponse|RedirectResponse {
-        $validated = $request->validate([
-            'recipient_email' => 'nullable|email',
-            'cc' => 'nullable|email',
-            'subject' => 'nullable|string',
-            'body' => 'nullable|string',
-        ]);
-
-        $recipientEmail = $validated['recipient_email'] ?? $invoice->contact?->email;
-        $documentType = $invoice->getAttributes()['type'] ?? 'sales';
-        $subject = $validated['subject'] ?? $mailer->renderSubject($documentType, $invoice);
-        $body = $validated['body'] ?? $mailer->renderBody($documentType, $invoice);
-        $cc = $validated['cc'] ?? '';
-
-        if (! $recipientEmail) {
-            if (! $request->expectsJson()) {
-                return back()->withErrors(['recipient_email' => 'Il cliente non ha un indirizzo email configurato.']);
-            }
-
-            return response()->json([
-                'success' => false,
-                'error' => 'Il cliente non ha un indirizzo email configurato.',
-            ], 422);
-        }
-
-        try {
-            $mailer->sendWithOverrides($invoice, $recipientEmail, $subject, $body, true, $cc);
-        } catch (Throwable $e) {
-            if (! $request->expectsJson()) {
-                return back()->withErrors(['action' => 'Invio email non riuscito: '.$e->getMessage()]);
-            }
-
-            return response()->json([
-                'success' => false,
-                'error' => 'Invio email non riuscito: '.$e->getMessage(),
-            ], 500);
-        }
-
-        if (! $request->expectsJson()) {
-            return back()->with('toast', [
-                'type' => 'success',
-                'title' => 'Operazione completata',
-                'message' => 'Email accodata correttamente.',
-                'duration' => 4500,
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Email accodata correttamente.',
-        ]);
+        return $this->sendDocumentEmail(
+            $request,
+            $invoice,
+            $mailer,
+            'Il cliente non ha un indirizzo email configurato.'
+        );
     }
 
     public function emailPreview(
         SalesInvoice $invoice,
         DocumentMailer $mailer
     ): JsonResponse {
-        $documentType = $invoice->getAttributes()['type'] ?? 'sales';
-        $metadata = is_array($invoice->metadata) ? $invoice->metadata : [];
-
-        return response()->json([
-            'success' => true,
-            'preview' => [
-                'recipient_email' => $invoice->contact?->email ?? '',
-                'cc' => (string) data_get($metadata, 'email.cc', ''),
-                'subject' => $mailer->renderSubject($documentType, $invoice),
-                'body' => $mailer->renderBody($documentType, $invoice),
-            ],
-        ]);
+        return $this->documentEmailPreview($invoice, $mailer);
     }
 
     public function recordPayment(Request $request, SalesInvoice $invoice): JsonResponse

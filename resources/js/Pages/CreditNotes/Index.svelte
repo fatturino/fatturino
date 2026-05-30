@@ -2,6 +2,7 @@
     import Authenticated from '$layouts/Authenticated.svelte'
     import Button from '$lib/components/ui/Button.svelte'
     import Input from '$lib/components/ui/Input.svelte'
+    import Textarea from '$lib/components/ui/Textarea.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
     import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
     import { showToast } from '$lib/toast.js'
@@ -29,6 +30,11 @@
     let confirmText = $state('Conferma')
     let confirmVariant = $state('primary')
     let onConfirmAction = $state(() => {})
+    let emailModalOpen = $state(false)
+    let emailModalLoading = $state(false)
+    let emailSending = $state(false)
+    let emailCreditNote = $state(null)
+    let emailForm = $state({ recipient_email: '', cc: '', subject: '', body: '' })
 
     const statusTabs = $derived([
         { label: 'Tutte', value: '', count: listState.invoices.total ?? 0 },
@@ -89,9 +95,9 @@
         return statusFilter === tabValue
     }
 
-    async function postAction(url) {
-        await new Promise((resolve) => {
-            router.post(url, {}, {
+    async function postAction(url, payload = {}) {
+        return await new Promise((resolve) => {
+            router.post(url, payload, {
                 preserveScroll: true,
                 preserveState: true,
                 only: ['creditNotes', 'stats', 'statusOptions'],
@@ -136,6 +142,53 @@ Controlla prima di confermare:
         confirmOpen = true
     }
 
+    async function sendEmail(creditNote) {
+        emailCreditNote = creditNote
+        emailModalOpen = true
+        emailModalLoading = true
+
+        try {
+            const response = await fetch(`/credit-notes/${creditNote.id}/email-preview`, {
+                headers: {
+                    'Accept': 'application/json',
+                },
+            })
+            const data = await response.json()
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Anteprima email non disponibile.')
+            }
+
+            emailForm = {
+                recipient_email: data.preview?.recipient_email ?? '',
+                cc: data.preview?.cc ?? '',
+                subject: data.preview?.subject ?? '',
+                body: data.preview?.body ?? '',
+            }
+        } catch (error) {
+            showToast(error?.message || 'Anteprima email non disponibile.', 'error')
+            emailModalOpen = false
+            emailCreditNote = null
+        } finally {
+            emailModalLoading = false
+        }
+    }
+
+    async function submitEmailModal() {
+        if (!emailCreditNote) return false
+        if (!emailForm.recipient_email) {
+            showToast('Inserisci un destinatario email.', 'error')
+            return false
+        }
+
+        emailSending = true
+        try {
+            const sent = await postAction(`/credit-notes/${emailCreditNote.id}/send-email`, emailForm)
+            return sent
+        } finally {
+            emailSending = false
+        }
+    }
+
 </script>
 
 <Dialog
@@ -146,6 +199,37 @@ Controlla prima di confermare:
     variant={confirmVariant}
     onConfirm={onConfirmAction}
 />
+<Dialog
+    bind:open={emailModalOpen}
+    title={`Invia email ${emailCreditNote?.number ?? (emailCreditNote ? '#' + emailCreditNote.id : '')}`}
+    confirmText="Invia email"
+    onConfirm={submitEmailModal}
+    isLoading={emailSending}
+    contentClass="max-w-2xl"
+>
+    {#if emailModalLoading}
+        <p class="text-sm text-brand-secondary">Caricamento anteprima email...</p>
+    {:else}
+        <div class="space-y-4">
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">Destinatario</span>
+                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.recipient_email} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">CC (opzionale)</span>
+                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.cc} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">Oggetto</span>
+                <Input class="mt-1 block w-full" type="text" bind:value={emailForm.subject} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">Messaggio</span>
+                <Textarea class="mt-1 block w-full min-h-64 resize-y" bind:value={emailForm.body} />
+            </label>
+        </div>
+    {/if}
+</Dialog>
 
 <Authenticated>
     {#snippet headerActions()}
@@ -212,7 +296,7 @@ Controlla prima di confermare:
                     <td class="px-4 py-3 font-medium text-brand-deep">{creditNote.contact?.name ?? '—'}</td>
                     <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(creditNote.total_gross)}</td>
                     <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(creditNote.status)}">{statusLabel(creditNote.status)}</span></td>
-                    <td class="px-4 py-3 text-right"><div class="flex justify-end gap-2 flex-wrap"><a href={`/credit-notes/${creditNote.id}/xml`} class="text-xs font-medium text-brand-secondary hover:text-brand-deep">XML</a>{#if creditNote.is_sdi_editable && creditNote.status === 'draft'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => validateXml(creditNote)}>Verifica XML</Button>{/if}{#if creditNote.is_sdi_editable && creditNote.status === 'xml_validated'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => sendToSdi(creditNote)}>Invia SDI</Button>{/if}<a href={`/credit-notes/${creditNote.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></div></td>
+                    <td class="px-4 py-3 text-right"><div class="flex justify-end gap-2 flex-wrap"><a href={`/credit-notes/${creditNote.id}/xml`} class="text-xs font-medium text-brand-secondary hover:text-brand-deep">XML</a><Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => sendEmail(creditNote)}>Email</Button>{#if creditNote.is_sdi_editable && creditNote.status === 'draft'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => validateXml(creditNote)}>Verifica XML</Button>{/if}{#if creditNote.is_sdi_editable && creditNote.status === 'xml_validated'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => sendToSdi(creditNote)}>Invia SDI</Button>{/if}<a href={`/credit-notes/${creditNote.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></div></td>
                 </tr>
             {/snippet}
             {#snippet mobileRow({ invoice: creditNote, formatDate })}
@@ -233,6 +317,7 @@ Controlla prima di confermare:
                     </div>
                     <div class="mt-3 flex items-center gap-3 text-xs">
                         <a href={`/credit-notes/${creditNote.id}/xml`} class="font-medium text-brand-secondary">XML</a>
+                        <Button class="font-medium text-brand-secondary" onclick={() => sendEmail(creditNote)}>Email</Button>
                         {#if creditNote.is_sdi_editable && creditNote.status === 'draft'}
                             <Button class="font-medium text-brand-secondary" onclick={() => validateXml(creditNote)}>Verifica XML</Button>
                         {/if}

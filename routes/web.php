@@ -112,8 +112,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/self-invoices/{selfInvoice}/pdf', [SelfInvoicesController::class, 'downloadPdf'])->name('self-invoices.download-pdf');
     Route::post('/self-invoices/{selfInvoice}/validate-xml', [SelfInvoicesController::class, 'validateXml'])->name('self-invoices.validate-xml');
     Route::post('/self-invoices/{selfInvoice}/send-sdi', [SelfInvoicesController::class, 'sendToSdi'])->name('self-invoices.send-sdi');
-    Route::get('/self-invoices/{selfInvoice}/email-preview', [SelfInvoicesController::class, 'emailPreview'])->name('self-invoices.email-preview');
-    Route::post('/self-invoices/{selfInvoice}/send-email', [SelfInvoicesController::class, 'sendEmail'])->name('self-invoices.send-email');
     Route::post('/self-invoices/{selfInvoice}/payments', [SelfInvoicesController::class, 'recordPayment'])->name('self-invoices.record-payment');
     Route::put('/self-invoices/{selfInvoice}/payments/{payment}', [SelfInvoicesController::class, 'updatePayment'])
         ->whereNumber('payment')
@@ -135,6 +133,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/credit-notes/{creditNote}/xml', [CreditNotesController::class, 'downloadXml'])->name('credit-notes.download-xml');
     Route::post('/credit-notes/{creditNote}/validate-xml', [CreditNotesController::class, 'validateXml'])->name('credit-notes.validate-xml');
     Route::post('/credit-notes/{creditNote}/send-sdi', [CreditNotesController::class, 'sendToSdi'])->name('credit-notes.send-sdi');
+    Route::get('/credit-notes/{creditNote}/email-preview', [CreditNotesController::class, 'emailPreview'])->name('credit-notes.email-preview');
+    Route::post('/credit-notes/{creditNote}/send-email', [CreditNotesController::class, 'sendEmail'])->name('credit-notes.send-email');
 
     // Proforma
     Route::get('/proforma', [ProformaInvoicesController::class, 'index'])->name('proforma.index')->defaults('title', 'Proforma');
@@ -146,6 +146,8 @@ Route::middleware('auth')->group(function () {
         ->defaults('title', 'Modifica Proforma')
         ->defaults('breadcrumbs', [['label' => 'Proforma', 'url' => '/proforma'], ['label' => 'Modifica']]);
     Route::put('/proforma/{proformaInvoice}', [ProformaInvoicesController::class, 'update'])->name('proforma.update');
+    Route::get('/proforma/{proformaInvoice}/email-preview', [ProformaInvoicesController::class, 'emailPreview'])->name('proforma.email-preview');
+    Route::post('/proforma/{proformaInvoice}/send-email', [ProformaInvoicesController::class, 'sendEmail'])->name('proforma.send-email');
 
     // Sequences
     Route::get('/sequences', [SequencesController::class, 'index'])->name('sequences.index')->defaults('title', 'Sequenze');
