@@ -8,6 +8,10 @@ test('each case has a non-empty label', function () {
     }
 });
 
+test('xml validated label is explicit', function () {
+    expect(InvoiceStatus::XmlValidated->label())->toBe('XML Validato');
+});
+
 test('each case has a non-empty color', function () {
     foreach (InvoiceStatus::cases() as $case) {
         expect($case->color())->toBeString()->not->toBeEmpty();

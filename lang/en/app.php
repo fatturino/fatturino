@@ -367,6 +367,7 @@ return [
             'missing_transmission_data' => 'Transmission data is missing',
             'parsing_error' => 'XML parsing error: :error',
             'missing_customer_fiscal_id' => 'Customer has no valid VAT number or fiscal code (11-16 characters): update the contact before sending.',
+            'related_document_number_too_long' => 'The related document number exceeds 20 characters and is not compliant with the SDI schema.',
         ],
 
         // SDI status labels

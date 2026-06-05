@@ -129,6 +129,14 @@ class LocalXmlValidator
             $errors[] = __('app.invoices.xml_errors.missing_customer_fiscal_id');
         }
 
+        $relatedDocuments = $xml->xpath('/p:FatturaElettronica/FatturaElettronicaBody/DatiGenerali/DatiFattureCollegate/IdDocumento');
+        foreach ($relatedDocuments as $relatedDocument) {
+            if (strlen(trim((string) $relatedDocument)) > 20) {
+                $errors[] = __('app.invoices.xml_errors.related_document_number_too_long');
+                break;
+            }
+        }
+
         libxml_clear_errors();
 
         return [

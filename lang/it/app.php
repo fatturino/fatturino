@@ -375,6 +375,7 @@ return [
             'missing_transmission_data' => 'Dati di trasmissione mancanti',
             'parsing_error' => 'Errore di lettura XML: :error',
             'missing_customer_fiscal_id' => 'Il cliente non ha Partita IVA né Codice Fiscale valido (11-16 caratteri): aggiornare l\'anagrafica prima di inviare.',
+            'related_document_number_too_long' => 'Il numero del documento collegato supera 20 caratteri e non e conforme allo schema SDI.',
         ],
         'cannot_send_not_validated' => 'L\'XML deve essere validato prima di poter inviare allo SDI.',
 

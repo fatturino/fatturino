@@ -6,6 +6,7 @@ use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\FiscalDocumentLine;
 use App\Models\SelfInvoice;
+use App\Services\LocalXmlValidator;
 use App\Services\SelfInvoiceXmlService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -144,5 +145,22 @@ class SelfInvoiceXmlTest extends TestCase
         // Format: <CountryCode><VatNumber>_<XXXXX>.xml
         $this->assertStringEndsWith('.xml', $filename);
         $this->assertStringContainsString('_', $filename);
+    }
+
+    public function test_local_validation_rejects_related_invoice_number_longer_than_20_characters()
+    {
+        $invoice = $this->makeInvoiceWithLine('TD17');
+        $invoice->update([
+            'related_invoice_number' => 'a636c2e7cd6a42b79f2c5241b7db3b14',
+        ]);
+
+        $xml = app(SelfInvoiceXmlService::class)->generate($invoice->fresh('lines', 'contact'));
+        $result = app(LocalXmlValidator::class)->validate($xml);
+
+        $this->assertFalse($result['valid']);
+        $this->assertContains(
+            'Il numero del documento collegato supera 20 caratteri e non e conforme allo schema SDI.',
+            $result['errors']
+        );
     }
 }

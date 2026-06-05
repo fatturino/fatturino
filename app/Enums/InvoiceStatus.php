@@ -17,7 +17,7 @@ enum InvoiceStatus: string
         return match ($this) {
             self::Draft => __('app.invoices.invoice_status_draft'),
             self::Generated => __('app.invoices.invoice_status_generated'),
-            self::XmlValidated => __('app.invoices.invoice_status_saved'),
+            self::XmlValidated => __('app.invoices.invoice_status_xml_validated'),
             self::Sent => __('app.invoices.invoice_status_sent'),
         };
     }
