@@ -1,6 +1,6 @@
 <script lang="ts">
     import { DatePicker as DatePickerPrimitive } from "bits-ui";
-    import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
+    import { getLocalTimeZone, parseDate, today, type DateValue } from "@internationalized/date";
     import CalendarBlank from "phosphor-svelte/lib/CalendarBlank";
     import { formatLocalDate } from "$lib/utils/date.js";
 
@@ -31,12 +31,24 @@
         return `${dateValue.year}-${month}-${day}`;
     }
 
+    function isSameDateValue(left?: DateValue, right?: DateValue) {
+        if (!left && !right) return true;
+        if (!left || !right) return false;
+
+        return left.year === right.year && left.month === right.month && left.day === right.day;
+    }
+
     const fallbackDateValue = today(getLocalTimeZone());
-    let calendarPlaceholder = $state(toDateValue(value) ?? fallbackDateValue);
+    let selectedDateValue = $state<DateValue | undefined>(toDateValue(value));
+    let calendarPlaceholder = $state(selectedDateValue ?? fallbackDateValue);
 
     $effect(() => {
         const nextValue = toDateValue(value);
-        if (nextValue) {
+        if (!isSameDateValue(selectedDateValue, nextValue)) {
+            selectedDateValue = nextValue;
+        }
+
+        if (nextValue && !isSameDateValue(calendarPlaceholder, nextValue)) {
             calendarPlaceholder = nextValue;
         }
     });
@@ -44,8 +56,9 @@
 
 <DatePickerPrimitive.Root
     type="single"
-    value={toDateValue(value)}
+    value={selectedDateValue}
     onValueChange={(nextValue) => {
+        selectedDateValue = nextValue;
         if (nextValue) {
             calendarPlaceholder = nextValue;
         }
