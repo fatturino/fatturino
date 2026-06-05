@@ -1,5 +1,6 @@
 <script>
     import Button from '$lib/components/ui/Button.svelte'
+    import DatePicker from '$lib/components/ui/DatePicker.svelte'
     import Input from '$lib/components/ui/Input.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
     import { showToast } from '$lib/toast.js'
@@ -199,7 +200,7 @@
             </div>
             <div class="mt-2">
                 <label class="mb-1 block text-sm font-medium text-brand-deep">Data pagamento (opzionale)</label>
-                <Input type="date" bind:value={paymentDate} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+                <DatePicker bind:value={paymentDate} class="w-full" />
             </div>
             <div class="mt-2">
                 <label class="mb-1 block text-sm font-medium text-brand-deep">Rif. bancario (opzionale)</label>

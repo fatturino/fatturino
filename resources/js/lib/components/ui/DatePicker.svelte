@@ -29,13 +29,16 @@
         const day = String(dateValue.day).padStart(2, "0");
         return `${dateValue.year}-${month}-${day}`;
     }
+
+    const fallbackDateValue = $derived(today(getLocalTimeZone()));
+    const selectedDateValue = $derived(toDateValue(value) ?? fallbackDateValue);
 </script>
 
 <DatePickerPrimitive.Root
     type="single"
-    value={toDateValue(value)}
+    value={selectedDateValue}
     onValueChange={(nextValue) => { value = toIsoDate(nextValue); }}
-    placeholder={toDateValue(value) ?? today(getLocalTimeZone())}
+    placeholder={selectedDateValue}
     {disabled}
     {locale}
     weekStartsOn={1}

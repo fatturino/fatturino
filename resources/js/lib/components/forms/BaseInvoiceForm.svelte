@@ -106,6 +106,12 @@
         return value.includes('T') ? value.slice(0, 10) : value
     }
 
+    function getTodayIsoDate() {
+        const now = new Date()
+        const timezoneOffsetMs = now.getTimezoneOffset() * 60 * 1000
+        return new Date(now.getTime() - timezoneOffsetMs).toISOString().slice(0, 10)
+    }
+
     function normalizeSelectCode(value) {
         if (value == null) return ''
         const normalized = String(value).trim()
@@ -200,7 +206,7 @@
     const form = useForm({
         contact_id: initialInvoice?.contact_id ?? '',
         sequence_id: initialInvoice?.sequence_id ?? resolvedDefaultSequenceId,
-        date: normalizeDateForPicker(initialInvoice?.date ?? ''),
+        date: normalizeDateForPicker(initialInvoice?.date ?? getTodayIsoDate()),
         due_date: normalizeDateForPicker(initialInvoice?.due_date ?? ''),
         number: initialInvoice?.number ?? (!isEdit && numberEditable ? initialNextNumber : ''),
         document_type: initialInvoice?.document_type ?? (bootstrap.defaultDocumentType ?? 'TD01'),

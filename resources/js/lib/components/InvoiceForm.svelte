@@ -52,6 +52,12 @@
         }
     }
 
+    function getTodayIsoDate() {
+        const now = new Date()
+        const timezoneOffsetMs = now.getTimezoneOffset() * 60 * 1000
+        return new Date(now.getTime() - timezoneOffsetMs).toISOString().slice(0, 10)
+    }
+
     let lines = $state(
         invoice?.lines?.map(l => ({
             id: l.id,
@@ -147,7 +153,7 @@
     const form = useForm({
         contact_id: invoice?.contact_id ?? '',
         sequence_id: invoice?.sequence_id ?? (formData.default_sequence_id ?? ''),
-        date: invoice?.date ?? new Date().toISOString().split('T')[0],
+        date: invoice?.date ?? getTodayIsoDate(),
         due_date: invoice?.due_date ?? '',
         document_type: invoice?.document_type ?? 'TD01',
         notes: invoice?.notes ?? (settings.default_notes ?? ''),
