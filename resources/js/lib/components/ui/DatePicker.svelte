@@ -31,15 +31,28 @@
         return `${dateValue.year}-${month}-${day}`;
     }
 
-    const fallbackDateValue = $derived(today(getLocalTimeZone()));
-    const selectedDateValue = $derived(toDateValue(value) ?? fallbackDateValue);
+    const fallbackDateValue = today(getLocalTimeZone());
+    let calendarPlaceholder = $state(toDateValue(value) ?? fallbackDateValue);
+
+    $effect(() => {
+        const nextValue = toDateValue(value);
+        if (nextValue) {
+            calendarPlaceholder = nextValue;
+        }
+    });
 </script>
 
 <DatePickerPrimitive.Root
     type="single"
-    value={selectedDateValue}
-    onValueChange={(nextValue) => { value = toIsoDate(nextValue); }}
-    placeholder={selectedDateValue}
+    value={toDateValue(value)}
+    onValueChange={(nextValue) => {
+        if (nextValue) {
+            calendarPlaceholder = nextValue;
+        }
+        value = toIsoDate(nextValue);
+    }}
+    placeholder={calendarPlaceholder}
+    onPlaceholderChange={(nextValue) => { calendarPlaceholder = nextValue; }}
     {disabled}
     {locale}
     weekStartsOn={1}
