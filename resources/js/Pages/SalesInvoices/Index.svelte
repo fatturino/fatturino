@@ -9,6 +9,7 @@
     import InvoiceDesktopContextMenu from '$lib/components/invoices/InvoiceDesktopContextMenu.svelte'
     import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
     import { buildInvoiceContextActions, InvoiceContentType } from '$lib/invoices/context-menu-registry.js'
+    import { formatLocalDate } from '$lib/utils/date.js'
     import { showToast } from '$lib/toast.js'
     import { router } from '@inertiajs/svelte'
 
@@ -88,8 +89,7 @@
 
     function formatDate(dateStr) {
         if (!dateStr) return '—'
-        const d = new Date(dateStr)
-        return d.toLocaleDateString('it-IT')
+        return formatLocalDate(dateStr, 'it-IT')
     }
 
     function vatRatePercent(value) {

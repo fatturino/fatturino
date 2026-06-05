@@ -3,6 +3,7 @@
     import DatePicker from '$lib/components/ui/DatePicker.svelte'
     import Input from '$lib/components/ui/Input.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
+    import { formatLocalDate } from '$lib/utils/date.js'
     import { showToast } from '$lib/toast.js'
 
     let {
@@ -24,7 +25,7 @@
 
     function formatDate(dateStr) {
         if (!dateStr) return '-'
-        return new Date(dateStr).toLocaleDateString('it-IT')
+        return formatLocalDate(dateStr, 'it-IT')
     }
 
     function csrfToken() {

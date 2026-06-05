@@ -2,6 +2,7 @@
     import { DatePicker as DatePickerPrimitive } from "bits-ui";
     import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
     import CalendarBlank from "phosphor-svelte/lib/CalendarBlank";
+    import { formatLocalDate } from "$lib/utils/date.js";
 
     let {
         value = $bindable(""),
@@ -45,7 +46,7 @@
 >
     <DatePickerPrimitive.Trigger class={`mt-1 flex w-full items-center justify-between rounded-lg border border-brand-secondary/20 bg-white px-3 py-2 text-sm form-focus ${className}`}>
         {#if value}
-            {new Date(`${normalizeIsoDateInput(value)}T00:00:00`).toLocaleDateString(locale)}
+            {formatLocalDate(normalizeIsoDateInput(value), locale)}
         {:else}
             <span class="text-brand-secondary/50">{placeholder}</span>
         {/if}

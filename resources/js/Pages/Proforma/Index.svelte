@@ -5,6 +5,7 @@
     import Textarea from '$lib/components/ui/Textarea.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
     import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
+    import { formatLocalDate } from '$lib/utils/date.js'
     import { showToast } from '$lib/toast.js'
     import { router } from '@inertiajs/svelte'
 
@@ -62,7 +63,7 @@
 
     function formatDate(dateStr) {
         if (!dateStr) return '—'
-        return new Date(dateStr).toLocaleDateString('it-IT')
+        return formatLocalDate(dateStr, 'it-IT')
     }
 
     function statusLabel(value) {

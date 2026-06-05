@@ -1,12 +1,13 @@
 <script>
     import BaseInvoiceForm from '$lib/components/forms/BaseInvoiceForm.svelte'
+    import { getLocalDateYear } from '$lib/utils/date.js'
 
     let { invoice = null, formData = {}, errors = {} } = $props()
 
     const isReadOnly = $derived.by(() => {
         const isEdit = invoice !== null
         const currentYear = new Date().getFullYear()
-        const invoiceYear = invoice?.date ? new Date(invoice.date).getFullYear() : currentYear
+        const invoiceYear = invoice?.date ? getLocalDateYear(invoice.date) ?? currentYear : currentYear
         return isEdit && (
             invoice?.status === 'converted' ||
             invoice?.status === 'cancelled' ||

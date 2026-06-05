@@ -1,5 +1,6 @@
 <script>
     import { router } from '@inertiajs/svelte'
+    import { formatLocalDate } from '$lib/utils/date.js'
 
     let {
         invoices = [],
@@ -31,7 +32,7 @@
 
     function formatDate(dateStr) {
         if (!dateStr) return '—'
-        return new Date(dateStr).toLocaleDateString('it-IT')
+        return formatLocalDate(dateStr, 'it-IT')
     }
 </script>
 
