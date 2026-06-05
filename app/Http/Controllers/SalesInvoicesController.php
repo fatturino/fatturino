@@ -45,7 +45,8 @@ class SalesInvoicesController extends Controller
         $search = $request->query('search', '');
         $filterStatus = $request->query('status', '');
         $filterPayment = $request->query('payment', '');
-        $sort = $request->query('sort', 'created_at');
+        $sort = $request->query('sort', 'date');
+        $sort = $sort === 'created_at' ? 'date' : $sort;
         $direction = $request->query('direction', 'desc');
         $perPage = 15;
 
@@ -456,7 +457,7 @@ class SalesInvoicesController extends Controller
 
     private function applySorting($query, string $sort, string $direction): void
     {
-        $sort = in_array($sort, ['number', 'created_at', 'contact'], true) ? $sort : 'created_at';
+        $sort = in_array($sort, ['number', 'date', 'contact'], true) ? $sort : 'date';
         $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
 
         if ($sort === 'number') {
@@ -476,6 +477,6 @@ class SalesInvoicesController extends Controller
             return;
         }
 
-        $query->orderBy('created_at', $direction)->orderBy('id', $direction);
+        $query->orderBy('date', $direction)->orderBy('id', $direction);
     }
 }

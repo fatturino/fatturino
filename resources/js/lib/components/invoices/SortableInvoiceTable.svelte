@@ -4,7 +4,7 @@
     let {
         invoices = [],
         contactLabel = 'Cliente',
-        sort = 'created_at',
+        sort = 'date',
         direction = 'desc',
         hasActiveFilters = false,
         emptyMessage = '',
@@ -17,7 +17,7 @@
 
     function toggleSort(field) {
         const url = new URL(window.location.href)
-        const nextDirection = sort === field ? (direction === 'asc' ? 'desc' : 'asc') : (field === 'created_at' ? 'desc' : 'asc')
+        const nextDirection = sort === field ? (direction === 'asc' ? 'desc' : 'asc') : (field === 'date' ? 'desc' : 'asc')
         url.searchParams.set('sort', field)
         url.searchParams.set('direction', nextDirection)
         url.searchParams.delete('page')
@@ -40,7 +40,7 @@
         <thead>
             <tr class="border-b border-border-light bg-surface-muted text-left">
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider"><button type="button" class="inline-flex items-center gap-1" onclick={() => toggleSort('number')}>Numero <span>{sortIndicator('number')}</span></button></th>
-                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider"><button type="button" class="inline-flex items-center gap-1" onclick={() => toggleSort('created_at')}>Data creazione <span>{sortIndicator('created_at')}</span></button></th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider"><button type="button" class="inline-flex items-center gap-1" onclick={() => toggleSort('date')}>Data <span>{sortIndicator('date')}</span></button></th>
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider"><button type="button" class="inline-flex items-center gap-1" onclick={() => toggleSort('contact')}>{contactLabel} <span>{sortIndicator('contact')}</span></button></th>
                 {@render desktopHeaders?.()}
             </tr>
