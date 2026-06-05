@@ -79,6 +79,15 @@ test('revenue ytd sums all invoices since start of year', function () {
     expect($this->service->revenueYtd())->toBe(35000);
 });
 
+test('revenue metrics exclude vat from operational turnover', function () {
+    makeInvoice('2026-06-01', 12200, ['total_net' => 10000, 'total_vat' => 2200]);
+    makeInvoice('2026-05-01', 24400, ['total_net' => 20000, 'total_vat' => 4400]);
+
+    expect($this->service->revenueThisMonth())->toBe(10000);
+    expect($this->service->revenueLastMonth())->toBe(20000);
+    expect($this->service->revenueYtd())->toBe(30000);
+});
+
 // ---------------------------------------------------------------------------
 // Invoice counts
 // ---------------------------------------------------------------------------
@@ -229,6 +238,28 @@ test('top clients returns contacts ranked by revenue descending', function () {
     expect($top->last()->contact_id)->toBe($clientB->id);    // 5000
 });
 
+test('top clients ranks by revenue without vat', function () {
+    $clientB = Contact::create(['name' => 'Client B']);
+
+    makeInvoice('2026-01-01', 12200, [
+        'contact_id' => $this->contact->id,
+        'total_net' => 10000,
+        'total_vat' => 2200,
+    ]);
+
+    makeInvoice('2026-01-02', 10980, [
+        'contact_id' => $clientB->id,
+        'total_net' => 9000,
+        'total_vat' => 1980,
+    ]);
+
+    $top = $this->service->topClients(2);
+
+    expect($top->first()->contact_id)->toBe($this->contact->id);
+    expect((int) $top->first()->revenue_total)->toBe(10000);
+    expect((int) $top->last()->revenue_total)->toBe(9000);
+});
+
 test('top clients respects the limit parameter', function () {
     for ($i = 1; $i <= 6; $i++) {
         $contact = Contact::create(['name' => "Client $i"]);
@@ -272,6 +303,82 @@ test('recent invoices includes only sales invoices', function () {
 
     expect($recent)->toHaveCount(1);
     expect($recent->first()->id)->toBe($salesInvoice->id);
+});
+
+test('monthly revenue trend excludes vat from operational turnover', function () {
+    makeInvoice('2026-01-10', 12200, ['total_net' => 10000, 'total_vat' => 2200]);
+    makeInvoice('2025-01-10', 6100, ['total_net' => 5000, 'total_vat' => 1100]);
+
+    $trend = $this->service->monthlyRevenueTrend(2026);
+
+    expect($trend['current'][0])->toBe(10000);
+    expect($trend['previous'][0])->toBe(5000);
+});
+
+test('payment summary separates collected net and collected vat for standard and partial invoices', function () {
+    makeInvoice('2026-01-10', 12200, [
+        'total_net' => 10000,
+        'total_vat' => 2200,
+        'total_paid' => 12200,
+        'payment_status' => 'paid',
+    ]);
+
+    makeInvoice('2026-02-10', 12200, [
+        'total_net' => 10000,
+        'total_vat' => 2200,
+        'total_paid' => 6100,
+        'payment_status' => 'partial',
+    ]);
+
+    $summary = $this->service->paymentSummary(2026);
+
+    expect($summary['paid']['count'])->toBe(1);
+    expect($summary['paid']['collected_net'])->toBe(10000);
+    expect($summary['paid']['collected_vat'])->toBe(2200);
+
+    expect($summary['partial']['count'])->toBe(1);
+    expect($summary['partial']['collected_net'])->toBe(5000);
+    expect($summary['partial']['collected_vat'])->toBe(1100);
+    expect($summary['partial']['outstanding_net'])->toBe(5000);
+    expect($summary['partial']['outstanding_vat'])->toBe(1100);
+});
+
+test('payment summary handles split payment, withholding, and fund vat correctly', function () {
+    makeInvoice('2026-03-10', 12200, [
+        'total_net' => 10000,
+        'total_vat' => 2200,
+        'total_paid' => 10000,
+        'payment_status' => 'paid',
+        'split_payment' => true,
+    ]);
+
+    makeInvoice('2026-04-10', 12200, [
+        'total_net' => 10000,
+        'total_vat' => 2200,
+        'total_paid' => 10200,
+        'payment_status' => 'paid',
+        'withholding_tax_enabled' => true,
+        'withholding_tax_amount' => 2000,
+    ]);
+
+    makeInvoice('2026-05-10', 12688, [
+        'total_net' => 10000,
+        'total_vat' => 2288,
+        'total_paid' => 10488,
+        'payment_status' => 'paid',
+        'split_payment' => true,
+        'fund_enabled' => true,
+        'fund_amount' => 400,
+        'fund_vat_rate' => 'R22',
+    ]);
+
+    $summary = $this->service->paymentSummary(2026);
+
+    expect($summary['paid']['count'])->toBe(3);
+    expect($summary['paid']['collected_net'])->toBe(28400);
+    expect($summary['paid']['collected_vat'])->toBe(2288);
+    expect($summary['paid']['outstanding_net'])->toBe(0);
+    expect($summary['paid']['outstanding_vat'])->toBe(0);
 });
 
 // ---------------------------------------------------------------------------
@@ -319,7 +426,7 @@ test('getDashboardStats includes vatOnPurchasesYtd and vatBalanceYtd', function 
 
     $stats = $this->service->getDashboardStats(2026);
 
-    expect($stats)->toHaveKeys(['vatOnPurchasesYtd', 'vatBalanceYtd']);
+    expect($stats)->toHaveKeys(['vatOnPurchasesYtd', 'vatBalanceYtd', 'collectedNetYtd', 'collectedVatYtd', 'outstandingNetYtd', 'outstandingVatYtd']);
     expect($stats['vatCollectedYtd'])->toBe(2200);
     expect($stats['vatOnPurchasesYtd'])->toBe(1000);
     expect($stats['vatBalanceYtd'])->toBe(1200);

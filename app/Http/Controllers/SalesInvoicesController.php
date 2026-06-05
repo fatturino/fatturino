@@ -10,8 +10,8 @@ use App\Enums\PaymentTerms;
 use App\Enums\SalesDocumentType;
 use App\Enums\VatPayability;
 use App\Enums\VatRate;
-use App\Http\Controllers\Concerns\HandlesDocumentPayments;
 use App\Http\Controllers\Concerns\HandlesDocumentEmail;
+use App\Http\Controllers\Concerns\HandlesDocumentPayments;
 use App\Http\Controllers\Concerns\HandlesXmlSdiWorkflow;
 use App\Models\Contact;
 use App\Models\Payment;
@@ -20,6 +20,7 @@ use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentMailer;
 use App\Services\InvoiceXmlService;
+use App\Services\ReportService;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
@@ -34,8 +35,8 @@ use Inertia\Response;
 
 class SalesInvoicesController extends Controller
 {
-    use HandlesDocumentPayments;
     use HandlesDocumentEmail;
+    use HandlesDocumentPayments;
     use HandlesXmlSdiWorkflow;
 
     public function index(Request $request): Response
@@ -434,37 +435,7 @@ class SalesInvoicesController extends Controller
 
     private function stats(int $fiscalYear): array
     {
-        $base = SalesInvoice::query()->whereYear('date', $fiscalYear);
-
-        $totalCount = (clone $base)->count();
-        $totalGross = (int) (clone $base)->sum('total_gross');
-
-        $unpaidInvoices = (clone $base)
-            ->where('payment_status', PaymentStatus::Unpaid)
-            ->get();
-
-        $unpaidCount = $unpaidInvoices->count();
-        $unpaidAmount = (int) $unpaidInvoices->sum(fn ($i) => $i->net_due - $i->total_paid);
-
-        $overdueInvoices = (clone $base)
-            ->where('payment_status', PaymentStatus::Unpaid)
-            ->get()
-            ->filter(fn ($i) => $i->isOverdue());
-
-        $overdueCount = $overdueInvoices->count();
-        $overdueAmount = (int) $overdueInvoices->sum(fn ($i) => $i->net_due - $i->total_paid);
-
-        $draftCount = (clone $base)->where('status', 'draft')->count();
-
-        return [
-            'total_count' => $totalCount,
-            'total_gross' => $totalGross,
-            'unpaid_count' => $unpaidCount,
-            'unpaid_amount' => $unpaidAmount,
-            'overdue_count' => $overdueCount,
-            'overdue_amount' => $overdueAmount,
-            'draft_count' => $draftCount,
-        ];
+        return app(ReportService::class)->salesInvoiceStats($fiscalYear);
     }
 
     private function statusOptions(): array

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PaymentStatus;
+use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\FiscalDocument;
 use App\Models\PurchaseInvoice;
@@ -33,7 +34,7 @@ class ReportService
         return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
-        ])->sum('total_gross');
+        ])->sum(\DB::raw('total_gross - total_vat'));
     }
 
     /**
@@ -49,7 +50,7 @@ class ReportService
         return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
-        ])->sum('total_gross');
+        ])->sum(\DB::raw('total_gross - total_vat'));
     }
 
     /**
@@ -62,7 +63,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return (int) SalesInvoice::whereBetween('date', [$start, $end])->sum('total_gross');
+        return (int) SalesInvoice::whereBetween('date', [$start, $end])->sum(\DB::raw('total_gross - total_vat'));
     }
 
     /**
@@ -221,11 +222,11 @@ class ReportService
         for ($m = 1; $m <= 12; $m++) {
             $start = sprintf('%04d-%02d-01', $year, $m);
             $end = sprintf('%04d-%02d-%02d', $year, $m, (new \DateTime("$year-$m-01"))->format('t'));
-            $current[] = (int) FiscalDocument::whereBetween('date', [$start, $end])->sum('total_gross');
+            $current[] = (int) SalesInvoice::whereBetween('date', [$start, $end])->sum(\DB::raw('total_gross - total_vat'));
 
             $prevStart = sprintf('%04d-%02d-01', $year - 1, $m);
             $prevEnd = sprintf('%04d-%02d-%02d', $year - 1, $m, (new \DateTime(($year - 1)."-$m-01"))->format('t'));
-            $previous[] = (int) FiscalDocument::whereBetween('date', [$prevStart, $prevEnd])->sum('total_gross');
+            $previous[] = (int) SalesInvoice::whereBetween('date', [$prevStart, $prevEnd])->sum(\DB::raw('total_gross - total_vat'));
         }
 
         return [
@@ -243,8 +244,8 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return FiscalDocument::whereBetween('date', [$start, $end])
-            ->selectRaw('contact_id, SUM(total_gross) as revenue_total')
+        return SalesInvoice::whereBetween('date', [$start, $end])
+            ->selectRaw('contact_id, SUM(total_gross - total_vat) as revenue_total')
             ->groupBy('contact_id')
             ->orderByDesc('revenue_total')
             ->with('contact')
@@ -276,28 +277,81 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        $statuses = SalesInvoice::whereBetween('date', [$start, $end])
-            ->selectRaw('payment_status, COUNT(*) as count, COALESCE(SUM(total_gross), 0) as total')
-            ->groupBy('payment_status')
-            ->pluck('total', 'payment_status')
-            ->toArray();
-
-        $counts = SalesInvoice::whereBetween('date', [$start, $end])
-            ->selectRaw('payment_status, COUNT(*) as count')
-            ->groupBy('payment_status')
-            ->pluck('count', 'payment_status')
-            ->toArray();
-
-        // Build a structured array keyed by PaymentStatus enum values
         $summary = [];
         foreach (PaymentStatus::cases() as $status) {
             $summary[$status->value] = [
-                'count' => $counts[$status->value] ?? 0,
-                'total' => (int) ($statuses[$status->value] ?? 0),
+                'count' => 0,
+                'collected_net' => 0,
+                'collected_vat' => 0,
+                'outstanding_net' => 0,
+                'outstanding_vat' => 0,
             ];
         }
 
+        SalesInvoice::whereBetween('date', [$start, $end])
+            ->get()
+            ->each(function (SalesInvoice $invoice) use (&$summary): void {
+                $bucket = $invoice->paymentStatusValue();
+                $split = $this->paymentAllocation($invoice);
+
+                $summary[$bucket]['count']++;
+                $summary[$bucket]['collected_net'] += $split['collected_net'];
+                $summary[$bucket]['collected_vat'] += $split['collected_vat'];
+                $summary[$bucket]['outstanding_net'] += $split['outstanding_net'];
+                $summary[$bucket]['outstanding_vat'] += $split['outstanding_vat'];
+            });
+
         return $summary;
+    }
+
+    /**
+     * Operational sales metrics for the invoices list.
+     */
+    public function salesInvoiceStats(int $year = 0): array
+    {
+        $year = $year ?: now()->year;
+        [$start, $end] = $this->yearDateRange($year);
+
+        $invoices = SalesInvoice::whereBetween('date', [$start, $end])->get();
+
+        $stats = [
+            'total_count' => $invoices->count(),
+            'total_revenue_net' => 0,
+            'total_document_vat' => 0,
+            'outstanding_count' => 0,
+            'outstanding_net' => 0,
+            'outstanding_vat' => 0,
+            'overdue_count' => 0,
+            'overdue_net' => 0,
+            'overdue_vat' => 0,
+            'draft_count' => $invoices->filter(fn (SalesInvoice $invoice): bool => $invoice->statusValue() === 'draft')->count(),
+        ];
+
+        foreach ($invoices as $invoice) {
+            $stats['total_revenue_net'] += $this->revenueNetAmount($invoice);
+            $stats['total_document_vat'] += (int) ($invoice->total_vat ?? 0);
+
+            $split = $this->paymentAllocation($invoice);
+
+            if ($split['outstanding_net'] > 0 || $split['outstanding_vat'] > 0) {
+                $stats['outstanding_count']++;
+            }
+
+            $stats['outstanding_net'] += $split['outstanding_net'];
+            $stats['outstanding_vat'] += $split['outstanding_vat'];
+
+            if ($invoice->paymentStatusValue() === PaymentStatus::Overdue->value) {
+                $stats['overdue_count']++;
+                $stats['overdue_net'] += $split['outstanding_net'];
+                $stats['overdue_vat'] += $split['outstanding_vat'];
+            }
+        }
+
+        $stats['average_revenue_net'] = $stats['total_count'] > 0
+            ? intdiv($stats['total_revenue_net'], $stats['total_count'])
+            : 0;
+
+        return $stats;
     }
 
     /**
@@ -408,6 +462,15 @@ class ReportService
         $invoicesYtd = $this->invoicesYtd($year);
         $vatCollectedYtd = $this->vatCollectedYtd($year);
         $vatOnPurchasesYtd = $this->vatOnPurchasesYtd($year);
+        $paymentSummary = $this->paymentSummary($year);
+
+        $collectedNetYtd = array_sum(array_column($paymentSummary, 'collected_net'));
+        $collectedVatYtd = array_sum(array_column($paymentSummary, 'collected_vat'));
+        $outstandingNetYtd = array_sum(array_column($paymentSummary, 'outstanding_net'));
+        $outstandingVatYtd = array_sum(array_column($paymentSummary, 'outstanding_vat'));
+        $openInvoicesCount = ($paymentSummary[PaymentStatus::Unpaid->value]['count'] ?? 0)
+            + ($paymentSummary[PaymentStatus::Partial->value]['count'] ?? 0)
+            + ($paymentSummary[PaymentStatus::Overdue->value]['count'] ?? 0);
 
         return [
             'revenueThisMonth' => $revenueThisMonth,
@@ -417,19 +480,23 @@ class ReportService
             'invoicesYtd' => $invoicesYtd,
             'activeClientsCount' => $this->activeClientsCount($year),
             'totalContactsCount' => $this->totalContactsCount(),
-            // Derived from already-fetched values — avoids two extra DB queries
             'averageInvoiceValue' => $invoicesYtd > 0 ? intdiv($revenueYtd, $invoicesYtd) : 0,
             'monthChangePercent' => $this->computeMonthChangePercent($revenueThisMonth, $revenueLastMonth),
             'withholdingTaxYtd' => $this->withholdingTaxYtd($year),
             'vatCollectedYtd' => $vatCollectedYtd,
             'vatOnPurchasesYtd' => $vatOnPurchasesYtd,
             'vatBalanceYtd' => $vatCollectedYtd - $vatOnPurchasesYtd,
+            'collectedNetYtd' => $collectedNetYtd,
+            'collectedVatYtd' => $collectedVatYtd,
+            'outstandingNetYtd' => $outstandingNetYtd,
+            'outstandingVatYtd' => $outstandingVatYtd,
+            'openInvoicesCount' => $openInvoicesCount,
             'vatByQuarter' => $this->vatByQuarter($year),
             'topClients' => $this->topClients(5, $year),
             'recentInvoices' => $this->recentInvoices(8, $year),
-            'paymentSummary' => $this->paymentSummary($year),
+            'paymentSummary' => $paymentSummary,
             'upcomingDueDates' => $this->upcomingDueDates(5, $year),
-            'cashflowForecast' => $this->cashflowForecast($year),
+            'cashflowForecast' => $this->cashflowForecast(),
             'revenueTrend' => $this->monthlyRevenueTrend($year),
             'draftCount' => FiscalDocument::where('status', 'draft')->whereYear('date', $year)->count(),
             'readyForSdiCount' => FiscalDocument::where('status', 'xml_validated')->whereYear('date', $year)->count(),
@@ -472,5 +539,58 @@ class ReportService
         }
 
         return $revenueThisMonth > 0 ? 100.0 : 0.0;
+    }
+
+    private function revenueNetAmount(FiscalDocument $document): int
+    {
+        return max(0, (int) ($document->total_gross ?? 0) - (int) ($document->total_vat ?? 0));
+    }
+
+    private function payableVatAmount(FiscalDocument $document): int
+    {
+        if (! $document->split_payment) {
+            return max(0, (int) ($document->total_vat ?? 0));
+        }
+
+        if (! $document->fund_enabled || (int) ($document->fund_amount ?? 0) <= 0 || ! $document->fund_vat_rate) {
+            return 0;
+        }
+
+        $fundVatRate = $document->fund_vat_rate instanceof VatRate
+            ? $document->fund_vat_rate
+            : VatRate::tryFrom((string) $document->fund_vat_rate);
+        $fundVatPercent = $fundVatRate?->percent() ?? 0;
+
+        return (int) round(((int) $document->fund_amount) * ($fundVatPercent / 100));
+    }
+
+    private function paymentAllocation(FiscalDocument $document): array
+    {
+        $netDue = max(0, (int) $document->net_due);
+        $payableVat = min($netDue, $this->payableVatAmount($document));
+        $collectibleNet = max(0, $netDue - $payableVat);
+        $appliedPaid = min(max(0, (int) ($document->total_paid ?? 0)), $netDue);
+
+        if ($netDue === 0) {
+            return [
+                'collected_net' => 0,
+                'collected_vat' => 0,
+                'outstanding_net' => 0,
+                'outstanding_vat' => 0,
+            ];
+        }
+
+        $collectedVat = $payableVat > 0
+            ? min($payableVat, (int) round($appliedPaid * $payableVat / $netDue))
+            : 0;
+
+        $collectedNet = max(0, $appliedPaid - $collectedVat);
+
+        return [
+            'collected_net' => $collectedNet,
+            'collected_vat' => $collectedVat,
+            'outstanding_net' => max(0, $collectibleNet - $collectedNet),
+            'outstanding_vat' => max(0, $payableVat - $collectedVat),
+        ];
     }
 }

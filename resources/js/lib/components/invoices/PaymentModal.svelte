@@ -33,6 +33,49 @@
         return Math.max(0, (currentInvoice?.net_due || currentInvoice?.total_gross || 0) - (currentInvoice?.total_paid || 0))
     }
 
+    function vatRatePercent(value) {
+        switch (value) {
+            case 'R22': return 22
+            case 'R10': return 10
+            case 'R5': return 5
+            case 'R4': return 4
+            default: return 0
+        }
+    }
+
+    function payableVatAmount(currentInvoice) {
+        if (!currentInvoice) return 0
+        if (!currentInvoice.split_payment) return currentInvoice.total_vat || 0
+        if (!currentInvoice.fund_enabled || !currentInvoice.fund_amount || !currentInvoice.fund_vat_rate) return 0
+
+        return Math.round((currentInvoice.fund_amount || 0) * (vatRatePercent(currentInvoice.fund_vat_rate) / 100))
+    }
+
+    function operationalPaymentSplit(currentInvoice) {
+        const netDue = Math.max(0, currentInvoice?.net_due || 0)
+        const payableVat = Math.min(netDue, payableVatAmount(currentInvoice))
+        const appliedPaid = Math.min(Math.max(0, currentInvoice?.total_paid || 0), netDue)
+
+        if (netDue === 0) {
+            return {
+                collectedNet: 0,
+                collectedVat: 0,
+                outstandingNet: 0,
+                outstandingVat: 0,
+            }
+        }
+
+        const collectedVat = payableVat > 0 ? Math.min(payableVat, Math.round((appliedPaid * payableVat) / netDue)) : 0
+        const collectedNet = Math.max(0, appliedPaid - collectedVat)
+
+        return {
+            collectedNet,
+            collectedVat,
+            outstandingNet: Math.max(0, netDue - payableVat - collectedNet),
+            outstandingVat: Math.max(0, payableVat - collectedVat),
+        }
+    }
+
     function setQuickPayment(fraction) {
         if (!invoice) return
         const cents = Math.max(1, Math.round(remainingAmountCents(invoice) * fraction))
@@ -156,14 +199,27 @@
             </div>
         </div>
         {#if invoice}
+            {@const split = operationalPaymentSplit(invoice)}
             <div class="rounded-lg border border-border-light bg-surface-muted px-3 py-2 text-xs text-brand-secondary">
                 <div class="flex items-center justify-between">
                     <span>Totale pagato</span>
                     <span class="font-semibold text-brand-deep">{formatCurrency(invoice.total_paid || 0)}</span>
                 </div>
                 <div class="mt-1 flex items-center justify-between">
-                    <span>Residuo</span>
-                    <span class="font-semibold text-brand-deep">{formatCurrency(remainingAmountCents(invoice))}</span>
+                    <span>Incassato netto</span>
+                    <span class="font-semibold text-brand-deep">{formatCurrency(split.collectedNet)}</span>
+                </div>
+                <div class="mt-1 flex items-center justify-between">
+                    <span>IVA incassata</span>
+                    <span class="font-semibold text-brand-deep">{formatCurrency(split.collectedVat)}</span>
+                </div>
+                <div class="mt-1 flex items-center justify-between">
+                    <span>Residuo netto</span>
+                    <span class="font-semibold text-brand-deep">{formatCurrency(split.outstandingNet)}</span>
+                </div>
+                <div class="mt-1 flex items-center justify-between">
+                    <span>IVA da incassare</span>
+                    <span class="font-semibold text-brand-deep">{formatCurrency(split.outstandingVat)}</span>
                 </div>
             </div>
             <div class="rounded-lg border border-border-light px-3 py-2">

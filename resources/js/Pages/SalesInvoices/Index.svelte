@@ -92,6 +92,41 @@
         return d.toLocaleDateString('it-IT')
     }
 
+    function vatRatePercent(value) {
+        switch (value) {
+            case 'R22': return 22
+            case 'R10': return 10
+            case 'R5': return 5
+            case 'R4': return 4
+            default: return 0
+        }
+    }
+
+    function payableVatAmount(invoice) {
+        if (!invoice) return 0
+        if (!invoice.split_payment) return invoice.total_vat || 0
+        if (!invoice.fund_enabled || !invoice.fund_amount || !invoice.fund_vat_rate) return 0
+
+        return Math.round((invoice.fund_amount || 0) * (vatRatePercent(invoice.fund_vat_rate) / 100))
+    }
+
+    function paymentSplit(invoice) {
+        const netDue = Math.max(0, invoice?.net_due || 0)
+        const payableVat = Math.min(netDue, payableVatAmount(invoice))
+        const appliedPaid = Math.min(Math.max(0, invoice?.total_paid || 0), netDue)
+
+        if (netDue === 0) {
+            return { outstandingNet: 0, outstandingVat: 0 }
+        }
+
+        const collectedVat = payableVat > 0 ? Math.min(payableVat, Math.round((appliedPaid * payableVat) / netDue)) : 0
+        const collectedNet = Math.max(0, appliedPaid - collectedVat)
+        const outstandingNet = Math.max(0, netDue - payableVat - collectedNet)
+        const outstandingVat = Math.max(0, payableVat - collectedVat)
+
+        return { outstandingNet, outstandingVat }
+    }
+
     function statusLabel(value) {
         const opt = listState.statusOptions.find(o => o.value === value)
         return opt ? opt.label : value
@@ -385,8 +420,8 @@ Controlla prima di confermare:
             desktopColspan={8}
         >
             {#snippet desktopHeaders()}
-                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale</th>
-                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Residuo</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale documento</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Residuo netto</th>
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th>
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Pagamento</th>
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
@@ -394,12 +429,18 @@ Controlla prima di confermare:
             {#snippet desktopRow({ invoice, formatDate })}
                 <InvoiceDesktopContextMenu actions={contextActions(invoice)}>
                     {#snippet children({ triggerProps })}
+                        {@const split = paymentSplit(invoice)}
                         <tr {...triggerProps} class="border-b border-border-light hover:bg-surface-muted/70 transition-colors cursor-context-menu">
                             <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{invoice.number ?? '#' + invoice.id}</td>
                             <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.created_at ?? invoice.date)}</td>
                             <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
                             <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
-                            <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.net_due - invoice.total_paid)}</td>
+                            <td class="px-4 py-3 text-right tabular-nums">
+                                <p class="font-semibold text-brand-deep">{formatCurrency(split.outstandingNet)}</p>
+                                {#if split.outstandingVat > 0}
+                                    <p class="text-[11px] text-brand-secondary/80">IVA {formatCurrency(split.outstandingVat)}</p>
+                                {/if}
+                            </td>
                             <td class="px-4 py-3">
                                 {#if invoice.sdi_status}
                                     <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {sdiStatusBadgeClass(invoice.sdi_status)}">{sdiStatusLabel(invoice.sdi_status)}</span>
@@ -422,6 +463,7 @@ Controlla prima di confermare:
                 </InvoiceDesktopContextMenu>
             {/snippet}
             {#snippet mobileRow({ invoice, formatDate })}
+                {@const split = paymentSplit(invoice)}
                 <article class="card-brand p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -431,10 +473,15 @@ Controlla prima di confermare:
                         <span class="text-xs text-brand-secondary">{formatDate(invoice.created_at ?? invoice.date)}</span>
                     </div>
                     <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
-                        <p class="text-brand-secondary">Totale</p>
+                        <p class="text-brand-secondary">Totale documento</p>
                         <p class="text-right font-semibold text-brand-deep tabular-nums">{formatCurrency(invoice.total_gross)}</p>
-                        <p class="text-brand-secondary">Residuo</p>
-                        <p class="text-right font-semibold text-brand-deep tabular-nums">{formatCurrency(invoice.net_due - invoice.total_paid)}</p>
+                        <p class="text-brand-secondary">Residuo netto</p>
+                        <div class="text-right">
+                            <p class="font-semibold text-brand-deep tabular-nums">{formatCurrency(split.outstandingNet)}</p>
+                            {#if split.outstandingVat > 0}
+                                <p class="text-[11px] text-brand-secondary/80">IVA {formatCurrency(split.outstandingVat)}</p>
+                            {/if}
+                        </div>
                     </div>
                     <div class="mt-3 flex items-center gap-2 flex-wrap">
                         {#if invoice.sdi_status}

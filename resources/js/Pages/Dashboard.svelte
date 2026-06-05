@@ -21,6 +21,11 @@
         vatCollectedYtd = 0,
         vatOnPurchasesYtd = 0,
         vatBalanceYtd = 0,
+        collectedNetYtd = 0,
+        collectedVatYtd = 0,
+        outstandingNetYtd = 0,
+        outstandingVatYtd = 0,
+        openInvoicesCount = 0,
         vatByQuarter = [],
         topClients = [],
         recentInvoices = [],
@@ -31,14 +36,8 @@
         upcomingDueDates = [],
     } = $props()
 
-    const unpaidSummary = $derived((paymentSummary?.unpaid?.total ?? 0) + (paymentSummary?.overdue?.total ?? 0))
-    const unpaidCount = $derived((paymentSummary?.unpaid?.count ?? 0) + (paymentSummary?.overdue?.count ?? 0))
-    const paidSummary = $derived(paymentSummary?.paid?.total ?? 0)
-    const paidCount = $derived(paymentSummary?.paid?.count ?? 0)
-    const partialSummary = $derived(paymentSummary?.partial?.total ?? 0)
-    const partialCount = $derived(paymentSummary?.partial?.count ?? 0)
     const overdueCount = $derived(paymentSummary?.overdue?.count ?? 0)
-    const collectionRate = $derived(revenueYtd > 0 ? Math.min(100, (paidSummary / revenueYtd) * 100) : 0)
+    const collectionRate = $derived(revenueYtd > 0 ? Math.min(100, (collectedNetYtd / revenueYtd) * 100) : 0)
     const selfInvoicesEnabled = $derived((page.props.fiscalRegime ?? null) !== 'RF19' || !!page.props.rf19SelfInvoicesEnabled)
 </script>
 
@@ -63,26 +62,27 @@
 
             <div class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <article class="rounded-xl border border-border-light bg-surface-muted p-4">
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Fatturato mese</p>
+                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Fatturato netto IVA mese</p>
                     <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(revenueThisMonth)}</p>
                     <p class="mt-1 text-xs {monthChangePercent >= 0 ? 'text-emerald-700' : 'text-red-700'}">
                         {monthChangePercent >= 0 ? '+' : ''}{monthChangePercent.toFixed(1)}% vs mese scorso
                     </p>
                 </article>
                 <article class="rounded-xl border border-border-light bg-surface-muted p-4">
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Da incassare</p>
-                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(unpaidSummary)}</p>
-                    <p class="text-xs text-brand-secondary/80">{unpaidCount} documenti</p>
+                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Da incassare netto</p>
+                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(outstandingNetYtd)}</p>
+                    <p class="text-xs text-brand-secondary/80">{openInvoicesCount} documenti aperti</p>
+                    <p class="mt-1 text-xs text-brand-secondary/80">IVA da incassare {formatCurrency(outstandingVatYtd)}</p>
                 </article>
                 <article class="rounded-xl border border-border-light bg-surface-muted p-4">
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Parziali</p>
-                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(partialSummary)}</p>
-                    <p class="text-xs text-brand-secondary/80">{partialCount} documenti</p>
+                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">IVA incassata</p>
+                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(collectedVatYtd)}</p>
+                    <p class="text-xs text-brand-secondary/80">separata dall'incassato operativo</p>
                 </article>
                 <article class="rounded-xl border border-border-light bg-surface-muted p-4">
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Incassato</p>
-                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(paidSummary)}</p>
-                    <p class="text-xs text-brand-secondary/80">{paidCount} documenti</p>
+                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Incassato netto</p>
+                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(collectedNetYtd)}</p>
+                    <p class="text-xs text-brand-secondary/80">al netto dell'IVA</p>
                 </article>
             </div>
         </section>
@@ -124,7 +124,7 @@
                     <span class="col-span-4">Documento</span>
                     <span class="col-span-2">Stato</span>
                     <span class="col-span-2">Scadenza</span>
-                    <span class="col-span-2 text-right">Importo</span>
+                    <span class="col-span-2 text-right">Totale documento</span>
                     <span class="col-span-2 text-right">Azione</span>
                 </div>
                 <div class="divide-y divide-border-light">
@@ -207,7 +207,8 @@
                 <div class="mt-3 h-2 w-full rounded-full bg-surface-muted">
                     <div class="h-2 rounded-full bg-brand-deep" style={`width: ${collectionRate}%`}></div>
                 </div>
-                <p class="mt-2 text-xs text-brand-secondary/80">{formatCurrency(paidSummary)} incassati su {formatCurrency(revenueYtd)}</p>
+                <p class="mt-2 text-xs text-brand-secondary/80">{formatCurrency(collectedNetYtd)} incassati su {formatCurrency(revenueYtd)}</p>
+                <p class="mt-1 text-xs text-brand-secondary/80">IVA incassata separata: {formatCurrency(collectedVatYtd)}</p>
             </article>
 
             <article class="card-brand p-4 sm:p-5">
