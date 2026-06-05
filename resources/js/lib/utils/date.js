@@ -1,13 +1,23 @@
 const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const DATE_PREFIX_PATTERN = /^(\d{4}-\d{2}-\d{2})(?:$|[T\s])/;
+
+export function extractDatePrefix(value) {
+    if (typeof value !== 'string') return null;
+
+    const normalized = value.trim();
+    const match = normalized.match(DATE_PREFIX_PATTERN);
+    return match ? match[1] : null;
+}
 
 export function isDateOnlyString(value) {
     return typeof value === 'string' && DATE_ONLY_PATTERN.test(value.trim());
 }
 
 export function parseDateOnly(value) {
-    if (!isDateOnlyString(value)) return null;
+    const dateOnly = isDateOnlyString(value) ? value.trim() : extractDatePrefix(value);
+    if (!dateOnly) return null;
 
-    const [, year, month, day] = value.trim().match(DATE_ONLY_PATTERN);
+    const [, year, month, day] = dateOnly.match(DATE_ONLY_PATTERN);
     return new Date(Number(year), Number(month) - 1, Number(day));
 }
 
@@ -18,7 +28,7 @@ export function toLocalDate(value) {
         return Number.isNaN(value.getTime()) ? null : value;
     }
 
-    if (isDateOnlyString(value)) {
+    if (typeof value === 'string' && extractDatePrefix(value)) {
         return parseDateOnly(value);
     }
 
