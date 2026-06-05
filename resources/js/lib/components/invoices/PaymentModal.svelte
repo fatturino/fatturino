@@ -13,6 +13,8 @@
     let paymentAmount = $state('')
     let paymentDate = $state('')
     let paymentReference = $state('')
+    let paymentNotes = $state('')
+    let paymentBankName = $state('')
     let editingPaymentId = $state(null)
 
     function formatCurrency(value) {
@@ -94,6 +96,8 @@
         paymentAmount = ((payment.amount || 0) / 100).toFixed(2)
         paymentDate = payment.paid_at || ''
         paymentReference = payment.reference || ''
+        paymentNotes = payment.notes || ''
+        paymentBankName = payment.bank_name || ''
     }
 
     function resetPaymentForm() {
@@ -101,6 +105,8 @@
         paymentAmount = ''
         paymentDate = ''
         paymentReference = ''
+        paymentNotes = ''
+        paymentBankName = ''
     }
 
     async function savePayment() {
@@ -126,6 +132,8 @@
                 amount: parsedAmount,
                 paid_at: paymentDate || null,
                 reference: paymentReference || null,
+                notes: paymentNotes || null,
+                bank_name: paymentBankName || null,
             }),
         })
 
@@ -197,6 +205,14 @@
                 <label class="mb-1 block text-sm font-medium text-brand-deep">Rif. bancario (opzionale)</label>
                 <Input type="text" bind:value={paymentReference} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" placeholder="CRO, TRN, ID operazione" />
             </div>
+            <div class="mt-2">
+                <label class="mb-1 block text-sm font-medium text-brand-deep">Causale accredito (opzionale)</label>
+                <Input type="text" bind:value={paymentNotes} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" placeholder="Es. saldo fattura aprile" />
+            </div>
+            <div class="mt-2">
+                <label class="mb-1 block text-sm font-medium text-brand-deep">Banca accredito (opzionale)</label>
+                <Input type="text" bind:value={paymentBankName} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" placeholder="Es. Intesa Sanpaolo" />
+            </div>
         </div>
         {#if invoice}
             {@const split = operationalPaymentSplit(invoice)}
@@ -233,6 +249,12 @@
                                     <p class="font-semibold text-brand-deep">{formatCurrency(payment.amount || 0)}</p>
                                     {#if payment.reference}
                                         <p class="text-brand-secondary/80">Rif: {payment.reference}</p>
+                                    {/if}
+                                    {#if payment.notes}
+                                        <p class="text-brand-secondary/80">Causale: {payment.notes}</p>
+                                    {/if}
+                                    {#if payment.bank_name}
+                                        <p class="text-brand-secondary/80">Banca: {payment.bank_name}</p>
                                     {/if}
                                 </div>
                                 <div class="flex items-center gap-2">

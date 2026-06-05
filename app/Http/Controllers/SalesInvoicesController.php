@@ -50,7 +50,7 @@ class SalesInvoicesController extends Controller
         $perPage = 15;
 
         $query = SalesInvoice::query()
-            ->with(['contact:id,name,email', 'payments:id,fiscal_document_id,amount,paid_at,reference'])
+            ->with(['contact:id,name,email', 'payments:id,fiscal_document_id,amount,paid_at,reference,notes,bank_name'])
             ->whereYear('date', $fiscalYear);
 
         if ($search !== '') {

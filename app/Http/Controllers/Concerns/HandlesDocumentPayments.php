@@ -15,12 +15,16 @@ trait HandlesDocumentPayments
             'amount' => 'required|numeric|gt:0',
             'paid_at' => 'nullable|date',
             'reference' => 'nullable|string|max:100',
+            'notes' => 'nullable|string',
+            'bank_name' => 'nullable|string|max:120',
         ]);
 
         $document->payments()->create([
             'amount' => (int) round(((float) $validated['amount']) * 100),
             'paid_at' => $validated['paid_at'] ?? null,
             'reference' => $validated['reference'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'bank_name' => $validated['bank_name'] ?? null,
         ]);
 
         $document->recalculatePaymentStatus();
@@ -39,12 +43,16 @@ trait HandlesDocumentPayments
             'amount' => 'required|numeric|gt:0',
             'paid_at' => 'nullable|date',
             'reference' => 'nullable|string|max:100',
+            'notes' => 'nullable|string',
+            'bank_name' => 'nullable|string|max:120',
         ]);
 
         $payment->update([
             'amount' => (int) round(((float) $validated['amount']) * 100),
             'paid_at' => $validated['paid_at'] ?? null,
             'reference' => $validated['reference'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'bank_name' => $validated['bank_name'] ?? null,
         ]);
 
         $document->recalculatePaymentStatus();
@@ -73,7 +81,15 @@ trait HandlesDocumentPayments
             'payment_status' => $document->paymentStatusValue(),
             'total_paid' => $document->total_paid,
             'remaining_balance' => $document->remainingBalance(),
-            'payments' => $document->payments()->orderByDesc('paid_at')->orderByDesc('id')->get(['id', 'fiscal_document_id', 'amount', 'paid_at', 'reference']),
+            'payments' => $document->payments()->orderByDesc('paid_at')->orderByDesc('id')->get([
+                'id',
+                'fiscal_document_id',
+                'amount',
+                'paid_at',
+                'reference',
+                'notes',
+                'bank_name',
+            ]),
         ]);
     }
 }

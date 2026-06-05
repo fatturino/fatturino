@@ -41,15 +41,23 @@ test('record payment endpoint returns updated aggregates and payments list', fun
         'amount' => 40.50,
         'paid_at' => null,
         'reference' => 'TRN-ABC-001',
+        'notes' => 'Saldo fattura aprile',
+        'bank_name' => 'Banca Uno',
     ]);
 
     $response->assertOk()
         ->assertJsonPath('success', true)
         ->assertJsonPath('total_paid', 4050)
         ->assertJsonPath('remaining_balance', 5950)
-        ->assertJsonPath('payments.0.reference', 'TRN-ABC-001');
+        ->assertJsonPath('payments.0.reference', 'TRN-ABC-001')
+        ->assertJsonPath('payments.0.notes', 'Saldo fattura aprile')
+        ->assertJsonPath('payments.0.bank_name', 'Banca Uno');
 
-    expect(Payment::where('fiscal_document_id', $document->id)->count())->toBe(1);
+    $payment = Payment::where('fiscal_document_id', $document->id)->sole();
+
+    expect($payment->reference)->toBe('TRN-ABC-001');
+    expect($payment->notes)->toBe('Saldo fattura aprile');
+    expect($payment->bank_name)->toBe('Banca Uno');
 })->with('paymentDocuments');
 
 test('update payment endpoint updates amount and date', function (string $modelClass, string $basePath) {
@@ -66,17 +74,24 @@ test('update payment endpoint updates amount and date', function (string $modelC
         'amount' => 35.25,
         'paid_at' => '2026-05-01',
         'reference' => 'TRN-UPD-002',
+        'notes' => 'Saldo con secondo conto',
+        'bank_name' => 'Banca Due',
     ]);
 
     $response->assertOk()
         ->assertJsonPath('success', true)
         ->assertJsonPath('total_paid', 3525)
-        ->assertJsonPath('remaining_balance', 6475);
+        ->assertJsonPath('remaining_balance', 6475)
+        ->assertJsonPath('payments.0.reference', 'TRN-UPD-002')
+        ->assertJsonPath('payments.0.notes', 'Saldo con secondo conto')
+        ->assertJsonPath('payments.0.bank_name', 'Banca Due');
 
     $payment->refresh();
     expect($payment->amount)->toBe(3525);
     expect($payment->paid_at?->format('Y-m-d'))->toBe('2026-05-01');
     expect($payment->reference)->toBe('TRN-UPD-002');
+    expect($payment->notes)->toBe('Saldo con secondo conto');
+    expect($payment->bank_name)->toBe('Banca Due');
 })->with('paymentDocuments');
 
 test('delete payment endpoint removes payment and recalculates totals', function (string $modelClass, string $basePath) {
