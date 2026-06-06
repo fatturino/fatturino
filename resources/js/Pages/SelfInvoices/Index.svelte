@@ -251,11 +251,10 @@ Controlla prima di confermare:
     {/snippet}
 
     <div class="page-shell pb-24 sm:pb-6 w-full">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="grid grid-cols-3 lg:grid-cols-3 gap-3 mb-6">
             <div class="card-brand p-4 sm:p-5"><p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Totale</p><p class="text-2xl font-semibold text-brand-deep">{formatCurrency(listState.stats.total_gross)}</p><p class="text-xs text-brand-secondary/70 mt-1">{listState.stats.total_count ?? 0} autofatture</p></div>
             <div class="card-brand p-4 sm:p-5"><p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Da pagare</p><p class="text-2xl font-semibold text-brand-deep">{formatCurrency(listState.stats.unpaid_amount)}</p><p class="text-xs text-brand-secondary/70 mt-1">{listState.stats.unpaid_count ?? 0} non pagate</p></div>
             <div class="card-brand p-4 sm:p-5"><p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Valore medio</p><p class="text-2xl font-semibold text-brand-deep">{listState.stats.total_count > 0 ? formatCurrency(listState.stats.total_gross / listState.stats.total_count) : '—'}</p><p class="text-xs text-brand-secondary/70 mt-1">per autofattura</p></div>
-            <div class="card-brand p-4 sm:p-5"><p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Scadute</p><p class="text-2xl font-semibold text-brand-deep">{listState.stats.overdue_count ?? 0}</p><p class="text-xs text-brand-secondary/70 mt-1">da saldare</p></div>
         </div>
 
         <section class="card-brand p-4 sm:p-5 mb-6">
