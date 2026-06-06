@@ -3,7 +3,7 @@
     import DatePicker from '$lib/components/ui/DatePicker.svelte'
     import Input from '$lib/components/ui/Input.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
-    import { formatLocalDate } from '$lib/utils/date.js'
+    import { formatLocalDate, normalizeDateOnlyString } from '$lib/utils/date.js'
     import { showToast } from '$lib/toast.js'
 
     let {
@@ -96,7 +96,7 @@
     function startEditPayment(payment) {
         editingPaymentId = payment.id
         paymentAmount = ((payment.amount || 0) / 100).toFixed(2)
-        paymentDate = payment.paid_at || ''
+        paymentDate = normalizeDateOnlyString(payment.paid_at) || ''
         paymentReference = payment.reference || ''
         paymentNotes = payment.notes || ''
         paymentBankName = payment.bank_name || ''

@@ -13,6 +13,7 @@
     import ArrowsClockwise from 'phosphor-svelte/lib/ArrowsClockwise'
     import Envelope from 'phosphor-svelte/lib/Envelope'
     import { headerActionsStore } from '$lib/stores/header-actions.js'
+    import { getTodayLocalDateString, normalizeDateOnlyString } from '$lib/utils/date.js'
 
     let {
         formData = {},
@@ -101,15 +102,8 @@
         }
     }
 
-    function normalizeDateForPicker(value) {
-        if (!value || typeof value !== 'string') return ''
-        return value.includes('T') ? value.slice(0, 10) : value
-    }
-
     function getTodayIsoDate() {
-        const now = new Date()
-        const timezoneOffsetMs = now.getTimezoneOffset() * 60 * 1000
-        return new Date(now.getTime() - timezoneOffsetMs).toISOString().slice(0, 10)
+        return getTodayLocalDateString()
     }
 
     function normalizeSelectCode(value) {
@@ -206,12 +200,12 @@
     const form = useForm({
         contact_id: initialInvoice?.contact_id ?? '',
         sequence_id: initialInvoice?.sequence_id ?? resolvedDefaultSequenceId,
-        date: normalizeDateForPicker(initialInvoice?.date ?? getTodayIsoDate()),
-        due_date: normalizeDateForPicker(initialInvoice?.due_date ?? ''),
+        date: normalizeDateOnlyString(initialInvoice?.date ?? '') || getTodayIsoDate(),
+        due_date: normalizeDateOnlyString(initialInvoice?.due_date ?? ''),
         number: initialInvoice?.number ?? (!isEdit && numberEditable ? initialNextNumber : ''),
         document_type: initialInvoice?.document_type ?? (bootstrap.defaultDocumentType ?? 'TD01'),
         related_invoice_number: initialInvoice?.related_invoice_number ?? '',
-        related_invoice_date: normalizeDateForPicker(initialInvoice?.related_invoice_date ?? ''),
+        related_invoice_date: normalizeDateOnlyString(initialInvoice?.related_invoice_date ?? ''),
         notes: initialInvoice?.notes ?? (initialUseSettingsDefaults ? (settings.default_notes ?? '') : ''),
         payment_method: normalizeSelectCode(initialInvoice?.payment_method ?? (initialUseSettingsDefaults ? (settings.default_payment_method ?? '') : '')),
         payment_terms: normalizeSelectCode(initialInvoice?.payment_terms ?? (initialUseSettingsDefaults ? (settings.default_payment_terms ?? '') : '')),

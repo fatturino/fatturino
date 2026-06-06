@@ -8,6 +8,7 @@
     import Select from '$lib/components/ui/Select.svelte'
     import Textarea from '$lib/components/ui/Textarea.svelte'
     import Switch from '$lib/components/ui/Switch.svelte'
+    import { getTodayLocalDateString, normalizeDateOnlyString } from '$lib/utils/date.js'
 
     let {
         // Props from server
@@ -53,9 +54,7 @@
     }
 
     function getTodayIsoDate() {
-        const now = new Date()
-        const timezoneOffsetMs = now.getTimezoneOffset() * 60 * 1000
-        return new Date(now.getTime() - timezoneOffsetMs).toISOString().slice(0, 10)
+        return getTodayLocalDateString()
     }
 
     let lines = $state(
@@ -153,8 +152,8 @@
     const form = useForm({
         contact_id: invoice?.contact_id ?? '',
         sequence_id: invoice?.sequence_id ?? (formData.default_sequence_id ?? ''),
-        date: invoice?.date ?? getTodayIsoDate(),
-        due_date: invoice?.due_date ?? '',
+        date: normalizeDateOnlyString(invoice?.date ?? '') || getTodayIsoDate(),
+        due_date: normalizeDateOnlyString(invoice?.due_date ?? ''),
         document_type: invoice?.document_type ?? 'TD01',
         notes: invoice?.notes ?? (settings.default_notes ?? ''),
         withholding_tax_enabled: withholdingTaxEnabled,

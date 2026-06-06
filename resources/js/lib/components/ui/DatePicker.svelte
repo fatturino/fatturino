@@ -1,8 +1,8 @@
 <script lang="ts">
     import { DatePicker as DatePickerPrimitive } from "bits-ui";
-    import { getLocalTimeZone, parseDate, today, type DateValue } from "@internationalized/date";
+    import { getLocalTimeZone, parseDate, today, type CalendarDate } from "@internationalized/date";
     import CalendarBlank from "phosphor-svelte/lib/CalendarBlank";
-    import { formatLocalDate } from "$lib/utils/date.js";
+    import { formatLocalDate, normalizeDateOnlyString } from "$lib/utils/date.js";
 
     let {
         value = $bindable(""),
@@ -12,26 +12,20 @@
         locale = "it-IT",
     } = $props();
 
-    function normalizeIsoDateInput(raw: string) {
-        if (!raw) return "";
-        const normalized = raw.trim().replace(" ", "T");
-        const match = normalized.match(/^(\d{4}-\d{2}-\d{2})/);
-        return match ? match[1] : normalized;
-    }
-
     function toDateValue(iso: string) {
-        if (!iso) return undefined;
-        return parseDate(normalizeIsoDateInput(iso));
+        const normalized = normalizeDateOnlyString(iso);
+        if (!normalized) return undefined;
+        return parseDate(normalized);
     }
 
-    function toIsoDate(dateValue: any) {
+    function toIsoDate(dateValue?: CalendarDate) {
         if (!dateValue) return "";
         const month = String(dateValue.month).padStart(2, "0");
         const day = String(dateValue.day).padStart(2, "0");
         return `${dateValue.year}-${month}-${day}`;
     }
 
-    function isSameDateValue(left?: DateValue, right?: DateValue) {
+    function isSameDateValue(left?: CalendarDate, right?: CalendarDate) {
         if (!left && !right) return true;
         if (!left || !right) return false;
 
@@ -39,8 +33,9 @@
     }
 
     const fallbackDateValue = today(getLocalTimeZone());
-    let selectedDateValue = $state<DateValue | undefined>(toDateValue(value));
+    let selectedDateValue = $state<CalendarDate | undefined>(toDateValue(value));
     let calendarPlaceholder = $state(selectedDateValue ?? fallbackDateValue);
+    let normalizedValue = $derived(normalizeDateOnlyString(value));
 
     $effect(() => {
         const nextValue = toDateValue(value);
@@ -71,8 +66,8 @@
     weekStartsOn={1}
 >
     <DatePickerPrimitive.Trigger class={`mt-1 flex w-full items-center justify-between rounded-lg border border-brand-secondary/20 bg-white px-3 py-2 text-sm form-focus ${className}`}>
-        {#if value}
-            {formatLocalDate(normalizeIsoDateInput(value), locale)}
+        {#if normalizedValue}
+            {formatLocalDate(normalizedValue, locale)}
         {:else}
             <span class="text-brand-secondary/50">{placeholder}</span>
         {/if}
