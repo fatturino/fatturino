@@ -164,6 +164,8 @@ class SelfInvoicesController extends Controller
         }
 
         $invoice->calculateTotals();
+        $invoice->refresh();
+        $invoice->markAsPaidOnIssueDate();
 
         return redirect()->route('self-invoices.index');
     }

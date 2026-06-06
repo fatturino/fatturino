@@ -160,6 +160,10 @@ class InvoiceXmlImportService
                 }
 
                 $this->createFiscalDocumentLines($body->DatiBeniServizi, $invoice);
+                $invoice->refresh();
+                if ($invoice instanceof SelfInvoice) {
+                    $invoice->markAsPaidOnIssueDate();
+                }
 
                 // Persist raw XML (including P7M signature if present) for disaster recovery
                 $storageCategory = match ($category) {

@@ -170,4 +170,27 @@ class SelfInvoice extends FiscalDocument implements HasTimeline
             'withholding_tax_amount' => $withholdingTaxAmount,
         ]);
     }
+
+    public function markAsPaidOnIssueDate(): void
+    {
+        if ($this->total_gross <= 0 || ! $this->date) {
+            return;
+        }
+
+        // Self-invoices are fiscally settled at issuance time, so they should
+        // always carry a full payment on the document date.
+        $payment = $this->payments()
+            ->whereDate('paid_at', $this->date->toDateString())
+            ->where('amount', $this->total_gross)
+            ->first();
+
+        if (! $payment) {
+            $this->payments()->create([
+                'amount' => $this->total_gross,
+                'paid_at' => $this->date->toDateString(),
+            ]);
+        }
+
+        $this->recalculatePaymentStatus();
+    }
 }

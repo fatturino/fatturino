@@ -1,11 +1,14 @@
 <?php
 
+use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\FiscalDocumentLine;
 use App\Models\Payment;
 use App\Models\SelfInvoice;
+use App\Models\Sequence;
+use App\Models\User;
 
 test('creating a SelfInvoice auto-sets type to self_invoice', function () {
     $contact = Contact::factory()->create();
@@ -106,4 +109,38 @@ test('self invoice date fields serialize as date-only strings for the frontend',
     expect($serializedInvoice['due_date'])->toBe('2026-05-12');
     expect($serializedInvoice['related_invoice_date'])->toBe('2026-05-05');
     expect($serializedPayment['paid_at'])->toBe('2026-05-05');
+});
+
+test('manual self invoice creation records full payment on invoice date', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    $sequence = Sequence::factory()->selfInvoice()->create();
+
+    $response = $this->actingAs($user)->post(route('self-invoices.store'), [
+        'contact_id' => $contact->id,
+        'sequence_id' => $sequence->id,
+        'date' => '2026-06-06',
+        'due_date' => null,
+        'document_type' => 'TD17',
+        'related_invoice_number' => 'SUP-001',
+        'related_invoice_date' => '2026-06-05',
+        'notes' => 'Autofattura test',
+        'lines' => [[
+            'description' => 'Servizio estero',
+            'quantity' => 1,
+            'unit_of_measure' => null,
+            'unit_price' => 100,
+            'vat_rate' => VatRate::R22->value,
+        ]],
+    ]);
+
+    $response->assertRedirect(route('self-invoices.index'));
+
+    $invoice = SelfInvoice::query()->latest('id')->first();
+
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->payment_status)->toBe(PaymentStatus::Paid)
+        ->and($invoice->total_paid)->toBe($invoice->total_gross)
+        ->and($invoice->payments()->count())->toBe(1)
+        ->and($invoice->payments()->first()?->paid_at?->toDateString())->toBe('2026-06-06');
 });
