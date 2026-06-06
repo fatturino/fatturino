@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Settings\OpenApiSettings;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,10 @@ class OpenApiSdiService
 {
     // Shared codice destinatario assigned to all OpenAPI tenants
     public const CODICE_DESTINATARIO = 'JKKZDGR';
+
+    private const CONNECT_TIMEOUT_SECONDS = 5;
+
+    private const REQUEST_TIMEOUT_SECONDS = 20;
 
     private string $baseUrl;
 
@@ -46,7 +51,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)
+            $response = $this->newRequest()
                 ->withHeaders([
                     'Content-Type' => 'application/xml',
                     'Accept' => 'application/json',
@@ -223,7 +228,7 @@ class OpenApiSdiService
             ]);
 
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->get($url);
+            $response = $this->newRequest()->get($url);
 
             Log::channel('fe-openapi')->info('checkActivationStatus response', [
                 'status' => $response->status(),
@@ -314,7 +319,7 @@ class OpenApiSdiService
             ]);
 
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->post($url, $payload);
+            $response = $this->newRequest()->post($url, $payload);
             Log::channel('fe-openapi')->info('registerBusinessConfiguration response', [
                 'status' => $response->status(),
                 'body' => $response->body(),
@@ -386,7 +391,7 @@ class OpenApiSdiService
             }
 
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->get(
+            $response = $this->newRequest()->get(
                 "{$this->baseUrl}/invoices",
                 $params,
             );
@@ -437,7 +442,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->get(
+            $response = $this->newRequest()->get(
                 "{$this->baseUrl}/invoices/{$uuid}",
             );
 
@@ -494,7 +499,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)
+            $response = $this->newRequest()
                 ->accept('application/xml')
                 ->get("{$this->baseUrl}/invoices_download/{$uuid}");
 
@@ -587,7 +592,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->post(
+            $response = $this->newRequest()->post(
                 "{$this->baseUrl}/api_configurations",
                 [
                     'fiscal_id' => $fiscalId,
@@ -649,7 +654,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->get(
+            $response = $this->newRequest()->get(
                 "{$this->baseUrl}/api_configurations",
                 [
                     'fiscal_id' => $fiscalId,
@@ -725,7 +730,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->post(
+            $response = $this->newRequest()->post(
                 "{$this->baseUrl}/simulate/{$type}",
                 $payload,
             );
@@ -782,7 +787,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->get(
+            $response = $this->newRequest()->get(
                 "{$this->baseUrl}/invoices_notifications/{$uuid}",
             );
 
@@ -839,7 +844,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->patch(
+            $response = $this->newRequest()->patch(
                 "{$this->baseUrl}/business_registry_configurations/{$fiscalId}/activate",
                 ['active' => true],
             );
@@ -893,7 +898,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)->post(
+            $response = $this->newRequest()->post(
                 "{$this->baseUrl}/supplier_invoice_imports",
                 [
                     'invoice' => base64_encode($xmlContent),
@@ -948,7 +953,7 @@ class OpenApiSdiService
 
         try {
             /** @var Response $response */
-            $response = Http::withToken($this->apiToken)
+            $response = $this->newRequest()
                 ->accept('application/pdf')
                 ->get("{$this->baseUrl}/invoices_download/{$uuid}");
 
@@ -1034,6 +1039,13 @@ class OpenApiSdiService
                 $parent->appendChild($child);
             }
         }
+    }
+
+    private function newRequest(): PendingRequest
+    {
+        return Http::withToken($this->apiToken)
+            ->connectTimeout(self::CONNECT_TIMEOUT_SECONDS)
+            ->timeout(self::REQUEST_TIMEOUT_SECONDS);
     }
 
     /**

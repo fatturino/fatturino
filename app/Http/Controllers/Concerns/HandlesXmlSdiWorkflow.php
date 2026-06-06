@@ -33,7 +33,7 @@ trait HandlesXmlSdiWorkflow
     ): JsonResponse|RedirectResponse {
         if (! $document->isSdiEditable()) {
             if (request()->expectsJson()) {
-                return response()->json(['success' => false, 'error' => $notEditableMessage], 422);
+                return $this->workflowErrorResponse($document, $notEditableMessage);
             }
 
             return back()->withErrors(['action' => $notEditableMessage]);
@@ -41,7 +41,7 @@ trait HandlesXmlSdiWorkflow
 
         if (! $document->status->canValidateXml()) {
             if (request()->expectsJson()) {
-                return response()->json(['success' => false, 'error' => $invalidStateMessage], 422);
+                return $this->workflowErrorResponse($document, $invalidStateMessage);
             }
 
             return back()->withErrors(['action' => $invalidStateMessage]);
@@ -58,13 +58,11 @@ trait HandlesXmlSdiWorkflow
                 return back()->withErrors(['action' => implode(' ', $errors)]);
             }
 
-            return response()->json([
-                'success' => false,
-                'errors' => $errors,
-            ], 422);
+            return $this->workflowErrorResponse($document, 'Validazione XML fallita.', $errors);
         }
 
         $document->update(['status' => InvoiceStatus::XmlValidated]);
+        $document->refresh();
 
         if (! request()->expectsJson()) {
             return back()->with('toast', [
@@ -75,7 +73,7 @@ trait HandlesXmlSdiWorkflow
             ]);
         }
 
-        return response()->json(['success' => true, 'message' => 'XML validato con successo.']);
+        return $this->workflowSuccessResponse($document, 'XML validato con successo.');
     }
 
     protected function sendXmlDocumentToSdi(
@@ -88,7 +86,7 @@ trait HandlesXmlSdiWorkflow
     ): JsonResponse|RedirectResponse {
         if (! $document->isSdiEditable()) {
             if (request()->expectsJson()) {
-                return response()->json(['success' => false, 'error' => $notEditableMessage], 422);
+                return $this->workflowErrorResponse($document, $notEditableMessage);
             }
 
             return back()->withErrors(['action' => $notEditableMessage]);
@@ -96,7 +94,7 @@ trait HandlesXmlSdiWorkflow
 
         if (! $document->status->canSendToSdi()) {
             if (request()->expectsJson()) {
-                return response()->json(['success' => false, 'error' => $invalidStateMessage], 422);
+                return $this->workflowErrorResponse($document, $invalidStateMessage);
             }
 
             return back()->withErrors(['action' => $invalidStateMessage]);
@@ -119,7 +117,7 @@ trait HandlesXmlSdiWorkflow
             ]);
 
             if (request()->expectsJson()) {
-                return response()->json(['success' => false, 'error' => $errorMessage], 422);
+                return $this->workflowErrorResponse($document, $errorMessage);
             }
 
             return back()->withErrors(['action' => $errorMessage]);
@@ -156,6 +154,7 @@ trait HandlesXmlSdiWorkflow
             'provider' => $xmlWorkflow->providerId(),
             'uuid' => $document->sdi_uuid,
         ]);
+        $document->refresh();
 
         if (! request()->expectsJson()) {
             return back()->with('toast', [
@@ -166,6 +165,38 @@ trait HandlesXmlSdiWorkflow
             ]);
         }
 
-        return response()->json(['success' => true, 'message' => $sentMessage]);
+        return $this->workflowSuccessResponse($document, $sentMessage);
+    }
+
+    protected function workflowSuccessResponse(object $document, string $message): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'document' => $this->workflowDocumentPayload($document),
+        ]);
+    }
+
+    protected function workflowErrorResponse(object $document, string $message, array $errors = []): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'error' => $message,
+            'errors' => $errors,
+            'document' => $this->workflowDocumentPayload($document),
+        ], 422);
+    }
+
+    protected function workflowDocumentPayload(object $document): array
+    {
+        $status = $document->status;
+        $sdiStatus = $document->sdi_status;
+
+        return [
+            'id' => $document->id,
+            'status' => $status instanceof \BackedEnum ? $status->value : $status,
+            'sdi_status' => $sdiStatus instanceof \BackedEnum ? $sdiStatus->value : $sdiStatus,
+            'is_sdi_editable' => $document->isSdiEditable(),
+        ];
     }
 }

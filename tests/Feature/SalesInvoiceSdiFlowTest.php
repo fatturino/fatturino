@@ -2,8 +2,10 @@
 
 use App\Contracts\SdiProvider;
 use App\Enums\InvoiceStatus;
+use App\Enums\SdiStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
+use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
 use App\Models\User;
 use App\Settings\CompanySettings;
@@ -51,7 +53,14 @@ test('validate xml endpoint sets invoice status to xml_validated', function () {
 
     $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/validate-xml");
 
-    $response->assertOk()->assertJson(['success' => true]);
+    $response->assertOk()->assertJson([
+        'success' => true,
+        'document' => [
+            'status' => InvoiceStatus::XmlValidated->value,
+            'sdi_status' => null,
+            'is_sdi_editable' => true,
+        ],
+    ]);
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::XmlValidated);
 });
 
@@ -80,6 +89,125 @@ test('send to sdi endpoint sends only xml validated invoices', function () {
     $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi");
 
     $response->assertStatus(422)->assertJson(['success' => false]);
+});
+
+test('send to sdi endpoint returns updated document payload on success', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::XmlValidated,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Servizio',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+    $invoice->calculateTotals();
+
+    $provider = Mockery::mock(SdiProvider::class);
+    $provider->shouldReceive('id')->once()->andReturn('mock-provider');
+    $provider->shouldReceive('sendInvoice')
+        ->once()
+        ->andReturn([
+            'success' => true,
+            'uuid' => 'uuid-123',
+            'file_id' => 'file-456',
+            'message' => 'Fattura inviata con successo allo SDI',
+        ]);
+    app()->instance(SdiProvider::class, $provider);
+
+    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi");
+
+    $response->assertOk()->assertJson([
+        'success' => true,
+        'document' => [
+            'status' => InvoiceStatus::Sent->value,
+            'sdi_status' => SdiStatus::Sent->value,
+            'is_sdi_editable' => false,
+        ],
+    ]);
+
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::Sent->value)
+        ->and($invoice->sdi_status)->toBe(SdiStatus::Sent->value)
+        ->and($invoice->sdi_uuid)->toBe('uuid-123');
+});
+
+test('validate xml endpoint returns uniform json when document is not editable', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::Draft,
+        'sdi_status' => SdiStatus::Delivered,
+    ]);
+
+    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/validate-xml");
+
+    $response->assertStatus(422)->assertJson([
+        'success' => false,
+        'document' => [
+            'status' => InvoiceStatus::Draft->value,
+            'sdi_status' => SdiStatus::Delivered->value,
+            'is_sdi_editable' => false,
+        ],
+    ]);
+});
+
+test('send to sdi endpoint logs send_failed and returns uniform json on provider failure', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::XmlValidated,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Servizio',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+    $invoice->calculateTotals();
+
+    $provider = Mockery::mock(SdiProvider::class);
+    $provider->shouldReceive('sendInvoice')
+        ->once()
+        ->andReturn([
+            'success' => false,
+            'error_message' => 'Provider offline',
+        ]);
+    app()->instance(SdiProvider::class, $provider);
+
+    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi");
+
+    $response->assertStatus(422)->assertJson([
+        'success' => false,
+        'error' => 'Provider offline',
+        'document' => [
+            'status' => InvoiceStatus::XmlValidated->value,
+            'sdi_status' => null,
+            'is_sdi_editable' => true,
+        ],
+    ]);
+
+    $log = EiOutboundLog::query()
+        ->where('fiscal_document_id', $invoice->id)
+        ->where('event_type', 'send_failed')
+        ->first();
+
+    expect($log)->not->toBeNull()
+        ->and($log->status)->toBe(SdiStatus::Error)
+        ->and($log->message)->toBe('Provider offline');
 });
 
 afterEach(function () {

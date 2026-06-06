@@ -1,5 +1,5 @@
 <script>
-    import { useForm } from '@inertiajs/svelte'
+    import { router, useForm } from '@inertiajs/svelte'
     import { showToast } from '$lib/toast.js'
     import { onDestroy } from 'svelte'
     import DatePicker from '$lib/components/ui/DatePicker.svelte'
@@ -69,6 +69,7 @@
     let confirmText = $state('Conferma')
     let confirmVariant = $state('primary')
     let onConfirmAction = $state(() => {})
+    let sdiActionState = $state('idle')
 
     function openConfirmDialog({ title, description, confirmText: confirmLabel = 'Conferma', variant = 'primary', onConfirm }) {
         confirmTitle = title
@@ -305,45 +306,78 @@
         return match ? decodeURIComponent(match[1]) : ''
     }
 
-    async function postAction(url, successMessage) {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': csrfToken(),
-            },
-        })
+    function sdiReloadOnly() {
+        return endpointBase === '/credit-notes' ? ['creditNote'] : ['invoice']
+    }
 
-        const data = await response.json()
+    function sdiErrorMessage(response, data) {
+        const errors = Array.isArray(data?.errors) ? data.errors.filter(Boolean).join(' ') : ''
+        if (errors) return errors
+        if (data?.error) return data.error
+        if (data?.message) return data.message
+        if (response.status === 419) return 'Sessione scaduta. Ricarica la pagina e riprova.'
+        if (response.status >= 500) return 'Errore server durante l\'operazione.'
+        if (response.status === 422) return 'Operazione non riuscita.'
+        return 'Risposta non valida dal server.'
+    }
 
-        if (data.success) {
-            showToast(successMessage)
-            window.location.reload()
-            return
+    async function postAction(url, successMessage, nextState) {
+        sdiActionState = nextState
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-XSRF-TOKEN': csrfToken(),
+                },
+                credentials: 'same-origin',
+            })
+
+            const data = await response.json().catch(() => ({}))
+
+            if (response.ok && data.success) {
+                router.reload({
+                    only: sdiReloadOnly(),
+                    preserveScroll: true,
+                    preserveState: true,
+                })
+                showToast(data.message || successMessage)
+                return true
+            }
+
+            showToast(sdiErrorMessage(response, data), 'error')
+            return false
+        } catch {
+            showToast('Errore di rete durante l\'operazione.', 'error')
+            return false
+        } finally {
+            sdiActionState = 'idle'
         }
-
-        const errors = Array.isArray(data.errors) ? data.errors.join('\n') : null
-        showToast(errors || data.error || 'Operazione non riuscita.', 'error')
     }
 
     const hasSdiFlow = $derived(isEdit && ['/sell-invoices', '/self-invoices', '/credit-notes'].includes(endpointBase))
+    const isSdiBusy = $derived(sdiActionState !== 'idle')
+    const sdiStatusTitle = $derived.by(() => {
+        if (sdiActionState === 'validating_xml') return 'Validazione XML in corso...'
+        if (sdiActionState === 'sending_sdi') return 'Invio allo SDI in corso...'
+        return ''
+    })
 
     async function validateXml() {
-        if (!invoice) return
+        if (!invoice || isSdiBusy) return
         const label = invoice.number ?? '#' + invoice.id
         openConfirmDialog({
             title: 'Conferma validazione XML',
             description: `Confermi la validazione XML del documento ${label}?`,
             confirmText: 'Verifica XML',
-            onConfirm: async () => {
-                await postAction(`${endpointBase}/${invoice.id}/validate-xml`, 'XML validato.')
-            },
+            onConfirm: () => postAction(`${endpointBase}/${invoice.id}/validate-xml`, 'XML validato.', 'validating_xml'),
         })
     }
 
     async function sendToSdi() {
-        if (!invoice) return
+        if (!invoice || isSdiBusy) return
         const label = invoice.number ?? '#' + invoice.id
         openConfirmDialog({
             title: 'Conferma invio SDI',
@@ -358,9 +392,7 @@ Controlla prima di confermare:
 - Codice destinatario o PEC`,
             confirmText: 'Invia SDI',
             variant: 'danger',
-            onConfirm: async () => {
-                await postAction(`${endpointBase}/${invoice.id}/send-sdi`, 'Documento inviato allo SDI.')
-            },
+            onConfirm: () => postAction(`${endpointBase}/${invoice.id}/send-sdi`, 'Documento inviato allo SDI.', 'sending_sdi'),
         })
     }
 
@@ -385,6 +417,7 @@ Controlla prima di confermare:
     description={confirmDescription}
     confirmText={confirmText}
     variant={confirmVariant}
+    isLoading={isSdiBusy}
     onConfirm={onConfirmAction}
 />
 
@@ -403,18 +436,28 @@ Controlla prima di confermare:
                     <span>Scarica XML</span>
                 </a>
                 {#if invoice.is_sdi_editable && invoice.status === 'draft'}
-                    <Button class="inline-flex items-center gap-2 rounded-lg border border-border-light px-3 py-1.5 text-sm font-medium text-brand-secondary hover:bg-surface-muted hover:text-brand-deep transition-colors" onclick={validateXml}>
+                    <Button class="inline-flex items-center gap-2 rounded-lg border border-border-light px-3 py-1.5 text-sm font-medium text-brand-secondary hover:bg-surface-muted hover:text-brand-deep transition-colors" onclick={validateXml} disabled={isSdiBusy}>
                         <ArrowsClockwise size={16} weight="bold" />
                         <span>Verifica XML</span>
                     </Button>
                 {/if}
                 {#if invoice.is_sdi_editable && invoice.status === 'xml_validated'}
-                    <Button class="inline-flex items-center gap-2 rounded-lg border border-border-light px-3 py-1.5 text-sm font-medium text-brand-secondary hover:bg-surface-muted hover:text-brand-deep transition-colors" onclick={sendToSdi}>
+                    <Button class="inline-flex items-center gap-2 rounded-lg border border-border-light px-3 py-1.5 text-sm font-medium text-brand-secondary hover:bg-surface-muted hover:text-brand-deep transition-colors" onclick={sendToSdi} disabled={isSdiBusy}>
                         <Envelope size={16} weight="bold" />
                         <span>Invia SDI</span>
                     </Button>
                 {/if}
             </div>
+
+            {#if isSdiBusy}
+                <div class="mt-4 flex items-start gap-3 rounded-xl border border-brand-accent/25 bg-brand-accent/10 px-4 py-3 text-sm text-brand-deep">
+                    <ArrowsClockwise class="mt-0.5 animate-spin" size={18} weight="bold" />
+                    <div>
+                        <p class="font-medium">{sdiStatusTitle}</p>
+                        <p class="text-brand-secondary/80">L'operazione può richiedere alcuni secondi.</p>
+                    </div>
+                </div>
+            {/if}
         </div>
     {/if}
 

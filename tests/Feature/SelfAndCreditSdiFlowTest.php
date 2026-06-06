@@ -52,7 +52,14 @@ test('self invoice validate xml sets status to xml_validated', function () {
 
     $response = $this->actingAs($user)->postJson("/self-invoices/{$invoice->id}/validate-xml");
 
-    $response->assertOk()->assertJson(['success' => true]);
+    $response->assertOk()->assertJson([
+        'success' => true,
+        'document' => [
+            'status' => InvoiceStatus::XmlValidated->value,
+            'sdi_status' => null,
+            'is_sdi_editable' => true,
+        ],
+    ]);
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::XmlValidated);
 });
 
@@ -80,7 +87,14 @@ test('credit note validate xml sets status to xml_validated', function () {
 
     $response = $this->actingAs($user)->postJson("/credit-notes/{$creditNote->id}/validate-xml");
 
-    $response->assertOk()->assertJson(['success' => true]);
+    $response->assertOk()->assertJson([
+        'success' => true,
+        'document' => [
+            'status' => InvoiceStatus::XmlValidated->value,
+            'sdi_status' => null,
+            'is_sdi_editable' => true,
+        ],
+    ]);
     expect($creditNote->fresh()->status)->toBe(InvoiceStatus::XmlValidated);
 });
 
