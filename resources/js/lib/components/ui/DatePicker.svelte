@@ -1,6 +1,6 @@
 <script lang="ts">
     import { DatePicker as DatePickerPrimitive } from "bits-ui";
-    import { getLocalTimeZone, parseDate, today, type CalendarDate } from "@internationalized/date";
+    import { parseDate, type CalendarDate } from "@internationalized/date";
     import CalendarBlank from "phosphor-svelte/lib/CalendarBlank";
     import { formatLocalDate, normalizeDateOnlyString } from "$lib/utils/date.js";
 
@@ -32,19 +32,13 @@
         return left.year === right.year && left.month === right.month && left.day === right.day;
     }
 
-    const fallbackDateValue = today(getLocalTimeZone());
     let selectedDateValue = $state<CalendarDate | undefined>(toDateValue(value));
-    let calendarPlaceholder = $state(selectedDateValue ?? fallbackDateValue);
     let normalizedValue = $derived(normalizeDateOnlyString(value));
 
     $effect(() => {
         const nextValue = toDateValue(value);
         if (!isSameDateValue(selectedDateValue, nextValue)) {
             selectedDateValue = nextValue;
-        }
-
-        if (nextValue && !isSameDateValue(calendarPlaceholder, nextValue)) {
-            calendarPlaceholder = nextValue;
         }
     });
 </script>
@@ -54,13 +48,8 @@
     value={selectedDateValue}
     onValueChange={(nextValue) => {
         selectedDateValue = nextValue;
-        if (nextValue) {
-            calendarPlaceholder = nextValue;
-        }
         value = toIsoDate(nextValue);
     }}
-    placeholder={calendarPlaceholder}
-    onPlaceholderChange={(nextValue) => { calendarPlaceholder = nextValue; }}
     {disabled}
     {locale}
     weekStartsOn={1}
