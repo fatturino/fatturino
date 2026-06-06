@@ -120,3 +120,17 @@ test('related_invoice fields are stored correctly', function () {
     expect($creditNote->related_invoice_number)->toBe('FT-2026-001');
     expect($creditNote->related_invoice_date->format('Y-m-d'))->toBe('2026-01-15');
 });
+
+test('credit note date fields serialize as date-only strings', function () {
+    $creditNote = CreditNote::factory()->create([
+        'date' => '2026-05-05',
+        'due_date' => '2026-05-12',
+        'related_invoice_date' => '2026-05-05',
+    ]);
+
+    $serialized = $creditNote->fresh()->toArray();
+
+    expect($serialized['date'])->toBe('2026-05-05');
+    expect($serialized['due_date'])->toBe('2026-05-12');
+    expect($serialized['related_invoice_date'])->toBe('2026-05-05');
+});

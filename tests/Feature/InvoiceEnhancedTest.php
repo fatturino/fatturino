@@ -403,3 +403,19 @@ test('invoice handles complex mixed vat scenario correctly', function () {
     expect($invoice->total_vat)->toEqual(5900); // 59.00 EUR in cents
     expect($invoice->total_gross)->toEqual(48400); // 484.00 EUR in cents
 });
+
+test('base fiscal document date fields serialize as date-only strings', function () {
+    $contact = Contact::create(['name' => 'Test Client']);
+
+    $invoice = FiscalDocument::create([
+        'number' => 1,
+        'date' => '2026-05-05',
+        'due_date' => '2026-05-12',
+        'contact_id' => $contact->id,
+    ]);
+
+    $serialized = $invoice->fresh()->toArray();
+
+    expect($serialized['date'])->toBe('2026-05-05');
+    expect($serialized['due_date'])->toBe('2026-05-12');
+});

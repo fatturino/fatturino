@@ -119,6 +119,18 @@ test('calculateTotals sums lines correctly', function () {
     expect($invoice->total_gross)->toBe(12200);
 });
 
+test('purchase invoice date fields serialize as date-only strings', function () {
+    $invoice = PurchaseInvoice::factory()->create([
+        'date' => '2026-05-05',
+        'due_date' => '2026-05-12',
+    ]);
+
+    $serialized = $invoice->fresh()->toArray();
+
+    expect($serialized['date'])->toBe('2026-05-05');
+    expect($serialized['due_date'])->toBe('2026-05-12');
+});
+
 test('createOrUpdateFromSdiData does not create purchase when matching self-invoice is already delivered', function () {
     $contact = Contact::factory()->create();
 

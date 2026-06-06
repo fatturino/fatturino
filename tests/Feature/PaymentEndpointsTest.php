@@ -82,6 +82,7 @@ test('update payment endpoint updates amount and date', function (string $modelC
         ->assertJsonPath('success', true)
         ->assertJsonPath('total_paid', 3525)
         ->assertJsonPath('remaining_balance', 6475)
+        ->assertJsonPath('payments.0.paid_at', '2026-05-01')
         ->assertJsonPath('payments.0.reference', 'TRN-UPD-002')
         ->assertJsonPath('payments.0.notes', 'Saldo con secondo conto')
         ->assertJsonPath('payments.0.bank_name', 'Banca Due');

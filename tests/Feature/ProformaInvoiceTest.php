@@ -122,3 +122,15 @@ test('calculateTotals includes fund contribution', function () {
     expect($proforma->total_vat)->toBe(22000 + 880); // line VAT + fund VAT
     expect($proforma->total_gross)->toBe(100000 + 4000 + 22000 + 880);
 });
+
+test('proforma date fields serialize as date-only strings', function () {
+    $proforma = ProformaInvoice::factory()->create([
+        'date' => '2026-05-05',
+        'due_date' => '2026-05-12',
+    ]);
+
+    $serialized = $proforma->fresh()->toArray();
+
+    expect($serialized['date'])->toBe('2026-05-05');
+    expect($serialized['due_date'])->toBe('2026-05-12');
+});
