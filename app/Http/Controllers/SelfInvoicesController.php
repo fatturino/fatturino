@@ -213,7 +213,7 @@ class SelfInvoicesController extends Controller
         ]);
 
         $year = Carbon::parse($validated['date'])->year;
-        $nextStatus = $selfInvoice->status === InvoiceStatus::XmlValidated
+        $nextStatus = in_array($selfInvoice->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
             ? InvoiceStatus::Draft
             : $selfInvoice->status;
 

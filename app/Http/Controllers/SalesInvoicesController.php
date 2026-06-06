@@ -222,7 +222,7 @@ class SalesInvoicesController extends Controller
         $normalizedLines = FiscalRegimePolicy::normalizeLinesForForfettario($validated['lines'], $companySettings->company_fiscal_regime);
 
         $year = Carbon::parse($normalized['date'])->year;
-        $nextStatus = $invoice->status === InvoiceStatus::XmlValidated
+        $nextStatus = in_array($invoice->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
             ? InvoiceStatus::Draft
             : $invoice->status;
 

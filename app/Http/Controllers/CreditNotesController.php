@@ -164,7 +164,7 @@ class CreditNotesController extends Controller
             : ($validated['notes'] ?? null);
 
         $year = Carbon::parse($validated['date'])->year;
-        $nextStatus = $creditNote->status === InvoiceStatus::XmlValidated
+        $nextStatus = in_array($creditNote->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
             ? InvoiceStatus::Draft
             : $creditNote->status;
 

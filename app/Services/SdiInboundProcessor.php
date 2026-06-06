@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
 use App\Models\EiInboundLog;
 use App\Models\EiOutboundLog;
@@ -242,6 +243,7 @@ class SdiInboundProcessor
         $message = $this->buildNotificationMessage($notificationType, $notification);
 
         $invoice->update([
+            'status' => $newStatus === SdiStatus::Rejected ? InvoiceStatus::Draft->value : $invoice->status,
             'sdi_status' => $newStatus->value,
             'sdi_message' => $message,
         ]);

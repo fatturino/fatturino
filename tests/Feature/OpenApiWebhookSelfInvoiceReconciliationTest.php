@@ -1,9 +1,11 @@
 <?php
 
+use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Models\EiInboundLog;
 use App\Models\PurchaseInvoice;
+use App\Models\SalesInvoice;
 use App\Models\SdiUuidLink;
 use App\Models\SelfInvoice;
 use App\Services\OpenApiSdiService;
@@ -183,6 +185,37 @@ test('reconcile command skips missing self-invoice without creating documents', 
 
     expect(SelfInvoice::withoutGlobalScopes()->count())->toBe(0)
         ->and(PurchaseInvoice::withoutGlobalScopes()->where('type', 'purchase')->count())->toBe(0);
+});
+
+test('customer notification NS reopens outbound invoice for correction and resend', function () {
+    $invoice = SalesInvoice::factory()->create([
+        'status' => InvoiceStatus::Sent,
+        'sdi_status' => SdiStatus::Sent,
+        'sdi_uuid' => 'outbound-sales-uuid',
+    ]);
+
+    $response = $this
+        ->withHeader('Authorization', 'Bearer webhook-secret')
+        ->postJson(route('openapi.webhook'), [
+            'event' => 'customer-notification',
+            'data' => [
+                'notification' => [
+                    'invoice_uuid' => 'outbound-sales-uuid',
+                    'type' => 'NS',
+                ],
+            ],
+        ]);
+
+    $response->assertOk()->assertJson([
+        'status' => 'ok',
+        'message' => null,
+    ]);
+
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::Draft->value)
+        ->and($invoice->sdi_status)->toBe(SdiStatus::Rejected->value)
+        ->and($invoice->isSdiEditable())->toBeTrue();
 });
 
 function supplierInvoiceWebhookPayload(string $uuid): array

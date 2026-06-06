@@ -7,6 +7,7 @@ use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
+use App\Models\Sequence;
 use App\Models\User;
 use App\Settings\CompanySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -208,6 +209,62 @@ test('send to sdi endpoint logs send_failed and returns uniform json on provider
     expect($log)->not->toBeNull()
         ->and($log->status)->toBe(SdiStatus::Error)
         ->and($log->message)->toBe('Provider offline');
+});
+
+test('updating a rejected invoice resets workflow status to draft so it can be revalidated', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+    $sequence = Sequence::factory()->forType('sales')->create();
+
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'sequence_id' => $sequence->id,
+        'status' => InvoiceStatus::Sent,
+        'sdi_status' => SdiStatus::Rejected,
+        'document_type' => 'TD01',
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Servizio',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+
+    $response = $this->actingAs($user)->put("/sell-invoices/{$invoice->id}", [
+        'contact_id' => $contact->id,
+        'sequence_id' => $sequence->id,
+        'date' => now()->format('Y-m-d'),
+        'due_date' => now()->addDays(30)->format('Y-m-d'),
+        'document_type' => 'TD01',
+        'notes' => 'Correzione dopo scarto SDI',
+        'withholding_tax_enabled' => false,
+        'fund_enabled' => false,
+        'stamp_duty_applied' => false,
+        'payment_method' => null,
+        'payment_terms' => null,
+        'bank_name' => null,
+        'bank_iban' => null,
+        'vat_payability' => 'I',
+        'split_payment' => false,
+        'lines' => [[
+            'description' => 'Servizio corretto',
+            'quantity' => 1,
+            'unit_of_measure' => 'pz',
+            'unit_price' => 11000,
+            'discount_percent' => 0,
+            'vat_rate' => VatRate::R22->value,
+        ]],
+    ]);
+
+    $response->assertRedirect(route('sell-invoices.index'));
+
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::Draft->value)
+        ->and($invoice->sdi_status)->toBe(SdiStatus::Rejected->value)
+        ->and($invoice->isSdiEditable())->toBeTrue();
 });
 
 afterEach(function () {
