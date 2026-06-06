@@ -31,8 +31,8 @@ class ProformaInvoice extends FiscalDocument
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'due_date' => 'date',
+        'date' => 'date:Y-m-d',
+        'due_date' => 'date:Y-m-d',
         'status' => ProformaStatus::class,
         'payment_status' => PaymentStatus::class,
         'total_net' => 'integer',

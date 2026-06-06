@@ -51,9 +51,9 @@ class SelfInvoice extends FiscalDocument implements HasTimeline
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'related_invoice_date' => 'date',
-        'due_date' => 'date',
+        'date' => 'date:Y-m-d',
+        'related_invoice_date' => 'date:Y-m-d',
+        'due_date' => 'date:Y-m-d',
         'status' => InvoiceStatus::class,
         'payment_status' => PaymentStatus::class,
         'sdi_status' => SdiStatus::class,

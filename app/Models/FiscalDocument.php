@@ -29,8 +29,8 @@ class FiscalDocument extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'due_date' => 'date',
+        'date' => 'date:Y-m-d',
+        'due_date' => 'date:Y-m-d',
         'payment_status' => PaymentStatus::class,
         'total_net' => 'integer',
         'total_vat' => 'integer',

@@ -4,6 +4,7 @@ use App\Enums\SdiStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\FiscalDocumentLine;
+use App\Models\Payment;
 use App\Models\SelfInvoice;
 
 test('creating a SelfInvoice auto-sets type to self_invoice', function () {
@@ -83,4 +84,26 @@ test('calculateTotals sums lines correctly', function () {
     expect($invoice->total_net)->toBe(10000);
     expect($invoice->total_vat)->toBe(1000); // 10% of 100.00
     expect($invoice->total_gross)->toBe(11000);
+});
+
+test('self invoice date fields serialize as date-only strings for the frontend', function () {
+    $invoice = SelfInvoice::factory()->create([
+        'date' => '2026-05-05',
+        'due_date' => '2026-05-12',
+        'related_invoice_date' => '2026-05-05',
+    ]);
+
+    $payment = Payment::create([
+        'fiscal_document_id' => $invoice->id,
+        'amount' => 183,
+        'paid_at' => '2026-05-05',
+    ]);
+
+    $serializedInvoice = $invoice->fresh()->toArray();
+    $serializedPayment = $payment->fresh()->toArray();
+
+    expect($serializedInvoice['date'])->toBe('2026-05-05');
+    expect($serializedInvoice['due_date'])->toBe('2026-05-12');
+    expect($serializedInvoice['related_invoice_date'])->toBe('2026-05-05');
+    expect($serializedPayment['paid_at'])->toBe('2026-05-05');
 });
