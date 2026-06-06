@@ -172,3 +172,35 @@ test('createOrUpdateFromSdiData does not create purchase when matching self-invo
     $selfInvoice->refresh();
     expect($selfInvoice->sdi_uuid)->toBe('11111111-2222-3333-4444-555555555555');
 });
+
+test('createOrUpdateFromSdiData skips inbound self-invoice when no local self-invoice matches', function () {
+    $contact = Contact::factory()->create();
+
+    $result = PurchaseInvoice::createOrUpdateFromSdiData([
+        'uuid' => '99999999-2222-3333-4444-555555555555',
+        'file_id' => 123456,
+        'filename' => 'IT_TEST_AF_999.xml',
+        'payload' => [
+            'fattura_elettronica_body' => [[
+                'dati_generali' => [
+                    'dati_generali_documento' => [
+                        'tipo_documento' => 'TD17',
+                        'numero' => 'AF-MISSING-001',
+                        'data' => '2024-01-10',
+                        'importo_totale_documento' => '122.00',
+                    ],
+                ],
+                'dati_beni_servizi' => [
+                    'dati_riepilogo' => [[
+                        'imponibile_importo' => '100.00',
+                        'imposta' => '22.00',
+                    ]],
+                ],
+            ]],
+        ],
+    ], $contact);
+
+    expect($result)->toBeNull()
+        ->and(PurchaseInvoice::withoutGlobalScopes()->where('type', 'purchase')->count())->toBe(0)
+        ->and(SelfInvoice::withoutGlobalScopes()->count())->toBe(0);
+});

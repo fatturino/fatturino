@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
@@ -155,7 +154,7 @@ class ReconcileCommand extends Command
                 }
 
                 try {
-                    // If this matches a self-invoice, mark it Delivered+Paid and skip
+                    // If this matches a self-invoice, reconcile only and skip import
                     if ($this->handleSelfInvoiceDelivery($record, $downloadResult['xml'])) {
                         $fn = $record['sdi_file_name'] ?? $record['filename'] ?? $uuid;
                         $this->line("  Skipped (self-invoice): {$fn}");
@@ -390,8 +389,8 @@ class ReconcileCommand extends Command
      */
     /**
      * If the incoming supplier invoice matches a self-invoice we previously
-     * sent, mark it as Delivered and Paid, and tell the caller to skip the
-     * import (no duplicate purchase row).
+     * sent, mark it as Delivered and tell the caller to skip the import
+     * (no duplicate purchase row).
      */
     private function handleSelfInvoiceDelivery(array $record, string $xml): bool
     {
@@ -426,25 +425,8 @@ class ReconcileCommand extends Command
             'sdi_filename' => $selfInvoice->sdi_filename ?: $filename,
             'sdi_status' => SdiStatus::Delivered,
             'sdi_message' => 'Consegnata (ricevuta come acquisto)',
+            'sdi_primary_channel' => 'inbound',
         ]);
-
-        // Mark as paid with the original document date
-        $documentDate = $this->extractDocumentDate($xml);
-
-        if ($documentDate && $selfInvoice->payment_status !== PaymentStatus::Paid) {
-            $existingPayment = $selfInvoice->payments()
-                ->where('paid_at', $documentDate)
-                ->exists();
-
-            if (! $existingPayment) {
-                $selfInvoice->payments()->create([
-                    'amount' => $selfInvoice->total_gross,
-                    'paid_at' => $documentDate,
-                ]);
-
-                $selfInvoice->recalculatePaymentStatus();
-            }
-        }
 
         Log::channel('fe-openapi')->info('OpenAPI reconcile: self-invoice marked as delivered (number match)', [
             'self_invoice_id' => $selfInvoice->id,
@@ -457,29 +439,12 @@ class ReconcileCommand extends Command
 
     /**
      * Extract a field value from FatturaPA XML using a simple regex.
-     * Avoids namespace complexity of SimpleXML — just find <TagName>value</TagName>.
+     * Avoids namespace complexity of SimpleXML - just find <TagName>value</TagName>.
      */
     private function extractXmlField(string $xml, string $tag): ?string
     {
         if (preg_match('/<'.$tag.'[^>]*>([^<]+)<\/'.$tag.'>/', $xml, $matches)) {
             return trim($matches[1]);
-        }
-
-        return null;
-    }
-
-    /**
-     * Extract the document date (<Data>) from within <DatiGeneraliDocumento>.
-     * We must scope the search because <Data> appears in many XML contexts
-     * (related invoices, registration dates, etc.).
-     */
-    private function extractDocumentDate(string $xml): ?string
-    {
-        // Extract the <DatiGeneraliDocumento> block first, then find <Data> inside it
-        if (preg_match('/<DatiGeneraliDocumento>(.*?)<\/DatiGeneraliDocumento>/s', $xml, $block)) {
-            if (preg_match('/<Data>([^<]+)<\/Data>/', $block[1], $dateMatch)) {
-                return trim($dateMatch[1]);
-            }
         }
 
         return null;

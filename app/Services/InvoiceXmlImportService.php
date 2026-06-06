@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\InvoiceStatus;
-use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
@@ -118,7 +117,9 @@ class InvoiceXmlImportService
                     $selfInvoiceTypes = ['TD17', 'TD18', 'TD19', 'TD28', 'TD29'];
 
                     if (in_array($documentType, $selfInvoiceTypes, true)) {
-                        // Already exists? Mark Delivered+Paid and skip duplicate
+                        // When a self-invoice comes back as a supplier invoice, only
+                        // reconcile an existing self-invoice. Missing historical
+                        // records must be imported manually to avoid wrong numbering.
                         if ($number) {
                             $existing = SelfInvoice::where('number', $number)->first();
 
@@ -127,26 +128,11 @@ class InvoiceXmlImportService
                                     $existing->update([
                                         'sdi_status' => SdiStatus::Delivered,
                                         'sdi_message' => 'Consegnata (ricevuta come acquisto)',
+                                        'sdi_primary_channel' => 'inbound',
                                     ]);
                                 }
 
                                 $this->applyMissingSdiContext($existing, $sdiContext);
-
-                                if ($existing->payment_status !== PaymentStatus::Paid) {
-                                    $documentDate = $this->extractText($datiGeneraliDoc->Data);
-                                    $alreadyPaid = $existing->payments()
-                                        ->where('paid_at', $documentDate)
-                                        ->exists();
-
-                                    if (! $alreadyPaid && $documentDate) {
-                                        $existing->payments()->create([
-                                            'amount' => $existing->total_gross,
-                                            'paid_at' => $documentDate,
-                                        ]);
-
-                                        $existing->recalculatePaymentStatus();
-                                    }
-                                }
 
                                 $this->stats['skipped']++;
 
@@ -154,12 +140,15 @@ class InvoiceXmlImportService
                             }
                         }
 
-                        // Redirect: import as self_invoice instead of purchase
-                        $isSelfInvoice = true;
-                        $isPurchase = false;
-                        $modelClass = SelfInvoice::class;
-                        $status = InvoiceStatus::Sent;
-                        $sdiStatus = SdiStatus::Delivered;
+                        Log::channel('fe-openapi')->info('InvoiceXmlImportService skipped inbound self-invoice without local match', [
+                            'number' => $number,
+                            'document_type' => $documentType,
+                            'sdi_uuid' => $sdiContext['sdi_uuid'] ?? null,
+                        ]);
+
+                        $this->stats['skipped']++;
+
+                        return;
                     }
                 }
 

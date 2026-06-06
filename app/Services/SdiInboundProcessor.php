@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Models\EiInboundLog;
 use App\Models\EiOutboundLog;
@@ -127,24 +126,21 @@ class SdiInboundProcessor
                     'sdi_primary_channel' => 'inbound',
                 ]);
 
-                if ($resolvedSelf->payment_status !== PaymentStatus::Paid) {
-                    $docDate = $this->extractDocumentDate($xml);
-                    if ($docDate) {
-                        $exists = $resolvedSelf->payments()->where('paid_at', $docDate)->exists();
-                        if (! $exists) {
-                            $resolvedSelf->payments()->create([
-                                'amount' => $resolvedSelf->total_gross,
-                                'paid_at' => $docDate,
-                            ]);
-                            $resolvedSelf->recalculatePaymentStatus();
-                        }
-                    }
-                }
-
                 $this->sdiUuidLinkService->linkInbound($resolvedSelf->id, $uuid, $fingerprint, 'self_invoice_roundtrip');
 
                 return ['status' => 'ok', 'fiscal_document_id' => $resolvedSelf->id];
             }
+
+            Log::channel('fe-openapi')->info('Supplier self-invoice skipped because no matching self-invoice exists locally', [
+                'uuid' => $uuid,
+                'document_number' => $this->extractXmlField($xml, 'Numero'),
+                'document_type' => $documentType,
+            ]);
+
+            return [
+                'status' => 'ignored',
+                'error' => 'Self-invoice not found locally for inbound reconciliation',
+            ];
         }
 
         $existing = PurchaseInvoice::withoutGlobalScopes()->where('sdi_uuid', $uuid)->first();
@@ -324,17 +320,6 @@ class SdiInboundProcessor
     {
         if (preg_match('/<'.$tag.'[^>]*>([^<]+)<\/'.$tag.'>/', $xml, $matches)) {
             return trim($matches[1]);
-        }
-
-        return null;
-    }
-
-    private function extractDocumentDate(string $xml): ?string
-    {
-        if (preg_match('/<DatiGeneraliDocumento>(.*?)<\/DatiGeneraliDocumento>/s', $xml, $block)) {
-            if (preg_match('/<Data>([^<]+)<\/Data>/', $block[1], $dateMatch)) {
-                return trim($dateMatch[1]);
-            }
         }
 
         return null;

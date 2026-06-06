@@ -208,8 +208,6 @@ class PurchaseInvoice extends FiscalDocument
         $selfInvoiceTypes = ['TD17', 'TD18', 'TD19', 'TD28', 'TD29'];
         $documentType = $documentData['tipo_documento'] ?? null;
         $documentNumber = $documentData['numero'] ?? null;
-        $documentDate = $documentData['data'] ?? null;
-
         if ($documentType && ! in_array($documentType, $selfInvoiceTypes, true)) {
             $documentNumber = null; // Skip self-invoice matching for non-self-invoice types
         }
@@ -226,27 +224,13 @@ class PurchaseInvoice extends FiscalDocument
                     'sdi_filename' => $selfInvoice->sdi_filename ?: ($invoiceData['filename'] ?? null),
                     'sdi_status' => SdiStatus::Delivered,
                     'sdi_message' => 'Consegnata (ricevuta come acquisto)',
+                    'sdi_primary_channel' => 'inbound',
                 ]);
-
-                // Mark as paid — the self-invoice is fulfilled when it
-                // comes back as a purchase (no real payment flow)
-                if ($documentDate && $selfInvoice->payment_status !== PaymentStatus::Paid) {
-                    $alreadyPaid = $selfInvoice->payments()
-                        ->where('paid_at', $documentDate)
-                        ->exists();
-
-                    if (! $alreadyPaid) {
-                        $selfInvoice->payments()->create([
-                            'amount' => $selfInvoice->total_gross,
-                            'paid_at' => $documentDate,
-                        ]);
-
-                        $selfInvoice->recalculatePaymentStatus();
-                    }
-                }
 
                 return null;
             }
+
+            return null;
         }
 
         return self::create([
