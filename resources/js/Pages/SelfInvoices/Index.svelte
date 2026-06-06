@@ -98,6 +98,40 @@
         }
     }
 
+    function sdiStatusLabel(value) {
+        switch (value) {
+            case 'sent': return 'Inviata'
+            case 'rejected': return 'Scartata'
+            case 'delivered': return 'Consegnata'
+            case 'not_delivered': return 'Mancata consegna'
+            case 'expired': return 'Decorrenza termini'
+            case 'accepted': return 'Accettata'
+            case 'refused': return 'Rifiutata'
+            case 'error': return 'Errore'
+            case 'received': return 'Ricevuta'
+            default: return value
+        }
+    }
+
+    function sdiStatusBadgeClass(value) {
+        switch (value) {
+            case 'delivered':
+            case 'accepted':
+            case 'expired':
+                return 'badge-sent'
+            case 'not_delivered':
+                return 'badge-overdue'
+            case 'rejected':
+            case 'refused':
+            case 'error':
+                return 'badge-draft'
+            case 'sent':
+                return 'badge-neutral'
+            default:
+                return 'badge-neutral'
+        }
+    }
+
     function paymentLabel(value) {
         const opt = listState.paymentOptions.find((o) => o.value === value)
         return opt ? opt.label : value
@@ -279,7 +313,13 @@ Controlla prima di confermare:
                             <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.date)}</td>
                             <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
                             <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
-                            <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span></td>
+                            <td class="px-4 py-3">
+                                {#if invoice.sdi_status}
+                                    <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {sdiStatusBadgeClass(invoice.sdi_status)}">{sdiStatusLabel(invoice.sdi_status)}</span>
+                                {:else}
+                                    <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span>
+                                {/if}
+                            </td>
                             <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {paymentBadgeClass(invoice.payment_status)}">{paymentLabel(invoice.payment_status)}</span></td>
                             <td class="px-4 py-3 text-right">
                                 <a href={`/self-invoices/${invoice.id}/edit`} class="inline-flex h-8 w-8 items-center justify-center rounded-md text-brand-secondary transition hover:bg-surface-muted hover:text-brand-deep" aria-label="Modifica autofattura" title="Modifica">
@@ -306,7 +346,11 @@ Controlla prima di confermare:
                         <p class="text-right font-semibold text-brand-deep tabular-nums">{formatCurrency(invoice.total_gross)}</p>
                     </div>
                     <div class="mt-3 flex items-center gap-2 flex-wrap">
-                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span>
+                        {#if invoice.sdi_status}
+                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {sdiStatusBadgeClass(invoice.sdi_status)}">{sdiStatusLabel(invoice.sdi_status)}</span>
+                        {:else}
+                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span>
+                        {/if}
                         <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {paymentBadgeClass(invoice.payment_status)}">{paymentLabel(invoice.payment_status)}</span>
                     </div>
                     <div class="mt-3 flex items-center gap-3 text-xs">
