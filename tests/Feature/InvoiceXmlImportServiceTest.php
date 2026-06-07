@@ -3,8 +3,8 @@
 use App\Enums\PaymentStatus;
 use App\Models\Contact;
 use App\Models\PurchaseInvoice;
-use App\Models\Sequence;
 use App\Models\SelfInvoice;
+use App\Models\Sequence;
 use App\Services\InvoiceXmlImportService;
 
 test('xml import sets created_at to invoice issue date', function () {
