@@ -129,7 +129,9 @@ class SelfInvoicesController extends Controller
         $sequence = Sequence::findOrFail($validated['sequence_id']);
         $year = Carbon::parse($validated['date'])->year;
         $customNumber = trim((string) ($validated['number'] ?? ''));
-        $customSequentialNumber = $this->extractSequentialNumber($customNumber);
+        $customSequentialNumber = $customNumber !== ''
+            ? $sequence->extractSequentialNumber($customNumber)
+            : null;
 
         if ($customSequentialNumber !== null) {
             $reserved = [
@@ -356,17 +358,6 @@ class SelfInvoicesController extends Controller
             'vat_rate' => $line['vat_rate'],
             'total' => (int) round($gross * 100),
         ];
-    }
-
-    private function extractSequentialNumber(string $number): ?int
-    {
-        if (! preg_match('/^\s*(\d+)/', $number, $matches)) {
-            return null;
-        }
-
-        $parsed = (int) $matches[1];
-
-        return $parsed > 0 ? $parsed : null;
     }
 
     private function stats(int $fiscalYear): array

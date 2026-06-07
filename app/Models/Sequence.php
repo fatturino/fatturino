@@ -59,6 +59,28 @@ class Sequence extends Model
     }
 
     /**
+     * Extract the sequential number from a formatted document number.
+     */
+    public function extractSequentialNumber(string $formattedNumber): ?int
+    {
+        $pattern = $this->pattern ?? '{SEQ}';
+        $quotedPattern = preg_quote($pattern, '/');
+        $regex = str_replace(
+            [preg_quote('{SEQ}', '/'), preg_quote('{ANNO}', '/')],
+            ['(?P<sequence>\d+)', '(?P<year>\d{4})'],
+            $quotedPattern
+        );
+
+        if (! preg_match('/^'.$regex.'$/', trim($formattedNumber), $matches)) {
+            return null;
+        }
+
+        $parsed = (int) ($matches['sequence'] ?? 0);
+
+        return $parsed > 0 ? $parsed : null;
+    }
+
+    /**
      * Atomically reserve the next sequential number within a transaction.
      * Locks the sequence row to prevent race conditions with concurrent saves.
      *

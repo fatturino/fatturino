@@ -195,6 +195,24 @@ test('getFormattedNumber uses correct year', function () {
     expect($sequence->getFormattedNumber(2025))->toBe('1-2025-AF');
 });
 
+test('extractSequentialNumber reads sequence token from formatted number', function () {
+    $sequence = Sequence::create(['name' => 'AF', 'type' => 'self_invoice', 'pattern' => '{SEQ}-{ANNO}-AF']);
+
+    expect($sequence->extractSequentialNumber('19-2026-AF'))->toBe(19);
+});
+
+test('extractSequentialNumber supports prefixed patterns', function () {
+    $sequence = Sequence::create(['name' => 'Vendite', 'type' => 'sales', 'pattern' => 'AF-{SEQ}']);
+
+    expect($sequence->extractSequentialNumber('AF-33'))->toBe(33);
+});
+
+test('extractSequentialNumber returns null when number does not match pattern', function () {
+    $sequence = Sequence::create(['name' => 'AF', 'type' => 'self_invoice', 'pattern' => '{SEQ}-{ANNO}-AF']);
+
+    expect($sequence->extractSequentialNumber('AF-19-2026'))->toBeNull();
+});
+
 // --- System sequence protection ---
 
 test('sequence can be marked as system', function () {

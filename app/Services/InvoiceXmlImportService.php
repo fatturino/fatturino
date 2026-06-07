@@ -405,8 +405,12 @@ class InvoiceXmlImportService
         $sequentialNumber = null;
         if ($sequenceId) {
             $sequence = Sequence::find($sequenceId);
-            $reserved = $sequence->reserveNextNumber($year);
-            $sequentialNumber = $reserved['sequential_number'];
+            $sequentialNumber = $sequence?->extractSequentialNumber($number ?? '');
+
+            if ($sequentialNumber === null) {
+                $reserved = $sequence->reserveNextNumber($year);
+                $sequentialNumber = $reserved['sequential_number'];
+            }
         }
 
         $attributes = [
