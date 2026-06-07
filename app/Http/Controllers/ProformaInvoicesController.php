@@ -11,6 +11,7 @@ use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\Sequence;
 use App\Services\DocumentMailer;
+use App\Services\Domain\DocumentNumberingService;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
@@ -78,7 +79,7 @@ class ProformaInvoicesController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, DocumentNumberingService $documentNumbering): RedirectResponse
     {
         $validated = $request->validate([
             'contact_id' => 'required|exists:contacts,id',
@@ -109,17 +110,16 @@ class ProformaInvoicesController extends Controller
         $normalizedLines = FiscalRegimePolicy::normalizeLinesForForfettario($validated['lines'], $companySettings->company_fiscal_regime);
 
         $sequence = Sequence::findOrFail($normalized['sequence_id']);
-        $year = Carbon::parse($normalized['date'])->year;
-        $reserved = $sequence->reserveNextNumber($year);
+        $numbering = $documentNumbering->reserve($sequence, $normalized['date']);
 
         $invoice = ProformaInvoice::create([
-            'number' => $reserved['formatted_number'],
-            'sequential_number' => $reserved['sequential_number'],
+            'number' => $numbering['number'],
+            'sequential_number' => $numbering['sequential_number'],
             'date' => $normalized['date'],
             'due_date' => $normalized['due_date'] ?? null,
             'contact_id' => $normalized['contact_id'],
             'sequence_id' => $normalized['sequence_id'],
-            'fiscal_year' => $year,
+            'fiscal_year' => $numbering['fiscal_year'],
             'status' => ProformaStatus::Draft,
             'notes' => $normalized['notes'] ?? null,
             'withholding_tax_enabled' => $normalized['withholding_tax_enabled'] ?? false,

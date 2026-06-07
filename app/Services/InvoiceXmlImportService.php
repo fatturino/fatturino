@@ -11,6 +11,7 @@ use App\Models\FiscalDocumentLine;
 use App\Models\PurchaseInvoice;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
+use App\Services\Domain\DocumentNumberingService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,7 @@ class InvoiceXmlImportService
     public function __construct(
         private DocumentStorageService $documentStorage,
         private BusinessFingerprintService $businessFingerprintService,
+        private DocumentNumberingService $documentNumbering,
     ) {}
 
     protected array $stats = [
@@ -400,21 +402,18 @@ class InvoiceXmlImportService
         $invoiceDate = $this->extractText($datiGenerali->Data);
 
         $year = $invoiceDate ? (int) substr($invoiceDate, 0, 4) : now()->year;
-
-        // Reserve sequential number only when a sequence is provided (not needed for purchases)
+        $resolvedNumber = $number;
         $sequentialNumber = null;
         if ($sequenceId) {
-            $sequence = Sequence::find($sequenceId);
-            $sequentialNumber = $sequence?->extractSequentialNumber($number ?? '');
-
-            if ($sequentialNumber === null) {
-                $reserved = $sequence->reserveNextNumber($year);
-                $sequentialNumber = $reserved['sequential_number'];
-            }
+            $sequence = Sequence::findOrFail($sequenceId);
+            $numbering = $this->documentNumbering->resolve($sequence, $invoiceDate ?: now(), $number);
+            $year = $numbering['fiscal_year'];
+            $resolvedNumber = $numbering['number'];
+            $sequentialNumber = $numbering['sequential_number'];
         }
 
         $attributes = [
-            'number' => $number,
+            'number' => $resolvedNumber,
             'sequence_id' => $sequenceId,
             'sequential_number' => $sequentialNumber,
             'fiscal_year' => $year,

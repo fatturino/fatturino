@@ -11,6 +11,7 @@ use App\Models\CreditNote;
 use App\Models\Sequence;
 use App\Services\CreditNoteXmlService;
 use App\Services\DocumentMailer;
+use App\Services\Domain\DocumentNumberingService;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
@@ -78,7 +79,7 @@ class CreditNotesController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, DocumentNumberingService $documentNumbering): RedirectResponse
     {
         $validated = $request->validate([
             'contact_id' => 'required|exists:contacts,id',
@@ -101,16 +102,15 @@ class CreditNotesController extends Controller
             : ($validated['notes'] ?? null);
 
         $sequence = Sequence::findOrFail($validated['sequence_id']);
-        $year = Carbon::parse($validated['date'])->year;
-        $reserved = $sequence->reserveNextNumber($year);
+        $numbering = $documentNumbering->reserve($sequence, $validated['date']);
 
         $creditNote = CreditNote::create([
-            'number' => $reserved['formatted_number'],
-            'sequential_number' => $reserved['sequential_number'],
+            'number' => $numbering['number'],
+            'sequential_number' => $numbering['sequential_number'],
             'date' => $validated['date'],
             'contact_id' => $validated['contact_id'],
             'sequence_id' => $validated['sequence_id'],
-            'fiscal_year' => $year,
+            'fiscal_year' => $numbering['fiscal_year'],
             'status' => InvoiceStatus::Draft,
             'document_type' => 'TD04',
             'related_invoice_number' => $validated['related_invoice_number'] ?? null,

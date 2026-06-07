@@ -12,6 +12,7 @@ use App\Models\Payment;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
+use App\Services\Domain\DocumentNumberingService;
 use App\Services\SelfInvoiceXmlService;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
@@ -104,7 +105,7 @@ class SelfInvoicesController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, DocumentNumberingService $documentNumbering): RedirectResponse
     {
         $this->ensureSelfInvoicesAllowed();
 
@@ -127,33 +128,16 @@ class SelfInvoicesController extends Controller
         ]);
 
         $sequence = Sequence::findOrFail($validated['sequence_id']);
-        $year = Carbon::parse($validated['date'])->year;
-        $customNumber = trim((string) ($validated['number'] ?? ''));
-        $customSequentialNumber = $customNumber !== ''
-            ? $sequence->extractSequentialNumber($customNumber)
-            : null;
-
-        if ($customSequentialNumber !== null) {
-            $reserved = [
-                'formatted_number' => $customNumber,
-                'sequential_number' => $customSequentialNumber,
-            ];
-        } else {
-            $reserved = $sequence->reserveNextNumber($year);
-
-            if ($customNumber !== '') {
-                $reserved['formatted_number'] = $customNumber;
-            }
-        }
+        $numbering = $documentNumbering->resolve($sequence, $validated['date'], $validated['number'] ?? null);
 
         $invoice = SelfInvoice::create([
-            'number' => $reserved['formatted_number'],
-            'sequential_number' => $reserved['sequential_number'],
+            'number' => $numbering['number'],
+            'sequential_number' => $numbering['sequential_number'],
             'date' => $validated['date'],
             'due_date' => $validated['due_date'] ?? null,
             'contact_id' => $validated['contact_id'],
             'sequence_id' => $validated['sequence_id'],
-            'fiscal_year' => $year,
+            'fiscal_year' => $numbering['fiscal_year'],
             'status' => InvoiceStatus::Draft,
             'document_type' => $validated['document_type'],
             'related_invoice_number' => $validated['related_invoice_number'] ?? null,
