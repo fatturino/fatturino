@@ -24,7 +24,7 @@
     let statusFilter = $state(initialStatus)
     let sort = $state(initialSort)
     let direction = $state(initialDirection)
-    let listState = $state({ invoices, stats, statusOptions, paymentOptions: [] })
+    const listState = $derived.by(() => ({ invoices, stats, statusOptions, paymentOptions: [] }))
     let emailModalOpen = $state(false)
     let emailModalLoading = $state(false)
     let emailSending = $state(false)
@@ -95,14 +95,21 @@
             router.post(url, payload, {
                 preserveScroll: true,
                 preserveState: true,
-                only: ['invoices', 'stats', 'statusOptions'],
+                only: ['invoices', 'stats', 'statusOptions', 'flash'],
                 onError: (errors) => {
                     const firstError = Object.values(errors ?? {})[0]
                     const message = Array.isArray(firstError) ? firstError[0] : firstError
                     showToast(message || 'Operazione non riuscita.', 'error')
                     resolve(false)
                 },
-                onSuccess: () => resolve(true),
+                onSuccess: (page) => {
+                    const successToast = page?.props?.flash?.toast
+                    if (successToast?.message) {
+                        showToast(successToast)
+                    }
+
+                    resolve(true)
+                },
             })
         })
     }

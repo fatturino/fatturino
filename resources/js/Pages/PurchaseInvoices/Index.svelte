@@ -26,7 +26,7 @@
     let paymentFilter = $state(initialPayment)
     let sort = $state(initialSort)
     let direction = $state(initialDirection)
-    let listState = $state({ invoices, stats, statusOptions, paymentOptions })
+    const listState = $derived.by(() => ({ invoices, stats, statusOptions, paymentOptions }))
     let paymentModalOpen = $state(false)
     let paymentInvoice = $state(null)
 

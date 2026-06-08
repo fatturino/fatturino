@@ -29,7 +29,7 @@
     let paymentFilter = $state(initialPayment)
     let sort = $state(initialSort)
     let direction = $state(initialDirection)
-    let listState = $state({ invoices, stats, statusOptions, paymentOptions })
+    const listState = $derived.by(() => ({ invoices, stats, statusOptions, paymentOptions }))
     let confirmOpen = $state(false)
     let confirmTitle = $state('')
     let confirmDescription = $state('')
@@ -163,14 +163,21 @@
             router.post(url, payload, {
                 preserveScroll: true,
                 preserveState: true,
-                only: ['invoices', 'stats', 'statusOptions', 'paymentOptions'],
+                only: ['invoices', 'stats', 'statusOptions', 'paymentOptions', 'flash'],
                 onError: (errors) => {
                     const firstError = Object.values(errors ?? {})[0]
                     const message = Array.isArray(firstError) ? firstError[0] : firstError
                     showToast(message || 'Operazione non riuscita.', 'error')
                     resolve(false)
                 },
-                onSuccess: () => resolve(true),
+                onSuccess: (page) => {
+                    const successToast = page?.props?.flash?.toast
+                    if (successToast?.message) {
+                        showToast(successToast)
+                    }
+
+                    resolve(true)
+                },
             })
         })
     }
