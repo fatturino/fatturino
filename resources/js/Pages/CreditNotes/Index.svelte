@@ -4,7 +4,9 @@
     import Input from '$lib/components/ui/Input.svelte'
     import Textarea from '$lib/components/ui/Textarea.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
+    import InvoiceDesktopContextMenu from '$lib/components/invoices/InvoiceDesktopContextMenu.svelte'
     import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
+    import { buildInvoiceContextActions, InvoiceContentType } from '$lib/invoices/context-menu-registry.js'
     import { formatLocalDate } from '$lib/utils/date.js'
     import { showToast } from '$lib/toast.js'
     import { router } from '@inertiajs/svelte'
@@ -197,6 +199,22 @@ Controlla prima di confermare:
         }
     }
 
+    function contextActions(creditNote) {
+        return buildInvoiceContextActions({
+            contentType: InvoiceContentType.CREDIT_NOTE,
+            item: creditNote,
+            links: {
+                edit: `/credit-notes/${creditNote.id}/edit`,
+                xml: `/credit-notes/${creditNote.id}/xml`,
+            },
+            callbacks: {
+                validateXml,
+                sendToSdi,
+                sendEmail,
+            },
+        })
+    }
+
 </script>
 
 <Dialog
@@ -282,6 +300,7 @@ Controlla prima di confermare:
             </div>
         </section>
 
+        <p class="hidden md:block mb-2 text-xs text-brand-secondary/80">Suggerimento: clic destro su una riga per aprire il menu contestuale.</p>
         <SortableInvoiceTable
             invoices={listState.invoices.data}
             {sort}
@@ -298,14 +317,24 @@ Controlla prima di confermare:
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
             {/snippet}
             {#snippet desktopRow({ invoice: creditNote, formatDate })}
-                <tr class="border-b border-border-light hover:bg-surface-muted/70 transition-colors">
-                    <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{creditNote.number ?? '#' + creditNote.id}</td>
-                    <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(creditNote.date)}</td>
-                    <td class="px-4 py-3 font-medium text-brand-deep">{creditNote.contact?.name ?? '—'}</td>
-                    <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(creditNote.total_gross)}</td>
-                    <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(creditNote.status)}">{statusLabel(creditNote.status)}</span></td>
-                    <td class="px-4 py-3 text-right"><div class="flex justify-end gap-2 flex-wrap"><a href={`/credit-notes/${creditNote.id}/xml`} class="text-xs font-medium text-brand-secondary hover:text-brand-deep">XML</a><Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => sendEmail(creditNote)}>Email</Button>{#if creditNote.is_sdi_editable && creditNote.status === 'draft'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => validateXml(creditNote)}>Verifica XML</Button>{/if}{#if creditNote.is_sdi_editable && creditNote.status === 'xml_validated'}<Button class="text-xs font-medium text-brand-secondary hover:text-brand-deep" onclick={() => sendToSdi(creditNote)}>Invia SDI</Button>{/if}<a href={`/credit-notes/${creditNote.id}/edit`} class="text-xs font-medium text-brand-accent hover:underline">Modifica</a></div></td>
-                </tr>
+                <InvoiceDesktopContextMenu actions={contextActions(creditNote)}>
+                    {#snippet children({ triggerProps })}
+                        <tr {...triggerProps} class="border-b border-border-light hover:bg-surface-muted/70 transition-colors cursor-context-menu">
+                            <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{creditNote.number ?? '#' + creditNote.id}</td>
+                            <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(creditNote.date)}</td>
+                            <td class="px-4 py-3 font-medium text-brand-deep">{creditNote.contact?.name ?? '—'}</td>
+                            <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(creditNote.total_gross)}</td>
+                            <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(creditNote.status)}">{statusLabel(creditNote.status)}</span></td>
+                            <td class="px-4 py-3 text-right">
+                                <a href={`/credit-notes/${creditNote.id}/edit`} class="inline-flex h-8 w-8 items-center justify-center rounded-md text-brand-secondary transition hover:bg-surface-muted hover:text-brand-deep" aria-label="Modifica nota di credito" title="Modifica">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path d="M13.586 2.586a2 2 0 0 1 2.828 2.828l-9.5 9.5a1 1 0 0 1-.447.263l-3 1a1 1 0 0 1-1.264-1.264l1-3a1 1 0 0 1 .263-.447l9.5-9.5ZM12.172 4 5.02 11.152l-.58 1.739 1.739-.58L13.33 5.16 12.172 4Z" />
+                                    </svg>
+                                </a>
+                            </td>
+                        </tr>
+                    {/snippet}
+                </InvoiceDesktopContextMenu>
             {/snippet}
             {#snippet mobileRow({ invoice: creditNote, formatDate })}
                 <article class="card-brand p-4">
