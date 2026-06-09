@@ -22,7 +22,7 @@ class InvoiceXmlEnhancedTest extends TestCase
         // Ensure company settings are properly set up for XML generation
         $settings = app(CompanySettings::class);
         $settings->company_name = 'Test Company SRL';
-        $settings->company_vat_number = 'IT12345678903';
+        $settings->company_vat_number = '12345678903';
         $settings->company_tax_code = '12345678903';
         $settings->company_address = 'Via Test 1';
         $settings->company_city = 'Milano';

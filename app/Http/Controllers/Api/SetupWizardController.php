@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\FiscalRegime;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\ItalianVatNumber;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
 use Illuminate\Http\JsonResponse;
@@ -48,7 +49,7 @@ class SetupWizardController extends Controller
         ]);
 
         $companySettings->company_name = $request->string('company_name');
-        $companySettings->company_vat_number = $request->string('company_vat_number');
+        $companySettings->company_vat_number = ItalianVatNumber::normalize((string) $request->input('company_vat_number')) ?? '';
         $companySettings->company_tax_code = $request->string('company_tax_code');
         $companySettings->company_fiscal_regime = $request->string('company_fiscal_regime');
         $companySettings->rf19_self_invoices_enabled = false;
@@ -83,7 +84,7 @@ class SetupWizardController extends Controller
             ],
             2 => [
                 'company_name' => 'required|min:2',
-                'company_vat_number' => 'required',
+                'company_vat_number' => ['required', new ItalianVatNumber],
                 'company_tax_code' => 'required',
                 'company_fiscal_regime' => 'required|in:'.FiscalRegime::RF01->value.','.FiscalRegime::RF19->value,
             ],
@@ -117,6 +118,10 @@ class SetupWizardController extends Controller
             $data[$field] = in_array($field, ['withholding_tax_enabled', 'auto_stamp_duty'], true)
                 ? $request->boolean($field)
                 : $request->input($field);
+
+            if ($field === 'company_vat_number') {
+                $data[$field] = ItalianVatNumber::normalize($data[$field]);
+            }
         }
 
         session(['setup_data' => $data]);

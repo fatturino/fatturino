@@ -2,6 +2,7 @@
 
 namespace App\Services\Concerns;
 
+use App\Rules\ItalianVatNumber;
 use App\Settings\CompanySettings;
 
 trait GeneratesSdiFilename
@@ -19,10 +20,7 @@ trait GeneratesSdiFilename
     {
         $countryCode = strtoupper($settings->company_country);
 
-        // Strip country prefix case-insensitively, then keep only alphanumeric chars
-        $vatNumber = preg_replace('/^'.preg_quote($countryCode, '/').'/i', '', $settings->company_vat_number);
-        $vatNumber = preg_replace('/[^A-Z0-9]/i', '', $vatNumber);
-        $vatNumber = strtoupper($vatNumber);
+        $vatNumber = ItalianVatNumber::normalize($settings->company_vat_number) ?? '';
 
         // Progressive: zero-padded, max 5 alphanumeric chars per SDI spec
         $progressivo = str_pad((string) ($documentId % 100000), 5, '0', STR_PAD_LEFT);

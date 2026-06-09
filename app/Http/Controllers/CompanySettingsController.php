@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AtecoCode;
 use App\Enums\FiscalRegime;
+use App\Rules\ItalianVatNumber;
 use App\Settings\CompanySettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,7 +34,7 @@ class CompanySettingsController extends Controller
     {
         $validated = $request->validate([
             'company_name' => 'required|string',
-            'company_vat_number' => 'nullable|string',
+            'company_vat_number' => ['nullable', new ItalianVatNumber],
             'company_tax_code' => 'nullable|string',
             'company_address' => 'nullable|string',
             'company_postal_code' => 'nullable|string',
@@ -67,6 +68,8 @@ class CompanySettingsController extends Controller
 
         $oldRegime = $settings->company_fiscal_regime;
         $oldRf19SelfInvoicesEnabled = $settings->rf19_self_invoices_enabled;
+
+        $validated['company_vat_number'] = ItalianVatNumber::normalize($validated['company_vat_number'] ?? null);
 
         $settings->fill($validated);
         $settings->save();

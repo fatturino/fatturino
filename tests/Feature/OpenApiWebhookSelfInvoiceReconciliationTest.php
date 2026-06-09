@@ -18,7 +18,7 @@ afterEach(function () {
 
 beforeEach(function () {
     $companySettings = app(CompanySettings::class);
-    $companySettings->company_vat_number = 'IT12345678903';
+    $companySettings->company_vat_number = '12345678903';
     $companySettings->save();
 
     $settings = app(OpenApiSettings::class);
@@ -192,7 +192,7 @@ test('reconcile command skips missing self-invoice without creating documents', 
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getSupplierInvoices')
         ->once()
-        ->with(Mockery::on(fn (array $filters) => ($filters['recipient'] ?? null) === 'IT12345678903'))
+        ->with(Mockery::on(fn (array $filters) => ($filters['recipient'] ?? null) === '12345678903'))
         ->andReturn([
             'success' => true,
             'data' => [[

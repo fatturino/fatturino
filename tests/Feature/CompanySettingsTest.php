@@ -1,5 +1,8 @@
 <?php
 
+use App\Contracts\EnvironmentCapabilities;
+use App\Models\User;
+use App\Services\UnrestrictedCapabilities;
 use App\Settings\CompanySettings;
 
 // Test company settings can be accessed
@@ -46,14 +49,34 @@ test('company settings can be updated', function () {
 });
 
 // Test Italian VAT number format
-test('company settings accept Italian vat number format', function () {
+test('company settings update normalizes italian vat number without country prefix', function () {
+    $user = User::factory()->create();
     $settings = app(CompanySettings::class);
+    app()->instance(EnvironmentCapabilities::class, new UnrestrictedCapabilities);
 
-    $settings->company_vat_number = 'IT12345678903';
-    $settings->save();
+    $response = $this->actingAs($user)->put(route('settings.company.update'), [
+        'company_name' => $settings->company_name ?: 'Test Company',
+        'company_vat_number' => 'IT12345678903',
+        'company_tax_code' => $settings->company_tax_code ?: '12345678903',
+        'company_address' => $settings->company_address ?: 'Via Test 1',
+        'company_postal_code' => $settings->company_postal_code ?: '20100',
+        'company_city' => $settings->company_city ?: 'Milano',
+        'company_province' => $settings->company_province ?: 'MI',
+        'company_country' => 'IT',
+        'company_email' => $settings->company_email ?: 'info@example.it',
+        'company_pec' => $settings->company_pec ?: 'pec@example.it',
+        'company_sdi_code' => $settings->company_sdi_code ?: '1234567',
+        'company_fiscal_regime' => $settings->company_fiscal_regime ?: 'RF01',
+        'rf19_self_invoices_enabled' => $settings->rf19_self_invoices_enabled,
+        'company_ateco_codes' => $settings->company_ateco_codes,
+        'remove_logo' => false,
+    ]);
+
+    $response->assertSessionHasNoErrors()
+        ->assertRedirect(route('settings.company'));
 
     $updatedSettings = app(CompanySettings::class);
-    expect($updatedSettings->company_vat_number)->toBe('IT12345678903');
+    expect($updatedSettings->company_vat_number)->toBe('12345678903');
 });
 
 // Test tax code format
@@ -153,7 +176,7 @@ test('company settings can store complete company profile', function () {
     $settings = app(CompanySettings::class);
 
     $settings->company_name = 'Test Company SRL';
-    $settings->company_vat_number = 'IT12345678903';
+    $settings->company_vat_number = '12345678903';
     $settings->company_tax_code = '12345678903';
     $settings->company_address = 'Via Roma 1';
     $settings->company_city = 'Milano';
@@ -168,7 +191,7 @@ test('company settings can store complete company profile', function () {
     $updatedSettings = app(CompanySettings::class);
 
     expect($updatedSettings->company_name)->toBe('Test Company SRL');
-    expect($updatedSettings->company_vat_number)->toBe('IT12345678903');
+    expect($updatedSettings->company_vat_number)->toBe('12345678903');
     expect($updatedSettings->company_tax_code)->toBe('12345678903');
     expect($updatedSettings->company_address)->toBe('Via Roma 1');
     expect($updatedSettings->company_city)->toBe('Milano');

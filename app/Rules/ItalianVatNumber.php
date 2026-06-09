@@ -7,16 +7,28 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class ItalianVatNumber implements ValidationRule
 {
+    public static function normalize(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $vat = strtoupper(trim($value));
+        $vat = preg_replace('/^IT/i', '', $vat);
+        $vat = preg_replace('/\D+/', '', $vat);
+
+        return $vat !== '' ? $vat : null;
+    }
+
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (empty($value)) {
             return;
         }
 
-        // Strip optional "IT" prefix
-        $vat = preg_replace('/^IT/i', '', $value);
+        $vat = self::normalize((string) $value);
 
-        if (! preg_match('/^\d{11}$/', $vat)) {
+        if ($vat === null || ! preg_match('/^\d{11}$/', $vat)) {
             $fail(__('validation.italian_vat_number'));
 
             return;

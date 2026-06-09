@@ -9,7 +9,7 @@ it('reconfigures webhook when provider status is already active', function () {
     config()->set('app.url', 'https://fatturino.test');
 
     $companySettings = app(CompanySettings::class);
-    $companySettings->company_vat_number = 'IT12345678901';
+    $companySettings->company_vat_number = '12345678901';
     $companySettings->save();
 
     $settings = app(OpenApiSettings::class);
@@ -35,6 +35,8 @@ it('reconfigures webhook when provider status is already active', function () {
 
     expect($exitCode)->toBe(0);
 
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/business_registry_configurations/12345678901'));
+
     $fresh = app(OpenApiSettings::class);
     expect($fresh->activated)->toBeTrue()
         ->and($fresh->webhook_secret)->not->toBe('')
@@ -43,7 +45,7 @@ it('reconfigures webhook when provider status is already active', function () {
 
 it('fails when provider status is not active', function () {
     $companySettings = app(CompanySettings::class);
-    $companySettings->company_vat_number = 'IT12345678901';
+    $companySettings->company_vat_number = '12345678901';
     $companySettings->save();
 
     $settings = app(OpenApiSettings::class);

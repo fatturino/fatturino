@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CreditNote;
+use App\Rules\ItalianVatNumber;
 use App\Services\Concerns\GeneratesSdiFilename;
 use App\Settings\CompanySettings;
 use Carbon\Carbon;
@@ -49,10 +50,10 @@ class CreditNoteXmlService
 
         // 1. Transmission Data
         $countryCode = $this->companySettings->company_country;
-        $vatNumber = $this->companySettings->company_vat_number;
+        $vatNumber = ItalianVatNumber::normalize($this->companySettings->company_vat_number) ?? '';
 
         $doc->setCountryCode($countryCode);
-        $doc->setSenderVatId(str_replace('IT', '', $vatNumber));
+        $doc->setSenderVatId($vatNumber);
         $doc->setSendingId(str_pad($creditNote->id, 5, '0', STR_PAD_LEFT));
         $doc->setTransmissionFormat(TransmissionFormat::FPR12());
         $doc->setEmittingSystem('Fatturino');
@@ -66,7 +67,7 @@ class CreditNoteXmlService
         // 2. Supplier (My Company — the one issuing the credit note)
         $supplier = new Supplier;
         $supplier->setCountryCode($countryCode);
-        $supplier->setVatNumber(str_replace('IT', '', $vatNumber));
+        $supplier->setVatNumber($vatNumber);
         $supplier->setFiscalCode($this->companySettings->company_tax_code);
         $supplier->setOrganization($this->companySettings->company_name);
 

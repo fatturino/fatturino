@@ -13,7 +13,7 @@ beforeEach(function () {
     // Set minimal company settings for placeholder rendering
     $company = app(CompanySettings::class);
     $company->company_name = 'Azienda Test';
-    $company->company_vat_number = 'IT12345678901';
+    $company->company_vat_number = '12345678901';
 
     // Set default email templates
     $settings = app(EmailSettings::class);
@@ -181,7 +181,7 @@ test('renderBody replaces all monetary and company placeholders', function () {
     expect($body)->toContain('€ 220,00');    // IMPORTO_IVA
     expect($body)->toContain('€ 1.220,00'); // IMPORTO_TOTALE
     expect($body)->toContain('Azienda Test');
-    expect($body)->toContain('IT12345678901');
+    expect($body)->toContain('12345678901');
     expect($body)->toContain('anna@example.com');
 });
 

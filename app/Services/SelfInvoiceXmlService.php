@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SelfInvoice;
+use App\Rules\ItalianVatNumber;
 use App\Services\Concerns\GeneratesSdiFilename;
 use App\Settings\CompanySettings;
 use Carbon\Carbon;
@@ -52,11 +53,11 @@ class SelfInvoiceXmlService
         $doc = new DigitalDocument;
 
         $companyCountry = $this->companySettings->company_country;
-        $companyVat = $this->companySettings->company_vat_number;
+        $companyVat = ItalianVatNumber::normalize($this->companySettings->company_vat_number) ?? '';
 
         // 1. Transmission Data — I am the transmitter, and also the recipient (self-invoice)
         $doc->setCountryCode($companyCountry);
-        $doc->setSenderVatId(str_replace('IT', '', $companyVat));
+        $doc->setSenderVatId($companyVat);
         $doc->setSendingId(str_pad($invoice->id, 5, '0', STR_PAD_LEFT));
         $doc->setTransmissionFormat(TransmissionFormat::FPR12());
         $doc->setEmittingSystem('Fatturino');
@@ -104,7 +105,7 @@ class SelfInvoiceXmlService
         // In a self-invoice, the buyer is my company (who is also issuing it)
         $customer = new Customer;
         $customer->setCountryCode($companyCountry);
-        $customer->setVatNumber(str_replace('IT', '', $companyVat));
+        $customer->setVatNumber($companyVat);
         $customer->setFiscalCode($this->companySettings->company_tax_code);
         $customer->setOrganization($this->companySettings->company_name);
 
@@ -122,7 +123,7 @@ class SelfInvoiceXmlService
         // Required when SoggettoEmittente = CC: the buyer is issuing the document
         $intermediary = new Intermediary;
         $intermediary->setCountryCode($companyCountry);
-        $intermediary->setVatNumber(str_replace('IT', '', $companyVat));
+        $intermediary->setVatNumber($companyVat);
         $intermediary->setFiscalCode($this->companySettings->company_tax_code);
         $intermediary->setOrganization($this->companySettings->company_name);
         $doc->setIntermediary($intermediary);
