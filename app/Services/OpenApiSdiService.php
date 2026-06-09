@@ -384,11 +384,11 @@ class OpenApiSdiService
                 // type=1 = fatture passive (ricevute), type=0 = fatture attive (inviate)
                 'type' => '1',
                 // Fail closed: with a shared provider token we must always scope passive invoices to the current company.
-                'destinatario' => $recipient,
+                'recipient' => $recipient,
             ];
 
             if (! empty($filters['sender'])) {
-                $params['mittente'] = $filters['sender'];
+                $params['sender'] = $filters['sender'];
             }
 
             if (! empty($filters['page'])) {
