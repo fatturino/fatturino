@@ -169,6 +169,7 @@
             item: invoice,
             links: {
                 edit: `/proforma/${invoice.id}/edit`,
+                pdf: `/proforma/${invoice.id}/pdf`,
             },
             callbacks: {
                 sendEmail,
@@ -326,6 +327,7 @@
                         <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span>
                     </div>
                     <div class="mt-3 flex items-center gap-3 text-xs">
+                        <a href={`/proforma/${invoice.id}/pdf`} class="font-medium text-brand-secondary">PDF</a>
                         <Button class="font-medium text-brand-secondary" onclick={() => sendEmail(invoice)}>Email</Button>
                         <a href={`/proforma/${invoice.id}/edit`} class="font-medium text-brand-accent">Modifica</a>
                     </div>

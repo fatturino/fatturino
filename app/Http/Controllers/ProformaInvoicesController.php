@@ -10,6 +10,7 @@ use App\Http\Controllers\Concerns\HandlesDocumentEmail;
 use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\Sequence;
+use App\Services\CourtesyPdfService;
 use App\Services\DocumentMailer;
 use App\Services\Domain\DocumentNumberingService;
 use App\Settings\CompanySettings;
@@ -218,6 +219,16 @@ class ProformaInvoicesController extends Controller
         $proformaInvoice->calculateTotals();
 
         return redirect()->route('proforma.index');
+    }
+
+    public function downloadPdf(
+        ProformaInvoice $proformaInvoice,
+        CourtesyPdfService $pdfService
+    ) {
+        $pdf = $pdfService->generateForProforma($proformaInvoice);
+        $filename = $pdfService->generateProformaFileName($proformaInvoice);
+
+        return $pdf->download($filename);
     }
 
     public function sendEmail(
