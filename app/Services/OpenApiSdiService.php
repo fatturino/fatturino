@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Settings\CompanySettings;
 use App\Settings\OpenApiSettings;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -369,17 +370,25 @@ class OpenApiSdiService
         }
 
         try {
+            $recipient = $this->resolveRecipientFiscalId();
+
+            if ($recipient === null) {
+                return [
+                    'success' => false,
+                    'error' => 'recipient_missing',
+                    'message' => 'Company VAT number is required to retrieve supplier invoices safely',
+                ];
+            }
+
             $params = [
                 // type=1 = fatture passive (ricevute), type=0 = fatture attive (inviate)
                 'type' => '1',
+                // Fail closed: with a shared provider token we must always scope passive invoices to the current company.
+                'destinatario' => $recipient,
             ];
 
             if (! empty($filters['sender'])) {
                 $params['mittente'] = $filters['sender'];
-            }
-
-            if (! empty($filters['recipient'])) {
-                $params['destinatario'] = $filters['recipient'];
             }
 
             if (! empty($filters['page'])) {
@@ -1046,6 +1055,14 @@ class OpenApiSdiService
         return Http::withToken($this->apiToken)
             ->connectTimeout(self::CONNECT_TIMEOUT_SECONDS)
             ->timeout(self::REQUEST_TIMEOUT_SECONDS);
+    }
+
+    private function resolveRecipientFiscalId(): ?string
+    {
+        $companyVat = app(CompanySettings::class)->company_vat_number ?? '';
+        $normalized = $this->normalizeFiscalId((string) $companyVat);
+
+        return $normalized !== '' ? $normalized : null;
     }
 
     /**

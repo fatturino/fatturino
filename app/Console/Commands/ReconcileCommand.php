@@ -7,8 +7,10 @@ use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
 use App\Models\PurchaseInvoice;
 use App\Models\SelfInvoice;
+use App\Services\InvoiceTenantGuardService;
 use App\Services\InvoiceXmlImportService;
 use App\Services\OpenApiSdiService;
+use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -36,10 +38,16 @@ class ReconcileCommand extends Command
         'expired' => 4,
     ];
 
-    public function handle(OpenApiSdiService $service): int
+    public function handle(OpenApiSdiService $service, CompanySettings $companySettings): int
     {
         if (! $service->isConfigured()) {
             $this->error('OpenAPI SDI is not configured.');
+
+            return self::FAILURE;
+        }
+
+        if (empty($companySettings->company_vat_number)) {
+            $this->error('Company VAT number is required to reconcile supplier invoices safely.');
 
             return self::FAILURE;
         }
@@ -53,7 +61,7 @@ class ReconcileCommand extends Command
         $updateStats = ['checked' => 0, 'updated' => 0, 'unchanged' => 0, 'errors' => 0];
 
         if (! $this->option('updates-only')) {
-            $receiveStats = $this->reconcileReceive($service, $isDryRun);
+            $receiveStats = $this->reconcileReceive($service, $isDryRun, $companySettings->company_vat_number);
         }
 
         if (! $this->option('receive-only')) {
@@ -74,7 +82,7 @@ class ReconcileCommand extends Command
         return self::SUCCESS;
     }
 
-    private function reconcileReceive(OpenApiSdiService $service, bool $isDryRun): array
+    private function reconcileReceive(OpenApiSdiService $service, bool $isDryRun, string $companyVat): array
     {
         $this->info('Reconciling supplier invoices...');
 
@@ -89,6 +97,7 @@ class ReconcileCommand extends Command
             $result = $service->getSupplierInvoices([
                 'page' => $page,
                 'per_page' => $pageSize,
+                'recipient' => $companyVat,
             ]);
 
             if (! $result['success']) {
@@ -154,6 +163,17 @@ class ReconcileCommand extends Command
                 }
 
                 try {
+                    if (! app(InvoiceTenantGuardService::class)->matchesInboundInvoice($downloadResult['xml'])) {
+                        $this->line("  Skipped (recipient mismatch): {$uuid}");
+                        $stats['skipped']++;
+
+                        Log::channel('fe-openapi')->warning('OpenAPI reconcile: supplier invoice skipped due to recipient VAT mismatch', [
+                            'uuid' => $uuid,
+                        ]);
+
+                        continue;
+                    }
+
                     // If this matches a self-invoice, reconcile only and skip import
                     if ($this->handleSelfInvoiceDelivery($record, $downloadResult['xml'])) {
                         $fn = $record['sdi_file_name'] ?? $record['filename'] ?? $uuid;

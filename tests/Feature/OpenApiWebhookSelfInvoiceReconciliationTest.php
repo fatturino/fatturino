@@ -9,6 +9,7 @@ use App\Models\SalesInvoice;
 use App\Models\SdiUuidLink;
 use App\Models\SelfInvoice;
 use App\Services\OpenApiSdiService;
+use App\Settings\CompanySettings;
 use App\Settings\OpenApiSettings;
 
 afterEach(function () {
@@ -16,6 +17,10 @@ afterEach(function () {
 });
 
 beforeEach(function () {
+    $companySettings = app(CompanySettings::class);
+    $companySettings->company_vat_number = 'IT12345678903';
+    $companySettings->save();
+
     $settings = app(OpenApiSettings::class);
     $settings->api_token = 'test-token';
     $settings->sandbox = true;
@@ -127,6 +132,30 @@ test('supplier invoice webhook keeps importing real purchase invoices', function
         ->and(SelfInvoice::withoutGlobalScopes()->where('type', 'self_invoice')->count())->toBe(0);
 });
 
+test('supplier invoice webhook skips invoices for another company vat', function () {
+    $service = Mockery::mock(OpenApiSdiService::class);
+    $service->shouldReceive('downloadInvoiceXml')
+        ->once()
+        ->with('foreign-company-uuid')
+        ->andReturn([
+            'success' => true,
+            'xml' => makeInboundInvoiceXml('TD01', 'FORN-2026-999', '99999999999'),
+        ]);
+    app()->instance(OpenApiSdiService::class, $service);
+
+    $response = $this
+        ->withHeader('Authorization', 'Bearer webhook-secret')
+        ->postJson(route('openapi.webhook'), supplierInvoiceWebhookPayload('foreign-company-uuid'));
+
+    $response->assertOk()->assertJson([
+        'status' => 'ignored',
+        'message' => 'Supplier invoice does not belong to current company',
+    ]);
+
+    expect(PurchaseInvoice::withoutGlobalScopes()->where('type', 'purchase')->count())->toBe(0)
+        ->and(SelfInvoice::withoutGlobalScopes()->count())->toBe(0);
+});
+
 test('supplier invoice webhook does not match self-invoice when inbound number differs', function () {
     SelfInvoice::factory()->create([
         'number' => '1/INT',
@@ -163,6 +192,7 @@ test('reconcile command skips missing self-invoice without creating documents', 
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getSupplierInvoices')
         ->once()
+        ->with(Mockery::on(fn (array $filters) => ($filters['recipient'] ?? null) === 'IT12345678903'))
         ->andReturn([
             'success' => true,
             'data' => [[
@@ -230,7 +260,7 @@ function supplierInvoiceWebhookPayload(string $uuid): array
     ];
 }
 
-function makeInboundInvoiceXml(string $documentType, string $number): string
+function makeInboundInvoiceXml(string $documentType, string $number, string $customerVat = '12345678903'): string
 {
     return <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
@@ -267,9 +297,9 @@ function makeInboundInvoiceXml(string $documentType, string $number): string
       <DatiAnagrafici>
         <IdFiscaleIVA>
           <IdPaese>IT</IdPaese>
-          <IdCodice>12345678903</IdCodice>
+          <IdCodice>{$customerVat}</IdCodice>
         </IdFiscaleIVA>
-        <CodiceFiscale>12345678903</CodiceFiscale>
+        <CodiceFiscale>{$customerVat}</CodiceFiscale>
         <Anagrafica>
           <Denominazione>Test Company SRL</Denominazione>
         </Anagrafica>

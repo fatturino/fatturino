@@ -21,6 +21,7 @@ class SdiInboundProcessor
         private readonly SdiUuidLinkService $sdiUuidLinkService,
         private readonly SdiCostGuardService $sdiCostGuardService,
         private readonly OpenApiSdiService $openApiSdiService,
+        private readonly InvoiceTenantGuardService $invoiceTenantGuardService,
     ) {}
 
     public function process(string $eventName, array $data, EiInboundLog $inboundLog, OpenApiSettings $settings): array
@@ -107,6 +108,18 @@ class SdiInboundProcessor
         }
 
         $xml = $downloadResult['xml'];
+
+        if (! $this->invoiceTenantGuardService->matchesInboundInvoice($xml)) {
+            Log::channel('fe-openapi')->warning('Supplier invoice skipped because recipient VAT does not match current company', [
+                'uuid' => $uuid,
+            ]);
+
+            return [
+                'status' => 'ignored',
+                'error' => 'Supplier invoice does not belong to current company',
+            ];
+        }
+
         $fingerprint = $this->businessFingerprintService->buildFromXml($xml);
 
         $documentType = $this->extractXmlField($xml, 'TipoDocumento');
@@ -226,6 +239,14 @@ class SdiInboundProcessor
         if (! $invoice) {
             $download = $this->openApiSdiService->downloadInvoiceXml($invoiceUuid);
             if (($download['success'] ?? false) && isset($download['xml'])) {
+                if (! $this->invoiceTenantGuardService->matchesOutboundInvoice($download['xml'])) {
+                    Log::channel('fe-openapi')->warning('Customer notification skipped because supplier VAT does not match current company', [
+                        'uuid' => $invoiceUuid,
+                    ]);
+
+                    return ['status' => 'ignored', 'error' => 'Invoice does not belong to current company'];
+                }
+
                 $fingerprint = $this->businessFingerprintService->buildFromXml($download['xml']);
                 $invoice = FiscalDocument::withoutGlobalScopes()->where('business_fingerprint', $fingerprint)->first();
             }

@@ -6,6 +6,31 @@ use Carbon\Carbon;
 
 class BusinessFingerprintService
 {
+    public function extractSupplierFiscalIdFromXml(string $xml): ?string
+    {
+        $parsed = $this->parseXml($xml);
+
+        return $this->normalizeFiscalIdentifier(
+            $this->extractPartyIdentifier($parsed->FatturaElettronicaHeader?->CedentePrestatore?->DatiAnagrafici ?? null)
+        );
+    }
+
+    public function extractCustomerFiscalIdFromXml(string $xml): ?string
+    {
+        $parsed = $this->parseXml($xml);
+
+        return $this->normalizeFiscalIdentifier(
+            $this->extractPartyIdentifier($parsed->FatturaElettronicaHeader?->CessionarioCommittente?->DatiAnagrafici ?? null)
+        );
+    }
+
+    public function normalizeFiscalIdentifier(?string $value): ?string
+    {
+        $normalized = $this->normalizeVatOrCf($value);
+
+        return $normalized === '-' ? null : $normalized;
+    }
+
     public function buildFromXml(string $xml): string
     {
         $parsed = $this->parseXml($xml);
