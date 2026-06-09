@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
 use App\Models\EiOutboundLog;
 use App\Services\BusinessFingerprintService;
+use App\Services\PostHogTelemetryService;
 use App\Services\SdiUuidLinkService;
 use App\Services\XmlWorkflowService;
 use App\Support\InvoiceAuditDispatcher;
@@ -150,10 +151,20 @@ trait HandlesXmlSdiWorkflow
             app(SdiUuidLinkService::class)->linkOutbound($document->id, $document->sdi_uuid, $fingerprint, 'manual');
         }
 
+        $providerId = $xmlWorkflow->providerId();
+
         InvoiceAuditDispatcher::dispatch($document, 'sdi_sent', [
-            'provider' => $xmlWorkflow->providerId(),
+            'provider' => $providerId,
             'uuid' => $document->sdi_uuid,
         ]);
+        app(PostHogTelemetryService::class)->capture(
+            'document_sent_to_sdi',
+            array_merge(
+                app(PostHogTelemetryService::class)->documentProperties($document),
+                ['provider' => $providerId]
+            ),
+            request()->user()
+        );
         $document->refresh();
 
         if (! request()->expectsJson()) {

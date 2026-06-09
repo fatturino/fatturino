@@ -20,6 +20,7 @@ use App\Http\Controllers\SelfInvoicesController;
 use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\SetupController;
+use App\Services\PostHogTelemetryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -183,6 +184,7 @@ Route::middleware('auth')->group(function () {
 
     // Logout
     Route::post('/logout', function () {
+        app(PostHogTelemetryService::class)->capture('user_logged_out', [], request()->user());
         Auth::logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();

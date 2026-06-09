@@ -15,6 +15,8 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'instance_id' => env('APP_INSTANCE_ID'),
+
     // Docker image tag of the deployed container (e.g., "latest", "v1.2.0", "abc123")
     'version' => env('APP_VERSION', '0.0.0'),
 

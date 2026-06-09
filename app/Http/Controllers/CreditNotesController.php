@@ -12,6 +12,7 @@ use App\Models\Sequence;
 use App\Services\CreditNoteXmlService;
 use App\Services\DocumentMailer;
 use App\Services\Domain\DocumentNumberingService;
+use App\Services\PostHogTelemetryService;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
@@ -123,6 +124,11 @@ class CreditNotesController extends Controller
         }
 
         $creditNote->calculateTotals();
+        app(PostHogTelemetryService::class)->capture(
+            'credit_note_created',
+            app(PostHogTelemetryService::class)->documentProperties($creditNote),
+            $request->user()
+        );
 
         return redirect()->route('credit-notes.index');
     }

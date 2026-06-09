@@ -21,6 +21,7 @@ use App\Services\CourtesyPdfService;
 use App\Services\DocumentMailer;
 use App\Services\Domain\DocumentNumberingService;
 use App\Services\InvoiceXmlService;
+use App\Services\PostHogTelemetryService;
 use App\Services\ReportService;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
@@ -168,6 +169,11 @@ class SalesInvoicesController extends Controller
         }
 
         $invoice->calculateTotals();
+        app(PostHogTelemetryService::class)->capture(
+            'sales_invoice_created',
+            app(PostHogTelemetryService::class)->documentProperties($invoice),
+            $request->user()
+        );
 
         return redirect()->route('sell-invoices.index');
     }
@@ -259,6 +265,11 @@ class SalesInvoicesController extends Controller
         }
 
         $invoice->calculateTotals();
+        app(PostHogTelemetryService::class)->capture(
+            'sales_invoice_updated',
+            app(PostHogTelemetryService::class)->documentProperties($invoice),
+            $request->user()
+        );
 
         return redirect()->route('sell-invoices.index');
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Sequence;
 use App\Services\Fattura24ContactImporter;
 use App\Services\InvoiceXmlImportService;
+use App\Services\PostHogTelemetryService;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
@@ -81,6 +82,13 @@ class ImportController extends Controller
                 $service->importXml(file_get_contents($filePath), $sequenceId, $category);
             }
 
+            app(PostHogTelemetryService::class)->capture('xml_import_completed', [
+                'import_type' => (string) $request->input('import_type'),
+                'import_category' => $category,
+                'source_files_count' => count($files),
+                'error_count' => count($service->getErrors()),
+            ], $request->user());
+
             return redirect()->route('imports.index')->with('importResult', [
                 'type' => $request->input('import_type'),
                 'stats' => $service->getStats(),
@@ -103,6 +111,12 @@ class ImportController extends Controller
             $importer = app(Fattura24ContactImporter::class);
             $file = $request->file('csv_file');
             $importer->import($file->getRealPath(), $updateExisting);
+            app(PostHogTelemetryService::class)->capture('xml_import_completed', [
+                'import_type' => 'fattura24_contacts',
+                'import_category' => 'contacts',
+                'source_files_count' => 1,
+                'error_count' => count($importer->getErrors()),
+            ], $request->user());
 
             return redirect()->route('imports.index')->with('importResult', [
                 'type' => 'fattura24_contacts',

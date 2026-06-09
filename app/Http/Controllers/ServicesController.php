@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PostHogTelemetryService;
 use App\Settings\BackupSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,9 +66,18 @@ class ServicesController extends Controller
             ]);
 
             $disk->files('/');
+            app(PostHogTelemetryService::class)->capture('service_connection_tested', [
+                'service' => 's3',
+                'success' => true,
+            ], $request->user());
 
             return back()->with('success', 'Connessione S3 riuscita.');
         } catch (\Exception $e) {
+            app(PostHogTelemetryService::class)->capture('service_connection_tested', [
+                'service' => 's3',
+                'success' => false,
+            ], $request->user());
+
             return back()->withErrors(['s3' => $e->getMessage()]);
         }
     }

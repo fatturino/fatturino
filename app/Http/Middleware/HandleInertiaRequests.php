@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\FiscalDocument;
+use App\Services\PostHogTelemetryService;
 use App\Settings\CompanySettings;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -57,13 +58,14 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'appName' => config('app.name'),
-            'auth.user' => fn () => $request->user() ? $request->user()->only('name', 'email') : null,
+            'auth.user' => fn () => $request->user() ? $request->user()->only('id', 'name', 'email') : null,
             'fiscalYear' => $fiscalYear,
             'availableYears' => $availableYears,
             'fiscalRegime' => $fiscalRegime,
             'rf19SelfInvoicesEnabled' => $rf19SelfInvoicesEnabled,
             'title' => fn () => $request->route()?->defaults['title'] ?? null,
             'breadcrumbs' => fn () => $request->route()?->defaults['breadcrumbs'] ?? [],
+            'telemetry' => app(PostHogTelemetryService::class)->sharedContext(),
             'flash' => [
                 'toast' => fn () => $request->session()->get('toast'),
             ],

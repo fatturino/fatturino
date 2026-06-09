@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Services\DocumentMailer;
+use App\Services\PostHogTelemetryService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -53,6 +54,12 @@ trait HandlesDocumentEmail
                 'error' => 'Invio email non riuscito: '.$e->getMessage(),
             ], 500);
         }
+
+        app(PostHogTelemetryService::class)->capture(
+            'document_email_sent',
+            app(PostHogTelemetryService::class)->documentProperties($document),
+            $request->user()
+        );
 
         if (! $request->expectsJson()) {
             return back()->with('toast', [

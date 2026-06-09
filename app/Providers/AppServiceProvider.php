@@ -10,6 +10,7 @@ use App\Services\DemoLoginCustomizer;
 use App\Services\NullLoginCustomizer;
 use App\Services\OpenApiSdiProvider;
 use App\Services\OpenApiSdiService;
+use App\Services\PostHogTelemetryService;
 use App\Services\UnrestrictedCapabilities;
 use App\Settings\BackupSettings;
 use App\Settings\OpenApiSettings;
@@ -23,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(OpenApiSdiService::class);
+        $this->app->singleton(PostHogTelemetryService::class);
         $this->app->singleton(SdiProvider::class, OpenApiSdiProvider::class);
 
         $this->mergeConfigFrom(config_path('fe-openapi.php'), 'fe-openapi');

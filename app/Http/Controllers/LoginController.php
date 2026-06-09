@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Contracts\LoginCustomizer;
 use App\Models\User;
+use App\Services\PostHogTelemetryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -63,6 +64,7 @@ class LoginController extends Controller
 
         RateLimiter::clear($throttleKey);
         session()->regenerate();
+        app(PostHogTelemetryService::class)->capture('user_logged_in', [], $request->user());
 
         return redirect()->route('dashboard');
     }

@@ -13,6 +13,7 @@ use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
 use App\Services\Domain\DocumentNumberingService;
+use App\Services\PostHogTelemetryService;
 use App\Services\SelfInvoiceXmlService;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
@@ -152,6 +153,11 @@ class SelfInvoicesController extends Controller
         $invoice->calculateTotals();
         $invoice->refresh();
         $invoice->markAsPaidOnIssueDate();
+        app(PostHogTelemetryService::class)->capture(
+            'self_invoice_created',
+            app(PostHogTelemetryService::class)->documentProperties($invoice),
+            $request->user()
+        );
 
         return redirect()->route('self-invoices.index');
     }

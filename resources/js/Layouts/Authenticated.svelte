@@ -1,6 +1,7 @@
 <script>
     import { page } from '@inertiajs/svelte'
     import Toast from '$lib/components/Toast.svelte'
+    import { syncPostHogPage } from '$lib/posthog.js'
     import Sidebar from '$lib/components/Sidebar.svelte'
     import Button from '$lib/components/ui/Button.svelte'
     import { headerActionsStore } from '$lib/stores/header-actions.js'
@@ -13,6 +14,7 @@
     const pageTitle = $derived(page.props.title ?? prettifyComponentName(page.component))
     const breadcrumbs = $derived(page.props.breadcrumbs ?? [])
     const user = $derived(page.props.auth?.user ?? null)
+    const telemetry = $derived(page.props.telemetry ?? null)
     const fiscalYear = $derived(page.props.fiscalYear ?? null)
     const availableYears = $derived(page.props.availableYears ?? [])
     const fiscalRegime = $derived(page.props.fiscalRegime ?? null)
@@ -102,6 +104,21 @@
 
         lastFlashToastKey = toastKey
         showToast(flashToast)
+    })
+
+    $effect(() => {
+        if (!user?.id || !telemetry?.instanceKey) {
+            return
+        }
+
+        void syncPostHogPage({
+            component: page.component,
+            props: {
+                auth: { user },
+                telemetry,
+            },
+            url: currentPath,
+        })
     })
 </script>
 

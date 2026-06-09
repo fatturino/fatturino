@@ -75,9 +75,11 @@ All'avvio il container esegue automaticamente:
 | `MAIL_EHLO_DOMAIN` | No | dominio da `APP_URL` | Dominio EHLO per SMTP |
 | `MAIL_FROM_ADDRESS` | No | `hello@example.com` | Indirizzo mittente di default |
 | `MAIL_FROM_NAME` | No | `Fatturino` | Nome mittente di default |
+| `APP_INSTANCE_ID` | No | fallback a `APP_NAME` | Identificativo stabile dell'istanza per namespace telemetry multi-tenant |
 | `BACKUP_MANAGED_BY_ENV` | No | `false` | Se `true`, UI e scheduler backup disabilitati. Le credenziali S3 vanno impostate via `AWS_*` env (modalita managed). Se `false` (default), la configurazione S3 si fa da UI in Impostazioni > Servizi |
 | `VITE_POSTHOG_KEY` | No | - | API key PostHog. Se vuota, PostHog non viene inizializzato |
-| `VITE_POSTHOG_HOST` | No | `https://eu.i.posthog.com` | Endpoint PostHog |
+| `VITE_POSTHOG_HOST` | No | `https://eu.i.posthog.com` | `api_host` PostHog frontend |
+| `VITE_POSTHOG_UI_HOST` | No | `https://eu.posthog.com` | `ui_host` PostHog frontend per link corretti quando si usa un proxy |
 | `POSTHOG_API_KEY` | No | - | API key PostHog backend. Se vuota, SDK PHP non inizializzato |
 | `POSTHOG_HOST` | No | `https://eu.i.posthog.com` | Endpoint PostHog backend |
 | `AWS_ACCESS_KEY_ID` | No | - | Access key S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |

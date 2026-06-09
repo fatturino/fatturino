@@ -10,6 +10,7 @@ use App\Models\Contact;
 use App\Models\Payment;
 use App\Models\PurchaseInvoice;
 use App\Models\Sequence;
+use App\Services\PostHogTelemetryService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -116,6 +117,11 @@ class PurchaseInvoicesController extends Controller
         }
 
         $purchaseInvoice->calculateTotals();
+        app(PostHogTelemetryService::class)->capture(
+            'purchase_invoice_updated',
+            app(PostHogTelemetryService::class)->documentProperties($purchaseInvoice),
+            $request->user()
+        );
 
         return redirect()->route('purchase-invoices.index');
     }

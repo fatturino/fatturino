@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequireCapability;
+use App\Services\PostHogTelemetryService;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -28,4 +29,18 @@ return Application::configure(basePath: dirname(__DIR__))
         // Trust all proxies — required for correct URL generation behind reverse proxy (Uncloud/Caddy)
         $middleware->trustProxies(at: '*');
     })
-    ->withExceptions(function (Exceptions $exceptions): void {})->create();
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->report(function (Throwable $throwable): void {
+            $telemetry = app(PostHogTelemetryService::class);
+
+            if (! $telemetry->shouldReportException($throwable)) {
+                return;
+            }
+
+            $telemetry->captureException(
+                $throwable,
+                $telemetry->exceptionContext($throwable, request()),
+                request()->user()
+            );
+        });
+    })->create();
