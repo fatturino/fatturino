@@ -1,6 +1,6 @@
-const posthogKey = import.meta.env.VITE_POSTHOG_KEY;
-const posthogHost = import.meta.env.VITE_POSTHOG_HOST || 'https://eu.i.posthog.com';
-const posthogUiHost = import.meta.env.VITE_POSTHOG_UI_HOST || 'https://eu.posthog.com';
+const buildTimePosthogKey = import.meta.env.VITE_POSTHOG_KEY;
+const buildTimePosthogHost = import.meta.env.VITE_POSTHOG_HOST || 'https://eu.i.posthog.com';
+const buildTimePosthogUiHost = import.meta.env.VITE_POSTHOG_UI_HOST || 'https://eu.posthog.com';
 
 let posthogPromise = null;
 let posthogInitialized = false;
@@ -9,14 +9,11 @@ let currentContext = {};
 let lastDistinctId = null;
 
 export async function syncPostHogPage(pageState) {
-    if (!posthogKey) {
-        return null;
-    }
-
     const telemetry = pageState?.props?.telemetry;
     const user = pageState?.props?.auth?.user;
+    const posthogConfig = buildPostHogConfig(telemetry);
 
-    if (!telemetry?.instanceKey || !user?.id) {
+    if (!posthogConfig.key || !telemetry?.instanceKey || !user?.id) {
         return null;
     }
 
@@ -25,9 +22,9 @@ export async function syncPostHogPage(pageState) {
 
     const posthog = await getPostHog();
     if (!posthogInitialized) {
-        posthog.init(posthogKey, {
-            api_host: posthogHost,
-            ui_host: posthogUiHost,
+        posthog.init(posthogConfig.key, {
+            api_host: posthogConfig.apiHost,
+            ui_host: posthogConfig.uiHost,
             defaults: '2026-05-30',
             person_profiles: 'identified_only',
             bootstrap: {
@@ -86,6 +83,14 @@ async function getPostHog() {
     }
 
     return posthogPromise;
+}
+
+function buildPostHogConfig(telemetry) {
+    return {
+        key: telemetry?.posthog?.key || buildTimePosthogKey,
+        apiHost: telemetry?.posthog?.apiHost || buildTimePosthogHost,
+        uiHost: telemetry?.posthog?.uiHost || buildTimePosthogUiHost,
+    }
 }
 
 function registerErrorHandlers(posthog) {

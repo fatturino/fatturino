@@ -54,6 +54,11 @@ class PostHogTelemetryService
             'appName' => (string) config('app.name'),
             'appEnv' => (string) config('app.env'),
             'appVersion' => (string) config('app.version'),
+            'posthog' => [
+                'key' => (string) config('services.posthog.frontend_key', ''),
+                'apiHost' => (string) config('services.posthog.frontend_host', 'https://eu.i.posthog.com'),
+                'uiHost' => (string) config('services.posthog.ui_host', 'https://eu.posthog.com'),
+            ],
         ];
     }
 

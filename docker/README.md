@@ -77,11 +77,14 @@ All'avvio il container esegue automaticamente:
 | `MAIL_FROM_NAME` | No | `Fatturino` | Nome mittente di default |
 | `APP_INSTANCE_ID` | No | fallback a `APP_NAME` | Identificativo stabile dell'istanza per namespace telemetry multi-tenant |
 | `BACKUP_MANAGED_BY_ENV` | No | `false` | Se `true`, UI e scheduler backup disabilitati. Le credenziali S3 vanno impostate via `AWS_*` env (modalita managed). Se `false` (default), la configurazione S3 si fa da UI in Impostazioni > Servizi |
-| `VITE_POSTHOG_KEY` | No | - | API key PostHog. Se vuota, PostHog non viene inizializzato |
-| `VITE_POSTHOG_HOST` | No | `https://eu.i.posthog.com` | `api_host` PostHog frontend |
-| `VITE_POSTHOG_UI_HOST` | No | `https://eu.posthog.com` | `ui_host` PostHog frontend per link corretti quando si usa un proxy |
+| `POSTHOG_FRONTEND_KEY` | No | fallback a `POSTHOG_API_KEY` | API key PostHog frontend letta a runtime da Laravel/Inertia |
+| `POSTHOG_FRONTEND_HOST` | No | fallback a `POSTHOG_HOST` | `api_host` PostHog frontend |
+| `POSTHOG_UI_HOST` | No | `https://eu.posthog.com` | `ui_host` PostHog frontend per link corretti quando si usa un proxy |
 | `POSTHOG_API_KEY` | No | - | API key PostHog backend. Se vuota, SDK PHP non inizializzato |
 | `POSTHOG_HOST` | No | `https://eu.i.posthog.com` | Endpoint PostHog backend |
+| `VITE_POSTHOG_KEY` | No | - | Fallback build-time per sviluppo locale. In produzione preferire `POSTHOG_FRONTEND_KEY` |
+| `VITE_POSTHOG_HOST` | No | `https://eu.i.posthog.com` | Fallback build-time per sviluppo locale |
+| `VITE_POSTHOG_UI_HOST` | No | `https://eu.posthog.com` | Fallback build-time per sviluppo locale |
 | `AWS_ACCESS_KEY_ID` | No | - | Access key S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |
 | `AWS_SECRET_ACCESS_KEY` | No | - | Secret key S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |
 | `AWS_DEFAULT_REGION` | No | `us-east-1` | Regione S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |

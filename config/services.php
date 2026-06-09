@@ -38,6 +38,9 @@ return [
     'posthog' => [
         'api_key' => env('POSTHOG_API_KEY'),
         'host' => env('POSTHOG_HOST', 'https://eu.i.posthog.com'),
+        'frontend_key' => env('POSTHOG_FRONTEND_KEY', env('POSTHOG_API_KEY')),
+        'frontend_host' => env('POSTHOG_FRONTEND_HOST', env('POSTHOG_HOST', 'https://eu.i.posthog.com')),
+        'ui_host' => env('POSTHOG_UI_HOST', 'https://eu.posthog.com'),
     ],
 
 ];
