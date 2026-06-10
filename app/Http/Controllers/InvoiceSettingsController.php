@@ -42,13 +42,13 @@ class InvoiceSettingsController extends Controller
     {
         $validated = $request->validate([
             'default_sequence_sales' => 'nullable|exists:sequences,id',
-            'default_vat_rate' => 'nullable|string',
+            'default_vat_rate' => ['nullable', 'string', Rule::in(array_column(VatRate::options(), 'id'))],
             'withholding_tax_enabled' => 'boolean',
             'withholding_tax_percent' => 'nullable|string',
             'fund_enabled' => 'boolean',
             'fund_type' => 'nullable|string',
             'fund_percent' => 'nullable|string',
-            'fund_vat_rate' => 'nullable|string',
+            'fund_vat_rate' => ['nullable', 'string', Rule::in(array_column(VatRate::options(), 'id'))],
             'fund_has_deduction' => 'boolean',
             'auto_stamp_duty' => 'boolean',
             'stamp_duty_threshold' => 'nullable|string',
@@ -63,6 +63,12 @@ class InvoiceSettingsController extends Controller
 
         $companySettings = app(CompanySettings::class);
         $normalized = FiscalRegimePolicy::normalizeInvoiceSettingsPayload($validated, $companySettings->company_fiscal_regime);
+        $normalized['default_vat_rate'] = filled($normalized['default_vat_rate'] ?? null)
+            ? VatRate::from($normalized['default_vat_rate'])
+            : null;
+        $normalized['fund_vat_rate'] = filled($normalized['fund_vat_rate'] ?? null)
+            ? VatRate::from($normalized['fund_vat_rate'])
+            : null;
         $settings->fill($normalized);
         $settings->save();
 
