@@ -2,6 +2,8 @@ import { writable } from 'svelte/store'
 
 export const toast = writable(null)
 
+let dismissTimer = null
+
 function normalizeToastPayload(payloadOrMessage, type = 'success', duration = 3000) {
     if (typeof payloadOrMessage === 'string') {
         return {
@@ -26,6 +28,14 @@ function normalizeToastPayload(payloadOrMessage, type = 'success', duration = 30
 
 export function showToast(payloadOrMessage, type = 'success', duration = 3000) {
     const payload = normalizeToastPayload(payloadOrMessage, type, duration)
+
+    if (dismissTimer) {
+        clearTimeout(dismissTimer)
+    }
+
     toast.set(payload)
-    setTimeout(() => toast.set(null), duration)
+    dismissTimer = setTimeout(() => {
+        toast.set(null)
+        dismissTimer = null
+    }, payload.duration)
 }
