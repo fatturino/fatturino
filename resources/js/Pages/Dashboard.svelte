@@ -38,67 +38,61 @@
 
     const overdueCount = $derived(paymentSummary?.overdue?.count ?? 0)
     const collectionRate = $derived(revenueYtd > 0 ? Math.min(100, (collectedNetYtd / revenueYtd) * 100) : 0)
-    const selfInvoicesEnabled = $derived((page.props.fiscalRegime ?? null) !== 'RF19' || !!page.props.rf19SelfInvoicesEnabled)
+    const fiscalRegime = $derived(page.props.fiscalRegime ?? null)
+    const hasVatAccounting = $derived(fiscalRegime !== 'RF19')
+    const selfInvoicesEnabled = $derived(fiscalRegime !== 'RF19' || !!page.props.rf19SelfInvoicesEnabled)
 </script>
 
 <Authenticated>
     {#snippet headerActions()}
         <a href="/sell-invoices/create" class="btn-brand text-sm">Nuova Fattura</a>
-        {#if selfInvoicesEnabled}
-            <a href="/self-invoices/create" class="btn-outline text-sm">Nuova Autofattura</a>
-        {/if}
-        <a href="/contacts/create" class="btn-outline text-sm">Nuovo Contatti</a>
     {/snippet}
 
     <div class="page-shell w-full">
         <section class="card-brand p-4 sm:p-6 mb-6">
-            <div>
+            <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)] lg:items-start">
                 <div>
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Dashboard operativa</p>
-                    <h2 class="mt-1 text-2xl font-semibold text-brand-deep">Controllo fatture e incassi</h2>
-                    <p class="mt-1 text-sm text-brand-secondary/80">Anno fiscale {fiscalYear}</p>
+                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Dashboard operativa · FY {fiscalYear}</p>
+                    <h2 class="mt-2 text-2xl font-semibold text-brand-deep">Incassi, scadenze e documenti da chiudere</h2>
+                    <p class="mt-2 max-w-2xl text-sm text-brand-secondary/80">
+                        {hasVatAccounting
+                            ? 'Priorita del giorno e andamento economico in un solo punto, con IVA sempre separata dai flussi operativi.'
+                            : 'Priorita del giorno e andamento economico in un solo punto, senza voci IVA non rilevanti per il regime forfettario.'}
+                    </p>
+
+                    <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                        <a href="/sell-invoices/create" class="btn-brand text-center text-sm">Nuova fattura</a>
+                        {#if selfInvoicesEnabled}
+                            <a href="/self-invoices/create" class="btn-outline text-center text-sm">Nuova autofattura</a>
+                        {/if}
+                        <a href="/contacts/create" class="btn-outline text-center text-sm">Nuovo contatto</a>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                    <div class="rounded-lg border border-border-light bg-surface-muted p-4">
+                        <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Da incassare netto</p>
+                        <p class="mt-2 text-2xl font-semibold text-brand-deep">{formatCurrency(outstandingNetYtd)}</p>
+                        <p class="mt-1 text-xs text-brand-secondary/80">
+                            {openInvoicesCount} documenti aperti{hasVatAccounting ? ` · IVA ${formatCurrency(outstandingVatYtd)}` : ''}
+                        </p>
+                    </div>
+                    <div class="rounded-lg border border-border-light bg-white p-4">
+                        <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Incassato netto YTD</p>
+                        <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(collectedNetYtd)}</p>
+                        <p class="mt-1 text-xs text-brand-secondary/80">Tasso incasso {collectionRate.toFixed(1)}%</p>
+                    </div>
+                    <div class="rounded-lg border border-border-light bg-white p-4">
+                        <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Fatturato netto mese</p>
+                        <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(revenueThisMonth)}</p>
+                        <p class="mt-1 text-xs {monthChangePercent >= 0 ? 'text-emerald-700' : 'text-red-700'}">
+                            {monthChangePercent >= 0 ? '+' : ''}{monthChangePercent.toFixed(1)}% vs mese scorso
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <article class="rounded-xl border border-border-light bg-surface-muted p-4">
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Fatturato netto IVA mese</p>
-                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(revenueThisMonth)}</p>
-                    <p class="mt-1 text-xs {monthChangePercent >= 0 ? 'text-emerald-700' : 'text-red-700'}">
-                        {monthChangePercent >= 0 ? '+' : ''}{monthChangePercent.toFixed(1)}% vs mese scorso
-                    </p>
-                </article>
-                <article class="rounded-xl border border-border-light bg-surface-muted p-4">
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Da incassare netto</p>
-                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(outstandingNetYtd)}</p>
-                    <p class="text-xs text-brand-secondary/80">{openInvoicesCount} documenti aperti</p>
-                    <p class="mt-1 text-xs text-brand-secondary/80">IVA da incassare {formatCurrency(outstandingVatYtd)}</p>
-                </article>
-                <article class="rounded-xl border border-border-light bg-surface-muted p-4">
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">IVA incassata</p>
-                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(collectedVatYtd)}</p>
-                    <p class="text-xs text-brand-secondary/80">separata dall'incassato operativo</p>
-                </article>
-                <article class="rounded-xl border border-border-light bg-surface-muted p-4">
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Incassato netto</p>
-                    <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(collectedNetYtd)}</p>
-                    <p class="text-xs text-brand-secondary/80">al netto dell'IVA</p>
-                </article>
-            </div>
-        </section>
-
-        {#if !isCurrentYear}
-            <div class="mb-6 bg-brand-accent/15 border border-brand-accent/25 rounded-xl p-4 flex items-center gap-3 text-sm text-brand-deep">
-                <svg aria-hidden="true" viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-brand-deep/80 fill-current">
-                    <path fill-rule="evenodd" d="M5.75 8.5a4.25 4.25 0 1 1 8.5 0V10h.25A1.75 1.75 0 0 1 16.25 11.75v4.5A1.75 1.75 0 0 1 14.5 18h-9A1.75 1.75 0 0 1 3.75 16.25v-4.5A1.75 1.75 0 0 1 5.5 10h.25V8.5Zm1.5 0V10h5V8.5a2.75 2.75 0 1 0-5 0Z" clip-rule="evenodd"></path>
-                </svg>
-                <span>Visualizzazione in sola lettura per l'anno fiscale {fiscalYear}.</span>
-            </div>
-        {/if}
-
-        <section class="card-brand p-4 sm:p-5 mb-6">
-            <h3 class="text-base font-semibold text-brand-deep">Focus oggi</h3>
-            <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3 text-sm">
+            <div class="mt-5 grid grid-cols-1 gap-2 border-t border-border-light pt-4 text-sm sm:grid-cols-3">
                 <a href="/sell-invoices?payment=overdue" class="dashboard-action-link">
                     <span>Fatture scadute</span>
                     <span class="badge badge-overdue">{overdueCount}</span>
@@ -113,6 +107,15 @@
                 </a>
             </div>
         </section>
+
+        {#if !isCurrentYear}
+            <div class="mb-6 bg-brand-accent/15 border border-brand-accent/25 rounded-xl p-4 flex items-center gap-3 text-sm text-brand-deep">
+                <svg aria-hidden="true" viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-brand-deep/80 fill-current">
+                    <path fill-rule="evenodd" d="M5.75 8.5a4.25 4.25 0 1 1 8.5 0V10h.25A1.75 1.75 0 0 1 16.25 11.75v4.5A1.75 1.75 0 0 1 14.5 18h-9A1.75 1.75 0 0 1 3.75 16.25v-4.5A1.75 1.75 0 0 1 5.5 10h.25V8.5Zm1.5 0V10h5V8.5a2.75 2.75 0 1 0-5 0Z" clip-rule="evenodd"></path>
+                </svg>
+                <span>Visualizzazione in sola lettura per l'anno fiscale {fiscalYear}.</span>
+            </div>
+        {/if}
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-12 mb-6">
             <article class="card-brand xl:col-span-8">
