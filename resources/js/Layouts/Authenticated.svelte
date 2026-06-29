@@ -177,7 +177,9 @@
                     {@render headerActions()}
                 {:else if headerActionsState}
                     <div class="hidden sm:flex items-center gap-2">
-                        <a href={headerActionsState.indexPath} class="btn-outline text-sm">Indietro</a>
+                        {#if headerActionsState.indexPath}
+                            <a href={headerActionsState.indexPath} class="btn-outline text-sm">Indietro</a>
+                        {/if}
                         {#if !headerActionsState.isReadOnly}
                             <Button
                                 class="text-sm"
@@ -200,6 +202,28 @@
             {@render children?.()}
         </main>
     </div>
+
+    {#if !headerActions && headerActionsState}
+        <div class="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border-light bg-white/95 px-4 py-3 backdrop-blur">
+            <div class="mx-auto flex max-w-5xl items-center gap-3">
+                {#if headerActionsState.indexPath}
+                    <a href={headerActionsState.indexPath} class="btn-outline flex-1 text-center text-sm">Indietro</a>
+                {/if}
+                {#if !headerActionsState.isReadOnly}
+                    <Button
+                        class="flex-1 text-sm"
+                        variant={headerActionsState.variant ?? 'brand'}
+                        onclick={headerActionsState.onSubmit}
+                        disabled={headerActionsState.processing || headerActionsState.isDisabled}
+                        isLoading={headerActionsState.processing}
+                        ariaLabel={headerActionsState.ariaLabel ?? 'Salva modifiche'}
+                    >
+                        {headerActionsState.submitLabel}
+                    </Button>
+                {/if}
+            </div>
+        </div>
+    {/if}
 
     <Toast />
 </div>

@@ -147,6 +147,10 @@
             form.company_name = form.name
         }
     }
+
+    function errorId(field) {
+        return errors[field] ? `${field}-error` : undefined
+    }
 </script>
 
 <div class="guest-shell">
@@ -205,6 +209,8 @@
         </div>
 
         <form onsubmit={onSubmit}>
+            <p class="mb-4 text-xs text-brand-secondary/70">I campi contrassegnati con * sono obbligatori.</p>
+
             {#if errors.step}
                 <div class="mb-4 rounded-lg border border-error-red/30 bg-error-red/5 px-3 py-2 text-sm text-error-red" role="alert">
                     {errors.step}
@@ -217,56 +223,77 @@
                     <div class="space-y-4">
                         <p class="text-brand-secondary/70 text-sm">Crea il tuo account amministratore.</p>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">Nome</span>
+                        <label class="block" for="setup-name">
+                            <span class="text-sm font-medium text-brand-deep">Nome *</span>
                             <Input
+                                id="setup-name"
+                                name="name"
                                 class="mt-1 w-full input-field"
                                 type="text"
                                 bind:value={form.name}
                                 oninput={onNameChange}
+                                autocomplete="name"
+                                aria-invalid={Boolean(errors.name)}
+                                aria-describedby={errorId('name')}
                                 required
                             />
                             {#if errors.name}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.name}</span>
+                                <span id="name-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.name}</span>
                             {/if}
                         </label>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">Email</span>
+                        <label class="block" for="setup-email">
+                            <span class="text-sm font-medium text-brand-deep">Email *</span>
                             <Input
+                                id="setup-email"
+                                name="email"
                                 class="mt-1 w-full input-field"
                                 type="email"
                                 bind:value={form.email}
+                                autocomplete="email"
+                                inputmode="email"
+                                aria-invalid={Boolean(errors.email)}
+                                aria-describedby={errorId('email')}
                                 required
                             />
                             {#if errors.email}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.email}</span>
+                                <span id="email-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.email}</span>
                             {/if}
                         </label>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">Password</span>
+                        <label class="block" for="setup-password">
+                            <span class="text-sm font-medium text-brand-deep">Password *</span>
                             <Input
+                                id="setup-password"
+                                name="password"
                                 class="mt-1 w-full input-field"
                                 type="password"
                                 bind:value={form.password}
+                                autocomplete="new-password"
+                                aria-invalid={Boolean(errors.password)}
+                                aria-describedby={errorId('password')}
                                 required
                             />
                             {#if errors.password}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.password}</span>
+                                <span id="password-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.password}</span>
                             {/if}
                         </label>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">Conferma Password</span>
+                        <label class="block" for="setup-password-confirmation">
+                            <span class="text-sm font-medium text-brand-deep">Conferma Password *</span>
                             <Input
+                                id="setup-password-confirmation"
+                                name="password_confirmation"
                                 class="mt-1 w-full input-field"
                                 type="password"
                                 bind:value={form.password_confirmation}
+                                autocomplete="new-password"
+                                aria-invalid={Boolean(errors.password_confirmation)}
+                                aria-describedby={errorId('password_confirmation')}
                                 required
                             />
                             {#if errors.password_confirmation}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.password_confirmation}</span>
+                                <span id="password_confirmation-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.password_confirmation}</span>
                             {/if}
                         </label>
                     </div>
@@ -275,52 +302,70 @@
                     <div class="space-y-4">
                         <p class="text-brand-secondary/70 text-sm">Informazioni sulla tua azienda e impostazioni predefinite per le fatture.</p>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">Nome Azienda</span>
+                        <label class="block" for="setup-company-name">
+                            <span class="text-sm font-medium text-brand-deep">Nome Azienda *</span>
                             <Input
+                                id="setup-company-name"
+                                name="company_name"
                                 class="mt-1 w-full input-field"
                                 type="text"
                                 bind:value={form.company_name}
+                                autocomplete="organization"
+                                aria-invalid={Boolean(errors.company_name)}
+                                aria-describedby={errorId('company_name')}
                                 required
                             />
                             {#if errors.company_name}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_name}</span>
+                                <span id="company_name-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_name}</span>
                             {/if}
                         </label>
 
                         <div class="grid grid-cols-2 gap-4">
-                            <label class="block">
-                                <span class="text-sm font-medium text-brand-deep">Partita IVA</span>
+                            <label class="block" for="setup-company-vat-number">
+                                <span class="text-sm font-medium text-brand-deep">Partita IVA *</span>
                                 <Input
+                                    id="setup-company-vat-number"
+                                    name="company_vat_number"
                                     class="mt-1 w-full input-field"
                                     type="text"
                                     bind:value={form.company_vat_number}
+                                    inputmode="numeric"
+                                    aria-invalid={Boolean(errors.company_vat_number)}
+                                    aria-describedby={errorId('company_vat_number')}
                                     required
                                 />
                                 {#if errors.company_vat_number}
-                                    <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_vat_number}</span>
+                                    <span id="company_vat_number-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_vat_number}</span>
                                 {/if}
                             </label>
-                            <label class="block">
-                                <span class="text-sm font-medium text-brand-deep">Codice Fiscale</span>
+                            <label class="block" for="setup-company-tax-code">
+                                <span class="text-sm font-medium text-brand-deep">Codice Fiscale *</span>
                                 <Input
+                                    id="setup-company-tax-code"
+                                    name="company_tax_code"
                                     class="mt-1 w-full input-field"
                                     type="text"
                                     bind:value={form.company_tax_code}
+                                    aria-invalid={Boolean(errors.company_tax_code)}
+                                    aria-describedby={errorId('company_tax_code')}
                                     required
                                 />
                                 {#if errors.company_tax_code}
-                                    <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_tax_code}</span>
+                                    <span id="company_tax_code-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_tax_code}</span>
                                 {/if}
                             </label>
                         </div>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">Regime Fiscale</span>
+                        <label class="block" for="setup-company-fiscal-regime">
+                            <span class="text-sm font-medium text-brand-deep">Regime Fiscale *</span>
                             <Select useNative
+                                id="setup-company-fiscal-regime"
+                                name="company_fiscal_regime"
                                 class="mt-1 w-full input-field bg-white"
                                 bind:value={form.company_fiscal_regime}
                                 onchange={onFiscalRegimeChange}
+                                aria-invalid={Boolean(errors.company_fiscal_regime)}
+                                aria-describedby={errorId('company_fiscal_regime')}
                                 required
                             >
                                 {#each fiscalRegimes as regime}
@@ -328,7 +373,7 @@
                                 {/each}
                             </Select>
                             {#if errors.company_fiscal_regime}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_fiscal_regime}</span>
+                                <span id="company_fiscal_regime-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_fiscal_regime}</span>
                             {/if}
                         </label>
 
@@ -338,97 +383,133 @@
                     <div class="space-y-4">
                         <p class="text-brand-secondary/70 text-sm">Indirizzo della sede legale e dati per la fatturazione elettronica.</p>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">Indirizzo</span>
+                        <label class="block" for="setup-company-address">
+                            <span class="text-sm font-medium text-brand-deep">Indirizzo *</span>
                             <Input
+                                id="setup-company-address"
+                                name="company_address"
                                 class="mt-1 w-full input-field"
                                 type="text"
                                 bind:value={form.company_address}
+                                autocomplete="street-address"
+                                aria-invalid={Boolean(errors.company_address)}
+                                aria-describedby={errorId('company_address')}
                                 required
                             />
                             {#if errors.company_address}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_address}</span>
+                                <span id="company_address-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_address}</span>
                             {/if}
                         </label>
 
                         <div class="grid grid-cols-3 gap-4">
-                            <label class="block">
-                                <span class="text-sm font-medium text-brand-deep">CAP</span>
+                            <label class="block" for="setup-company-postal-code">
+                                <span class="text-sm font-medium text-brand-deep">CAP *</span>
                                 <Input
+                                    id="setup-company-postal-code"
+                                    name="company_postal_code"
                                     class="mt-1 w-full input-field"
                                     type="text"
                                     bind:value={form.company_postal_code}
+                                    autocomplete="postal-code"
+                                    inputmode="numeric"
+                                    aria-invalid={Boolean(errors.company_postal_code)}
+                                    aria-describedby={errorId('company_postal_code')}
                                     required
                                 />
                                 {#if errors.company_postal_code}
-                                    <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_postal_code}</span>
+                                    <span id="company_postal_code-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_postal_code}</span>
                                 {/if}
                             </label>
-                            <label class="block">
-                                <span class="text-sm font-medium text-brand-deep">Città</span>
+                            <label class="block" for="setup-company-city">
+                                <span class="text-sm font-medium text-brand-deep">Città *</span>
                                 <Input
+                                    id="setup-company-city"
+                                    name="company_city"
                                     class="mt-1 w-full input-field"
                                     type="text"
                                     bind:value={form.company_city}
+                                    autocomplete="address-level2"
+                                    aria-invalid={Boolean(errors.company_city)}
+                                    aria-describedby={errorId('company_city')}
                                     required
                                 />
                                 {#if errors.company_city}
-                                    <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_city}</span>
+                                    <span id="company_city-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_city}</span>
                                 {/if}
                             </label>
-                            <label class="block">
-                                <span class="text-sm font-medium text-brand-deep">Provincia</span>
+                            <label class="block" for="setup-company-province">
+                                <span class="text-sm font-medium text-brand-deep">Provincia *</span>
                                 <Input
+                                    id="setup-company-province"
+                                    name="company_province"
                                     class="mt-1 w-full input-field"
                                     type="text"
                                     maxlength="2"
                                     bind:value={form.company_province}
+                                    autocomplete="address-level1"
+                                    aria-invalid={Boolean(errors.company_province)}
+                                    aria-describedby={errorId('company_province')}
                                     required
                                 />
                                 {#if errors.company_province}
-                                    <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_province}</span>
+                                    <span id="company_province-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_province}</span>
                                 {/if}
                             </label>
                         </div>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">Nazione</span>
+                        <label class="block" for="setup-company-country">
+                            <span class="text-sm font-medium text-brand-deep">Nazione *</span>
                             <Input
+                                id="setup-company-country"
+                                name="company_country"
                                 class="mt-1 w-full input-field"
                                 type="text"
                                 maxlength="2"
                                 bind:value={form.company_country}
+                                autocomplete="country"
+                                aria-invalid={Boolean(errors.company_country)}
+                                aria-describedby={errorId('company_country')}
                                 required
                             />
                             {#if errors.company_country}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_country}</span>
+                                <span id="company_country-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_country}</span>
                             {/if}
                         </label>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">PEC</span>
+                        <label class="block" for="setup-company-pec">
+                            <span class="text-sm font-medium text-brand-deep">PEC *</span>
                             <Input
+                                id="setup-company-pec"
+                                name="company_pec"
                                 class="mt-1 w-full input-field"
                                 type="email"
                                 bind:value={form.company_pec}
+                                autocomplete="email"
+                                inputmode="email"
+                                aria-invalid={Boolean(errors.company_pec)}
+                                aria-describedby={errorId('company_pec')}
                                 required
                             />
                             {#if errors.company_pec}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_pec}</span>
+                                <span id="company_pec-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_pec}</span>
                             {/if}
                         </label>
 
-                        <label class="block">
-                            <span class="text-sm font-medium text-brand-deep">Codice SDI</span>
+                        <label class="block" for="setup-company-sdi-code">
+                            <span class="text-sm font-medium text-brand-deep">Codice SDI *</span>
                             <Input
+                                id="setup-company-sdi-code"
+                                name="company_sdi_code"
                                 class="mt-1 w-full input-field"
                                 type="text"
                                 maxlength="7"
                                 bind:value={form.company_sdi_code}
+                                aria-invalid={Boolean(errors.company_sdi_code)}
+                                aria-describedby={errorId('company_sdi_code')}
                                 required
                             />
                             {#if errors.company_sdi_code}
-                                <span class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_sdi_code}</span>
+                                <span id="company_sdi_code-error" class="text-error-red text-xs mt-0.5 block" role="alert">{errors.company_sdi_code}</span>
                             {/if}
                         </label>
 
