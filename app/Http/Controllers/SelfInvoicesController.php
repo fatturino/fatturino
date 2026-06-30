@@ -12,6 +12,7 @@ use App\Models\Payment;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
+use App\Services\DocumentEventRecorder;
 use App\Services\Domain\DocumentNumberingService;
 use App\Services\PostHogTelemetryService;
 use App\Services\SelfInvoiceXmlService;
@@ -153,6 +154,7 @@ class SelfInvoicesController extends Controller
         $invoice->calculateTotals();
         $invoice->refresh();
         $invoice->markAsPaidOnIssueDate();
+        app(DocumentEventRecorder::class)->created($invoice);
         app(PostHogTelemetryService::class)->capture(
             'self_invoice_created',
             app(PostHogTelemetryService::class)->documentProperties($invoice),
@@ -166,7 +168,10 @@ class SelfInvoicesController extends Controller
     {
         $this->ensureSelfInvoicesAllowed();
 
-        $selfInvoice->load('lines');
+        $selfInvoice->load([
+            'lines',
+            'events' => fn ($query) => $query->latest('occurred_at')->limit(10),
+        ]);
 
         return Inertia::render('SelfInvoices/Edit', [
             'invoice' => $selfInvoice,

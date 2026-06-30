@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\InvoiceStatus;
 use App\Enums\VatPayability;
 use App\Http\Controllers\Controller;
+use App\Services\DocumentEventRecorder;
 use App\Services\Domain\FiscalDocumentMutationService;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
@@ -92,6 +93,7 @@ class SalesInvoiceCreateController extends Controller
             'vat_payability' => ($normalized['split_payment'] ?? false) ? 'S' : $normalized['vat_payability'],
             'split_payment' => $normalized['split_payment'] ?? false,
         ], array_map(fn (array $line): array => $this->buildLinePayload($line), $normalizedLines));
+        app(DocumentEventRecorder::class)->created($invoice);
 
         return response()->json([
             'message' => 'Fattura creata.',

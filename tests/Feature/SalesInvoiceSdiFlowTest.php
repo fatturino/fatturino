@@ -63,6 +63,12 @@ test('validate xml endpoint sets invoice status to xml_validated', function () {
         ],
     ]);
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::XmlValidated);
+    $this->assertDatabaseHas('document_events', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'xml_validated',
+        'channel' => 'xml',
+        'status' => 'success',
+    ]);
 });
 
 test('send to sdi endpoint sends only xml validated invoices', function () {
@@ -138,6 +144,18 @@ test('send to sdi endpoint returns updated document payload on success', functio
     expect($invoice->status)->toBe(InvoiceStatus::Sent->value)
         ->and($invoice->sdi_status)->toBe(SdiStatus::Sent->value)
         ->and($invoice->sdi_uuid)->toBe('uuid-123');
+
+    $this->assertDatabaseHas('ei_outbound_logs', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'sent',
+        'status' => SdiStatus::Sent->value,
+    ]);
+    $this->assertDatabaseHas('document_events', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'sdi_sent',
+        'channel' => 'sdi',
+        'status' => 'success',
+    ]);
 });
 
 test('validate xml endpoint returns uniform json when document is not editable', function () {

@@ -10,6 +10,7 @@ use App\Models\Contact;
 use App\Models\CreditNote;
 use App\Models\Sequence;
 use App\Services\CreditNoteXmlService;
+use App\Services\DocumentEventRecorder;
 use App\Services\DocumentMailer;
 use App\Services\Domain\DocumentNumberingService;
 use App\Services\PostHogTelemetryService;
@@ -39,7 +40,10 @@ class CreditNotesController extends Controller
         $perPage = 15;
 
         $query = CreditNote::query()
-            ->with('contact:id,name,email')
+            ->with([
+                'contact:id,name,email',
+                'latestEmailEvent',
+            ])
             ->whereYear('date', $fiscalYear);
 
         if ($search !== '') {
@@ -124,6 +128,7 @@ class CreditNotesController extends Controller
         }
 
         $creditNote->calculateTotals();
+        app(DocumentEventRecorder::class)->created($creditNote);
         app(PostHogTelemetryService::class)->capture(
             'credit_note_created',
             app(PostHogTelemetryService::class)->documentProperties($creditNote),
@@ -135,7 +140,10 @@ class CreditNotesController extends Controller
 
     public function edit(CreditNote $creditNote): Response
     {
-        $creditNote->load('lines');
+        $creditNote->load([
+            'lines',
+            'events' => fn ($query) => $query->latest('occurred_at')->limit(10),
+        ]);
 
         return Inertia::render('CreditNotes/Edit', [
             'creditNote' => $creditNote,

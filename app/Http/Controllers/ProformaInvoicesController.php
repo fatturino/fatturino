@@ -11,6 +11,7 @@ use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
+use App\Services\DocumentEventRecorder;
 use App\Services\DocumentMailer;
 use App\Services\Domain\DocumentNumberingService;
 use App\Settings\CompanySettings;
@@ -38,7 +39,10 @@ class ProformaInvoicesController extends Controller
         $perPage = 15;
 
         $query = ProformaInvoice::query()
-            ->with('contact:id,name,email')
+            ->with([
+                'contact:id,name,email',
+                'latestEmailEvent',
+            ])
             ->whereYear('date', $fiscalYear);
 
         if ($search !== '') {
@@ -141,13 +145,17 @@ class ProformaInvoicesController extends Controller
         }
 
         $invoice->calculateTotals();
+        app(DocumentEventRecorder::class)->created($invoice);
 
         return redirect()->route('proforma.index');
     }
 
     public function edit(ProformaInvoice $proformaInvoice): Response
     {
-        $proformaInvoice->load('lines');
+        $proformaInvoice->load([
+            'lines',
+            'events' => fn ($query) => $query->latest('occurred_at')->limit(10),
+        ]);
 
         return Inertia::render('Proforma/Edit', [
             'invoice' => $proformaInvoice,

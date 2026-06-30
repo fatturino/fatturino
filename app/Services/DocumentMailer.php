@@ -18,6 +18,7 @@ class DocumentMailer
     public function __construct(
         private readonly EmailSettings $emailSettings,
         private readonly CompanySettings $companySettings,
+        private readonly DocumentEventRecorder $documentEvents,
     ) {}
 
     /**
@@ -30,6 +31,8 @@ class DocumentMailer
         $subject = $this->renderSubject($type, $document);
         $body = $this->renderBody($type, $document);
 
+        $this->documentEvents->emailQueued($document, $recipientEmail, $subject);
+
         SendDocumentMailJob::dispatch($recipientEmail, $subject, $body, $document);
     }
 
@@ -39,6 +42,8 @@ class DocumentMailer
      */
     public function sendWithOverrides(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = ''): void
     {
+        $this->documentEvents->emailQueued($document, $recipientEmail, $subject, $cc);
+
         SendDocumentMailJob::dispatch($recipientEmail, $subject, $body, $document, $attachPdf, $cc);
     }
 
@@ -48,7 +53,15 @@ class DocumentMailer
      */
     public function sendNowWithOverrides(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = ''): void
     {
-        $this->deliver($recipientEmail, $subject, $body, $document, $attachPdf, $cc);
+        $this->documentEvents->emailQueued($document, $recipientEmail, $subject, $cc);
+
+        try {
+            $this->deliver($recipientEmail, $subject, $body, $document, $attachPdf, $cc);
+        } catch (Throwable $e) {
+            $this->recordEmailFailure($document, $recipientEmail, $subject, $e->getMessage(), $cc);
+
+            throw $e;
+        }
     }
 
     /**
@@ -164,27 +177,27 @@ class DocumentMailer
         }
 
         return "Ad oggi risultano non saldate le seguenti fatture:\n"
-            . $invoices
-            ->map(function (Model $invoice): string {
-                $number = $invoice->number ?: '#'.$invoice->getKey();
-                $date = $this->formatDocumentDate($invoice->date ?? null);
-                $dueDate = $this->formatDocumentDate($invoice->due_date ?? null);
-                $remaining = max(0, (int) ($invoice->net_due ?? 0) - (int) ($invoice->total_paid ?? 0));
-                $parts = ["- Fattura {$number}"];
+            .$invoices
+                ->map(function (Model $invoice): string {
+                    $number = $invoice->number ?: '#'.$invoice->getKey();
+                    $date = $this->formatDocumentDate($invoice->date ?? null);
+                    $dueDate = $this->formatDocumentDate($invoice->due_date ?? null);
+                    $remaining = max(0, (int) ($invoice->net_due ?? 0) - (int) ($invoice->total_paid ?? 0));
+                    $parts = ["- Fattura {$number}"];
 
-                if ($date !== '') {
-                    $parts[] = "del {$date}";
-                }
+                    if ($date !== '') {
+                        $parts[] = "del {$date}";
+                    }
 
-                if ($dueDate !== '') {
-                    $parts[] = "scadenza {$dueDate}";
-                }
+                    if ($dueDate !== '') {
+                        $parts[] = "scadenza {$dueDate}";
+                    }
 
-                $parts[] = 'residuo '.$this->formatCurrency($remaining);
+                    $parts[] = 'residuo '.$this->formatCurrency($remaining);
 
-                return implode(' - ', $parts);
-            })
-            ->implode("\n");
+                    return implode(' - ', $parts);
+                })
+                ->implode("\n");
     }
 
     private function formatCurrency(int $amount): string
@@ -231,8 +244,19 @@ class DocumentMailer
         ));
 
         if ($document !== null) {
+            $this->documentEvents->emailSent($document, $recipientEmail, $subject, $cc);
             $this->markEmailAsSent($document, $recipientEmail, $cc);
         }
+    }
+
+    public function recordEmailFailure(?Model $document, string $recipientEmail, string $subject, string $errorMessage, string $cc = ''): void
+    {
+        if ($document === null) {
+            return;
+        }
+
+        $this->documentEvents->emailFailed($document, $recipientEmail, $subject, $errorMessage, $cc);
+        $this->markEmailAsFailed($document, $recipientEmail, $cc, $errorMessage);
     }
 
     /**
@@ -289,9 +313,38 @@ class DocumentMailer
 
         $metadata['email'] = [
             'sent' => true,
+            'status' => 'sent',
             'sent_at' => Carbon::now()->toIso8601String(),
             'recipient' => $recipientEmail,
             'cc' => $cc,
+        ];
+
+        $freshDocument->forceFill(['metadata' => $metadata])->save();
+    }
+
+    private function markEmailAsFailed(Model $document, string $recipientEmail, string $cc, string $errorMessage): void
+    {
+        if (! $document->exists) {
+            return;
+        }
+
+        $freshDocument = $document->newQueryWithoutScopes()->find($document->getKey());
+        if ($freshDocument === null) {
+            return;
+        }
+
+        $metadata = $freshDocument->metadata ?? [];
+        if (! is_array($metadata)) {
+            $metadata = [];
+        }
+
+        $metadata['email'] = [
+            'sent' => false,
+            'status' => 'failed',
+            'failed_at' => Carbon::now()->toIso8601String(),
+            'recipient' => $recipientEmail,
+            'cc' => $cc,
+            'error' => $errorMessage,
         ];
 
         $freshDocument->forceFill(['metadata' => $metadata])->save();

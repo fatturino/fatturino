@@ -2,6 +2,7 @@
 
 use App\Mail\DocumentMail;
 use App\Models\Contact;
+use App\Models\DocumentEvent;
 use App\Models\FiscalDocument;
 use App\Models\ProformaInvoice;
 use App\Models\User;
@@ -303,6 +304,19 @@ test('send email endpoint can skip PDF attachment', function () {
     $response->assertOk()->assertJson(['success' => true]);
 
     Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->document === null);
+
+    $this->assertDatabaseHas('document_events', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'email_queued',
+        'recipient_email' => 'mario@example.com',
+        'subject' => 'Oggetto',
+    ]);
+    $this->assertDatabaseHas('document_events', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'email_sent',
+        'recipient_email' => 'mario@example.com',
+        'subject' => 'Oggetto',
+    ]);
 });
 
 test('testConnection returns error string when no from address configured', function () {
@@ -340,6 +354,47 @@ test('deliver stores email delivery metadata after successful send', function ()
     expect($saved->metadata['email']['recipient'] ?? null)->toBe('mario@example.com');
     expect($saved->metadata['email']['cc'] ?? null)->toBe('contabilita@example.com');
     expect($saved->metadata['email']['sent_at'] ?? null)->not->toBeNull();
+
+    $this->assertDatabaseHas('document_events', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'email_sent',
+        'recipient_email' => 'mario@example.com',
+        'cc' => 'contabilita@example.com',
+        'subject' => 'Oggetto',
+    ]);
+});
+
+test('sendNowWithOverrides stores failed event when delivery fails', function () {
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'metadata' => [],
+    ]);
+
+    Mail::shouldReceive('purge')->twice();
+    Mail::shouldReceive('to')
+        ->once()
+        ->with('mario@example.com')
+        ->andThrow(new RuntimeException('SMTP down'));
+
+    expect(fn () => app(DocumentMailer::class)->sendNowWithOverrides(
+        $invoice,
+        'mario@example.com',
+        'Oggetto',
+        'Corpo',
+    ))->toThrow(RuntimeException::class, 'SMTP down');
+
+    expect(DocumentEvent::where('event_type', 'email_queued')->count())->toBe(1);
+    $this->assertDatabaseHas('document_events', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'email_failed',
+        'recipient_email' => 'mario@example.com',
+        'subject' => 'Oggetto',
+        'error_message' => 'SMTP down',
+    ]);
+
+    $saved = $invoice->fresh();
+    expect($saved->metadata['email']['status'] ?? null)->toBe('failed');
 });
 
 test('deliver sends through Scaleway TEM when selected', function () {

@@ -30,6 +30,12 @@ class SendDocumentMailJob implements ShouldQueue
      */
     public function handle(DocumentMailer $mailer): void
     {
-        $mailer->deliver($this->recipientEmail, $this->subject, $this->body, $this->document, $this->attachPdf, $this->cc);
+        try {
+            $mailer->deliver($this->recipientEmail, $this->subject, $this->body, $this->document, $this->attachPdf, $this->cc);
+        } catch (\Throwable $e) {
+            $mailer->recordEmailFailure($this->document, $this->recipientEmail, $this->subject, $e->getMessage(), $this->cc);
+
+            throw $e;
+        }
     }
 }

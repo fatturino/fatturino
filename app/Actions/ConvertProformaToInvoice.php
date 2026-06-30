@@ -7,6 +7,7 @@ use App\Enums\ProformaStatus;
 use App\Models\FiscalDocument;
 use App\Models\ProformaInvoice;
 use App\Models\Sequence;
+use App\Services\DocumentEventRecorder;
 use Illuminate\Support\Facades\DB;
 
 class ConvertProformaToInvoice
@@ -71,6 +72,7 @@ class ConvertProformaToInvoice
             }
 
             $invoice->calculateTotals();
+            app(DocumentEventRecorder::class)->created($invoice);
 
             // Mark proforma as converted
             $proforma->update(['status' => ProformaStatus::Converted]);

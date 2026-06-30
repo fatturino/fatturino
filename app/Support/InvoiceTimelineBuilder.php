@@ -3,13 +3,12 @@
 namespace App\Support;
 
 use App\Contracts\HasTimeline;
-use App\Models\EiOutboundLog;
 use App\Models\FiscalDocumentLine;
 use Illuminate\Support\Collection;
 use OwenIt\Auditing\Models\Audit;
 
 /**
- * Builds a merged timeline of audit events and SDI logs for an invoice.
+ * Builds a merged timeline of product events and audit events for an invoice.
  * Groups consecutive FiscalDocumentLine audits from the same user within the
  * configured grouping window into a single expandable cluster.
  */
@@ -52,6 +51,23 @@ class InvoiceTimelineBuilder
             })
             ->get();
 
+        $documentEvents = $invoice->events()->with('creator')->get()->map(fn ($event) => [
+            'source' => 'document_event',
+            'at' => $event->occurred_at,
+            'user_name' => $event->creator?->name,
+            'user_id' => $event->created_by,
+            'event' => $event->event_type,
+            'auditable_type' => null,
+            'auditable_id' => null,
+            'title' => $event->title,
+            'message' => $event->message,
+            'status' => $event->status,
+            'channel' => $event->channel,
+            'recipient_email' => $event->recipient_email,
+            'subject' => $event->subject,
+            'error_message' => $event->error_message,
+        ]);
+
         $audits = $rawAudits->map(fn ($audit) => [
             'source' => 'audit',
             'at' => $audit->created_at,
@@ -64,19 +80,7 @@ class InvoiceTimelineBuilder
             'new_values' => $audit->new_values,
         ]);
 
-        $sdiLogs = $invoice->sdiLogs()->get()->map(fn (EiOutboundLog $log) => [
-            'source' => 'sdi',
-            'at' => $log->created_at,
-            'user_name' => null,
-            'user_id' => null,
-            'event' => $log->event_type,
-            'auditable_type' => null,
-            'auditable_id' => null,
-            'status' => $log->status,
-            'message' => $log->message,
-        ]);
-
-        return $audits->concat($sdiLogs);
+        return $documentEvents->concat($audits);
     }
 
     /**

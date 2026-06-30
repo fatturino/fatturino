@@ -7,6 +7,7 @@ use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
 use App\Models\PurchaseInvoice;
 use App\Models\SelfInvoice;
+use App\Services\DocumentEventRecorder;
 use App\Services\InvoiceTenantGuardService;
 use App\Services\InvoiceXmlImportService;
 use App\Services\OpenApiSdiService;
@@ -344,14 +345,21 @@ class ReconcileCommand extends Command
                 ->exists();
 
             if (! $logExists) {
-                EiOutboundLog::create([
+                $outboundLog = EiOutboundLog::create([
                     'fiscal_document_id' => $invoice->id,
                     'event_type' => $notificationType,
                     'status' => $newStatus->value,
                     'message' => $message,
                     'raw_payload' => ['source' => 'reconcile', 'notification' => $bestNotification],
                 ]);
+            } else {
+                $outboundLog = EiOutboundLog::where('fiscal_document_id', $invoice->id)
+                    ->where('event_type', $notificationType)
+                    ->where('status', $newStatus->value)
+                    ->first();
             }
+
+            app(DocumentEventRecorder::class)->sdiResultReceived($invoice, $outboundLog?->id, $message);
 
             $this->line("  Updated invoice #{$invoice->id}: {$invoice->sdi_status->value} → {$newStatus->value}");
             $stats['updated']++;

@@ -18,6 +18,7 @@ use App\Models\Payment;
 use App\Models\SalesInvoice;
 use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
+use App\Services\DocumentEventRecorder;
 use App\Services\DocumentMailer;
 use App\Services\Domain\DocumentNumberingService;
 use App\Services\InvoiceXmlService;
@@ -53,7 +54,11 @@ class SalesInvoicesController extends Controller
         $perPage = 15;
 
         $query = SalesInvoice::query()
-            ->with(['contact:id,name,email', 'payments:id,fiscal_document_id,amount,paid_at,reference,notes,bank_name'])
+            ->with([
+                'contact:id,name,email',
+                'payments:id,fiscal_document_id,amount,paid_at,reference,notes,bank_name',
+                'latestEmailEvent',
+            ])
             ->whereYear('date', $fiscalYear);
 
         if ($search !== '') {
@@ -169,6 +174,7 @@ class SalesInvoicesController extends Controller
         }
 
         $invoice->calculateTotals();
+        app(DocumentEventRecorder::class)->created($invoice);
         app(PostHogTelemetryService::class)->capture(
             'sales_invoice_created',
             app(PostHogTelemetryService::class)->documentProperties($invoice),
@@ -180,7 +186,10 @@ class SalesInvoicesController extends Controller
 
     public function edit(SalesInvoice $invoice): Response
     {
-        $invoice->load('lines');
+        $invoice->load([
+            'lines',
+            'events' => fn ($query) => $query->latest('occurred_at')->limit(10),
+        ]);
 
         return Inertia::render('SalesInvoices/Edit', [
             'invoice' => $invoice,

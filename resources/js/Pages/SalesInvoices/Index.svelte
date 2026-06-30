@@ -191,6 +191,51 @@
         }
     }
 
+    function emailStatusLabel(invoice) {
+        const eventType = invoice.latest_email_event?.event_type
+
+        switch (eventType) {
+            case 'email_queued':
+            case 'payment_reminder_queued':
+                return 'In coda'
+            case 'email_sent':
+            case 'payment_reminder_sent':
+                return 'Inviata'
+            case 'email_failed':
+            case 'payment_reminder_failed':
+                return 'Fallita'
+            default:
+                return 'Mai inviata'
+        }
+    }
+
+    function emailStatusBadgeClass(invoice) {
+        const eventType = invoice.latest_email_event?.event_type
+
+        switch (eventType) {
+            case 'email_sent':
+            case 'payment_reminder_sent':
+                return 'badge-sent'
+            case 'email_failed':
+            case 'payment_reminder_failed':
+                return 'badge-error'
+            case 'email_queued':
+            case 'payment_reminder_queued':
+            default:
+                return 'badge-neutral'
+        }
+    }
+
+    function emailStatusTitle(invoice) {
+        const event = invoice.latest_email_event
+        if (!event) return 'Nessun invio email registrato'
+
+        const recipient = event.recipient_email ? `Destinatario: ${event.recipient_email}` : null
+        const subject = event.subject ? `Oggetto: ${event.subject}` : null
+
+        return [recipient, subject].filter(Boolean).join('\n') || emailStatusLabel(invoice)
+    }
+
     function hasActiveFilters() {
         return statusFilter || paymentFilter || searchValue
     }
@@ -433,13 +478,14 @@ Controlla prima di confermare:
             hasActiveFilters={hasActiveFilters()}
             emptyFilteredMessage="Nessuna fattura trovata con questi filtri."
             emptyMessage="Nessuna fattura ancora emessa."
-            desktopColspan={8}
+            desktopColspan={9}
         >
             {#snippet desktopHeaders()}
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale documento</th>
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Residuo netto</th>
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th>
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Pagamento</th>
+                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Email</th>
                 <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
             {/snippet}
             {#snippet desktopRow({ invoice, formatDate })}
@@ -466,6 +512,9 @@ Controlla prima di confermare:
                             </td>
                             <td class="px-4 py-3">
                                 <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {paymentBadgeClass(invoice.payment_status)}">{paymentLabel(invoice.payment_status)}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {emailStatusBadgeClass(invoice)}" title={emailStatusTitle(invoice)}>{emailStatusLabel(invoice)}</span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <a href={`/sell-invoices/${invoice.id}/edit`} class="inline-flex h-8 w-8 items-center justify-center rounded-md text-brand-secondary transition hover:bg-surface-muted hover:text-brand-deep" aria-label="Modifica fattura" title="Modifica">
@@ -506,6 +555,7 @@ Controlla prima di confermare:
                             <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span>
                         {/if}
                         <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {paymentBadgeClass(invoice.payment_status)}">{paymentLabel(invoice.payment_status)}</span>
+                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {emailStatusBadgeClass(invoice)}" title={emailStatusTitle(invoice)}>{emailStatusLabel(invoice)}</span>
                     </div>
                     <div class="mt-3 flex items-center gap-3 text-xs">
                         <Button class="font-medium text-brand-secondary" onclick={() => openPaymentModal(invoice)}>Segna pagamento</Button>

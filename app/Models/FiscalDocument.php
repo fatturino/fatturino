@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 use Parental\HasChildren;
 
@@ -81,6 +82,29 @@ class FiscalDocument extends Model
     public function sdiLogs(): HasMany
     {
         return $this->hasMany(EiOutboundLog::class, 'fiscal_document_id');
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(DocumentEvent::class, 'fiscal_document_id');
+    }
+
+    public function latestEmailEvent(): HasOne
+    {
+        return $this->hasOne(DocumentEvent::class, 'fiscal_document_id')
+            ->ofMany([
+                'occurred_at' => 'max',
+                'id' => 'max',
+            ], function ($query) {
+                $query->whereIn('document_events.event_type', [
+                    'email_queued',
+                    'email_sent',
+                    'email_failed',
+                    'payment_reminder_queued',
+                    'payment_reminder_sent',
+                    'payment_reminder_failed',
+                ]);
+            });
     }
 
     protected static function booted(): void

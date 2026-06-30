@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
 use App\Models\EiOutboundLog;
 use App\Services\BusinessFingerprintService;
+use App\Services\DocumentEventRecorder;
 use App\Services\PostHogTelemetryService;
 use App\Services\SdiUuidLinkService;
 use App\Services\XmlWorkflowService;
@@ -54,6 +55,7 @@ trait HandlesXmlSdiWorkflow
         $validationResult = $xmlWorkflow->validate($xml);
         if (! $validationResult['valid']) {
             $errors = $validationResult['errors'] ?? ['Validazione XML fallita.'];
+            app(DocumentEventRecorder::class)->xmlValidated($document, false, implode(' ', $errors));
 
             if (! request()->expectsJson()) {
                 return back()->withErrors(['action' => implode(' ', $errors)]);
@@ -64,6 +66,7 @@ trait HandlesXmlSdiWorkflow
 
         $document->update(['status' => InvoiceStatus::XmlValidated]);
         $document->refresh();
+        app(DocumentEventRecorder::class)->xmlValidated($document, true, 'XML validato con successo.');
 
         if (! request()->expectsJson()) {
             return back()->with('toast', [
@@ -109,12 +112,21 @@ trait HandlesXmlSdiWorkflow
         if (! ($sendResult['success'] ?? false)) {
             $errorMessage = $sendResult['error_message'] ?? 'Invio allo SDI fallito.';
 
-            EiOutboundLog::create([
+            $outboundLog = EiOutboundLog::create([
                 'fiscal_document_id' => $document->id,
                 'event_type' => 'send_failed',
                 'status' => SdiStatus::Error->value,
                 'message' => $errorMessage,
                 'raw_payload' => $sendResult,
+            ]);
+            app(DocumentEventRecorder::class)->record($document, [
+                'event_type' => 'sdi_sent',
+                'channel' => 'sdi',
+                'status' => 'failed',
+                'title' => 'Invio SDI fallito',
+                'message' => $errorMessage,
+                'technical_reference_type' => 'ei_outbound_log',
+                'technical_reference_id' => $outboundLog->id,
             ]);
 
             if (request()->expectsJson()) {
@@ -136,7 +148,7 @@ trait HandlesXmlSdiWorkflow
             'sdi_primary_channel' => 'outbound',
         ]);
 
-        EiOutboundLog::firstOrCreate([
+        $outboundLog = EiOutboundLog::firstOrCreate([
             'fiscal_document_id' => $document->id,
             'event_type' => 'sent',
             'status' => SdiStatus::Sent->value,
@@ -146,6 +158,11 @@ trait HandlesXmlSdiWorkflow
             'business_fingerprint' => $fingerprint,
             'raw_payload' => $sendResult,
         ]);
+        app(DocumentEventRecorder::class)->sdiSent(
+            $document,
+            $outboundLog->id,
+            $sendResult['message'] ?? $sentMessage
+        );
 
         if (! empty($document->sdi_uuid)) {
             app(SdiUuidLinkService::class)->linkOutbound($document->id, $document->sdi_uuid, $fingerprint, 'manual');

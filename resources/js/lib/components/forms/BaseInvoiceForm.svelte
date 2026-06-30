@@ -13,7 +13,7 @@
     import ArrowsClockwise from 'phosphor-svelte/lib/ArrowsClockwise'
     import Envelope from 'phosphor-svelte/lib/Envelope'
     import { headerActionsStore } from '$lib/stores/header-actions.js'
-    import { getTodayLocalDateString, normalizeDateOnlyString } from '$lib/utils/date.js'
+    import { formatLocalDate, getTodayLocalDateString, normalizeDateOnlyString } from '$lib/utils/date.js'
 
     let {
         formData = {},
@@ -57,6 +57,7 @@
     const isRf19 = fiscalRegime === 'RF19'
 
     const isEdit = initialInvoice !== null
+    const documentEvents = $derived((initialInvoice?.events ?? []).slice(0, 6))
     const settings = bootstrap.formData?.settings ?? {}
     const resolvedDefaultSequenceId = bootstrap.formData?.default_sequence_id ?? bootstrap.formData?.sequences?.[0]?.id ?? ''
     const initialSequence = bootstrap.formData?.sequences?.find((s) => s.id === Number(resolvedDefaultSequenceId))
@@ -147,6 +148,41 @@
         const net = lineTotal(line)
         const vat = vatPercent(line.vat_rate)
         return net + (net * vat / 100)
+    }
+
+    function eventBadgeClass(status) {
+        switch (status) {
+            case 'success': return 'badge-sent'
+            case 'failed': return 'badge-error'
+            case 'queued':
+            case 'received':
+            default:
+                return 'badge-neutral'
+        }
+    }
+
+    function eventStatusLabel(status) {
+        switch (status) {
+            case 'success': return 'OK'
+            case 'failed': return 'Errore'
+            case 'queued': return 'In coda'
+            case 'received': return 'Ricevuto'
+            default: return null
+        }
+    }
+
+    function formatEventDate(value) {
+        if (!value) return ''
+
+        try {
+            const date = new Date(value)
+            const day = formatLocalDate(value, 'it-IT')
+            const time = date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+
+            return `${day} ${time}`
+        } catch (error) {
+            return value
+        }
     }
 
     let totalNet = $derived(lines.reduce((sum, line) => sum + lineTotal(line), 0))
@@ -796,6 +832,35 @@ Controlla prima di confermare:
                     {/if}
                 </div>
             </div>
+            {#if isEdit}
+                <div class="card-brand p-6 mt-4">
+                    <h2 class="text-base font-semibold text-brand-deep mb-4">Storico</h2>
+                    {#if documentEvents.length > 0}
+                        <div class="space-y-4">
+                            {#each documentEvents as event}
+                                <div class="border-b border-border-light pb-3 last:border-b-0 last:pb-0">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-brand-deep">{event.title}</p>
+                                            <p class="mt-0.5 text-xs text-brand-secondary/70">{formatEventDate(event.occurred_at)}</p>
+                                        </div>
+                                        {#if eventStatusLabel(event.status)}
+                                            <span class="shrink-0 inline-block px-2 py-0.5 rounded-full text-xs font-medium {eventBadgeClass(event.status)}">{eventStatusLabel(event.status)}</span>
+                                        {/if}
+                                    </div>
+                                    {#if event.message || event.recipient_email || event.error_message}
+                                        <p class="mt-2 text-xs text-brand-secondary/80 break-words">
+                                            {event.error_message || event.message || event.recipient_email}
+                                        </p>
+                                    {/if}
+                                </div>
+                            {/each}
+                        </div>
+                    {:else}
+                        <p class="text-sm text-brand-secondary/70">Nessun evento registrato.</p>
+                    {/if}
+                </div>
+            {/if}
             {#if showTaxOptions}
                 <div class="card-brand p-6 sticky top-[28rem] mt-4">
                     <h2 class="text-base font-semibold text-brand-deep mb-1">Opzioni fiscali</h2>

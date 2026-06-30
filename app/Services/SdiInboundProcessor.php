@@ -269,7 +269,7 @@ class SdiInboundProcessor
             'sdi_message' => $message,
         ]);
 
-        EiOutboundLog::firstOrCreate(
+        $outboundLog = EiOutboundLog::firstOrCreate(
             [
                 'fiscal_document_id' => $invoice->id,
                 'event_type' => $notificationType,
@@ -282,6 +282,7 @@ class SdiInboundProcessor
                 'raw_payload' => $data,
             ]
         );
+        app(DocumentEventRecorder::class)->sdiResultReceived($invoice, $outboundLog->id, $message);
 
         $this->sdiUuidLinkService->linkInbound($invoice->id, $invoiceUuid, $invoice->business_fingerprint ?? '-', 'reconcile');
 
@@ -306,7 +307,7 @@ class SdiInboundProcessor
             return ['status' => 'error', 'error' => 'Invoice not found for customer-invoice'];
         }
 
-        EiOutboundLog::firstOrCreate(
+        $outboundLog = EiOutboundLog::firstOrCreate(
             [
                 'fiscal_document_id' => $invoice->id,
                 'event_type' => 'received',
@@ -318,6 +319,11 @@ class SdiInboundProcessor
                 'business_fingerprint' => $invoice->business_fingerprint,
                 'raw_payload' => $data,
             ]
+        );
+        app(DocumentEventRecorder::class)->sdiResultReceived(
+            $invoice,
+            $outboundLog->id,
+            __('app.invoices.sdi_log_received_by_sdi')
         );
 
         $this->sdiUuidLinkService->linkOutbound($invoice->id, $invoiceUuid, $invoice->business_fingerprint ?? '-', 'manual');
