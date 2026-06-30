@@ -22,6 +22,7 @@ class SendDocumentMailJob implements ShouldQueue
         public readonly ?Model $document = null,
         public readonly bool $attachPdf = true,
         public readonly string $cc = '',
+        public readonly string $bcc = '',
     ) {}
 
     /**
@@ -31,9 +32,9 @@ class SendDocumentMailJob implements ShouldQueue
     public function handle(DocumentMailer $mailer): void
     {
         try {
-            $mailer->deliver($this->recipientEmail, $this->subject, $this->body, $this->document, $this->attachPdf, $this->cc);
+            $mailer->deliver($this->recipientEmail, $this->subject, $this->body, $this->document, $this->attachPdf, $this->cc, $this->bcc);
         } catch (\Throwable $e) {
-            $mailer->recordEmailFailure($this->document, $this->recipientEmail, $this->subject, $e->getMessage(), $this->cc);
+            $mailer->recordEmailFailure($this->document, $this->recipientEmail, $this->subject, $e->getMessage(), $this->cc, $this->bcc);
 
             throw $e;
         }

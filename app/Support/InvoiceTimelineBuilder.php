@@ -64,6 +64,7 @@ class InvoiceTimelineBuilder
             'status' => $event->status,
             'channel' => $event->channel,
             'recipient_email' => $event->recipient_email,
+            'bcc' => $event->bcc,
             'subject' => $event->subject,
             'error_message' => $event->error_message,
         ]);

@@ -253,7 +253,7 @@ test('testConnection returns null on successful send', function () {
     expect($result)->toBeNull();
 });
 
-test('sendWithOverrides with CC includes CC address in envelope', function () {
+test('sendWithOverrides with CC and BCC includes both addresses in envelope', function () {
     Mail::fake();
 
     $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
@@ -266,9 +266,11 @@ test('sendWithOverrides with CC includes CC address in envelope', function () {
         'Corpo',
         attachPdf: true,
         cc: 'contabilita@example.com',
+        bcc: 'direzione@example.com',
     );
 
-    Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasCc('contabilita@example.com'));
+    Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasCc('contabilita@example.com')
+        && $mail->hasBcc('direzione@example.com'));
 });
 
 test('document mail keeps technical sender address and uses settings for name and reply-to', function () {
@@ -299,6 +301,7 @@ test('send email endpoint can skip PDF attachment', function () {
         'subject' => 'Oggetto',
         'body' => 'Corpo',
         'attach_pdf' => false,
+        'bcc' => 'direzione@example.com',
     ]);
 
     $response->assertOk()->assertJson(['success' => true]);
@@ -309,12 +312,14 @@ test('send email endpoint can skip PDF attachment', function () {
         'fiscal_document_id' => $invoice->id,
         'event_type' => 'email_queued',
         'recipient_email' => 'mario@example.com',
+        'bcc' => 'direzione@example.com',
         'subject' => 'Oggetto',
     ]);
     $this->assertDatabaseHas('document_events', [
         'fiscal_document_id' => $invoice->id,
         'event_type' => 'email_sent',
         'recipient_email' => 'mario@example.com',
+        'bcc' => 'direzione@example.com',
         'subject' => 'Oggetto',
     ]);
 });
@@ -346,6 +351,7 @@ test('deliver stores email delivery metadata after successful send', function ()
         $invoice,
         true,
         'contabilita@example.com',
+        'direzione@example.com',
     );
 
     $saved = $invoice->fresh();
@@ -353,6 +359,7 @@ test('deliver stores email delivery metadata after successful send', function ()
     expect($saved->metadata['email']['sent'] ?? null)->toBeTrue();
     expect($saved->metadata['email']['recipient'] ?? null)->toBe('mario@example.com');
     expect($saved->metadata['email']['cc'] ?? null)->toBe('contabilita@example.com');
+    expect($saved->metadata['email']['bcc'] ?? null)->toBe('direzione@example.com');
     expect($saved->metadata['email']['sent_at'] ?? null)->not->toBeNull();
 
     $this->assertDatabaseHas('document_events', [
@@ -360,6 +367,7 @@ test('deliver stores email delivery metadata after successful send', function ()
         'event_type' => 'email_sent',
         'recipient_email' => 'mario@example.com',
         'cc' => 'contabilita@example.com',
+        'bcc' => 'direzione@example.com',
         'subject' => 'Oggetto',
     ]);
 });
@@ -418,6 +426,7 @@ test('deliver sends through Scaleway TEM when selected', function () {
         null,
         false,
         'contabilita@example.com',
+        'direzione@example.com',
     );
 
     Http::assertSent(function ($request) {
@@ -431,6 +440,7 @@ test('deliver sends through Scaleway TEM when selected', function () {
             && $request['from']['name'] === 'Fatturino'
             && $request['to'][0]['email'] === 'mario@example.com'
             && $request['cc'][0]['email'] === 'contabilita@example.com'
+            && $request['bcc'][0]['email'] === 'direzione@example.com'
             && str_contains($replyToHeader['value'] ?? '', 'fatture@example.com')
             && $request['subject'] === 'Oggetto';
     });

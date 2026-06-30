@@ -35,6 +35,7 @@ class DocumentEventRecorder
             'message' => $attributes['message'] ?? null,
             'recipient_email' => $attributes['recipient_email'] ?? null,
             'cc' => $attributes['cc'] ?? null,
+            'bcc' => $attributes['bcc'] ?? null,
             'subject' => $attributes['subject'] ?? null,
             'error_message' => $attributes['error_message'] ?? null,
             'technical_reference_type' => $attributes['technical_reference_type'] ?? null,
@@ -92,7 +93,7 @@ class DocumentEventRecorder
         ]);
     }
 
-    public function emailQueued(Model $document, string $recipientEmail, string $subject, string $cc = ''): ?DocumentEvent
+    public function emailQueued(Model $document, string $recipientEmail, string $subject, string $cc = '', string $bcc = ''): ?DocumentEvent
     {
         return $this->record($document, [
             'event_type' => 'email_queued',
@@ -101,11 +102,12 @@ class DocumentEventRecorder
             'title' => 'Email accodata',
             'recipient_email' => $recipientEmail,
             'cc' => $cc,
+            'bcc' => $bcc,
             'subject' => $subject,
         ]);
     }
 
-    public function emailSent(Model $document, string $recipientEmail, string $subject, string $cc = ''): ?DocumentEvent
+    public function emailSent(Model $document, string $recipientEmail, string $subject, string $cc = '', string $bcc = ''): ?DocumentEvent
     {
         return $this->record($document, [
             'event_type' => 'email_sent',
@@ -114,11 +116,12 @@ class DocumentEventRecorder
             'title' => 'Email inviata',
             'recipient_email' => $recipientEmail,
             'cc' => $cc,
+            'bcc' => $bcc,
             'subject' => $subject,
         ]);
     }
 
-    public function emailFailed(Model $document, string $recipientEmail, string $subject, string $errorMessage, string $cc = ''): ?DocumentEvent
+    public function emailFailed(Model $document, string $recipientEmail, string $subject, string $errorMessage, string $cc = '', string $bcc = ''): ?DocumentEvent
     {
         return $this->record($document, [
             'event_type' => 'email_failed',
@@ -127,6 +130,7 @@ class DocumentEventRecorder
             'title' => 'Invio email fallito',
             'recipient_email' => $recipientEmail,
             'cc' => $cc,
+            'bcc' => $bcc,
             'subject' => $subject,
             'error_message' => $errorMessage,
         ]);

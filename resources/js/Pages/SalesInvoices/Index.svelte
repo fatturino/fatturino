@@ -45,7 +45,7 @@
     let emailModalLoading = $state(false)
     let emailSending = $state(false)
     let emailInvoice = $state(null)
-    let emailForm = $state({ recipient_email: '', cc: '', subject: '', body: '', attach_pdf: true })
+    let emailForm = $state({ recipient_email: '', cc: '', bcc: '', subject: '', body: '', attach_pdf: true })
     const statusTabs = $derived([
         { label: 'Tutte', value: '', count: listState.invoices.total ?? 0 },
         { label: 'Bozze', value: 'draft', count: listState.stats.draft_count ?? 0 },
@@ -319,6 +319,7 @@ Controlla prima di confermare:
             emailForm = {
                 recipient_email: data.preview?.recipient_email ?? '',
                 cc: data.preview?.cc ?? '',
+                bcc: data.preview?.bcc ?? '',
                 subject: data.preview?.subject ?? '',
                 body: data.preview?.body ?? '',
                 attach_pdf: data.preview?.attach_pdf ?? true,
@@ -406,6 +407,10 @@ Controlla prima di confermare:
             <label class="block">
                 <span class="text-sm font-medium text-brand-deep">CC (opzionale)</span>
                 <Input class="mt-1 block w-full" type="email" bind:value={emailForm.cc} />
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep">CCN (opzionale)</span>
+                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.bcc} />
             </label>
             <label class="block">
                 <span class="text-sm font-medium text-brand-deep">Oggetto</span>

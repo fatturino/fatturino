@@ -33,6 +33,7 @@ test('document event recorder stores email metadata without body snapshot', func
         'cliente@example.com',
         'Fattura 1',
         'contabilita@example.com',
+        'direzione@example.com',
     );
 
     $event = DocumentEvent::first();
@@ -41,6 +42,7 @@ test('document event recorder stores email metadata without body snapshot', func
     expect($event->event_type)->toBe('email_queued');
     expect($event->recipient_email)->toBe('cliente@example.com');
     expect($event->cc)->toBe('contabilita@example.com');
+    expect($event->bcc)->toBe('direzione@example.com');
     expect($event->subject)->toBe('Fattura 1');
     expect($event->getAttributes())->not->toHaveKey('body');
 });

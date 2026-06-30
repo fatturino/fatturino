@@ -40,25 +40,25 @@ class DocumentMailer
      * Send document email with caller-supplied subject and body (used from the modal).
      * Throws on delivery failure.
      */
-    public function sendWithOverrides(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = ''): void
+    public function sendWithOverrides(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = '', string $bcc = ''): void
     {
-        $this->documentEvents->emailQueued($document, $recipientEmail, $subject, $cc);
+        $this->documentEvents->emailQueued($document, $recipientEmail, $subject, $cc, $bcc);
 
-        SendDocumentMailJob::dispatch($recipientEmail, $subject, $body, $document, $attachPdf, $cc);
+        SendDocumentMailJob::dispatch($recipientEmail, $subject, $body, $document, $attachPdf, $cc, $bcc);
     }
 
     /**
      * Send immediately in the current request lifecycle.
      * Use this for manual user-triggered sends so API success reflects real delivery attempt.
      */
-    public function sendNowWithOverrides(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = ''): void
+    public function sendNowWithOverrides(Model $document, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = '', string $bcc = ''): void
     {
-        $this->documentEvents->emailQueued($document, $recipientEmail, $subject, $cc);
+        $this->documentEvents->emailQueued($document, $recipientEmail, $subject, $cc, $bcc);
 
         try {
-            $this->deliver($recipientEmail, $subject, $body, $document, $attachPdf, $cc);
+            $this->deliver($recipientEmail, $subject, $body, $document, $attachPdf, $cc, $bcc);
         } catch (Throwable $e) {
-            $this->recordEmailFailure($document, $recipientEmail, $subject, $e->getMessage(), $cc);
+            $this->recordEmailFailure($document, $recipientEmail, $subject, $e->getMessage(), $cc, $bcc);
 
             throw $e;
         }
@@ -226,7 +226,7 @@ class DocumentMailer
      * Apply mail overrides and send synchronously. Called from SendDocumentMailJob
      * so it runs inside the queue worker process — where Config::set() actually takes effect.
      */
-    public function deliver(string $recipientEmail, string $subject, string $body, ?Model $document = null, bool $attachPdf = true, string $cc = ''): void
+    public function deliver(string $recipientEmail, string $subject, string $body, ?Model $document = null, bool $attachPdf = true, string $cc = '', string $bcc = ''): void
     {
         $this->applyMailOverrides();
 
@@ -237,6 +237,7 @@ class DocumentMailer
             $body,
             $attachedDocument,
             $cc,
+            $bcc,
             config('mail.from.address'),
             $this->emailSettings->from_name,
             $this->emailSettings->from_address,
@@ -244,19 +245,19 @@ class DocumentMailer
         ));
 
         if ($document !== null) {
-            $this->documentEvents->emailSent($document, $recipientEmail, $subject, $cc);
-            $this->markEmailAsSent($document, $recipientEmail, $cc);
+            $this->documentEvents->emailSent($document, $recipientEmail, $subject, $cc, $bcc);
+            $this->markEmailAsSent($document, $recipientEmail, $cc, $bcc);
         }
     }
 
-    public function recordEmailFailure(?Model $document, string $recipientEmail, string $subject, string $errorMessage, string $cc = ''): void
+    public function recordEmailFailure(?Model $document, string $recipientEmail, string $subject, string $errorMessage, string $cc = '', string $bcc = ''): void
     {
         if ($document === null) {
             return;
         }
 
-        $this->documentEvents->emailFailed($document, $recipientEmail, $subject, $errorMessage, $cc);
-        $this->markEmailAsFailed($document, $recipientEmail, $cc, $errorMessage);
+        $this->documentEvents->emailFailed($document, $recipientEmail, $subject, $errorMessage, $cc, $bcc);
+        $this->markEmailAsFailed($document, $recipientEmail, $cc, $bcc, $errorMessage);
     }
 
     /**
@@ -295,7 +296,7 @@ class DocumentMailer
         Mail::purge('scaleway_tem');
     }
 
-    private function markEmailAsSent(Model $document, string $recipientEmail, string $cc): void
+    private function markEmailAsSent(Model $document, string $recipientEmail, string $cc, string $bcc): void
     {
         if (! $document->exists) {
             return;
@@ -317,12 +318,13 @@ class DocumentMailer
             'sent_at' => Carbon::now()->toIso8601String(),
             'recipient' => $recipientEmail,
             'cc' => $cc,
+            'bcc' => $bcc,
         ];
 
         $freshDocument->forceFill(['metadata' => $metadata])->save();
     }
 
-    private function markEmailAsFailed(Model $document, string $recipientEmail, string $cc, string $errorMessage): void
+    private function markEmailAsFailed(Model $document, string $recipientEmail, string $cc, string $bcc, string $errorMessage): void
     {
         if (! $document->exists) {
             return;
@@ -344,6 +346,7 @@ class DocumentMailer
             'failed_at' => Carbon::now()->toIso8601String(),
             'recipient' => $recipientEmail,
             'cc' => $cc,
+            'bcc' => $bcc,
             'error' => $errorMessage,
         ];
 

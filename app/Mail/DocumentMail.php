@@ -20,6 +20,7 @@ class DocumentMail extends Mailable
         public readonly string $emailBody,
         public readonly ?Model $document = null,
         public readonly string $emailCc = '',
+        public readonly string $emailBcc = '',
         public readonly ?string $senderAddress = null,
         public readonly ?string $senderName = null,
         public readonly ?string $replyToAddress = null,
@@ -35,6 +36,7 @@ class DocumentMail extends Mailable
             from: $fromAddress,
             subject: $this->emailSubject,
             cc: $this->emailCc !== '' ? [new Address($this->emailCc)] : [],
+            bcc: $this->emailBcc !== '' ? [new Address($this->emailBcc)] : [],
             replyTo: $replyToAddress !== null ? [$replyToAddress] : [],
         );
     }

@@ -21,6 +21,7 @@ trait HandlesDocumentEmail
         $validated = $request->validate([
             'recipient_email' => 'nullable|email',
             'cc' => 'nullable|email',
+            'bcc' => 'nullable|email',
             'subject' => 'nullable|string',
             'body' => 'nullable|string',
             'attach_pdf' => 'nullable|boolean',
@@ -31,6 +32,7 @@ trait HandlesDocumentEmail
         $subject = $validated['subject'] ?? $mailer->renderSubject($documentType, $document);
         $body = $validated['body'] ?? $mailer->renderBody($documentType, $document);
         $cc = $validated['cc'] ?? '';
+        $bcc = $validated['bcc'] ?? '';
         $attachPdf = $request->has('attach_pdf') ? $request->boolean('attach_pdf') : true;
 
         if (! $recipientEmail) {
@@ -45,7 +47,7 @@ trait HandlesDocumentEmail
         }
 
         try {
-            $mailer->sendWithOverrides($document, $recipientEmail, $subject, $body, $attachPdf, $cc);
+            $mailer->sendWithOverrides($document, $recipientEmail, $subject, $body, $attachPdf, $cc, $bcc);
         } catch (Throwable $e) {
             if (! $request->expectsJson()) {
                 return back()->withErrors(['action' => 'Invio email non riuscito: '.$e->getMessage()]);
@@ -90,6 +92,7 @@ trait HandlesDocumentEmail
             'preview' => [
                 'recipient_email' => $document->contact?->email ?? '',
                 'cc' => (string) data_get($metadata, 'email.cc', ''),
+                'bcc' => (string) data_get($metadata, 'email.bcc', ''),
                 'subject' => $mailer->renderSubject($documentType, $document),
                 'body' => $mailer->renderBody($documentType, $document),
                 'attach_pdf' => true,
