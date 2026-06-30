@@ -25,7 +25,7 @@
     </div>
 
     <div class="card-brand p-5">
-        <p class="text-xs text-brand-secondary/60 font-medium uppercase tracking-wide mb-2">Ricavi YTD</p>
+        <p class="text-xs text-brand-secondary/60 font-medium uppercase tracking-wide mb-2">Ricavi da inizio anno</p>
         <p class="text-2xl font-bold text-brand-deep">{formatCurrency(revenueYtd)}</p>
         <p class="text-xs text-brand-secondary/60 mt-1">{invoicesYtd} fatture</p>
     </div>

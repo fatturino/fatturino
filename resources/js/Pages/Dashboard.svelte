@@ -52,7 +52,7 @@
         <section class="card-brand p-4 sm:p-6 mb-6">
             <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)] lg:items-start">
                 <div>
-                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Dashboard operativa · FY {fiscalYear}</p>
+                    <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Dashboard operativa · Anno {fiscalYear}</p>
                     <h2 class="mt-2 text-2xl font-semibold text-brand-deep">Incassi, scadenze e documenti da chiudere</h2>
                     <p class="mt-2 max-w-2xl text-sm text-brand-secondary/80">
                         {hasVatAccounting
@@ -78,7 +78,7 @@
                         </p>
                     </div>
                     <div class="rounded-lg border border-border-light bg-white p-4">
-                        <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Incassato netto YTD</p>
+                        <p class="text-xs uppercase tracking-wide text-brand-secondary/70">Incassato netto da inizio anno</p>
                         <p class="mt-2 text-xl font-semibold text-brand-deep">{formatCurrency(collectedNetYtd)}</p>
                         <p class="mt-1 text-xs text-brand-secondary/80">Tasso incasso {collectionRate.toFixed(1)}%</p>
                     </div>
@@ -205,7 +205,7 @@
         <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <article class="card-brand p-4 sm:p-5">
                 <h3 class="text-base font-semibold text-brand-deep">Salute incassi</h3>
-                <p class="mt-3 text-xs uppercase tracking-wide text-brand-secondary/70">Tasso incasso YTD</p>
+                <p class="mt-3 text-xs uppercase tracking-wide text-brand-secondary/70">Tasso incasso da inizio anno</p>
                 <p class="mt-1 text-2xl font-semibold text-brand-deep">{collectionRate.toFixed(1)}%</p>
                 <div class="mt-3 h-2 w-full rounded-full bg-surface-muted">
                     <div class="h-2 rounded-full bg-brand-deep" style={`width: ${collectionRate}%`}></div>

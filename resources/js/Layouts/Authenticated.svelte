@@ -166,7 +166,7 @@
                     <h1 class="text-xl font-semibold text-brand-deep truncate">{pageTitle}</h1>
                     {#if fiscalYear}
                         <span class="hidden sm:inline-flex shrink-0 items-center rounded-md border border-border-light bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-brand-secondary">
-                            FY {fiscalYear}
+                            Anno {fiscalYear}
                         </span>
                     {/if}
                 </div>

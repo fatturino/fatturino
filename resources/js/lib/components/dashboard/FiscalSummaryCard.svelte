@@ -31,7 +31,7 @@
             <p class="text-base font-bold {vatBalanceYtd >= 0 ? 'text-red-600' : 'text-green-600'}">{formatCurrency(vatBalanceYtd)}</p>
         </div>
         <div class="rounded-lg bg-brand/5 p-3">
-            <p class="text-[11px] text-brand-secondary/60 mb-1">Ritenute YTD</p>
+            <p class="text-[11px] text-brand-secondary/60 mb-1">Ritenute da inizio anno</p>
             <p class="text-base font-bold text-brand-deep">{formatCurrency(withholdingTaxYtd)}</p>
         </div>
     </div>
@@ -47,4 +47,3 @@
         {/each}
     </div>
 </div>
-
