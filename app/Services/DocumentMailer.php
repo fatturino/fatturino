@@ -222,6 +222,8 @@ class DocumentMailer
             $body,
             $attachedDocument,
             $cc,
+            config('mail.from.address'),
+            $this->emailSettings->from_name,
             $this->emailSettings->from_address,
             $this->emailSettings->from_name,
         ));
@@ -256,10 +258,6 @@ class DocumentMailer
             Config::set('mail.mailers.smtp.username', $this->emailSettings->smtp_username);
             Config::set('mail.mailers.smtp.password', $this->emailSettings->smtp_password);
             Config::set('mail.mailers.smtp.encryption', $this->emailSettings->smtp_encryption ?? 'tls');
-        }
-
-        if ($this->emailSettings->from_address) {
-            Config::set('mail.from.address', $this->emailSettings->from_address);
         }
 
         if ($this->emailSettings->from_name) {

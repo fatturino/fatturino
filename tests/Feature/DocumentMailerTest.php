@@ -261,20 +261,17 @@ test('sendWithOverrides with CC includes CC address in envelope', function () {
     Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasCc('contabilita@example.com'));
 });
 
-test('document mail uses configured sender name and reply-to address', function () {
-    config([
-        'mail.from.address' => 'default@fatturino.test',
-        'mail.from.name' => 'Fatturino Default',
-    ]);
-
+test('document mail keeps technical sender address and uses settings for name and reply-to', function () {
     $envelope = (new DocumentMail(
         'Oggetto',
         'Corpo',
-        senderAddress: 'fatture@example.com',
+        senderAddress: 'verified@fatturino.test',
         senderName: 'Studio Rossi',
+        replyToAddress: 'fatture@example.com',
+        replyToName: 'Studio Rossi',
     ))->envelope();
 
-    expect($envelope->from->address)->toBe('fatture@example.com');
+    expect($envelope->from->address)->toBe('verified@fatturino.test');
     expect($envelope->from->name)->toBe('Studio Rossi');
     expect($envelope->replyTo[0]->address)->toBe('fatture@example.com');
     expect($envelope->replyTo[0]->name)->toBe('Studio Rossi');
@@ -340,6 +337,7 @@ test('deliver sends through Scaleway TEM when selected', function () {
     Http::fake([
         'https://api.scaleway.com/transactional-email/v1alpha1/regions/fr-par/emails' => Http::response(['id' => 'email-123'], 200),
     ]);
+    config(['mail.from.address' => 'verified@fatturino.test']);
 
     $settings = app(EmailSettings::class);
     $settings->mail_provider = 'scaleway_tem';
@@ -365,7 +363,7 @@ test('deliver sends through Scaleway TEM when selected', function () {
         return $request->hasHeader('X-Auth-Token', 'secret-123')
             && $request->url() === 'https://api.scaleway.com/transactional-email/v1alpha1/regions/fr-par/emails'
             && $request['project_id'] === 'project-123'
-            && $request['from']['email'] === 'fatture@example.com'
+            && $request['from']['email'] === 'verified@fatturino.test'
             && $request['from']['name'] === 'Fatturino'
             && $request['to'][0]['email'] === 'mario@example.com'
             && $request['cc'][0]['email'] === 'contabilita@example.com'

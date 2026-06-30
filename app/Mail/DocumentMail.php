@@ -22,17 +22,20 @@ class DocumentMail extends Mailable
         public readonly string $emailCc = '',
         public readonly ?string $senderAddress = null,
         public readonly ?string $senderName = null,
+        public readonly ?string $replyToAddress = null,
+        public readonly ?string $replyToName = null,
     ) {}
 
     public function envelope(): Envelope
     {
         $fromAddress = $this->configuredSender();
+        $replyToAddress = $this->configuredReplyTo();
 
         return new Envelope(
             from: $fromAddress,
             subject: $this->emailSubject,
             cc: $this->emailCc !== '' ? [new Address($this->emailCc)] : [],
-            replyTo: $fromAddress !== null ? [$fromAddress] : [],
+            replyTo: $replyToAddress !== null ? [$replyToAddress] : [],
         );
     }
 
@@ -77,5 +80,14 @@ class DocumentMail extends Mailable
         }
 
         return new Address($this->senderAddress, $this->senderName ?: null);
+    }
+
+    private function configuredReplyTo(): ?Address
+    {
+        if ($this->replyToAddress === null || $this->replyToAddress === '') {
+            return null;
+        }
+
+        return new Address($this->replyToAddress, $this->replyToName ?: null);
     }
 }

@@ -124,8 +124,9 @@
             <div class="card-brand p-4 sm:p-5">
                 <h2 class="text-base font-semibold text-brand-deep mb-4">Mittente</h2>
                 <div class="space-y-4">
-                    <label class="block"><span class="text-sm font-medium text-brand-deep">Indirizzo email</span>
+                    <label class="block"><span class="text-sm font-medium text-brand-deep">Indirizzo Reply-To</span>
                         <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="email" bind:value={form.from_address} />
+                        <span class="text-xs text-brand-secondary/60 mt-0.5 block">Le risposte dei clienti arriveranno qui. Il dominio tecnico di invio resta quello configurato nel provider.</span>
                     </label>
                     <label class="block"><span class="text-sm font-medium text-brand-deep">Nome visualizzato</span>
                         <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.from_name} />
