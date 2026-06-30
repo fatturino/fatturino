@@ -188,7 +188,7 @@ class SalesInvoicesController extends Controller
     {
         $invoice->load([
             'lines',
-            'events' => fn ($query) => $query->latest('occurred_at')->limit(10),
+            'events' => fn ($query) => $query->latest('occurred_at'),
         ]);
 
         return Inertia::render('SalesInvoices/Edit', [

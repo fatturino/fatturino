@@ -57,7 +57,7 @@
     const isRf19 = fiscalRegime === 'RF19'
 
     const isEdit = initialInvoice !== null
-    const documentEvents = $derived((initialInvoice?.events ?? []).slice(0, 6))
+    const documentEvents = $derived(initialInvoice?.events ?? [])
     const settings = bootstrap.formData?.settings ?? {}
     const resolvedDefaultSequenceId = bootstrap.formData?.default_sequence_id ?? bootstrap.formData?.sequences?.[0]?.id ?? ''
     const initialSequence = bootstrap.formData?.sequences?.find((s) => s.id === Number(resolvedDefaultSequenceId))
@@ -169,6 +169,14 @@
             case 'received': return 'Ricevuto'
             default: return null
         }
+    }
+
+    function eventMeta(event) {
+        return [
+            event.channel ? event.channel.toUpperCase() : null,
+            event.recipient_email,
+            event.subject,
+        ].filter(Boolean).join(' - ')
     }
 
     function formatEventDate(value) {
@@ -501,7 +509,7 @@ Controlla prima di confermare:
         <div class="lg:col-span-2 space-y-6">
             <div class="card-brand p-6">
                 {#if showTabs}
-                    <div class={`mb-4 grid ${showPaymentTab ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+                    <div class={`mb-4 grid ${showPaymentTab ? (isEdit ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3') : (isEdit ? 'grid-cols-3' : 'grid-cols-2')} gap-2`}>
                         <button
                             type="button"
                             class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeDocumentTab === 'dati' ? 'border-brand-deep bg-brand-deep text-white' : 'border-border-light bg-white text-brand-deep hover:bg-surface-muted'}"
@@ -525,6 +533,15 @@ Controlla prima di confermare:
                         >
                             Note
                         </button>
+                        {#if isEdit}
+                            <button
+                                type="button"
+                                class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeDocumentTab === 'storico' ? 'border-brand-deep bg-brand-deep text-white' : 'border-border-light bg-white text-brand-deep hover:bg-surface-muted'}"
+                                onclick={() => activeDocumentTab = 'storico'}
+                            >
+                                Storico
+                            </button>
+                        {/if}
                     </div>
                 {/if}
 
@@ -642,6 +659,44 @@ Controlla prima di confermare:
                     {#if displayErrors.notes}
                         <span class="text-red-600 text-xs mt-0.5 block">{displayErrors.notes}</span>
                     {/if}
+                {:else if activeDocumentTab === 'storico' && isEdit}
+                    <div>
+                        <h2 class="text-base font-semibold text-brand-deep">Storico</h2>
+                        {#if documentEvents.length > 0}
+                            <div class="mt-5 space-y-0">
+                                {#each documentEvents as event}
+                                    <div class="grid grid-cols-1 gap-2 border-l border-border-light pb-6 pl-4 last:pb-0 sm:grid-cols-[8rem_1fr] sm:gap-4">
+                                        <div class="text-xs text-brand-secondary/70">
+                                            {formatEventDate(event.occurred_at)}
+                                        </div>
+                                        <div class="relative min-w-0">
+                                            <span class="absolute -left-[1.31rem] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-brand-deep sm:-left-[1.31rem]"></span>
+                                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <p class="text-sm font-medium text-brand-deep">{event.title}</p>
+                                                    {#if eventMeta(event)}
+                                                        <p class="mt-1 text-xs text-brand-secondary/70 break-words">
+                                                            {eventMeta(event)}
+                                                        </p>
+                                                    {/if}
+                                                </div>
+                                                {#if eventStatusLabel(event.status)}
+                                                    <span class="shrink-0 inline-block px-2 py-0.5 rounded-full text-xs font-medium {eventBadgeClass(event.status)}">{eventStatusLabel(event.status)}</span>
+                                                {/if}
+                                            </div>
+                                            {#if event.message || event.error_message}
+                                                <p class="mt-2 text-sm text-brand-secondary/80 break-words">
+                                                    {event.error_message || event.message}
+                                                </p>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+                        {:else}
+                            <p class="mt-4 text-sm text-brand-secondary/70">Nessun evento registrato.</p>
+                        {/if}
+                    </div>
                 {/if}
             </div>
 
@@ -832,35 +887,6 @@ Controlla prima di confermare:
                     {/if}
                 </div>
             </div>
-            {#if isEdit}
-                <div class="card-brand p-6 mt-4">
-                    <h2 class="text-base font-semibold text-brand-deep mb-4">Storico</h2>
-                    {#if documentEvents.length > 0}
-                        <div class="space-y-4">
-                            {#each documentEvents as event}
-                                <div class="border-b border-border-light pb-3 last:border-b-0 last:pb-0">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-medium text-brand-deep">{event.title}</p>
-                                            <p class="mt-0.5 text-xs text-brand-secondary/70">{formatEventDate(event.occurred_at)}</p>
-                                        </div>
-                                        {#if eventStatusLabel(event.status)}
-                                            <span class="shrink-0 inline-block px-2 py-0.5 rounded-full text-xs font-medium {eventBadgeClass(event.status)}">{eventStatusLabel(event.status)}</span>
-                                        {/if}
-                                    </div>
-                                    {#if event.message || event.recipient_email || event.error_message}
-                                        <p class="mt-2 text-xs text-brand-secondary/80 break-words">
-                                            {event.error_message || event.message || event.recipient_email}
-                                        </p>
-                                    {/if}
-                                </div>
-                            {/each}
-                        </div>
-                    {:else}
-                        <p class="text-sm text-brand-secondary/70">Nessun evento registrato.</p>
-                    {/if}
-                </div>
-            {/if}
             {#if showTaxOptions}
                 <div class="card-brand p-6 sticky top-[28rem] mt-4">
                     <h2 class="text-base font-semibold text-brand-deep mb-1">Opzioni fiscali</h2>
