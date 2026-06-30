@@ -14,6 +14,6 @@ return [
     |
     */
 
-    'managed_by_env' => env('SMTP_MANAGED_BY_ENV', false),
+    'managed_by_env' => env('EMAIL_MANAGED_BY_ENV', env('SMTP_MANAGED_BY_ENV', false)),
 
 ];

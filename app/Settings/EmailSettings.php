@@ -6,6 +6,8 @@ use Spatie\LaravelSettings\Settings;
 
 class EmailSettings extends Settings
 {
+    public string $mail_provider;
+
     // SMTP configuration (overrides .env when non-null)
     public ?string $smtp_host;
 
@@ -20,6 +22,12 @@ class EmailSettings extends Settings
     public ?string $from_address;
 
     public ?string $from_name;
+
+    public ?string $scaleway_tem_region;
+
+    public ?string $scaleway_tem_project_id;
+
+    public ?string $scaleway_tem_secret_key;
 
     // Email templates for sales invoices
     public string $template_sales_subject;

@@ -49,6 +49,13 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        'scaleway_tem' => [
+            'transport' => 'scaleway_tem',
+            'region' => env('SCALEWAY_TEM_REGION', 'fr-par'),
+            'project_id' => env('SCALEWAY_TEM_PROJECT_ID'),
+            'secret_key' => env('SCALEWAY_TEM_SECRET_KEY'),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],

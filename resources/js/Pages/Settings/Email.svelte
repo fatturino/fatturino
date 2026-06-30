@@ -8,17 +8,27 @@
     import Switch from '$lib/components/ui/Switch.svelte'
     import { showToast } from '$lib/toast.js'
 
-    let { settings = {}, smtpManagedByEnv = false, encryptionOptions = [], errors = {} } = $props()
+    let {
+        settings = {},
+        smtpManagedByEnv = false,
+        mailProviderOptions = [],
+        encryptionOptions = [],
+        errors = {},
+    } = $props()
 
     let autoSendSales = $state(settings.auto_send_sales ?? false)
     let autoSendProforma = $state(settings.auto_send_proforma ?? false)
 
     const form = useForm({
+        mail_provider: settings.mail_provider ?? 'smtp',
         smtp_host: settings.smtp_host ?? '',
         smtp_port: settings.smtp_port ?? '',
         smtp_username: settings.smtp_username ?? '',
         smtp_password: settings.smtp_password ?? '',
         smtp_encryption: settings.smtp_encryption ?? '',
+        scaleway_tem_region: settings.scaleway_tem_region ?? 'fr-par',
+        scaleway_tem_project_id: settings.scaleway_tem_project_id ?? '',
+        scaleway_tem_secret_key: settings.scaleway_tem_secret_key ?? '',
         from_address: settings.from_address ?? '',
         from_name: settings.from_name ?? '',
         template_sales_subject: settings.template_sales_subject ?? '',
@@ -36,7 +46,7 @@
     }
 
     function handleTest() {
-        form.post('/email-settings/test', { preserveScroll: true, onSuccess: () => showToast('Connessione SMTP riuscita.') })
+        form.post('/email-settings/test', { preserveScroll: true, onSuccess: () => showToast('Connessione email riuscita.') })
     }
 </script>
 
@@ -49,32 +59,51 @@
 
     <div class="page-shell pb-24 sm:pb-6 w-full">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- SMTP -->
+            <!-- Provider -->
             <div class="card-brand p-4 sm:p-5">
-                <h2 class="text-base font-semibold text-brand-deep mb-4">Configurazione SMTP</h2>
+                <h2 class="text-base font-semibold text-brand-deep mb-4">Provider invio email</h2>
                 {#if smtpManagedByEnv}
                     <p class="text-sm text-brand-secondary/60">Configurato tramite variabili d'ambiente.</p>
                 {:else}
                     <div class="space-y-4">
-                        <label class="block"><span class="text-sm font-medium text-brand-deep">Host</span>
-                            <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.smtp_host} />
+                        <label class="block"><span class="text-sm font-medium text-brand-deep">Provider</span>
+                            <Select useNative class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" bind:value={form.mail_provider}>
+                                {#each mailProviderOptions as o}<option value={o.value}>{o.label}</option>{/each}
+                            </Select>
                         </label>
-                        <div class="grid grid-cols-2 gap-4">
-                            <label class="block"><span class="text-sm font-medium text-brand-deep">Porta</span>
-                                <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.smtp_port} />
+                        {#if form.mail_provider === 'scaleway_tem'}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <label class="block"><span class="text-sm font-medium text-brand-deep">Regione</span>
+                                    <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.scaleway_tem_region} />
+                                </label>
+                                <label class="block"><span class="text-sm font-medium text-brand-deep">Project ID</span>
+                                    <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.scaleway_tem_project_id} />
+                                </label>
+                            </div>
+                            <label class="block"><span class="text-sm font-medium text-brand-deep">Secret key</span>
+                                <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="password" bind:value={form.scaleway_tem_secret_key} />
                             </label>
-                            <label class="block"><span class="text-sm font-medium text-brand-deep">Crittografia</span>
-                                <Select useNative class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" bind:value={form.smtp_encryption}>
-                                    {#each encryptionOptions as o}<option value={o.value}>{o.label}</option>{/each}
-                                </Select>
+                        {:else}
+                            <label class="block"><span class="text-sm font-medium text-brand-deep">Host</span>
+                                <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.smtp_host} />
                             </label>
-                        </div>
-                        <label class="block"><span class="text-sm font-medium text-brand-deep">Username</span>
-                            <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.smtp_username} />
-                        </label>
-                        <label class="block"><span class="text-sm font-medium text-brand-deep">Password</span>
-                            <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="password" bind:value={form.smtp_password} />
-                        </label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <label class="block"><span class="text-sm font-medium text-brand-deep">Porta</span>
+                                    <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.smtp_port} />
+                                </label>
+                                <label class="block"><span class="text-sm font-medium text-brand-deep">Crittografia</span>
+                                    <Select useNative class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" bind:value={form.smtp_encryption}>
+                                        {#each encryptionOptions as o}<option value={o.value}>{o.label}</option>{/each}
+                                    </Select>
+                                </label>
+                            </div>
+                            <label class="block"><span class="text-sm font-medium text-brand-deep">Username</span>
+                                <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="text" bind:value={form.smtp_username} />
+                            </label>
+                            <label class="block"><span class="text-sm font-medium text-brand-deep">Password</span>
+                                <Input class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus" type="password" bind:value={form.smtp_password} />
+                            </label>
+                        {/if}
                     </div>
                 {/if}
             </div>

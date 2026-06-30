@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\EnvironmentCapabilities;
 use App\Contracts\LoginCustomizer;
 use App\Contracts\SdiProvider;
+use App\Mail\ScalewayTemTransport;
 use App\Services\DemoCapabilities;
 use App\Services\DemoLoginCustomizer;
 use App\Services\NullLoginCustomizer;
@@ -14,7 +15,9 @@ use App\Services\PostHogTelemetryService;
 use App\Services\UnrestrictedCapabilities;
 use App\Settings\BackupSettings;
 use App\Settings\OpenApiSettings;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use PostHog\PostHog;
@@ -59,6 +62,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->applyBackupCredentials();
         $this->initializePostHog();
+        $this->registerScalewayTemTransport();
 
         $this->loadViewsFrom(resource_path('views/vendor/fe-openapi'), 'fe-openapi');
         $this->loadTranslationsFrom(lang_path('vendor/fe-openapi'), 'fe-openapi');
@@ -115,5 +119,15 @@ class AppServiceProvider extends ServiceProvider
         PostHog::init($apiKey, [
             'host' => (string) config('services.posthog.host', 'https://eu.i.posthog.com'),
         ]);
+    }
+
+    private function registerScalewayTemTransport(): void
+    {
+        Mail::extend('scaleway_tem', fn (array $config) => new ScalewayTemTransport(
+            app(HttpFactory::class),
+            (string) ($config['secret_key'] ?? ''),
+            (string) ($config['project_id'] ?? ''),
+            (string) ($config['region'] ?? 'fr-par'),
+        ));
     }
 }

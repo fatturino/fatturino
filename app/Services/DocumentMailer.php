@@ -79,7 +79,7 @@ class DocumentMailer
     }
 
     /**
-     * Send a test email to the configured from_address to verify SMTP connectivity.
+     * Send a test email to the configured from_address to verify mail connectivity.
      * Returns null on success, or the error message string on failure.
      */
     public function testConnection(): ?string
@@ -92,7 +92,7 @@ class DocumentMailer
         }
 
         try {
-            $this->applySmtpOverrides();
+            $this->applyMailOverrides();
             Mail::raw(__('app.email.test_body'), function ($message) use ($recipient) {
                 $message->to($recipient)
                     ->subject(__('app.email.test_subject'));
@@ -153,12 +153,12 @@ class DocumentMailer
     }
 
     /**
-     * Apply SMTP overrides and send synchronously. Called from SendDocumentMailJob
+     * Apply mail overrides and send synchronously. Called from SendDocumentMailJob
      * so it runs inside the queue worker process — where Config::set() actually takes effect.
      */
     public function deliver(string $recipientEmail, string $subject, string $body, ?Model $document = null, bool $attachPdf = true, string $cc = ''): void
     {
-        $this->applySmtpOverrides();
+        $this->applyMailOverrides();
 
         $attachedDocument = $attachPdf ? $document : null;
 
@@ -170,17 +170,24 @@ class DocumentMailer
     }
 
     /**
-     * Override the SMTP mailer config at runtime using user-configured settings.
+     * Override the mailer config at runtime using user-configured settings.
      * Falls back to .env defaults when settings are not configured.
      */
-    private function applySmtpOverrides(): void
+    private function applyMailOverrides(): void
     {
-        // When SMTP is managed by env, .env MAIL_* vars win — never override from DB
+        // When mail is managed by env, .env vars win and DB settings only drive templates.
         if (config('email.managed_by_env')) {
             return;
         }
 
-        if ($this->emailSettings->smtp_host) {
+        $provider = $this->emailSettings->mail_provider ?? 'smtp';
+
+        if ($provider === 'scaleway_tem') {
+            Config::set('mail.default', 'scaleway_tem');
+            Config::set('mail.mailers.scaleway_tem.region', $this->emailSettings->scaleway_tem_region ?: 'fr-par');
+            Config::set('mail.mailers.scaleway_tem.project_id', $this->emailSettings->scaleway_tem_project_id);
+            Config::set('mail.mailers.scaleway_tem.secret_key', $this->emailSettings->scaleway_tem_secret_key);
+        } elseif ($this->emailSettings->smtp_host) {
             Config::set('mail.default', 'smtp');
             Config::set('mail.mailers.smtp.host', $this->emailSettings->smtp_host);
             Config::set('mail.mailers.smtp.port', $this->emailSettings->smtp_port ?? 587);
@@ -197,8 +204,9 @@ class DocumentMailer
             Config::set('mail.from.name', $this->emailSettings->from_name);
         }
 
-        // Purge the cached mailer so the new config takes effect immediately
+        // Purge cached mailers so runtime provider changes take effect immediately.
         Mail::purge('smtp');
+        Mail::purge('scaleway_tem');
     }
 
     private function markEmailAsSent(Model $document, string $recipientEmail, string $cc): void

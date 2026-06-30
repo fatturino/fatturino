@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\DocumentMailer;
+use App\Settings\CompanySettings;
 use App\Settings\EmailSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,10 @@ class EmailSettingsController extends Controller
         return Inertia::render('Settings/Email', [
             'settings' => $settings->toArray(),
             'smtpManagedByEnv' => config('email.managed_by_env', false),
+            'mailProviderOptions' => [
+                ['value' => 'smtp', 'label' => 'SMTP'],
+                ['value' => 'scaleway_tem', 'label' => 'Scaleway TEM'],
+            ],
             'encryptionOptions' => [
                 ['value' => '', 'label' => 'Nessuna'],
                 ['value' => 'tls', 'label' => 'TLS'],
@@ -39,11 +44,15 @@ class EmailSettingsController extends Controller
 
         if (! config('email.managed_by_env', false)) {
             $rules = array_merge($rules, [
+                'mail_provider' => 'required|in:smtp,scaleway_tem',
                 'smtp_host' => 'nullable|string',
                 'smtp_port' => 'nullable|string',
                 'smtp_username' => 'nullable|string',
                 'smtp_password' => 'nullable|string',
                 'smtp_encryption' => 'nullable|string',
+                'scaleway_tem_region' => 'nullable|string',
+                'scaleway_tem_project_id' => 'nullable|string',
+                'scaleway_tem_secret_key' => 'nullable|string',
             ]);
         }
 
@@ -55,21 +64,31 @@ class EmailSettingsController extends Controller
         return redirect()->route('settings.email');
     }
 
-    public function testConnection(Request $request): RedirectResponse
+    public function testConnection(Request $request, EmailSettings $settings): RedirectResponse
     {
         try {
-            $config = [
-                'host' => $request->input('smtp_host'),
-                'port' => $request->input('smtp_port'),
-                'username' => $request->input('smtp_username'),
-                'password' => $request->input('smtp_password'),
-                'encryption' => $request->input('smtp_encryption'),
-            ];
+            if (! config('email.managed_by_env', false)) {
+                $settings->fill($request->validate([
+                    'mail_provider' => 'required|in:smtp,scaleway_tem',
+                    'smtp_host' => 'nullable|string',
+                    'smtp_port' => 'nullable|string',
+                    'smtp_username' => 'nullable|string',
+                    'smtp_password' => 'nullable|string',
+                    'smtp_encryption' => 'nullable|string',
+                    'scaleway_tem_region' => 'nullable|string',
+                    'scaleway_tem_project_id' => 'nullable|string',
+                    'scaleway_tem_secret_key' => 'nullable|string',
+                    'from_address' => 'nullable|email',
+                    'from_name' => 'nullable|string',
+                ]));
+            }
 
-            $mailer = app(DocumentMailer::class);
-            $mailer->testConnection($config);
+            $error = (new DocumentMailer($settings, app(CompanySettings::class)))->testConnection();
+            if ($error !== null) {
+                throw new \RuntimeException($error);
+            }
 
-            return back()->with('success', 'Connessione SMTP riuscita.');
+            return back()->with('success', 'Connessione email riuscita.');
         } catch (\Exception $e) {
             return back()->withErrors(['smtp' => $e->getMessage()]);
         }

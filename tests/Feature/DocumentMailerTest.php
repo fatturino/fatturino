@@ -7,6 +7,7 @@ use App\Models\ProformaInvoice;
 use App\Services\DocumentMailer;
 use App\Settings\CompanySettings;
 use App\Settings\EmailSettings;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 
 beforeEach(function () {
@@ -17,11 +18,15 @@ beforeEach(function () {
 
     // Set default email templates
     $settings = app(EmailSettings::class);
+    $settings->mail_provider = 'smtp';
     $settings->smtp_host = null;
     $settings->smtp_port = null;
     $settings->smtp_username = null;
     $settings->smtp_password = null;
     $settings->smtp_encryption = null;
+    $settings->scaleway_tem_region = 'fr-par';
+    $settings->scaleway_tem_project_id = null;
+    $settings->scaleway_tem_secret_key = null;
     $settings->from_address = null;
     $settings->from_name = null;
     $settings->template_sales_subject = 'Fattura n. {NUMERO_DOCUMENTO} del {DATA_DOCUMENTO}';
@@ -249,4 +254,38 @@ test('deliver stores email delivery metadata after successful send', function ()
     expect($saved->metadata['email']['recipient'] ?? null)->toBe('mario@example.com');
     expect($saved->metadata['email']['cc'] ?? null)->toBe('contabilita@example.com');
     expect($saved->metadata['email']['sent_at'] ?? null)->not->toBeNull();
+});
+
+test('deliver sends through Scaleway TEM when selected', function () {
+    Http::fake([
+        'https://api.scaleway.com/transactional-email/v1alpha1/regions/fr-par/emails' => Http::response(['id' => 'email-123'], 200),
+    ]);
+
+    $settings = app(EmailSettings::class);
+    $settings->mail_provider = 'scaleway_tem';
+    $settings->from_address = 'fatture@example.com';
+    $settings->from_name = 'Fatturino';
+    $settings->scaleway_tem_region = 'fr-par';
+    $settings->scaleway_tem_project_id = 'project-123';
+    $settings->scaleway_tem_secret_key = 'secret-123';
+
+    app(DocumentMailer::class)->deliver(
+        'mario@example.com',
+        'Oggetto',
+        'Corpo',
+        null,
+        false,
+        'contabilita@example.com',
+    );
+
+    Http::assertSent(function ($request) {
+        return $request->hasHeader('X-Auth-Token', 'secret-123')
+            && $request->url() === 'https://api.scaleway.com/transactional-email/v1alpha1/regions/fr-par/emails'
+            && $request['project_id'] === 'project-123'
+            && $request['from']['email'] === 'fatture@example.com'
+            && $request['from']['name'] === 'Fatturino'
+            && $request['to'][0]['email'] === 'mario@example.com'
+            && $request['cc'][0]['email'] === 'contabilita@example.com'
+            && $request['subject'] === 'Oggetto';
+    });
 });

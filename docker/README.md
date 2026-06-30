@@ -65,8 +65,8 @@ All'avvio il container esegue automaticamente:
 | `APP_ENV` | No | `production` | Ambiente Laravel (`production`, `local`) |
 | `SSL_MODE` | No | `off` | Modalita SSL del container (`off`, `full`, `flexible`) |
 | `PHP_DATE_TIMEZONE` | No | `Europe/Rome` | Timezone PHP |
-| `SMTP_MANAGED_BY_ENV` | No | `false` | Se `true`, le credenziali SMTP sono lette solo da env (UI SMTP nascosta) |
-| `MAIL_MAILER` | No | `log` | Driver email (`smtp`, `log`, `sendmail`) |
+| `SMTP_MANAGED_BY_ENV` | No | `false` | Se `true`, il provider email e le credenziali sono letti solo da env (UI provider nascosta) |
+| `MAIL_MAILER` | No | `log` | Driver email (`smtp`, `scaleway_tem`, `log`, `sendmail`) |
 | `MAIL_HOST` | No | `127.0.0.1` | Host SMTP |
 | `MAIL_PORT` | No | `2525` | Porta SMTP |
 | `MAIL_USERNAME` | No | - | Username SMTP |
@@ -75,6 +75,9 @@ All'avvio il container esegue automaticamente:
 | `MAIL_EHLO_DOMAIN` | No | dominio da `APP_URL` | Dominio EHLO per SMTP |
 | `MAIL_FROM_ADDRESS` | No | `hello@example.com` | Indirizzo mittente di default |
 | `MAIL_FROM_NAME` | No | `Fatturino` | Nome mittente di default |
+| `SCALEWAY_TEM_REGION` | No | `fr-par` | Regione Scaleway TEM |
+| `SCALEWAY_TEM_PROJECT_ID` | No | - | Project ID Scaleway TEM |
+| `SCALEWAY_TEM_SECRET_KEY` | No | - | Secret key Scaleway con permessi TEM |
 | `APP_INSTANCE_ID` | No | fallback a `APP_NAME` | Identificativo stabile dell'istanza per namespace telemetry multi-tenant |
 | `BACKUP_MANAGED_BY_ENV` | No | `false` | Se `true`, UI e scheduler backup disabilitati. Le credenziali S3 vanno impostate via `AWS_*` env (modalita managed). Se `false` (default), la configurazione S3 si fa da UI in Impostazioni > Servizi |
 | `POSTHOG_FRONTEND_KEY` | No | fallback a `POSTHOG_API_KEY` | API key PostHog frontend letta a runtime da Laravel/Inertia |
@@ -116,6 +119,19 @@ services:
 
 volumes:
   fatturino-data:
+```
+
+Per usare Scaleway TEM via API al posto di SMTP:
+
+```yaml
+environment:
+  SMTP_MANAGED_BY_ENV: "true"
+  MAIL_MAILER: "scaleway_tem"
+  MAIL_FROM_ADDRESS: "fatture@example.com"
+  MAIL_FROM_NAME: "Fatturino"
+  SCALEWAY_TEM_REGION: "fr-par"
+  SCALEWAY_TEM_PROJECT_ID: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  SCALEWAY_TEM_SECRET_KEY: "scw_secret_xxx"
 ```
 
 > Usa `latest-stable` in produzione. Il tag `latest` e' rolling dall'ultimo push su `main` (development/staging). I tag `vX.Y.Z` sono rilasci immutabili.
