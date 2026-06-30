@@ -217,7 +217,14 @@ class DocumentMailer
 
         $attachedDocument = $attachPdf ? $document : null;
 
-        Mail::to($recipientEmail)->send(new DocumentMail($subject, $body, $attachedDocument, $cc));
+        Mail::to($recipientEmail)->send(new DocumentMail(
+            $subject,
+            $body,
+            $attachedDocument,
+            $cc,
+            $this->emailSettings->from_address,
+            $this->emailSettings->from_name,
+        ));
 
         if ($document !== null) {
             $this->markEmailAsSent($document, $recipientEmail, $cc);

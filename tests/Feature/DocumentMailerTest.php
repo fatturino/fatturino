@@ -261,6 +261,25 @@ test('sendWithOverrides with CC includes CC address in envelope', function () {
     Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasCc('contabilita@example.com'));
 });
 
+test('document mail uses configured sender name and reply-to address', function () {
+    config([
+        'mail.from.address' => 'default@fatturino.test',
+        'mail.from.name' => 'Fatturino Default',
+    ]);
+
+    $envelope = (new DocumentMail(
+        'Oggetto',
+        'Corpo',
+        senderAddress: 'fatture@example.com',
+        senderName: 'Studio Rossi',
+    ))->envelope();
+
+    expect($envelope->from->address)->toBe('fatture@example.com');
+    expect($envelope->from->name)->toBe('Studio Rossi');
+    expect($envelope->replyTo[0]->address)->toBe('fatture@example.com');
+    expect($envelope->replyTo[0]->name)->toBe('Studio Rossi');
+});
+
 test('send email endpoint can skip PDF attachment', function () {
     Mail::fake();
 
@@ -340,6 +359,9 @@ test('deliver sends through Scaleway TEM when selected', function () {
     );
 
     Http::assertSent(function ($request) {
+        $replyToHeader = collect($request['additional_headers'] ?? [])
+            ->first(fn (array $header): bool => ($header['key'] ?? '') === 'Reply-To');
+
         return $request->hasHeader('X-Auth-Token', 'secret-123')
             && $request->url() === 'https://api.scaleway.com/transactional-email/v1alpha1/regions/fr-par/emails'
             && $request['project_id'] === 'project-123'
@@ -347,6 +369,7 @@ test('deliver sends through Scaleway TEM when selected', function () {
             && $request['from']['name'] === 'Fatturino'
             && $request['to'][0]['email'] === 'mario@example.com'
             && $request['cc'][0]['email'] === 'contabilita@example.com'
+            && str_contains($replyToHeader['value'] ?? '', 'fatture@example.com')
             && $request['subject'] === 'Oggetto';
     });
 });

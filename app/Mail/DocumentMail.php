@@ -20,13 +20,19 @@ class DocumentMail extends Mailable
         public readonly string $emailBody,
         public readonly ?Model $document = null,
         public readonly string $emailCc = '',
+        public readonly ?string $senderAddress = null,
+        public readonly ?string $senderName = null,
     ) {}
 
     public function envelope(): Envelope
     {
+        $fromAddress = $this->configuredSender();
+
         return new Envelope(
+            from: $fromAddress,
             subject: $this->emailSubject,
             cc: $this->emailCc !== '' ? [new Address($this->emailCc)] : [],
+            replyTo: $fromAddress !== null ? [$fromAddress] : [],
         );
     }
 
@@ -62,5 +68,14 @@ class DocumentMail extends Mailable
             // PDF generation failure must not block email delivery
             return [];
         }
+    }
+
+    private function configuredSender(): ?Address
+    {
+        if ($this->senderAddress === null || $this->senderAddress === '') {
+            return null;
+        }
+
+        return new Address($this->senderAddress, $this->senderName ?: null);
     }
 }
