@@ -195,7 +195,7 @@ test('renderBody replaces outstanding invoices placeholder for the same contact'
     $contact = Contact::create(['name' => 'Anna Verdi', 'email' => 'anna@example.com']);
     $otherContact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
 
-    $invoice = FiscalDocument::factory()->create([
+    FiscalDocument::factory()->create([
         'contact_id' => $contact->id,
         'number' => 'FT-100',
         'date' => '2026-06-01',
@@ -220,16 +220,25 @@ test('renderBody replaces outstanding invoices placeholder for the same contact'
         'total_gross' => 70000,
     ]);
 
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'number' => 'FT-103',
+        'payment_status' => 'unpaid',
+        'total_gross' => 80000,
+    ]);
+
     $settings = app(EmailSettings::class);
     $settings->template_sales_body = "Situazione aperta:\n{FATTURE_NON_SALDATE}";
 
     $body = app(DocumentMailer::class)->renderBody('sales', $invoice);
 
+    expect($body)->toContain('Ad oggi risultano non saldate le seguenti fatture:');
     expect($body)->toContain('Fattura FT-100');
     expect($body)->toContain('scadenza 30/06/2026');
     expect($body)->toContain('residuo € 1.000,00');
     expect($body)->not->toContain('FT-101');
     expect($body)->not->toContain('FT-102');
+    expect($body)->not->toContain('FT-103');
 });
 
 test('testConnection returns null on successful send', function () {

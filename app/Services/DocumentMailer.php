@@ -149,6 +149,7 @@ class DocumentMailer
         $invoices = $document->newQuery()
             ->where('type', 'sales')
             ->where('contact_id', $document->contact_id)
+            ->whereKeyNot($document->getKey())
             ->whereIn('payment_status', [
                 PaymentStatus::Unpaid->value,
                 PaymentStatus::Partial->value,
@@ -162,7 +163,8 @@ class DocumentMailer
             return 'Nessuna fattura non saldata.';
         }
 
-        return $invoices
+        return "Ad oggi risultano non saldate le seguenti fatture:\n"
+            . $invoices
             ->map(function (Model $invoice): string {
                 $number = $invoice->number ?: '#'.$invoice->getKey();
                 $date = $this->formatDocumentDate($invoice->date ?? null);
