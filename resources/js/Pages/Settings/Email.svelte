@@ -18,6 +18,18 @@
 
     let autoSendSales = $state(settings.auto_send_sales ?? false)
     let autoSendProforma = $state(settings.auto_send_proforma ?? false)
+    const emailTokens = [
+        { token: '{CLIENTE}', description: 'Nome del cliente' },
+        { token: '{EMAIL_CLIENTE}', description: 'Email del cliente' },
+        { token: '{NUMERO_DOCUMENTO}', description: 'Numero del documento' },
+        { token: '{DATA_DOCUMENTO}', description: 'Data del documento' },
+        { token: '{IMPORTO_NETTO}', description: 'Importo netto' },
+        { token: '{IMPORTO_IVA}', description: 'Importo IVA' },
+        { token: '{IMPORTO_TOTALE}', description: 'Importo totale' },
+        { token: '{AZIENDA}', description: 'Nome azienda' },
+        { token: '{PARTITA_IVA_AZIENDA}', description: 'Partita IVA azienda' },
+        { token: '{FATTURE_NON_SALDATE}', description: 'Elenco fatture vendita non saldate del cliente' },
+    ]
 
     const form = useForm({
         mail_provider: settings.mail_provider ?? 'smtp',
@@ -124,6 +136,23 @@
                         </Button>
                     {/if}
                     {#if errors.smtp}<span class="text-red-600 text-xs block">{errors.smtp}</span>{/if}
+                </div>
+            </div>
+
+            <!-- Token -->
+            <div class="card-brand p-4 sm:p-5 lg:col-span-2">
+                <div class="mb-4">
+                    <h2 class="text-base font-semibold text-brand-deep">Token disponibili</h2>
+                    <p class="mt-1 text-sm text-brand-secondary">Usali in oggetto e corpo dei template email.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {#each emailTokens as item}
+                        <div class="rounded-lg border border-border-light bg-surface-muted px-3 py-2">
+                            <code class="text-sm font-semibold text-brand-deep">{item.token}</code>
+                            <p class="mt-1 text-xs text-brand-secondary">{item.description}</p>
+                        </div>
+                    {/each}
                 </div>
             </div>
 

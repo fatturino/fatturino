@@ -9,4 +9,4 @@
     } = $props();
 </script>
 
-<textarea class={`input-field min-h-36 resize-y py-2 ${state === "error" ? "input-error" : ""} ${className}`.trim()} bind:value disabled={isDisabled} aria-label={ariaLabel} {...restProps}></textarea>
+<textarea class={`input-field textarea-field min-h-36 resize-y ${state === "error" ? "input-error" : ""} ${className}`.trim()} bind:value disabled={isDisabled} aria-label={ariaLabel} {...restProps}></textarea>

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\PaymentStatus;
 use App\Jobs\SendDocumentMailJob;
 use App\Mail\DocumentMail;
 use App\Settings\CompanySettings;
@@ -119,6 +120,9 @@ class DocumentMailer
     private function replacePlaceholders(string $template, Model $document): string
     {
         $contact = $document->contact;
+        $outstandingInvoices = str_contains($template, '{FATTURE_NON_SALDATE}')
+            ? $this->renderOutstandingInvoicesList($document)
+            : '';
 
         $replacements = [
             '{CLIENTE}' => $contact?->name ?? '',
@@ -130,9 +134,60 @@ class DocumentMailer
             '{AZIENDA}' => $this->companySettings->company_name,
             '{PARTITA_IVA_AZIENDA}' => $this->companySettings->company_vat_number,
             '{EMAIL_CLIENTE}' => $contact?->email ?? '',
+            '{FATTURE_NON_SALDATE}' => $outstandingInvoices,
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $template);
+    }
+
+    private function renderOutstandingInvoicesList(Model $document): string
+    {
+        if (! $document->contact_id) {
+            return 'Nessuna fattura non saldata.';
+        }
+
+        $invoices = $document->newQuery()
+            ->where('type', 'sales')
+            ->where('contact_id', $document->contact_id)
+            ->whereIn('payment_status', [
+                PaymentStatus::Unpaid->value,
+                PaymentStatus::Partial->value,
+                PaymentStatus::Overdue->value,
+            ])
+            ->orderBy('due_date')
+            ->orderBy('date')
+            ->get();
+
+        if ($invoices->isEmpty()) {
+            return 'Nessuna fattura non saldata.';
+        }
+
+        return $invoices
+            ->map(function (Model $invoice): string {
+                $number = $invoice->number ?: '#'.$invoice->getKey();
+                $date = $this->formatDocumentDate($invoice->date ?? null);
+                $dueDate = $this->formatDocumentDate($invoice->due_date ?? null);
+                $remaining = max(0, (int) ($invoice->net_due ?? 0) - (int) ($invoice->total_paid ?? 0));
+                $parts = ["- Fattura {$number}"];
+
+                if ($date !== '') {
+                    $parts[] = "del {$date}";
+                }
+
+                if ($dueDate !== '') {
+                    $parts[] = "scadenza {$dueDate}";
+                }
+
+                $parts[] = 'residuo '.$this->formatCurrency($remaining);
+
+                return implode(' - ', $parts);
+            })
+            ->implode("\n");
+    }
+
+    private function formatCurrency(int $amount): string
+    {
+        return '€ '.number_format($amount / 100, 2, ',', '.');
     }
 
     private function formatDocumentDate(mixed $value): string

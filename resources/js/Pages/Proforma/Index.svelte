@@ -3,6 +3,7 @@
     import Button from '$lib/components/ui/Button.svelte'
     import Input from '$lib/components/ui/Input.svelte'
     import Textarea from '$lib/components/ui/Textarea.svelte'
+    import Switch from '$lib/components/ui/Switch.svelte'
     import Dialog from '$lib/components/ui/Dialog.svelte'
     import InvoiceDesktopContextMenu from '$lib/components/invoices/InvoiceDesktopContextMenu.svelte'
     import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
@@ -31,7 +32,7 @@
     let emailModalLoading = $state(false)
     let emailSending = $state(false)
     let emailInvoice = $state(null)
-    let emailForm = $state({ recipient_email: '', cc: '', subject: '', body: '' })
+    let emailForm = $state({ recipient_email: '', cc: '', subject: '', body: '', attach_pdf: true })
 
     const statusTabs = $derived([
         { label: 'Tutte', value: '', count: listState.invoices.total ?? 0 },
@@ -137,6 +138,7 @@
                 cc: data.preview?.cc ?? '',
                 subject: data.preview?.subject ?? '',
                 body: data.preview?.body ?? '',
+                attach_pdf: data.preview?.attach_pdf ?? true,
             }
         } catch (error) {
             showToast(error?.message || 'Anteprima email non disponibile.', 'error')
@@ -203,9 +205,16 @@
                 <span class="text-sm font-medium text-brand-deep">Oggetto</span>
                 <Input class="mt-1 block w-full" type="text" bind:value={emailForm.subject} />
             </label>
+            <label class="flex items-start justify-between gap-4 rounded-lg border border-border-light bg-surface-muted px-3 py-3">
+                <span>
+                    <span class="block text-sm font-medium text-brand-deep">Allega documento</span>
+                    <span class="block text-xs text-brand-secondary">Include il PDF della proforma nell'email.</span>
+                </span>
+                <Switch bind:checked={emailForm.attach_pdf} ariaLabel="Allega documento" />
+            </label>
             <label class="block">
                 <span class="text-sm font-medium text-brand-deep">Messaggio</span>
-                <Textarea class="mt-1 block w-full min-h-64 resize-y" bind:value={emailForm.body} />
+                <Textarea class="mt-1 block w-full min-h-72 resize-y text-sm" bind:value={emailForm.body} />
             </label>
         </div>
     {/if}

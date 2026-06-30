@@ -4,6 +4,7 @@ use App\Mail\DocumentMail;
 use App\Models\Contact;
 use App\Models\FiscalDocument;
 use App\Models\ProformaInvoice;
+use App\Models\User;
 use App\Services\DocumentMailer;
 use App\Settings\CompanySettings;
 use App\Settings\EmailSettings;
@@ -190,6 +191,47 @@ test('renderBody replaces all monetary and company placeholders', function () {
     expect($body)->toContain('anna@example.com');
 });
 
+test('renderBody replaces outstanding invoices placeholder for the same contact', function () {
+    $contact = Contact::create(['name' => 'Anna Verdi', 'email' => 'anna@example.com']);
+    $otherContact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'number' => 'FT-100',
+        'date' => '2026-06-01',
+        'due_date' => '2026-06-30',
+        'payment_status' => 'unpaid',
+        'total_gross' => 122000,
+        'total_paid' => 22000,
+    ]);
+
+    FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'number' => 'FT-101',
+        'payment_status' => 'paid',
+        'total_gross' => 50000,
+        'total_paid' => 50000,
+    ]);
+
+    FiscalDocument::factory()->create([
+        'contact_id' => $otherContact->id,
+        'number' => 'FT-102',
+        'payment_status' => 'unpaid',
+        'total_gross' => 70000,
+    ]);
+
+    $settings = app(EmailSettings::class);
+    $settings->template_sales_body = "Situazione aperta:\n{FATTURE_NON_SALDATE}";
+
+    $body = app(DocumentMailer::class)->renderBody('sales', $invoice);
+
+    expect($body)->toContain('Fattura FT-100');
+    expect($body)->toContain('scadenza 30/06/2026');
+    expect($body)->toContain('residuo € 1.000,00');
+    expect($body)->not->toContain('FT-101');
+    expect($body)->not->toContain('FT-102');
+});
+
 test('testConnection returns null on successful send', function () {
     Mail::fake();
 
@@ -217,6 +259,25 @@ test('sendWithOverrides with CC includes CC address in envelope', function () {
     );
 
     Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->hasCc('contabilita@example.com'));
+});
+
+test('send email endpoint can skip PDF attachment', function () {
+    Mail::fake();
+
+    $user = User::factory()->create();
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = FiscalDocument::factory()->create(['contact_id' => $contact->id]);
+
+    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-email", [
+        'recipient_email' => 'mario@example.com',
+        'subject' => 'Oggetto',
+        'body' => 'Corpo',
+        'attach_pdf' => false,
+    ]);
+
+    $response->assertOk()->assertJson(['success' => true]);
+
+    Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->document === null);
 });
 
 test('testConnection returns error string when no from address configured', function () {
