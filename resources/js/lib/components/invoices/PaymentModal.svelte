@@ -19,6 +19,27 @@
     let paymentBankName = $state('')
     let editingPaymentId = $state(null)
 
+    const isReceivable = $derived(basePath === '/sell-invoices')
+    const paymentCopy = $derived({
+        action: isReceivable ? 'incasso' : 'pagamento',
+        title: isReceivable ? 'Registra incasso' : 'Registra pagamento',
+        editTitle: isReceivable ? 'Modifica incasso' : 'Modifica pagamento',
+        newTitle: isReceivable ? 'Nuovo incasso' : 'Nuovo pagamento',
+        updateLabel: isReceivable ? 'Aggiorna incasso' : 'Aggiorna pagamento',
+        saveLabel: isReceivable ? 'Salva incasso' : 'Salva pagamento',
+        dateLabel: isReceivable ? 'Data accredito (opzionale)' : 'Data pagamento (opzionale)',
+        referenceLabel: isReceivable ? 'Rif. accredito (opzionale)' : 'Rif. pagamento (opzionale)',
+        notesLabel: isReceivable ? 'Causale accredito (opzionale)' : 'Causale pagamento (opzionale)',
+        bankLabel: isReceivable ? 'Banca accredito (opzionale)' : 'Banca addebito (opzionale)',
+        totalPaidLabel: isReceivable ? 'Totale incassato' : 'Totale pagato',
+        netPaidLabel: isReceivable ? 'Incassato netto' : 'Pagato netto',
+        vatPaidLabel: isReceivable ? 'IVA incassata' : 'IVA pagata',
+        outstandingNetLabel: isReceivable ? 'Residuo da incassare netto' : 'Residuo da pagare netto',
+        outstandingVatLabel: isReceivable ? 'IVA da incassare' : 'IVA da pagare',
+        emptyListLabel: isReceivable ? 'Nessun incasso registrato.' : 'Nessun pagamento registrato.',
+        listTitle: isReceivable ? 'Incassi registrati' : 'Pagamenti registrati',
+    })
+
     function formatCurrency(value) {
         return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format((value || 0) / 100)
     }
@@ -142,12 +163,12 @@
         const data = await response.json()
         if (!response.ok || !data.success) {
             const errors = Array.isArray(data.errors) ? data.errors.join('\n') : null
-            showToast(errors || data.error || 'Registrazione pagamento non riuscita.', 'error')
+            showToast(errors || data.error || `Registrazione ${paymentCopy.action} non riuscita.`, 'error')
             return
         }
 
         applyPaymentResponse(data)
-        showToast(isEdit ? 'Pagamento aggiornato.' : 'Pagamento registrato.')
+        showToast(isEdit ? `${capitalize(paymentCopy.action)} aggiornato.` : `${capitalize(paymentCopy.action)} registrato.`)
         resetPaymentForm()
     }
 
@@ -163,7 +184,7 @@
         const data = await response.json()
         if (!response.ok || !data.success) {
             const errors = Array.isArray(data.errors) ? data.errors.join('\n') : null
-            showToast(errors || data.error || 'Eliminazione pagamento non riuscita.', 'error')
+            showToast(errors || data.error || `Eliminazione ${paymentCopy.action} non riuscita.`, 'error')
             return
         }
 
@@ -171,28 +192,32 @@
         if (editingPaymentId === payment.id) {
             resetPaymentForm()
         }
-        showToast('Pagamento eliminato.')
+        showToast(`${capitalize(paymentCopy.action)} eliminato.`)
+    }
+
+    function capitalize(value) {
+        return value ? value.charAt(0).toUpperCase() + value.slice(1) : ''
     }
 </script>
 
 <Dialog
     bind:open
-    title={invoice ? `Registra pagamento - ${invoice.number ?? '#' + invoice.id}` : 'Registra pagamento'}
-    description="Inserisci importo e, se disponibile, la data pagamento."
-    confirmText={editingPaymentId ? 'Aggiorna pagamento' : 'Salva pagamento'}
+    title={invoice ? `${paymentCopy.title} - ${invoice.number ?? '#' + invoice.id}` : paymentCopy.title}
+    description={`Inserisci importo e, se disponibile, la data ${paymentCopy.action}.`}
+    confirmText={editingPaymentId ? paymentCopy.updateLabel : paymentCopy.saveLabel}
     onConfirm={savePayment}
 >
     <div class="space-y-3">
         <div class="rounded-lg border border-border-light p-3">
             <div class="mb-2 flex items-center justify-between">
-                <p class="text-xs font-medium text-brand-deep">{editingPaymentId ? 'Modifica pagamento' : 'Nuovo pagamento'}</p>
+                <p class="text-xs font-medium text-brand-deep">{editingPaymentId ? paymentCopy.editTitle : paymentCopy.newTitle}</p>
                 {#if editingPaymentId}
                     <Button class="text-xs text-brand-secondary" onclick={resetPaymentForm}>Annulla modifica</Button>
                 {/if}
             </div>
             <div>
-                <label class="mb-1 block text-sm font-medium text-brand-deep">Importo (EUR)</label>
-                <Input type="number" min="0.01" step="0.01" bind:value={paymentAmount} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+                <label for="payment-amount" class="mb-1 block text-sm font-medium text-brand-deep">Importo (EUR)</label>
+                <Input id="payment-amount" type="number" min="0.01" step="0.01" bind:value={paymentAmount} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
             </div>
             <div class="mt-2 flex items-center gap-2">
                 <Button class="btn-outline text-xs" onclick={() => setQuickPayment(1)}>Tutto</Button>
@@ -200,48 +225,48 @@
                 <Button class="btn-outline text-xs" onclick={() => setQuickPayment(1 / 3)}>1/3</Button>
             </div>
             <div class="mt-2">
-                <label class="mb-1 block text-sm font-medium text-brand-deep">Data pagamento (opzionale)</label>
-                <DatePicker bind:value={paymentDate} class="w-full" />
+                <label for="payment-date" class="mb-1 block text-sm font-medium text-brand-deep">{paymentCopy.dateLabel}</label>
+                <DatePicker id="payment-date" bind:value={paymentDate} class="w-full" ariaLabel={paymentCopy.dateLabel} />
             </div>
             <div class="mt-2">
-                <label class="mb-1 block text-sm font-medium text-brand-deep">Rif. bancario (opzionale)</label>
-                <Input type="text" bind:value={paymentReference} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" placeholder="CRO, TRN, ID operazione" />
+                <label for="payment-reference" class="mb-1 block text-sm font-medium text-brand-deep">{paymentCopy.referenceLabel}</label>
+                <Input id="payment-reference" type="text" bind:value={paymentReference} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" placeholder="CRO, TRN, ID operazione" />
             </div>
             <div class="mt-2">
-                <label class="mb-1 block text-sm font-medium text-brand-deep">Causale accredito (opzionale)</label>
-                <Input type="text" bind:value={paymentNotes} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" placeholder="Es. saldo fattura aprile" />
+                <label for="payment-notes" class="mb-1 block text-sm font-medium text-brand-deep">{paymentCopy.notesLabel}</label>
+                <Input id="payment-notes" type="text" bind:value={paymentNotes} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" placeholder="Es. saldo fattura aprile" />
             </div>
             <div class="mt-2">
-                <label class="mb-1 block text-sm font-medium text-brand-deep">Banca accredito (opzionale)</label>
-                <Input type="text" bind:value={paymentBankName} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" placeholder="Es. Intesa Sanpaolo" />
+                <label for="payment-bank-name" class="mb-1 block text-sm font-medium text-brand-deep">{paymentCopy.bankLabel}</label>
+                <Input id="payment-bank-name" type="text" bind:value={paymentBankName} class="block w-full rounded-lg border border-border px-3 py-2 text-sm" placeholder="Es. Intesa Sanpaolo" />
             </div>
         </div>
         {#if invoice}
             {@const split = operationalPaymentSplit(invoice)}
             <div class="rounded-lg border border-border-light bg-surface-muted px-3 py-2 text-xs text-brand-secondary">
                 <div class="flex items-center justify-between">
-                    <span>Totale pagato</span>
+                    <span>{paymentCopy.totalPaidLabel}</span>
                     <span class="font-semibold text-brand-deep">{formatCurrency(invoice.total_paid || 0)}</span>
                 </div>
                 <div class="mt-1 flex items-center justify-between">
-                    <span>Incassato netto</span>
+                    <span>{paymentCopy.netPaidLabel}</span>
                     <span class="font-semibold text-brand-deep">{formatCurrency(split.collectedNet)}</span>
                 </div>
                 <div class="mt-1 flex items-center justify-between">
-                    <span>IVA incassata</span>
+                    <span>{paymentCopy.vatPaidLabel}</span>
                     <span class="font-semibold text-brand-deep">{formatCurrency(split.collectedVat)}</span>
                 </div>
                 <div class="mt-1 flex items-center justify-between">
-                    <span>Residuo netto</span>
+                    <span>{paymentCopy.outstandingNetLabel}</span>
                     <span class="font-semibold text-brand-deep">{formatCurrency(split.outstandingNet)}</span>
                 </div>
                 <div class="mt-1 flex items-center justify-between">
-                    <span>IVA da incassare</span>
+                    <span>{paymentCopy.outstandingVatLabel}</span>
                     <span class="font-semibold text-brand-deep">{formatCurrency(split.outstandingVat)}</span>
                 </div>
             </div>
             <div class="rounded-lg border border-border-light px-3 py-2">
-                <p class="mb-2 text-xs font-medium text-brand-deep">Pagamenti registrati</p>
+                <p class="mb-2 text-xs font-medium text-brand-deep">{paymentCopy.listTitle}</p>
                 {#if (invoice.payments || []).length > 0}
                     <div class="space-y-1.5">
                         {#each invoice.payments as payment}
@@ -267,7 +292,7 @@
                         {/each}
                     </div>
                 {:else}
-                    <p class="text-xs text-brand-secondary">Nessun pagamento registrato.</p>
+                    <p class="text-xs text-brand-secondary">{paymentCopy.emptyListLabel}</p>
                 {/if}
             </div>
         {/if}

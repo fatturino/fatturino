@@ -10,6 +10,8 @@
         placeholder = "Seleziona data",
         class: className = "",
         locale = "it-IT",
+        id = undefined as string | undefined,
+        ariaLabel = undefined as string | undefined,
     } = $props();
 
     function toDateValue(iso: string) {
@@ -54,7 +56,7 @@
     {locale}
     weekStartsOn={1}
 >
-    <DatePickerPrimitive.Trigger class={`mt-1 flex w-full items-center justify-between rounded-lg border border-brand-secondary/20 bg-white px-3 py-2 text-sm form-focus ${className}`}>
+    <DatePickerPrimitive.Trigger id={id} aria-label={ariaLabel} class={`mt-1 flex w-full items-center justify-between rounded-lg border border-brand-secondary/20 bg-white px-3 py-2 text-sm form-focus ${className}`}>
         {#if normalizedValue}
             {formatLocalDate(normalizedValue, locale)}
         {:else}
