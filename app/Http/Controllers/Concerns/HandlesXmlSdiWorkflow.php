@@ -13,6 +13,8 @@ use App\Services\XmlWorkflowService;
 use App\Support\InvoiceAuditDispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 trait HandlesXmlSdiWorkflow
 {
@@ -111,23 +113,29 @@ trait HandlesXmlSdiWorkflow
 
         if (! ($sendResult['success'] ?? false)) {
             $errorMessage = $sendResult['error_message'] ?? 'Invio allo SDI fallito.';
+            $outboundLog = null;
 
-            $outboundLog = EiOutboundLog::create([
-                'fiscal_document_id' => $document->id,
-                'event_type' => 'send_failed',
-                'status' => SdiStatus::Error->value,
-                'message' => $errorMessage,
-                'raw_payload' => $sendResult,
-            ]);
-            app(DocumentEventRecorder::class)->record($document, [
-                'event_type' => 'sdi_sent',
-                'channel' => 'sdi',
-                'status' => 'failed',
-                'title' => 'Invio SDI fallito',
-                'message' => $errorMessage,
-                'technical_reference_type' => 'ei_outbound_log',
-                'technical_reference_id' => $outboundLog->id,
-            ]);
+            $this->runSdiSideEffect('record outbound send failure log', function () use (&$outboundLog, $document, $errorMessage, $sendResult) {
+                $outboundLog = EiOutboundLog::create([
+                    'fiscal_document_id' => $document->id,
+                    'event_type' => 'send_failed',
+                    'status' => SdiStatus::Error->value,
+                    'message' => $errorMessage,
+                    'raw_payload' => $sendResult,
+                ]);
+            }, $document);
+
+            $this->runSdiSideEffect('record failed document event', function () use ($document, $outboundLog, $errorMessage) {
+                app(DocumentEventRecorder::class)->record($document, [
+                    'event_type' => 'sdi_sent',
+                    'channel' => 'sdi',
+                    'status' => 'failed',
+                    'title' => 'Invio SDI fallito',
+                    'message' => $errorMessage,
+                    'technical_reference_type' => 'ei_outbound_log',
+                    'technical_reference_id' => $outboundLog?->id,
+                ]);
+            }, $document);
 
             if (request()->expectsJson()) {
                 return $this->workflowErrorResponse($document, $errorMessage);
@@ -148,40 +156,54 @@ trait HandlesXmlSdiWorkflow
             'sdi_primary_channel' => 'outbound',
         ]);
 
-        $outboundLog = EiOutboundLog::firstOrCreate([
-            'fiscal_document_id' => $document->id,
-            'event_type' => 'sent',
-            'status' => SdiStatus::Sent->value,
-        ], [
-            'source_uuid' => $document->sdi_uuid,
-            'message' => $sendResult['message'] ?? $sentMessage,
-            'business_fingerprint' => $fingerprint,
-            'raw_payload' => $sendResult,
-        ]);
-        app(DocumentEventRecorder::class)->sdiSent(
-            $document,
-            $outboundLog->id,
-            $sendResult['message'] ?? $sentMessage
-        );
-
-        if (! empty($document->sdi_uuid)) {
-            app(SdiUuidLinkService::class)->linkOutbound($document->id, $document->sdi_uuid, $fingerprint, 'manual');
-        }
-
         $providerId = $xmlWorkflow->providerId();
+        $outboundLog = null;
 
-        InvoiceAuditDispatcher::dispatch($document, 'sdi_sent', [
-            'provider' => $providerId,
-            'uuid' => $document->sdi_uuid,
-        ]);
-        app(PostHogTelemetryService::class)->capture(
-            'document_sent_to_sdi',
-            array_merge(
-                app(PostHogTelemetryService::class)->documentProperties($document),
-                ['provider' => $providerId]
-            ),
-            request()->user()
-        );
+        $this->runSdiSideEffect('record outbound sent log', function () use (&$outboundLog, $document, $sendResult, $sentMessage, $fingerprint) {
+            $outboundLog = EiOutboundLog::firstOrCreate([
+                'fiscal_document_id' => $document->id,
+                'event_type' => 'sent',
+                'status' => SdiStatus::Sent->value,
+            ], [
+                'source_uuid' => $document->sdi_uuid,
+                'message' => $sendResult['message'] ?? $sentMessage,
+                'business_fingerprint' => $fingerprint,
+                'raw_payload' => $sendResult,
+            ]);
+        }, $document);
+
+        $this->runSdiSideEffect('record document event', function () use ($document, $outboundLog, $sendResult, $sentMessage) {
+            app(DocumentEventRecorder::class)->sdiSent(
+                $document,
+                $outboundLog?->id,
+                $sendResult['message'] ?? $sentMessage
+            );
+        }, $document);
+
+        $this->runSdiSideEffect('link outbound uuid', function () use ($document, $fingerprint) {
+            if (! empty($document->sdi_uuid)) {
+                app(SdiUuidLinkService::class)->linkOutbound($document->id, $document->sdi_uuid, $fingerprint, 'manual');
+            }
+        }, $document);
+
+        $this->runSdiSideEffect('dispatch audit', function () use ($document, $providerId) {
+            InvoiceAuditDispatcher::dispatch($document, 'sdi_sent', [
+                'provider' => $providerId,
+                'uuid' => $document->sdi_uuid,
+            ]);
+        }, $document);
+
+        $this->runSdiSideEffect('capture telemetry', function () use ($document, $providerId) {
+            app(PostHogTelemetryService::class)->capture(
+                'document_sent_to_sdi',
+                array_merge(
+                    app(PostHogTelemetryService::class)->documentProperties($document),
+                    ['provider' => $providerId]
+                ),
+                request()->user()
+            );
+        }, $document);
+
         $document->refresh();
 
         if (! request()->expectsJson()) {
@@ -226,5 +248,19 @@ trait HandlesXmlSdiWorkflow
             'sdi_status' => $sdiStatus instanceof \BackedEnum ? $sdiStatus->value : $sdiStatus,
             'is_sdi_editable' => $document->isSdiEditable(),
         ];
+    }
+
+    private function runSdiSideEffect(string $operation, callable $callback, object $document): void
+    {
+        try {
+            $callback();
+        } catch (Throwable $exception) {
+            Log::channel('fe-openapi')->error('SDI send side effect failed after successful provider submission', [
+                'operation' => $operation,
+                'fiscal_document_id' => $document->id ?? null,
+                'sdi_uuid' => $document->sdi_uuid ?? null,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }

@@ -63,3 +63,34 @@ test('get supplier invoices uses recipient and sender query params from the spec
             && ! array_key_exists('mittente', $query);
     });
 });
+
+test('get customer invoices scopes active invoices to company vat as sender', function () {
+    Http::fake([
+        'https://test.sdi.openapi.it/invoices*' => Http::response([
+            'data' => [],
+            'meta' => ['current_page' => 1, 'last_page' => 1],
+        ], 200),
+    ]);
+
+    $service = app(OpenApiSdiService::class);
+
+    $result = $service->getCustomerInvoices([
+        'recipient' => '98765432109',
+        'page' => 2,
+        'per_page' => 50,
+    ]);
+
+    expect($result['success'])->toBeTrue();
+
+    Http::assertSent(function ($request) {
+        $query = [];
+        parse_str(parse_url($request->url(), PHP_URL_QUERY) ?? '', $query);
+
+        return str_starts_with($request->url(), 'https://test.sdi.openapi.it/invoices')
+            && ($query['type'] ?? null) === '0'
+            && ($query['sender'] ?? null) === '12345678903'
+            && ($query['recipient'] ?? null) === '98765432109'
+            && ($query['page'] ?? null) === '2'
+            && ($query['per_page'] ?? null) === '50';
+    });
+});

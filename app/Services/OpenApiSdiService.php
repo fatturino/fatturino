@@ -437,6 +437,86 @@ class OpenApiSdiService
     }
 
     /**
+     * Retrieve customer invoices (active invoices) from OpenAPI.
+     */
+    public function getCustomerInvoices(array $filters = []): array
+    {
+        if (! $this->isConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'Service not configured',
+                'message' => 'OpenAPI SDI API token is not configured',
+            ];
+        }
+
+        try {
+            $sender = $this->resolveRecipientFiscalId();
+
+            if ($sender === null) {
+                return [
+                    'success' => false,
+                    'error' => 'sender_missing',
+                    'message' => 'Company VAT number is required to retrieve customer invoices safely',
+                ];
+            }
+
+            $params = [
+                // type=0 means active invoices, type=1 means passive invoices.
+                'type' => '0',
+                // Fail closed: with a shared provider token we must always scope active invoices to the current company.
+                'sender' => $sender,
+            ];
+
+            if (! empty($filters['recipient'])) {
+                $params['recipient'] = $filters['recipient'];
+            }
+
+            if (! empty($filters['page'])) {
+                $params['page'] = $filters['page'];
+            }
+
+            if (! empty($filters['per_page'])) {
+                $params['per_page'] = $filters['per_page'];
+            }
+
+            /** @var Response $response */
+            $response = $this->newRequest()->get(
+                "{$this->baseUrl}/invoices",
+                $params,
+            );
+
+            if ($response->successful()) {
+                $body = $response->json();
+
+                return [
+                    'success' => true,
+                    'data' => $body['data'] ?? [],
+                    'meta' => $body['meta'] ?? null,
+                    'links' => $body['links'] ?? null,
+                ];
+            }
+
+            $body = $response->json();
+
+            return [
+                'success' => false,
+                'error' => $response->status(),
+                'message' => $body['message'] ?? 'Failed to retrieve customer invoices',
+            ];
+        } catch (\Exception $e) {
+            Log::channel('fe-openapi')->error('OpenAPI SDI customer invoices retrieval failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'connection_failed',
+                'message' => 'Failed to connect to OpenAPI: '.$e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Retrieve a single invoice by UUID
      */
     public function getInvoiceByUuid(string $uuid): array

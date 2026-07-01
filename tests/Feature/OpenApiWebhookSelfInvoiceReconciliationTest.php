@@ -217,6 +217,57 @@ test('reconcile command skips missing self-invoice without creating documents', 
         ->and(PurchaseInvoice::withoutGlobalScopes()->where('type', 'purchase')->count())->toBe(0);
 });
 
+test('reconcile command recovers self-invoice sent to openapi when local uuid was not persisted', function () {
+    $selfInvoice = SelfInvoice::factory()->create([
+        'number' => '10/INT',
+        'document_type' => 'TD17',
+        'status' => InvoiceStatus::XmlValidated,
+        'sdi_status' => null,
+        'sdi_uuid' => null,
+    ]);
+
+    $service = Mockery::mock(OpenApiSdiService::class);
+    $service->shouldReceive('isConfigured')->once()->andReturnTrue();
+    $service->shouldReceive('getCustomerInvoices')
+        ->once()
+        ->with(Mockery::on(fn (array $filters) => ($filters['page'] ?? null) === 1))
+        ->andReturn([
+            'success' => true,
+            'data' => [[
+                'uuid' => 'recovered-outbound-uuid',
+                'file_id' => 'file-123',
+                'created_at' => now()->toIso8601String(),
+                'filename' => 'IT_RECOVERED.xml',
+            ]],
+        ]);
+    $service->shouldReceive('downloadInvoiceXml')
+        ->once()
+        ->with('recovered-outbound-uuid')
+        ->andReturn([
+            'success' => true,
+            'xml' => makeInboundInvoiceXml('TD17', '10/INT'),
+        ]);
+    app()->instance(OpenApiSdiService::class, $service);
+
+    $this->artisan('openapi:reconcile', ['--recover-sends-only' => true])
+        ->assertExitCode(0);
+
+    $selfInvoice->refresh();
+
+    expect($selfInvoice->status)->toBe(InvoiceStatus::Sent)
+        ->and($selfInvoice->sdi_status)->toBe(SdiStatus::Sent)
+        ->and($selfInvoice->sdi_uuid)->toBe('recovered-outbound-uuid')
+        ->and($selfInvoice->sdi_file_id)->toBe('file-123')
+        ->and($selfInvoice->sdi_primary_channel)->toBe('outbound');
+
+    $this->assertDatabaseHas('ei_outbound_logs', [
+        'fiscal_document_id' => $selfInvoice->id,
+        'event_type' => 'sent',
+        'status' => SdiStatus::Sent->value,
+        'source_uuid' => 'recovered-outbound-uuid',
+    ]);
+});
+
 test('customer notification NS reopens outbound invoice for correction and resend', function () {
     $invoice = SalesInvoice::factory()->create([
         'status' => InvoiceStatus::Sent,

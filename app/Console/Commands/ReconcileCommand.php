@@ -2,15 +2,18 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
 use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
 use App\Models\PurchaseInvoice;
 use App\Models\SelfInvoice;
+use App\Services\BusinessFingerprintService;
 use App\Services\DocumentEventRecorder;
 use App\Services\InvoiceTenantGuardService;
 use App\Services\InvoiceXmlImportService;
 use App\Services\OpenApiSdiService;
+use App\Services\SdiUuidLinkService;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
 use Carbon\Carbon;
@@ -22,6 +25,7 @@ class ReconcileCommand extends Command
     protected $signature = 'openapi:reconcile
         {--receive-only : Only reconcile missed supplier invoices}
         {--updates-only : Only reconcile missed status updates}
+        {--recover-sends-only : Only recover outbound invoices submitted to OpenAPI but not persisted locally}
         {--days=7 : Number of days to look back for missed invoices}
         {--max-pages=500 : Hard limit on pages fetched to guard against API pagination bugs}
         {--dry-run : Show what would be synced without making changes}';
@@ -59,13 +63,18 @@ class ReconcileCommand extends Command
         }
 
         $receiveStats = ['imported' => 0, 'skipped' => 0, 'errors' => 0];
+        $recoverStats = ['checked' => 0, 'recovered' => 0, 'skipped' => 0, 'errors' => 0];
         $updateStats = ['checked' => 0, 'updated' => 0, 'unchanged' => 0, 'errors' => 0];
 
-        if (! $this->option('updates-only')) {
+        if (! $this->option('updates-only') && ! $this->option('recover-sends-only')) {
             $receiveStats = $this->reconcileReceive($service, $isDryRun, $companySettings->company_vat_number);
         }
 
-        if (! $this->option('receive-only')) {
+        if (! $this->option('receive-only') && ! $this->option('updates-only')) {
+            $recoverStats = $this->recoverOutboundSends($service, $isDryRun);
+        }
+
+        if (! $this->option('receive-only') && ! $this->option('recover-sends-only')) {
             $updateStats = $this->reconcileUpdates($service, $isDryRun);
         }
 
@@ -74,6 +83,10 @@ class ReconcileCommand extends Command
             ['Supplier invoices imported', $receiveStats['imported']],
             ['Supplier invoices skipped', $receiveStats['skipped']],
             ['Supplier invoice errors', $receiveStats['errors']],
+            ['Outbound sends checked', $recoverStats['checked']],
+            ['Outbound sends recovered', $recoverStats['recovered']],
+            ['Outbound sends skipped', $recoverStats['skipped']],
+            ['Outbound send errors', $recoverStats['errors']],
             ['Status updates checked', $updateStats['checked']],
             ['Status updates applied', $updateStats['updated']],
             ['Status updates unchanged', $updateStats['unchanged']],
@@ -255,6 +268,119 @@ class ReconcileCommand extends Command
         if ($page > $maxPages) {
             $this->warn("Reached max-pages limit ({$maxPages}). Check for API pagination issues.");
             Log::channel('fe-openapi')->warning('OpenAPI reconcile: reached max-pages limit', ['max_pages' => $maxPages]);
+        }
+
+        return $stats;
+    }
+
+    private function recoverOutboundSends(OpenApiSdiService $service, bool $isDryRun): array
+    {
+        $this->info('Recovering outbound sends...');
+
+        $stats = ['checked' => 0, 'recovered' => 0, 'skipped' => 0, 'errors' => 0];
+        $days = (int) $this->option('days');
+        $maxPages = (int) $this->option('max-pages');
+        $cutoffDate = Carbon::now()->subDays($days);
+        $page = 1;
+        $pageSize = 100;
+
+        while ($page <= $maxPages) {
+            $result = $service->getCustomerInvoices([
+                'page' => $page,
+                'per_page' => $pageSize,
+            ]);
+
+            if (! $result['success']) {
+                $this->error("Failed to fetch customer invoices page {$page}: ".($result['error'] ?? 'unknown'));
+                $stats['errors']++;
+
+                break;
+            }
+
+            $records = $result['data'];
+            if (empty($records)) {
+                break;
+            }
+
+            $allOlderThanCutoff = true;
+
+            foreach ($records as $record) {
+                $sentAt = isset($record['created_at']) ? Carbon::parse($record['created_at']) : null;
+
+                if ($sentAt && $sentAt->lt($cutoffDate)) {
+                    $stats['skipped']++;
+
+                    continue;
+                }
+
+                $allOlderThanCutoff = false;
+                $uuid = $record['uuid'] ?? null;
+
+                if (empty($uuid)) {
+                    $stats['errors']++;
+
+                    continue;
+                }
+
+                if (FiscalDocument::withoutGlobalScopes()->where('sdi_uuid', $uuid)->exists()) {
+                    $stats['skipped']++;
+
+                    continue;
+                }
+
+                $stats['checked']++;
+                $downloadResult = $service->downloadInvoiceXml($uuid);
+                if (! $downloadResult['success']) {
+                    $this->warn("  Failed to download outbound invoice {$uuid}: ".($downloadResult['error'] ?? 'unknown'));
+                    $stats['errors']++;
+
+                    continue;
+                }
+
+                $selfInvoice = $this->findRecoverableSelfInvoice($downloadResult['xml'], $cutoffDate);
+
+                if (! $selfInvoice) {
+                    $stats['skipped']++;
+
+                    continue;
+                }
+
+                if ($isDryRun) {
+                    $this->line("  [DRY RUN] Would recover self-invoice #{$selfInvoice->id} with UUID {$uuid}");
+                    $stats['recovered']++;
+
+                    continue;
+                }
+
+                try {
+                    $this->markSelfInvoiceAsSentFromOpenApi($selfInvoice, $record, $downloadResult['xml']);
+                    $this->line("  Recovered self-invoice #{$selfInvoice->id} with UUID {$uuid}");
+                    $stats['recovered']++;
+                } catch (\Exception $e) {
+                    $this->warn("  Failed to recover outbound invoice {$uuid}: {$e->getMessage()}");
+                    $stats['errors']++;
+
+                    Log::channel('fe-openapi')->error('OpenAPI reconcile: outbound send recovery failed', [
+                        'uuid' => $uuid,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            if ($allOlderThanCutoff) {
+                break;
+            }
+
+            if (count($records) < $pageSize) {
+                break;
+            }
+
+            $page++;
+        }
+
+        if ($page > $maxPages) {
+            $this->warn("Reached max-pages limit ({$maxPages}). Check for API pagination issues.");
+            Log::channel('fe-openapi')->warning('OpenAPI reconcile: reached max-pages limit during outbound recovery', ['max_pages' => $maxPages]);
         }
 
         return $stats;
@@ -448,6 +574,7 @@ class ReconcileCommand extends Command
         $uuid = $record['uuid'] ?? null;
 
         $selfInvoice->update([
+            'status' => InvoiceStatus::Sent,
             'sdi_uuid' => $selfInvoice->sdi_uuid ?: $uuid,
             'sdi_file_id' => $selfInvoice->sdi_file_id ?: $fileId,
             'sdi_filename' => $selfInvoice->sdi_filename ?: $filename,
@@ -463,6 +590,79 @@ class ReconcileCommand extends Command
         ]);
 
         return true;
+    }
+
+    private function findRecoverableSelfInvoice(string $xml, Carbon $cutoffDate): ?SelfInvoice
+    {
+        $documentType = $this->extractXmlField($xml, 'TipoDocumento');
+
+        if (! $documentType || ! in_array($documentType, ['TD17', 'TD18', 'TD19', 'TD28', 'TD29'], true)) {
+            return null;
+        }
+
+        $documentNumber = $this->extractXmlField($xml, 'Numero');
+
+        if (! $documentNumber) {
+            return null;
+        }
+
+        return SelfInvoice::withoutGlobalScopes()
+            ->whereNull('sdi_uuid')
+            ->where('number', $documentNumber)
+            ->where('document_type', $documentType)
+            ->whereDate('date', '>=', $cutoffDate->toDateString())
+            ->whereIn('status', [
+                InvoiceStatus::XmlValidated->value,
+                InvoiceStatus::Sent->value,
+            ])
+            ->where(function ($query) {
+                $query->whereNull('sdi_status')
+                    ->orWhere('sdi_status', SdiStatus::Error->value);
+            })
+            ->first();
+    }
+
+    private function markSelfInvoiceAsSentFromOpenApi(SelfInvoice $selfInvoice, array $record, string $xml): void
+    {
+        $uuid = $record['uuid'] ?? null;
+        $fileId = $record['file_id'] ?? null;
+        $filename = $record['sdi_file_name'] ?? $record['filename'] ?? null;
+        $fingerprint = app(BusinessFingerprintService::class)->buildFromXml($xml);
+        $message = 'Invio SDI recuperato da OpenAPI';
+
+        $selfInvoice->update([
+            'status' => InvoiceStatus::Sent,
+            'sdi_status' => SdiStatus::Sent,
+            'sdi_uuid' => $uuid,
+            'sdi_file_id' => $fileId,
+            'sdi_filename' => $filename,
+            'sdi_message' => $message,
+            'business_fingerprint' => $fingerprint,
+            'sdi_primary_channel' => 'outbound',
+        ]);
+
+        $outboundLog = EiOutboundLog::firstOrCreate([
+            'fiscal_document_id' => $selfInvoice->id,
+            'event_type' => 'sent',
+            'status' => SdiStatus::Sent->value,
+        ], [
+            'source_uuid' => $uuid,
+            'message' => $message,
+            'business_fingerprint' => $fingerprint,
+            'raw_payload' => ['source' => 'reconcile', 'invoice' => $record],
+        ]);
+
+        if (! empty($uuid)) {
+            app(SdiUuidLinkService::class)->linkOutbound($selfInvoice->id, $uuid, $fingerprint, 'reconcile');
+        }
+
+        app(DocumentEventRecorder::class)->sdiSent($selfInvoice, $outboundLog->id, $message);
+
+        Log::channel('fe-openapi')->info('OpenAPI reconcile: outbound self-invoice send recovered', [
+            'self_invoice_id' => $selfInvoice->id,
+            'sdi_uuid' => $uuid,
+            'file_id' => $fileId,
+        ]);
     }
 
     /**

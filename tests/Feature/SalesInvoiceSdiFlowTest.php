@@ -9,6 +9,7 @@ use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
 use App\Models\Sequence;
 use App\Models\User;
+use App\Services\DocumentEventRecorder;
 use App\Settings\CompanySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -156,6 +157,60 @@ test('send to sdi endpoint returns updated document payload on success', functio
         'channel' => 'sdi',
         'status' => 'success',
     ]);
+});
+
+test('send to sdi endpoint stays successful when document event logging fails after provider success', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::XmlValidated,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Servizio',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+    $invoice->calculateTotals();
+
+    $provider = Mockery::mock(SdiProvider::class);
+    $provider->shouldReceive('id')->once()->andReturn('mock-provider');
+    $provider->shouldReceive('sendInvoice')
+        ->once()
+        ->andReturn([
+            'success' => true,
+            'uuid' => 'uuid-logging-fails',
+            'file_id' => 'file-logging-fails',
+            'message' => 'Fattura inviata con successo allo SDI',
+        ]);
+    app()->instance(SdiProvider::class, $provider);
+
+    $recorder = Mockery::mock(DocumentEventRecorder::class);
+    $recorder->shouldReceive('sdiSent')
+        ->once()
+        ->andThrow(new RuntimeException('event log unavailable'));
+    app()->instance(DocumentEventRecorder::class, $recorder);
+
+    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi");
+
+    $response->assertOk()->assertJson([
+        'success' => true,
+        'document' => [
+            'status' => InvoiceStatus::Sent->value,
+            'sdi_status' => SdiStatus::Sent->value,
+            'is_sdi_editable' => false,
+        ],
+    ]);
+
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::Sent->value)
+        ->and($invoice->sdi_status)->toBe(SdiStatus::Sent->value)
+        ->and($invoice->sdi_uuid)->toBe('uuid-logging-fails');
 });
 
 test('validate xml endpoint returns uniform json when document is not editable', function () {
