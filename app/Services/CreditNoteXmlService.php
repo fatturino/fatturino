@@ -32,6 +32,10 @@ class CreditNoteXmlService
 {
     use GeneratesSdiFilename;
 
+    private const STAMP_DUTY_DESCRIPTION = 'Marca da bollo';
+    private const STAMP_DUTY_REFERENCE = 'Escluso art. 15 DPR 633/72';
+    private const FORFETTARIO_REFERENCE = "Operazione in franchigia da IVA ai sensi dell'art. 1, commi 54-89, Legge 190/2014";
+
     public function __construct(
         protected CompanySettings $companySettings
     ) {}
@@ -188,6 +192,19 @@ class CreditNoteXmlService
             $instance->addLine($lineItem);
         }
 
+        if ($creditNote->stamp_duty_applied && $creditNote->stamp_duty_amount > 0) {
+            $stampDutyLine = new Line;
+            $stampDutyLine->setNumber($creditNote->lines->count() + 1);
+            $stampDutyLine->setDescription(self::STAMP_DUTY_DESCRIPTION);
+            $stampDutyLine->setQuantity(1.0);
+            $stampDutyLine->setUnitPrice($creditNote->stamp_duty_amount / 100);
+            $stampDutyLine->setTotal($creditNote->stamp_duty_amount / 100);
+            $stampDutyLine->setTaxPercentage(0.0);
+            $stampDutyLine->setVatNature(VatNature::N1());
+
+            $instance->addLine($stampDutyLine);
+        }
+
         // Totals (DatiRiepilogo) — grouped by VAT rate and nature
         $summary = [];
         foreach ($creditNote->lines as $line) {
@@ -208,6 +225,21 @@ class CreditNoteXmlService
             $summary[$key]['tax'] += $lineTotal * ($rate / 100);
         }
 
+        if ($creditNote->stamp_duty_applied && $creditNote->stamp_duty_amount > 0) {
+            $key = '0_N1';
+
+            if (! isset($summary[$key])) {
+                $summary[$key] = [
+                    'rate' => 0,
+                    'nature' => 'N1',
+                    'taxable' => 0,
+                    'tax' => 0,
+                ];
+            }
+
+            $summary[$key]['taxable'] += $creditNote->stamp_duty_amount / 100;
+        }
+
         $vatEligibility = $creditNote->split_payment ? 'S' : ($creditNote->vat_payability ?? 'I');
 
         foreach ($summary as $data) {
@@ -217,6 +249,12 @@ class CreditNoteXmlService
             $total->setTaxAmount((float) $data['tax']);
             if ($data['nature']) {
                 $total->setVatNature(new VatNature($data['nature']));
+            }
+            $requiresReference = (float) $data['rate'] === 0.0
+                && ($data['nature'] === 'N1' || $this->companySettings->company_fiscal_regime === 'RF19');
+
+            if ($requiresReference) {
+                $total->setReference($this->referenceForVatNature($data['nature']));
             }
             $total->setTaxType(new VatEligibility($vatEligibility));
 
@@ -260,5 +298,12 @@ class CreditNoteXmlService
         $doc->addDigitalDocumentInstance($instance);
 
         return trim($doc->serialize()->asXML());
+    }
+
+    private function referenceForVatNature(?string $nature): string
+    {
+        return $nature === 'N1'
+            ? self::STAMP_DUTY_REFERENCE
+            : self::FORFETTARIO_REFERENCE;
     }
 }

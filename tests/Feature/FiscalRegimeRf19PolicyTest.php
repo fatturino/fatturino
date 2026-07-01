@@ -1,9 +1,13 @@
 <?php
 
+use App\Enums\PaymentMethod;
+use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\FiscalDocument;
+use App\Models\FiscalDocumentLine;
 use App\Models\Sequence;
 use App\Models\User;
+use App\Services\InvoiceXmlService;
 use App\Settings\CompanySettings;
 use Inertia\Testing\AssertableInertia;
 
@@ -75,4 +79,45 @@ test('rf19 hides self invoice import option', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('selfInvoiceImportEnabled', false)
         );
+});
+
+test('rf19 xml charges stamp duty as n1 line and includes normative references', function () {
+    $contact = Contact::factory()->create([
+        'country' => 'IT',
+        'sdi_code' => '0000000',
+        'pec' => 'cliente@example.test',
+    ]);
+
+    $invoice = FiscalDocument::create([
+        'number' => '1',
+        'date' => '2026-06-19',
+        'contact_id' => $contact->id,
+        'total_net' => 27000,
+        'total_vat' => 0,
+        'total_gross' => 27000,
+        'stamp_duty_applied' => true,
+        'stamp_duty_amount' => 200,
+        'payment_method' => PaymentMethod::MP05,
+        'notes' => "Operazione in franchigia da IVA ai sensi dell'art. 1, commi 54-89, Legge 190/2014",
+    ]);
+
+    FiscalDocumentLine::create([
+        'fiscal_document_id' => $invoice->id,
+        'description' => 'Servizio',
+        'quantity' => 1,
+        'unit_price' => 27000,
+        'vat_rate' => VatRate::N2_2->value,
+        'total' => 27000,
+    ]);
+
+    $xml = app(InvoiceXmlService::class)->generate($invoice);
+
+    expect($xml)->toContain('<ImportoTotaleDocumento>272.00</ImportoTotaleDocumento>');
+    expect($xml)->toContain('<Descrizione>Marca da bollo</Descrizione>');
+    expect($xml)->toContain('<PrezzoTotale>2.00000000</PrezzoTotale>');
+    expect($xml)->toContain('<Natura>N1</Natura>');
+    expect($xml)->toContain('<ImponibileImporto>270.00</ImponibileImporto>');
+    expect($xml)->toContain('<ImponibileImporto>2.00</ImponibileImporto>');
+    expect($xml)->toContain("<RiferimentoNormativo>Operazione in franchigia da IVA ai sensi dell'art. 1, commi 54-89, Legge 190/2014</RiferimentoNormativo>");
+    expect($xml)->toContain('<RiferimentoNormativo>Escluso art. 15 DPR 633/72</RiferimentoNormativo>');
 });

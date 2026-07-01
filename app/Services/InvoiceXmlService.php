@@ -32,6 +32,10 @@ class InvoiceXmlService
 {
     use GeneratesSdiFilename;
 
+    private const STAMP_DUTY_DESCRIPTION = 'Marca da bollo';
+    private const STAMP_DUTY_REFERENCE = 'Escluso art. 15 DPR 633/72';
+    private const FORFETTARIO_REFERENCE = "Operazione in franchigia da IVA ai sensi dell'art. 1, commi 54-89, Legge 190/2014";
+
     public function __construct(
         protected CompanySettings $companySettings
     ) {}
@@ -211,6 +215,19 @@ class InvoiceXmlService
             $instance->addLine($lineItem);
         }
 
+        if ($invoice->stamp_duty_applied && $invoice->stamp_duty_amount > 0) {
+            $stampDutyLine = new Line;
+            $stampDutyLine->setNumber($invoice->lines->count() + 1);
+            $stampDutyLine->setDescription(self::STAMP_DUTY_DESCRIPTION);
+            $stampDutyLine->setQuantity(1.0);
+            $stampDutyLine->setUnitPrice($invoice->stamp_duty_amount / 100);
+            $stampDutyLine->setTotal($invoice->stamp_duty_amount / 100);
+            $stampDutyLine->setTaxPercentage(0.0);
+            $stampDutyLine->setVatNature(VatNature::N1());
+
+            $instance->addLine($stampDutyLine);
+        }
+
         // Totals (DatiRiepilogo)
         $summary = [];
         foreach ($invoice->lines as $line) {
@@ -250,6 +267,21 @@ class InvoiceXmlService
             $summary[$key]['tax'] += $fundAmountEuros * ($rate / 100);
         }
 
+        if ($invoice->stamp_duty_applied && $invoice->stamp_duty_amount > 0) {
+            $key = '0_N1';
+
+            if (! isset($summary[$key])) {
+                $summary[$key] = [
+                    'rate' => 0,
+                    'nature' => 'N1',
+                    'taxable' => 0,
+                    'tax' => 0,
+                ];
+            }
+
+            $summary[$key]['taxable'] += $invoice->stamp_duty_amount / 100;
+        }
+
         // Split payment forces 'S' (Scissione); otherwise use the invoice vat_payability setting
         $vatEligibility = $invoice->split_payment ? 'S' : ($invoice->vat_payability ?? 'I');
 
@@ -260,6 +292,12 @@ class InvoiceXmlService
             $total->setTaxAmount((float) $data['tax']); // Imposta
             if ($data['nature']) {
                 $total->setVatNature(new VatNature($data['nature']));
+            }
+            $requiresReference = (float) $data['rate'] === 0.0
+                && ($data['nature'] === 'N1' || $this->companySettings->company_fiscal_regime === 'RF19');
+
+            if ($requiresReference) {
+                $total->setReference($this->referenceForVatNature($data['nature']));
             }
             $total->setTaxType(new VatEligibility($vatEligibility));
 
@@ -316,5 +354,12 @@ class InvoiceXmlService
 
         // Generate XML
         return trim($doc->serialize()->asXML());
+    }
+
+    private function referenceForVatNature(?string $nature): string
+    {
+        return $nature === 'N1'
+            ? self::STAMP_DUTY_REFERENCE
+            : self::FORFETTARIO_REFERENCE;
     }
 }
