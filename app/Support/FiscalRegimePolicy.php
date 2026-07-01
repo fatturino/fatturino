@@ -10,6 +10,12 @@ class FiscalRegimePolicy
 
     public const FORFETTARIO_WITHHOLDING_NOTICE = "Compenso non soggetto a ritenuta d'acconto ai sensi dell'art. 1, comma 67, Legge 190/2014";
 
+    public const STAMP_DUTY_DESCRIPTION = 'Marca da bollo';
+
+    public const STAMP_DUTY_VAT_RATE = 'N1';
+
+    public const STAMP_DUTY_REFERENCE = 'Escluso art. 15 DPR 633/72';
+
     public static function supportsWithholdingTax(?string $fiscalRegime): bool
     {
         return $fiscalRegime !== 'RF19';
@@ -86,6 +92,21 @@ class FiscalRegimePolicy
         self::appendMissingNoticeLine($lines, self::FORFETTARIO_WITHHOLDING_NOTICE);
 
         return implode("\n", $lines);
+    }
+
+    public static function shouldWriteVatSummaryReference(float $vatRate, ?string $vatNature, ?string $fiscalRegime): bool
+    {
+        return $vatRate === 0.0 && (
+            $vatNature === self::STAMP_DUTY_VAT_RATE
+            || self::requiresForfettarioLegalNotice($fiscalRegime)
+        );
+    }
+
+    public static function vatSummaryReference(?string $vatNature): string
+    {
+        return $vatNature === self::STAMP_DUTY_VAT_RATE
+            ? self::STAMP_DUTY_REFERENCE
+            : self::FORFETTARIO_VAT_NOTICE;
     }
 
     private static function appendMissingNoticeLine(array &$lines, string $notice): void
