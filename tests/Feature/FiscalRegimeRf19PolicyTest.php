@@ -82,7 +82,7 @@ test('rf19 hides self invoice import option', function () {
         );
 });
 
-test('rf19 xml charges stamp duty as n1 line and includes normative references', function () {
+test('rf19 xml charges stamp duty as n2 2 taxable line', function () {
     $contact = Contact::factory()->create([
         'country' => 'IT',
         'sdi_code' => '0000000',
@@ -116,9 +116,9 @@ test('rf19 xml charges stamp duty as n1 line and includes normative references',
     expect($xml)->toContain('<ImportoTotaleDocumento>272.00</ImportoTotaleDocumento>');
     expect($xml)->toContain('<Descrizione>'.FiscalRegimePolicy::STAMP_DUTY_DESCRIPTION.'</Descrizione>');
     expect($xml)->toContain('<PrezzoTotale>2.00000000</PrezzoTotale>');
-    expect($xml)->toContain('<Natura>N1</Natura>');
-    expect($xml)->toContain('<ImponibileImporto>270.00</ImponibileImporto>');
-    expect($xml)->toContain('<ImponibileImporto>2.00</ImponibileImporto>');
+    expect($xml)->toContain('<Natura>'.FiscalRegimePolicy::FORFETTARIO_VAT_RATE.'</Natura>');
+    expect($xml)->toContain('<ImponibileImporto>272.00</ImponibileImporto>');
     expect($xml)->toContain('<RiferimentoNormativo>'.FiscalRegimePolicy::FORFETTARIO_VAT_NOTICE.'</RiferimentoNormativo>');
-    expect($xml)->toContain('<RiferimentoNormativo>'.FiscalRegimePolicy::STAMP_DUTY_REFERENCE.'</RiferimentoNormativo>');
+    expect($xml)->not->toContain('<Natura>'.FiscalRegimePolicy::STAMP_DUTY_VAT_RATE.'</Natura>');
+    expect($xml)->not->toContain('<RiferimentoNormativo>'.FiscalRegimePolicy::STAMP_DUTY_REFERENCE.'</RiferimentoNormativo>');
 });

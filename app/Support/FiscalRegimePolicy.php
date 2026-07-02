@@ -94,6 +94,15 @@ class FiscalRegimePolicy
         return implode("\n", $lines);
     }
 
+    public static function stampDutyVatRate(?string $fiscalRegime): string
+    {
+        if (self::requiresForfettarioLegalNotice($fiscalRegime)) {
+            return self::FORFETTARIO_VAT_RATE;
+        }
+
+        return self::STAMP_DUTY_VAT_RATE;
+    }
+
     public static function shouldWriteVatSummaryReference(float $vatRate, ?string $vatNature, ?string $fiscalRegime): bool
     {
         return $vatRate === 0.0 && (

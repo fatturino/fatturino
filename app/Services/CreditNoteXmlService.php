@@ -190,6 +190,9 @@ class CreditNoteXmlService
         }
 
         if ($creditNote->stamp_duty_applied && $creditNote->stamp_duty_amount > 0) {
+            $stampDutyVatRate = FiscalRegimePolicy::stampDutyVatRate(
+                $this->companySettings->company_fiscal_regime
+            );
             $stampDutyLine = new Line;
             $stampDutyLine->setNumber($creditNote->lines->count() + 1);
             $stampDutyLine->setDescription(FiscalRegimePolicy::STAMP_DUTY_DESCRIPTION);
@@ -197,7 +200,7 @@ class CreditNoteXmlService
             $stampDutyLine->setUnitPrice($creditNote->stamp_duty_amount / 100);
             $stampDutyLine->setTotal($creditNote->stamp_duty_amount / 100);
             $stampDutyLine->setTaxPercentage(0.0);
-            $stampDutyLine->setVatNature(new VatNature(FiscalRegimePolicy::STAMP_DUTY_VAT_RATE));
+            $stampDutyLine->setVatNature(new VatNature($stampDutyVatRate));
 
             $instance->addLine($stampDutyLine);
         }
@@ -223,12 +226,15 @@ class CreditNoteXmlService
         }
 
         if ($creditNote->stamp_duty_applied && $creditNote->stamp_duty_amount > 0) {
-            $key = '0_'.FiscalRegimePolicy::STAMP_DUTY_VAT_RATE;
+            $stampDutyVatRate = FiscalRegimePolicy::stampDutyVatRate(
+                $this->companySettings->company_fiscal_regime
+            );
+            $key = '0_'.$stampDutyVatRate;
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [
                     'rate' => 0,
-                    'nature' => FiscalRegimePolicy::STAMP_DUTY_VAT_RATE,
+                    'nature' => $stampDutyVatRate,
                     'taxable' => 0,
                     'tax' => 0,
                 ];
