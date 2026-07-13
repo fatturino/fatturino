@@ -206,6 +206,7 @@
     description={`Inserisci importo e, se disponibile, la data ${paymentCopy.action}.`}
     confirmText={editingPaymentId ? paymentCopy.updateLabel : paymentCopy.saveLabel}
     onConfirm={savePayment}
+    contentClass="payment-modal-panel"
 >
     <div class="space-y-3">
         <div class="rounded-lg border border-border-light p-3">

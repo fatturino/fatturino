@@ -361,6 +361,15 @@
     box-shadow: var(--shadow-modal);
 }
 
+.payment-modal-panel {
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    max-width: min(32rem, calc(100vw - 2rem));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
 .filter-grid {
     display: grid;
     gap: 0.75rem;
