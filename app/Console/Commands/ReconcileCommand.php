@@ -29,7 +29,7 @@ class ReconcileCommand extends Command
         {--days=7 : Number of days to look back for missed invoices}
         {--max-pages=500 : Hard limit on pages fetched to guard against API pagination bugs}
         {--dry-run : Show what would be synced without making changes}
-        {--v|verbose : Show detailed skip/error reasons for every record}';
+        {--d|details : Show detailed skip/error reasons for every record}';
 
     protected $description = 'Reconcile missed webhook events by polling the OpenAPI SDI API';
 
@@ -63,18 +63,18 @@ class ReconcileCommand extends Command
             $this->info('[DRY RUN] No changes will be made.');
         }
 
-        $isVerbose = $this->option('verbose');
+        $showDetails = $this->option('details');
 
         $receiveStats = ['imported' => 0, 'skipped' => 0, 'errors' => 0];
         $recoverStats = ['checked' => 0, 'recovered' => 0, 'skipped' => 0, 'errors' => 0];
         $updateStats = ['checked' => 0, 'updated' => 0, 'unchanged' => 0, 'errors' => 0];
 
         if (! $this->option('updates-only') && ! $this->option('recover-sends-only')) {
-            $receiveStats = $this->reconcileReceive($service, $isDryRun, $companySettings->company_vat_number, $isVerbose);
+            $receiveStats = $this->reconcileReceive($service, $isDryRun, $companySettings->company_vat_number, $showDetails);
         }
 
         if (! $this->option('receive-only') && ! $this->option('updates-only')) {
-            $recoverStats = $this->recoverOutboundSends($service, $isDryRun, $isVerbose);
+            $recoverStats = $this->recoverOutboundSends($service, $isDryRun, $showDetails);
         }
 
         if (! $this->option('receive-only') && ! $this->option('recover-sends-only')) {
@@ -99,7 +99,7 @@ class ReconcileCommand extends Command
         return self::SUCCESS;
     }
 
-    private function reconcileReceive(OpenApiSdiService $service, bool $isDryRun, string $companyVat, bool $isVerbose = false): array
+    private function reconcileReceive(OpenApiSdiService $service, bool $isDryRun, string $companyVat, bool $showDetails = false): array
     {
         $this->info('Reconciling supplier invoices...');
 
@@ -137,7 +137,7 @@ class ReconcileCommand extends Command
 
                 if ($receivedAt && $receivedAt->lt($cutoffDate)) {
                     $stats['skipped']++;
-                    if ($isVerbose) {
+                    if ($showDetails) {
                         $uuid = $record['uuid'] ?? '?';
                         $filename = $record['sdi_file_name'] ?? $record['filename'] ?? $uuid;
                         $this->line("  <fg=gray>Skipped (outside date range): {$filename} (UUID: {$uuid}, received: {$receivedAt->toDateString()})</>");
@@ -151,7 +151,7 @@ class ReconcileCommand extends Command
 
                 if (empty($uuid)) {
                     $stats['errors']++;
-                    if ($isVerbose) {
+                    if ($showDetails) {
                         $filename = $record['sdi_file_name'] ?? $record['filename'] ?? '?';
                         $this->warn("  Skipped (missing UUID): {$filename}");
                     }
@@ -162,7 +162,7 @@ class ReconcileCommand extends Command
                 // Idempotency: skip if this UUID was already linked to a purchase or self-invoice
                 if (PurchaseInvoice::withoutGlobalScopes()->where('sdi_uuid', $uuid)->exists()) {
                     $stats['skipped']++;
-                    if ($isVerbose) {
+                    if ($showDetails) {
                         $filename = $record['sdi_file_name'] ?? $record['filename'] ?? $uuid;
                         $this->line("  <fg=gray>Skipped (UUID already in PurchaseInvoice): {$filename} (UUID: {$uuid})</>");
                     }
@@ -172,7 +172,7 @@ class ReconcileCommand extends Command
 
                 if (SelfInvoice::withoutGlobalScopes()->where('sdi_uuid', $uuid)->exists()) {
                     $stats['skipped']++;
-                    if ($isVerbose) {
+                    if ($showDetails) {
                         $filename = $record['sdi_file_name'] ?? $record['filename'] ?? $uuid;
                         $this->line("  <fg=gray>Skipped (UUID already in SelfInvoice): {$filename} (UUID: {$uuid})</>");
                     }
@@ -192,7 +192,7 @@ class ReconcileCommand extends Command
                 if (! $downloadResult['success']) {
                     $errorDetail = $downloadResult['error'] ?? 'unknown';
                     $this->warn("  Failed to download invoice {$uuid}: {$errorDetail}");
-                    if ($isVerbose && ! empty($downloadResult['raw_response'])) {
+                    if ($showDetails && ! empty($downloadResult['raw_response'])) {
                         $this->line("  <fg=gray>  Raw response: {$downloadResult['raw_response']}</>");
                     }
                     $stats['errors']++;
@@ -238,7 +238,7 @@ class ReconcileCommand extends Command
                     if (! empty($importErrors)) {
                         $errorMessage = implode('; ', $importErrors);
                         $this->warn("  Import failed for {$uuid}: {$errorMessage}");
-                        if ($isVerbose) {
+                        if ($showDetails) {
                             $this->line("  <fg=gray>  XML preview: ".substr($downloadResult['xml'], 0, 300)."</>");
                         }
                         $stats['errors']++;
@@ -258,7 +258,7 @@ class ReconcileCommand extends Command
                     if (($importStats['invoices_imported'] ?? 0) < 1) {
                         $skipReason = ($importStats['skipped'] ?? 0) > 0 ? 'duplicate' : 'skipped by importer';
                         $this->line("  Skipped (already imported, {$skipReason}): {$filename}");
-                        if ($isVerbose) {
+                        if ($showDetails) {
                             $this->line("  <fg=gray>  Import stats: ".json_encode($importStats)."</>");
                         }
                         $stats['skipped']++;
@@ -304,7 +304,7 @@ class ReconcileCommand extends Command
         return $stats;
     }
 
-    private function recoverOutboundSends(OpenApiSdiService $service, bool $isDryRun, bool $isVerbose = false): array
+    private function recoverOutboundSends(OpenApiSdiService $service, bool $isDryRun, bool $showDetails = false): array
     {
         $this->info('Recovering outbound sends...');
 
@@ -340,7 +340,7 @@ class ReconcileCommand extends Command
 
                 if ($sentAt && $sentAt->lt($cutoffDate)) {
                     $stats['skipped']++;
-                    if ($isVerbose) {
+                    if ($showDetails) {
                         $uuid = $record['uuid'] ?? '?';
                         $filename = $record['sdi_file_name'] ?? $record['filename'] ?? $uuid;
                         $this->line("  <fg=gray>Skipped (outside date range): {$filename} (UUID: {$uuid}, sent: {$sentAt->toDateString()})</>");
@@ -354,7 +354,7 @@ class ReconcileCommand extends Command
 
                 if (empty($uuid)) {
                     $stats['errors']++;
-                    if ($isVerbose) {
+                    if ($showDetails) {
                         $filename = $record['sdi_file_name'] ?? $record['filename'] ?? '?';
                         $this->warn("  Skipped outbound (missing UUID): {$filename}");
                     }
@@ -364,7 +364,7 @@ class ReconcileCommand extends Command
 
                 if (FiscalDocument::withoutGlobalScopes()->where('sdi_uuid', $uuid)->exists()) {
                     $stats['skipped']++;
-                    if ($isVerbose) {
+                    if ($showDetails) {
                         $filename = $record['sdi_file_name'] ?? $record['filename'] ?? $uuid;
                         $this->line("  <fg=gray>Skipped outbound (UUID already in FiscalDocument): {$filename} (UUID: {$uuid})</>");
                     }
@@ -385,7 +385,7 @@ class ReconcileCommand extends Command
 
                 if (! $selfInvoice) {
                     $stats['skipped']++;
-                    if ($isVerbose) {
+                    if ($showDetails) {
                         $filename = $record['sdi_file_name'] ?? $record['filename'] ?? $uuid;
                         $documentType = $this->extractXmlField($downloadResult['xml'], 'TipoDocumento') ?? '?';
                         $documentNumber = $this->extractXmlField($downloadResult['xml'], 'Numero') ?? '?';
