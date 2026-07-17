@@ -595,6 +595,9 @@ class OpenApiSdiService
             if ($response->successful()) {
                 $body = $response->body();
 
+                // Strip UTF-8 BOM if present — some OpenAPI responses include it
+                $body = preg_replace('/^\xEF\xBB\xBF/', '', $body);
+
                 // API returns JSON even when Accept: application/xml is set.
                 // Extract the nested payload and convert it to FatturaElettronica XML.
                 if (! str_starts_with(ltrim($body), '<')) {
