@@ -39,8 +39,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
             $telemetry->captureException(
                 $throwable,
-                $telemetry->exceptionContext($throwable, request()),
-                request()->user()
+                $telemetry->exceptionContext($throwable, app()->bound('request') ? request() : null),
+                app()->bound('request') ? request()->user() : null
             );
         });
     })->create();

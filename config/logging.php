@@ -129,7 +129,7 @@ return [
 
         'fe-openapi' => [
             'driver' => 'daily',
-            'path' => app()->environment('production')
+            'path' => env('APP_ENV') === 'production'
                 ? '/data/logs/plugin-fe-openapi.log'
                 : storage_path('logs/plugin-fe-openapi.log'),
             'level' => env('LOG_LEVEL', 'debug'),
