@@ -606,6 +606,7 @@ class OpenApiSdiService
                             'success' => false,
                             'error' => 'empty_payload',
                             'message' => "No invoice payload found in API response for UUID {$uuid}",
+                            'raw_response' => substr($body, 0, 1024),
                         ];
                     }
 
