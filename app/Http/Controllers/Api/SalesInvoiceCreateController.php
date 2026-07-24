@@ -95,7 +95,7 @@ class SalesInvoiceCreateController extends Controller
             'bank_iban' => $normalized['bank_iban'] ?? null,
             'vat_payability' => ($normalized['split_payment'] ?? false) ? 'S' : $normalized['vat_payability'],
             'split_payment' => $normalized['split_payment'] ?? false,
-        ], array_map(fn(array $line): array => $this->buildLinePayload($line), $normalizedLines));
+        ], array_map(fn (array $line): array => $this->buildLinePayload($line), $normalizedLines));
         app(DocumentEventRecorder::class)->created($invoice);
 
         return response()->json([

@@ -9,6 +9,7 @@ use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
 use App\Models\ProformaInvoice;
 use App\Services\CourtesyPdfService;
+use App\Settings\CompanySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -73,7 +74,7 @@ class CourtesyPdfTest extends TestCase
 
         $html = view('pdf.courtesy-invoice', [
             'invoice' => $invoice->load('contact', 'lines'),
-            'company' => app(\App\Settings\CompanySettings::class),
+            'company' => app(CompanySettings::class),
             'logo' => null,
             'vatSummary' => $invoice->getVatSummary(),
             'documentTitle' => __('app.pdf.courtesy_title'),
@@ -179,7 +180,7 @@ class CourtesyPdfTest extends TestCase
         $output = $service->generateForProforma($proforma)->output();
         $html = view('pdf.courtesy-invoice', [
             'invoice' => $proforma->load('contact', 'lines'),
-            'company' => app(\App\Settings\CompanySettings::class),
+            'company' => app(CompanySettings::class),
             'logo' => null,
             'vatSummary' => $proforma->getVatSummary(),
             'documentTitle' => __('app.pdf.proforma_title'),

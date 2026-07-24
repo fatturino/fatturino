@@ -112,7 +112,7 @@ class FiscalRegimePolicy
     {
         $base = trim((string) $notes);
         $lines = $base === '' ? [] : preg_split('/\r\n|\r|\n/', $base);
-        $lines = array_values(array_filter(array_map('trim', $lines), fn(string $line): bool => $line !== ''));
+        $lines = array_values(array_filter(array_map('trim', $lines), fn (string $line): bool => $line !== ''));
 
         self::appendMissingNoticeLine($lines, self::FORFETTARIO_VAT_NOTICE);
         self::appendMissingNoticeLine($lines, self::FORFETTARIO_WITHHOLDING_NOTICE);

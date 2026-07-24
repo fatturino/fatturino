@@ -125,7 +125,7 @@ class ProformaInvoice extends FiscalDocument
         $summary = [];
 
         foreach ($this->lines as $line) {
-            $key = ($line->vat_rate->percent() ?? 0) . '_' . ($line->vat_rate->nature() ?? '');
+            $key = ($line->vat_rate->percent() ?? 0).'_'.($line->vat_rate->nature() ?? '');
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [
@@ -144,7 +144,7 @@ class ProformaInvoice extends FiscalDocument
         if ($this->fund_enabled && $this->fund_amount > 0) {
             $rate = (float) ($this->fund_vat_rate?->percent() ?? 0);
             $nature = $this->fund_vat_rate?->nature();
-            $key = $rate . '_' . ($nature ?? '');
+            $key = $rate.'_'.($nature ?? '');
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [

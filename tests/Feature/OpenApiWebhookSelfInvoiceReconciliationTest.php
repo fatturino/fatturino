@@ -192,7 +192,7 @@ test('reconcile command skips missing self-invoice without creating documents', 
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getSupplierInvoices')
         ->once()
-        ->with(Mockery::on(fn(array $filters) => ($filters['recipient'] ?? null) === '12345678903'))
+        ->with(Mockery::on(fn (array $filters) => ($filters['recipient'] ?? null) === '12345678903'))
         ->andReturn([
             'success' => true,
             'data' => [[
@@ -230,7 +230,7 @@ test('reconcile command recovers self-invoice sent to openapi when local uuid wa
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getCustomerInvoices')
         ->once()
-        ->with(Mockery::on(fn(array $filters) => ($filters['page'] ?? null) === 1))
+        ->with(Mockery::on(fn (array $filters) => ($filters['page'] ?? null) === 1))
         ->andReturn([
             'success' => true,
             'data' => [[

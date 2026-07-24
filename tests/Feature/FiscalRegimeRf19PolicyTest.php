@@ -78,7 +78,7 @@ test('rf19 hides self invoice import option', function () {
         ->get('/imports')
         ->assertOk()
         ->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->where('selfInvoiceImportEnabled', false)
         );
 });
@@ -116,13 +116,13 @@ test('rf19 xml charges stamp duty as n2 2 taxable line', function () {
     $xml = app(InvoiceXmlService::class)->generate($invoice);
 
     expect($xml)->toContain('<ImportoTotaleDocumento>272.00</ImportoTotaleDocumento>');
-    expect($xml)->toContain('<Descrizione>' . FiscalRegimePolicy::STAMP_DUTY_DESCRIPTION . '</Descrizione>');
+    expect($xml)->toContain('<Descrizione>'.FiscalRegimePolicy::STAMP_DUTY_DESCRIPTION.'</Descrizione>');
     expect($xml)->toContain('<PrezzoTotale>2.00000000</PrezzoTotale>');
-    expect($xml)->toContain('<Natura>' . FiscalRegimePolicy::FORFETTARIO_VAT_RATE . '</Natura>');
+    expect($xml)->toContain('<Natura>'.FiscalRegimePolicy::FORFETTARIO_VAT_RATE.'</Natura>');
     expect($xml)->toContain('<ImponibileImporto>272.00</ImponibileImporto>');
-    expect($xml)->toContain('<RiferimentoNormativo>' . FiscalRegimePolicy::FORFETTARIO_VAT_NOTICE . '</RiferimentoNormativo>');
-    expect($xml)->not->toContain('<Natura>' . FiscalRegimePolicy::STAMP_DUTY_VAT_RATE . '</Natura>');
-    expect($xml)->not->toContain('<RiferimentoNormativo>' . FiscalRegimePolicy::STAMP_DUTY_REFERENCE . '</RiferimentoNormativo>');
+    expect($xml)->toContain('<RiferimentoNormativo>'.FiscalRegimePolicy::FORFETTARIO_VAT_NOTICE.'</RiferimentoNormativo>');
+    expect($xml)->not->toContain('<Natura>'.FiscalRegimePolicy::STAMP_DUTY_VAT_RATE.'</Natura>');
+    expect($xml)->not->toContain('<RiferimentoNormativo>'.FiscalRegimePolicy::STAMP_DUTY_REFERENCE.'</RiferimentoNormativo>');
 });
 
 test('rf19 requires stamp duty above threshold but lets the issuer bear its cost', function () {
@@ -170,5 +170,5 @@ test('rf19 issuer-paid stamp duty is declared in dati bollo without increasing x
     expect($xml)->toContain('<ImportoBollo>2.00</ImportoBollo>');
     expect($xml)->toContain('<ImportoTotaleDocumento>100.00</ImportoTotaleDocumento>');
     expect($xml)->toContain('<ImportoPagamento>100.00</ImportoPagamento>');
-    expect($xml)->not->toContain('<Descrizione>' . FiscalRegimePolicy::STAMP_DUTY_DESCRIPTION . '</Descrizione>');
+    expect($xml)->not->toContain('<Descrizione>'.FiscalRegimePolicy::STAMP_DUTY_DESCRIPTION.'</Descrizione>');
 });
