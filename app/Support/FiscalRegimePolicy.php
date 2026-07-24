@@ -12,6 +12,10 @@ class FiscalRegimePolicy
 
     public const STAMP_DUTY_DESCRIPTION = 'Marca da bollo';
 
+    public const STAMP_DUTY_AMOUNT_CENTS = 200;
+
+    public const STAMP_DUTY_THRESHOLD = 77.47;
+
     public const STAMP_DUTY_VAT_RATE = 'N1';
 
     public const STAMP_DUTY_REFERENCE = 'Escluso art. 15 DPR 633/72';
@@ -55,6 +59,28 @@ class FiscalRegimePolicy
         return $payload;
     }
 
+    public static function normalizeStampDutyPayload(array $payload, array $lines, ?string $fiscalRegime): array
+    {
+        $applied = (bool) ($payload['stamp_duty_applied'] ?? false);
+
+        if ($fiscalRegime === 'RF19') {
+            $operationsTotal = array_sum(array_map(function (array $line): float {
+                $gross = (float) ($line['quantity'] ?? 0) * (float) ($line['unit_price'] ?? 0);
+                $discount = (float) ($line['discount_percent'] ?? 0);
+
+                return $gross * (1 - ($discount / 100));
+            }, $lines));
+
+            $applied = $operationsTotal > self::STAMP_DUTY_THRESHOLD;
+        }
+
+        $payload['stamp_duty_applied'] = $applied;
+        $payload['stamp_duty_charged_to_customer'] = $applied
+            && (bool) ($payload['stamp_duty_charged_to_customer'] ?? true);
+
+        return $payload;
+    }
+
     public static function normalizeInvoiceSettingsPayload(array $payload, ?string $fiscalRegime): array
     {
         if ($fiscalRegime !== 'RF19') {
@@ -86,7 +112,7 @@ class FiscalRegimePolicy
     {
         $base = trim((string) $notes);
         $lines = $base === '' ? [] : preg_split('/\r\n|\r|\n/', $base);
-        $lines = array_values(array_filter(array_map('trim', $lines), fn (string $line): bool => $line !== ''));
+        $lines = array_values(array_filter(array_map('trim', $lines), fn(string $line): bool => $line !== ''));
 
         self::appendMissingNoticeLine($lines, self::FORFETTARIO_VAT_NOTICE);
         self::appendMissingNoticeLine($lines, self::FORFETTARIO_WITHHOLDING_NOTICE);

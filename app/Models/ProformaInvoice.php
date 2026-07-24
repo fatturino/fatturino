@@ -43,6 +43,7 @@ class ProformaInvoice extends FiscalDocument
         'withholding_tax_percent' => 'decimal:2',
         'withholding_tax_amount' => 'integer',
         'stamp_duty_applied' => 'boolean',
+        'stamp_duty_charged_to_customer' => 'boolean',
         'stamp_duty_amount' => 'integer',
         'fund_enabled' => 'boolean',
         'fund_percent' => 'decimal:2',
@@ -124,7 +125,7 @@ class ProformaInvoice extends FiscalDocument
         $summary = [];
 
         foreach ($this->lines as $line) {
-            $key = ($line->vat_rate->percent() ?? 0).'_'.($line->vat_rate->nature() ?? '');
+            $key = ($line->vat_rate->percent() ?? 0) . '_' . ($line->vat_rate->nature() ?? '');
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [
@@ -143,7 +144,7 @@ class ProformaInvoice extends FiscalDocument
         if ($this->fund_enabled && $this->fund_amount > 0) {
             $rate = (float) ($this->fund_vat_rate?->percent() ?? 0);
             $nature = $this->fund_vat_rate?->nature();
-            $key = $rate.'_'.($nature ?? '');
+            $key = $rate . '_' . ($nature ?? '');
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [
@@ -163,7 +164,9 @@ class ProformaInvoice extends FiscalDocument
 
     public function getNetDueAttribute(): int
     {
-        $due = $this->total_gross + ($this->stamp_duty_amount ?? 0) - ($this->withholding_tax_amount ?? 0);
+        $due = $this->total_gross
+            + ($this->stamp_duty_charged_to_customer !== false ? ($this->stamp_duty_amount ?? 0) : 0)
+            - ($this->withholding_tax_amount ?? 0);
 
         return $due;
     }

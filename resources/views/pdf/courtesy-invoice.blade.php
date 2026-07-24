@@ -580,7 +580,7 @@
                         <td class="totals-amount" style="font-weight:bold;">{{ number_format($invoice->total_gross / 100, 2, ',', '.') }}&nbsp;&euro;</td>
                     </tr>
 
-                    @if ($invoice->stamp_duty_applied && $invoice->stamp_duty_amount > 0)
+                    @if ($invoice->stamp_duty_applied && $invoice->stamp_duty_charged_to_customer !== false && $invoice->stamp_duty_amount > 0)
                         <tr>
                             <td class="totals-label">{{ __('app.pdf.stamp_duty') }}</td>
                             <td class="totals-amount">{{ number_format($invoice->stamp_duty_amount / 100, 2, ',', '.') }}&nbsp;&euro;</td>
@@ -604,9 +604,9 @@
                     @endif
 
                     @php
-                        // Net due = gross + stamp duty - withholding - split payment VAT deduction
+                        // Net due = gross + customer-charged stamp duty - withholding - split payment VAT deduction
                         $netDue = $invoice->total_gross;
-                        if ($invoice->stamp_duty_applied) {
+                        if ($invoice->stamp_duty_applied && $invoice->stamp_duty_charged_to_customer !== false) {
                             $netDue += $invoice->stamp_duty_amount;
                         }
                         if ($invoice->withholding_tax_enabled) {

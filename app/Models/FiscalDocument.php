@@ -42,6 +42,7 @@ class FiscalDocument extends Model
         'withholding_tax_amount' => 'integer',
         'split_payment' => 'boolean',
         'stamp_duty_applied' => 'boolean',
+        'stamp_duty_charged_to_customer' => 'boolean',
         'stamp_duty_amount' => 'integer',
         'fund_enabled' => 'boolean',
         'fund_percent' => 'decimal:2',
@@ -137,7 +138,9 @@ class FiscalDocument extends Model
 
     public function getNetDueAttribute(): int
     {
-        $due = $this->total_gross + ($this->stamp_duty_amount ?? 0) - ($this->withholding_tax_amount ?? 0);
+        $due = $this->total_gross
+            + ($this->stamp_duty_charged_to_customer !== false ? ($this->stamp_duty_amount ?? 0) : 0)
+            - ($this->withholding_tax_amount ?? 0);
         $fundVatRate = $this->fund_vat_rate instanceof VatRate
             ? $this->fund_vat_rate
             : VatRate::tryFrom((string) $this->fund_vat_rate);
@@ -300,7 +303,7 @@ class FiscalDocument extends Model
         foreach ($this->lines as $line) {
             $rate = (float) ($line->vat_rate?->percent() ?? 0);
             $nature = $line->vat_rate?->nature();
-            $key = $rate.'_'.($nature ?? '');
+            $key = $rate . '_' . ($nature ?? '');
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [
@@ -322,7 +325,7 @@ class FiscalDocument extends Model
                 : VatRate::tryFrom((string) $this->fund_vat_rate);
             $fundRate = (float) ($fundVatRate?->percent() ?? 0);
             $fundNature = $fundVatRate?->nature();
-            $fundKey = $fundRate.'_'.($fundNature ?? '');
+            $fundKey = $fundRate . '_' . ($fundNature ?? '');
 
             if (! isset($summary[$fundKey])) {
                 $summary[$fundKey] = [

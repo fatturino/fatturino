@@ -55,6 +55,7 @@ class ConvertProformaToInvoice
                 'fund_vat_rate' => $proforma->fund_vat_rate?->value,
                 'fund_has_deduction' => $proforma->fund_has_deduction,
                 'stamp_duty_applied' => $proforma->stamp_duty_applied,
+                'stamp_duty_charged_to_customer' => $proforma->stamp_duty_charged_to_customer,
                 'stamp_duty_amount' => $proforma->stamp_duty_amount,
                 'notes' => $proforma->notes,
             ]);

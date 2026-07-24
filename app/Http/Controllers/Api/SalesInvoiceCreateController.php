@@ -48,6 +48,7 @@ class SalesInvoiceCreateController extends Controller
             ],
             'fund_has_deduction' => 'boolean',
             'stamp_duty_applied' => 'boolean',
+            'stamp_duty_charged_to_customer' => 'boolean',
             'payment_method' => 'nullable|string',
             'payment_terms' => 'nullable|string',
             'bank_name' => 'nullable|string',
@@ -65,6 +66,7 @@ class SalesInvoiceCreateController extends Controller
         $companySettings = app(CompanySettings::class);
         $normalized = FiscalRegimePolicy::normalizeDocumentPayload($validated, $companySettings->company_fiscal_regime);
         $normalizedLines = FiscalRegimePolicy::normalizeLinesForForfettario($validated['lines'], $companySettings->company_fiscal_regime);
+        $normalized = FiscalRegimePolicy::normalizeStampDutyPayload($normalized, $normalizedLines, $companySettings->company_fiscal_regime);
 
         $invoice = $mutationService->create([
             'date' => $normalized['date'],
@@ -85,14 +87,15 @@ class SalesInvoiceCreateController extends Controller
             'fund_vat_rate' => ($normalized['fund_enabled'] ?? false) ? ($normalized['fund_vat_rate'] ?? null) : null,
             'fund_has_deduction' => ($normalized['fund_enabled'] ?? false) && ($normalized['fund_has_deduction'] ?? false),
             'stamp_duty_applied' => $normalized['stamp_duty_applied'] ?? false,
-            'stamp_duty_amount' => ($normalized['stamp_duty_applied'] ?? false) ? 200 : 0,
+            'stamp_duty_charged_to_customer' => $normalized['stamp_duty_charged_to_customer'] ?? false,
+            'stamp_duty_amount' => ($normalized['stamp_duty_applied'] ?? false) ? FiscalRegimePolicy::STAMP_DUTY_AMOUNT_CENTS : 0,
             'payment_method' => $normalized['payment_method'] ?? null,
             'payment_terms' => $normalized['payment_terms'] ?? null,
             'bank_name' => $normalized['bank_name'] ?? null,
             'bank_iban' => $normalized['bank_iban'] ?? null,
             'vat_payability' => ($normalized['split_payment'] ?? false) ? 'S' : $normalized['vat_payability'],
             'split_payment' => $normalized['split_payment'] ?? false,
-        ], array_map(fn (array $line): array => $this->buildLinePayload($line), $normalizedLines));
+        ], array_map(fn(array $line): array => $this->buildLinePayload($line), $normalizedLines));
         app(DocumentEventRecorder::class)->created($invoice);
 
         return response()->json([

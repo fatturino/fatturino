@@ -202,7 +202,14 @@
     let fundVatRate = $state(initialShowTaxOptions ? (initialInvoice?.fund_vat_rate ?? settings.fund_vat_rate ?? '') : '')
     let fundHasDeduction = $state(initialShowTaxOptions ? (initialInvoice?.fund_has_deduction ?? settings.fund_has_deduction ?? false) : false)
     let stampDutyApplied = $state(initialShowTaxOptions ? (initialInvoice?.stamp_duty_applied ?? settings.auto_stamp_duty ?? false) : false)
+    let stampDutyChargedToCustomer = $state(initialShowTaxOptions ? (initialInvoice?.stamp_duty_charged_to_customer ?? true) : false)
     let splitPayment = $state(initialShowTaxOptions ? (initialInvoice?.split_payment ?? settings.default_split_payment ?? false) : false)
+
+    $effect(() => {
+        if (isRf19) {
+            stampDutyApplied = totalNet > 77.47
+        }
+    })
     let vatPayability = $state(initialShowTaxOptions ? (initialInvoice?.vat_payability ?? settings.default_vat_payability ?? 'I') : 'I')
 
     let fundAmount = $derived.by(() => {
@@ -224,7 +231,7 @@
 
     let totalDue = $derived.by(() => {
         let due = totalGross
-        if (initialShowTaxOptions && stampDutyApplied) due += 2
+        if (initialShowTaxOptions && stampDutyApplied && stampDutyChargedToCustomer) due += 2
         return due
     })
 
@@ -264,6 +271,7 @@
         fund_vat_rate: initialShowTaxOptions ? (initialInvoice?.fund_vat_rate ?? settings.fund_vat_rate ?? '') : '',
         fund_has_deduction: initialShowTaxOptions ? (initialInvoice?.fund_has_deduction ?? settings.fund_has_deduction ?? false) : false,
         stamp_duty_applied: initialShowTaxOptions ? (initialInvoice?.stamp_duty_applied ?? settings.auto_stamp_duty ?? false) : false,
+        stamp_duty_charged_to_customer: initialShowTaxOptions ? (initialInvoice?.stamp_duty_charged_to_customer ?? true) : false,
         split_payment: initialShowTaxOptions ? (initialInvoice?.split_payment ?? settings.default_split_payment ?? false) : false,
         vat_payability: initialShowTaxOptions ? (initialInvoice?.vat_payability ?? settings.default_vat_payability ?? 'I') : 'I',
         lines: initialInvoice?.lines ?? [],
@@ -296,6 +304,7 @@
         form.fund_vat_rate = showTaxOptions ? (fundVatRate ?? '') : ''
         form.fund_has_deduction = showTaxOptions ? fundHasDeduction : false
         form.stamp_duty_applied = showTaxOptions ? stampDutyApplied : false
+        form.stamp_duty_charged_to_customer = showTaxOptions && stampDutyApplied ? stampDutyChargedToCustomer : false
         form.split_payment = showTaxOptions && !isRf19 ? splitPayment : false
         form.vat_payability = showTaxOptions && !isRf19 ? (splitPayment ? 'S' : vatPayability) : 'I'
 
@@ -849,7 +858,7 @@ Controlla prima di confermare:
                         <span class="text-brand-deep font-semibold">Totale lordo</span>
                         <span class="font-bold tabular-nums text-brand-deep">{formatCurrency(totalGross)}</span>
                     </div>
-                    {#if showTaxOptions && stampDutyApplied}
+                    {#if showTaxOptions && stampDutyApplied && stampDutyChargedToCustomer}
                         <div class="flex justify-between">
                             <span class="text-brand-secondary/60">Marca da bollo</span>
                             <span class="font-semibold tabular-nums">€2,00</span>
@@ -943,10 +952,19 @@ Controlla prima di confermare:
                             {/if}
                         </div>
                         <div class="rounded-lg border border-border-light p-3">
-                            <label class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-medium text-brand-deep">Marca da bollo</span>
-                                <Switch bind:checked={stampDutyApplied} disabled={isReadOnly} />
-                            </label>
+                            {#if isRf19}
+                                <p class="text-sm font-medium text-brand-deep">Marca da bollo</p>
+                                <p class="mt-1 text-xs text-brand-secondary/70">Sopra €77,47 il bollo di €2,00 è dovuto.</p>
+                                <label class="mt-3 flex items-center justify-between gap-3">
+                                    <span class="text-sm text-brand-deep">Addebita al cliente</span>
+                                    <Switch bind:checked={stampDutyChargedToCustomer} disabled={isReadOnly || !stampDutyApplied} />
+                                </label>
+                            {:else}
+                                <label class="flex items-center justify-between gap-3">
+                                    <span class="text-sm font-medium text-brand-deep">Marca da bollo</span>
+                                    <Switch bind:checked={stampDutyApplied} disabled={isReadOnly} />
+                                </label>
+                            {/if}
                         </div>
                         <div class="rounded-lg border border-border-light p-3">
                             {#if !isRf19}
