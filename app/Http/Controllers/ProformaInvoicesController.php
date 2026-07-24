@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\ConvertProformaToInvoice;
+use App\Actions\LinkProformaToInvoice;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentTerms;
 use App\Enums\ProformaStatus;
@@ -10,6 +11,7 @@ use App\Enums\VatRate;
 use App\Http\Controllers\Concerns\HandlesDocumentEmail;
 use App\Models\Contact;
 use App\Models\ProformaInvoice;
+use App\Models\SalesInvoice;
 use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentEventRecorder;
@@ -70,6 +72,10 @@ class ProformaInvoicesController extends Controller
             'direction' => $direction,
             'stats' => $this->stats($fiscalYear),
             'statusOptions' => $this->proformaStatusOptions(),
+            'linkableInvoices' => SalesInvoice::query()
+                ->whereNull('proforma_id')
+                ->orderByDesc('date')
+                ->get(['id', 'number', 'contact_id', 'status', 'date', 'total_gross']),
         ]);
     }
 
@@ -230,20 +236,34 @@ class ProformaInvoicesController extends Controller
         return redirect()->route('proforma.index');
     }
 
-    public function convert(ProformaInvoice $proformaInvoice, ConvertProformaToInvoice $convertProforma): RedirectResponse
-    {
-        $invoice = $convertProforma->execute($proformaInvoice);
+    public function convert(
+        Request $request,
+        ProformaInvoice $proformaInvoice,
+        ConvertProformaToInvoice $convertProforma,
+        LinkProformaToInvoice $linkProforma
+    ): RedirectResponse {
+        $validated = $request->validate([
+            'mode' => 'nullable|in:create,link',
+            'invoice_id' => 'required_if:mode,link|nullable|integer|exists:fiscal_documents,id,type,sales',
+        ]);
+
+        $mode = $validated['mode'] ?? 'create';
+        $invoice = $mode === 'link'
+            ? $linkProforma->execute($proformaInvoice, SalesInvoice::findOrFail($validated['invoice_id']))
+            : $convertProforma->execute($proformaInvoice);
 
         if (! $invoice) {
             return back()->withErrors([
-                'invoice' => 'Impossibile convertire la proforma. Verifica che sia in stato Bozza o Inviata e che esista un sezionale per le fatture di vendita.',
+                'invoice' => 'Impossibile completare l’operazione. Verifica che la proforma sia convertibile e che la fattura selezionata appartenga allo stesso cliente e non sia già collegata.',
             ]);
         }
 
         return redirect()->route('sell-invoices.edit', $invoice)
             ->with('toast', [
                 'type' => 'success',
-                'message' => "Proforma convertita in fattura #{$invoice->number}.",
+                'message' => $mode === 'link'
+                    ? "Proforma collegata alla fattura #{$invoice->number}."
+                    : "Proforma convertita in fattura #{$invoice->number}.",
             ]);
     }
 

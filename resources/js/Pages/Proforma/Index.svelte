@@ -32,6 +32,7 @@
         sort: initialSort = "date",
         direction: initialDirection = "desc",
         statusOptions = [],
+        linkableInvoices = [],
     } = $props();
 
     let searchValue = $state(initialSearch);
@@ -47,6 +48,8 @@
     let conversionModalOpen = $state(false);
     let convertingInvoice = $state(null);
     let converting = $state(false);
+    let conversionMode = $state("create");
+    let linkedInvoiceId = $state("");
     let emailModalOpen = $state(false);
     let emailModalLoading = $state(false);
     let emailSending = $state(false);
@@ -220,18 +223,36 @@
         if (!["draft", "sent"].includes(invoice.status)) return;
 
         convertingInvoice = invoice;
+        conversionMode = "create";
+        linkedInvoiceId = "";
         conversionModalOpen = true;
     }
 
+    const eligibleLinkableInvoices = $derived(
+        linkableInvoices.filter(
+            (invoice) => invoice.contact_id === convertingInvoice?.contact_id,
+        ),
+    );
+
     async function confirmConversion() {
         if (!convertingInvoice) return false;
+        if (conversionMode === "link" && !linkedInvoiceId) {
+            showToast("Seleziona una fattura da collegare.", "error");
+            return false;
+        }
 
         converting = true;
         try {
             return await new Promise((resolve) => {
                 router.post(
                     `/proforma/${convertingInvoice.id}/convert`,
-                    {},
+                    {
+                        mode: conversionMode,
+                        invoice_id:
+                            conversionMode === "link"
+                                ? Number(linkedInvoiceId)
+                                : undefined,
+                    },
                     {
                         onError: (errors) => {
                             const firstError = Object.values(errors ?? {})[0];
@@ -333,14 +354,80 @@
     bind:open={conversionModalOpen}
     title="Converti in fattura"
     description={convertingInvoice
-        ? `Convertire la proforma ${convertingInvoice.number ?? "#" + convertingInvoice.id} in una fattura elettronica in bozza?
+        ? `Scegli se creare una nuova fattura elettronica in bozza o collegare una fattura già esistente per la proforma ${convertingInvoice.number ?? "#" + convertingInvoice.id}.
 
-Verranno copiati righe, dati fiscali e movimenti di pagamento. La proforma non sarà più modificabile.`
+La proforma non sarà più modificabile.`
         : ""}
-    confirmText="Converti in fattura"
+    confirmText={conversionMode === "link" ? "Collega fattura" : "Crea fattura"}
     onConfirm={confirmConversion}
     isLoading={converting}
-/>
+>
+    <div class="space-y-3">
+        <label
+            class="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3"
+        >
+            <input
+                type="radio"
+                name="conversion-mode"
+                value="create"
+                bind:group={conversionMode}
+            />
+            <span>
+                <span class="block text-sm font-medium text-brand-deep"
+                    >Crea una nuova fattura</span
+                >
+                <span class="block text-xs text-brand-secondary"
+                    >Copia righe, dati fiscali e movimenti di pagamento in una
+                    nuova bozza.</span
+                >
+            </span>
+        </label>
+        <label
+            class="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3"
+        >
+            <input
+                type="radio"
+                name="conversion-mode"
+                value="link"
+                bind:group={conversionMode}
+            />
+            <span>
+                <span class="block text-sm font-medium text-brand-deep"
+                    >Collega una fattura esistente</span
+                >
+                <span class="block text-xs text-brand-secondary"
+                    >La fattura non verrà modificata, anche se è già inviata.</span
+                >
+            </span>
+        </label>
+
+        {#if conversionMode === "link"}
+            <label class="block">
+                <span class="text-sm font-medium text-brand-deep"
+                    >Fattura dello stesso cliente</span
+                >
+                <select
+                    class="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm form-focus"
+                    bind:value={linkedInvoiceId}
+                >
+                    <option value="">Seleziona una fattura...</option>
+                    {#each eligibleLinkableInvoices as invoice}
+                        <option value={invoice.id}
+                            >{invoice.number ?? `#${invoice.id}`} · {formatDate(
+                                invoice.date,
+                            )} · {formatCurrency(invoice.total_gross)}</option
+                        >
+                    {/each}
+                </select>
+                {#if eligibleLinkableInvoices.length === 0}
+                    <span class="mt-1 block text-xs text-brand-secondary"
+                        >Non ci sono fatture non collegate per questo cliente.</span
+                    >
+                {/if}
+            </label>
+        {/if}
+    </div>
+</Dialog>
 
 <Dialog
     bind:open={emailModalOpen}
