@@ -1155,6 +1155,7 @@ return [
         'notes' => 'Note',
 
         'sdi_disclaimer' => 'Documento privo di rilevanza fiscale ai sensi dell\'art. 21 del DPR 633/72. La fattura originale e\' stata inviata in formato elettronico tramite il Sistema di Interscambio (SDI).',
+        'proforma_disclaimer' => 'Il presente documento non costituisce fattura valida ai fini del DpR 633 26/10/1972 e successive modifiche. La fattura definitiva verrà emessa all\'atto del pagamento del corrispettivo (articolo 6, comma 3, DpR 633/72).',
     ],
 
     'errors' => [

@@ -51,6 +51,7 @@ class CourtesyPdfService
             'vatSummary' => $invoice->getVatSummary(),
             'documentTitle' => __('app.pdf.proforma_title'),
             'showSdiDisclaimer' => false,
+            'proformaDisclaimer' => __('app.pdf.proforma_disclaimer'),
         ];
 
         return Pdf::loadView('pdf.courtesy-invoice', $data)->setPaper('a4');

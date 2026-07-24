@@ -615,10 +615,10 @@
         </div>
     @endif
 
-    {{-- ── Disclaimer (SDI invoices only) ──────────────────────────── --}}
-    @if ($showSdiDisclaimer)
+    {{-- ── Footer disclaimer ───────────────────────────────────────── --}}
+    @if ($showSdiDisclaimer || isset($proformaDisclaimer))
         <div class="disclaimer">
-            {{ __('app.pdf.sdi_disclaimer') }}
+            {{ $proformaDisclaimer ?? __('app.pdf.sdi_disclaimer') }}
         </div>
     @endif
 

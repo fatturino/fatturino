@@ -121,7 +121,7 @@ class CourtesyPdfTest extends TestCase
         $this->assertEquals(60000, $bucket['taxable']); // 40000 + 20000 cents
     }
 
-    public function test_proforma_pdf_is_generated_without_sdi_disclaimer(): void
+    public function test_proforma_pdf_is_generated_with_its_legal_disclaimer(): void
     {
         $contact = Contact::create([
             'name' => 'Cliente Proforma',
@@ -150,8 +150,20 @@ class CourtesyPdfTest extends TestCase
 
         $service = app(CourtesyPdfService::class);
         $output = $service->generateForProforma($proforma)->output();
+        $html = view('pdf.courtesy-invoice', [
+            'invoice' => $proforma->load('contact', 'lines'),
+            'company' => app(\App\Settings\CompanySettings::class),
+            'logo' => null,
+            'vatSummary' => $proforma->getVatSummary(),
+            'documentTitle' => __('app.pdf.proforma_title'),
+            'showSdiDisclaimer' => false,
+            'proformaDisclaimer' => __('app.pdf.proforma_disclaimer'),
+        ])->render();
 
         $this->assertStringStartsWith('%PDF', $output);
+        $renderedText = html_entity_decode($html, ENT_QUOTES, 'UTF-8');
+        $this->assertStringContainsString(__('app.pdf.proforma_disclaimer'), $renderedText);
+        $this->assertStringNotContainsString(__('app.pdf.sdi_disclaimer'), $renderedText);
         $this->assertEquals('proforma-P1/2024.pdf', $service->generateProformaFileName($proforma));
     }
 }
