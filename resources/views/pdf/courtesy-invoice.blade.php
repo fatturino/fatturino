@@ -285,6 +285,25 @@
             font-size: 8px;
         }
 
+        .paid-notice {
+            margin-top: 12px;
+            padding: 10px;
+            background-color: #eef8f0;
+            border-left: 3px solid #2e7d32;
+        }
+
+        .paid-notice-title {
+            font-size: 10px;
+            font-weight: bold;
+            color: #1b5e20;
+            margin-bottom: 2px;
+        }
+
+        .paid-notice-text {
+            font-size: 9px;
+            color: #2e7d32;
+        }
+
 
         /* ── Notes ──────────────────────────────────── */
         .notes-section {
@@ -506,24 +525,31 @@
                 @endif
 
                 {{-- Payment details --}}
-                @if ($invoice->payment_method)
-                    <div class="section-title">{{ __('app.pdf.payment_info') }}</div>
-                    <div class="payment-row">
-                        <span class="payment-key">{{ __('app.pdf.payment_method') }}:</span>
-                        {{ $invoice->payment_method instanceof \App\Enums\PaymentMethod ? $invoice->payment_method->label() : (\App\Enums\PaymentMethod::tryFrom($invoice->payment_method)?->label() ?? $invoice->payment_method) }}
+                @if ($invoice->type === 'sales' && $invoice->payment_status === \App\Enums\PaymentStatus::Paid)
+                    <div class="paid-notice">
+                        <div class="paid-notice-title">{{ __('app.pdf.payment_paid_title') }}</div>
+                        <div class="paid-notice-text">{{ __('app.pdf.payment_paid_description') }}</div>
                     </div>
-                @endif
-                @if ($invoice->bank_name)
-                    <div class="payment-row">
-                        <span class="payment-key">{{ __('app.pdf.bank') }}:</span>
-                        {{ $invoice->bank_name }}
-                    </div>
-                @endif
-                @if ($invoice->bank_iban)
-                    <div class="payment-row">
-                        <span class="payment-key">{{ __('app.pdf.iban') }}:</span>
-                        {{ $invoice->bank_iban }}
-                    </div>
+                @else
+                    @if ($invoice->payment_method)
+                        <div class="section-title">{{ __('app.pdf.payment_info') }}</div>
+                        <div class="payment-row">
+                            <span class="payment-key">{{ __('app.pdf.payment_method') }}:</span>
+                            {{ $invoice->payment_method instanceof \App\Enums\PaymentMethod ? $invoice->payment_method->label() : (\App\Enums\PaymentMethod::tryFrom($invoice->payment_method)?->label() ?? $invoice->payment_method) }}
+                        </div>
+                    @endif
+                    @if ($invoice->bank_name)
+                        <div class="payment-row">
+                            <span class="payment-key">{{ __('app.pdf.bank') }}:</span>
+                            {{ $invoice->bank_name }}
+                        </div>
+                    @endif
+                    @if ($invoice->bank_iban)
+                        <div class="payment-row">
+                            <span class="payment-key">{{ __('app.pdf.iban') }}:</span>
+                            {{ $invoice->bank_iban }}
+                        </div>
+                    @endif
                 @endif
             </td>
 

@@ -1142,6 +1142,8 @@ return [
         'payment_method' => 'Metodo',
         'bank' => 'Banca',
         'iban' => 'IBAN',
+        'payment_paid_title' => 'FATTURA SALDATA',
+        'payment_paid_description' => 'Il pagamento di questa fattura risulta interamente ricevuto.',
 
         'net_total' => 'Imponibile',
         'fund_contribution' => 'Rivalsa Previdenziale (:percent%)',

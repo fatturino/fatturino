@@ -1100,6 +1100,8 @@ return [
         'payment_method' => 'Method',
         'bank' => 'Bank',
         'iban' => 'IBAN',
+        'payment_paid_title' => 'INVOICE PAID',
+        'payment_paid_description' => 'Payment for this invoice has been received in full.',
 
         'net_total' => 'Net Total',
         'fund_contribution' => 'Professional Fund (:percent%)',

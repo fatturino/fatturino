@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PaymentStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\FiscalDocument;
@@ -59,6 +60,32 @@ class CourtesyPdfTest extends TestCase
 
         $this->assertNotEmpty($output);
         $this->assertStringStartsWith('%PDF', $output);
+    }
+
+    public function test_paid_sales_invoice_pdf_shows_paid_notice_instead_of_payment_details(): void
+    {
+        [$invoice] = $this->createBaseInvoice([
+            'payment_status' => PaymentStatus::Paid,
+            'payment_method' => 'MP05',
+            'bank_name' => 'Banca Test',
+            'bank_iban' => 'IT60X0542811101000000123456',
+        ]);
+
+        $html = view('pdf.courtesy-invoice', [
+            'invoice' => $invoice->load('contact', 'lines'),
+            'company' => app(\App\Settings\CompanySettings::class),
+            'logo' => null,
+            'vatSummary' => $invoice->getVatSummary(),
+            'documentTitle' => __('app.pdf.courtesy_title'),
+            'showSdiDisclaimer' => true,
+        ])->render();
+
+        $renderedText = html_entity_decode($html, ENT_QUOTES, 'UTF-8');
+
+        $this->assertStringContainsString(__('app.pdf.payment_paid_title'), $renderedText);
+        $this->assertStringContainsString(__('app.pdf.payment_paid_description'), $renderedText);
+        $this->assertStringNotContainsString('Banca Test', $renderedText);
+        $this->assertStringNotContainsString('IT60X0542811101000000123456', $renderedText);
     }
 
     public function test_pdf_filename_contains_invoice_number(): void
