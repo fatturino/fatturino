@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->mergeConfigFrom(config_path('fe-openapi.php'), 'fe-openapi');
         $this->app->make('config')->set('logging.channels.fe-openapi', [
-            'driver' => 'daily',
+            'driver' => app()->isProduction() ? 'stderr' : 'daily',
             'path' => storage_path('logs/plugin-fe-openapi.log'),
             'level' => 'debug',
             'days' => 14,

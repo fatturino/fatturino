@@ -124,14 +124,12 @@ return [
         ],
 
         'emergency' => [
-            'path' => storage_path('logs/fatturino.log'),
+            'path' => 'php://stderr',
         ],
 
         'fe-openapi' => [
-            'driver' => 'daily',
-            'path' => env('APP_ENV') === 'production'
-                ? '/data/logs/plugin-fe-openapi.log'
-                : storage_path('logs/plugin-fe-openapi.log'),
+            'driver' => env('APP_ENV') === 'production' ? 'stderr' : 'daily',
+            'path' => storage_path('logs/plugin-fe-openapi.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => 14,
         ],

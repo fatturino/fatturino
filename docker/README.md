@@ -300,14 +300,6 @@ docker logs fatturino -f        # Follow in tempo reale
 docker logs fatturino --tail 50 # Ultime 50 righe
 ```
 
-Per avere anche i log su file (nel volume `/data`):
-
-```yaml
-environment:
-  LOG_CHANNEL: "stack"
-  LOG_STACK: "single,stderr"
-```
-
 In sviluppo locale puoi aumentare il dettaglio:
 
 ```yaml
