@@ -35,12 +35,12 @@ jobs:
       - name: Create dummy Vite manifest
         run: |
           mkdir -p public/build/assets
-          touch public/build/assets/app.css
-          touch public/build/assets/app.js
+          touch public/build/assets/fatturino.css
+          touch public/build/assets/fatturino.js
           cat > public/build/manifest.json << 'EOF'
           {
-              "resources/css/app.css": {"file": "assets/app.css", "src": "resources/css/app.css"},
-              "resources/js/app.js": {"file": "assets/app.js", "src": "resources/js/app.js"}
+              "resources/css/fatturino.css": {"file": "assets/fatturino.css", "src": "resources/css/fatturino.css"},
+              "resources/js/fatturino.js": {"file": "assets/fatturino.js", "src": "resources/js/fatturino.js"}
           }
           EOF
 

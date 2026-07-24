@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Contracts\HasTimeline;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
@@ -12,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Parental\HasParent;
 
-class SelfInvoice extends FiscalDocument implements HasTimeline
+class SelfInvoice extends FiscalDocument
 {
     use HasFactory;
     use HasParent;
