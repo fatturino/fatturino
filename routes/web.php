@@ -44,7 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->defaults('title', 'Dashboard');
 
     Route::post('/fiscal-year', function (Request $request) {
-        $request->validate(['year' => 'required|integer|min:2000|max:'.(now()->year + 1)]);
+        $request->validate(['year' => 'required|integer|min:2000|max:' . (now()->year + 1)]);
         session(['fiscal_year' => (int) $request->year]);
 
         return back();
@@ -147,6 +147,7 @@ Route::middleware('auth')->group(function () {
         ->defaults('title', 'Modifica Proforma')
         ->defaults('breadcrumbs', [['label' => 'Proforma', 'url' => '/proforma'], ['label' => 'Modifica']]);
     Route::put('/proforma/{proformaInvoice}', [ProformaInvoicesController::class, 'update'])->name('proforma.update');
+    Route::post('/proforma/{proformaInvoice}/convert', [ProformaInvoicesController::class, 'convert'])->name('proforma.convert');
     Route::get('/proforma/{proformaInvoice}/pdf', [ProformaInvoicesController::class, 'downloadPdf'])->name('proforma.download-pdf');
     Route::get('/proforma/{proformaInvoice}/email-preview', [ProformaInvoicesController::class, 'emailPreview'])->name('proforma.email-preview');
     Route::post('/proforma/{proformaInvoice}/send-email', [ProformaInvoicesController::class, 'sendEmail'])->name('proforma.send-email');

@@ -69,7 +69,7 @@ export function buildInvoiceContextActions({ contentType, item, links = {}, call
         actions.push({ id: 'pdf', label: 'Download PDF', href: links.pdf })
     }
 
-    if (contentType === InvoiceContentType.PROFORMA && callbacks.convertToInvoice) {
+    if (contentType === InvoiceContentType.PROFORMA && callbacks.convertToInvoice && ['draft', 'sent'].includes(item?.status)) {
         actions.push({
             id: 'convert_to_invoice',
             label: 'Converti in fattura',

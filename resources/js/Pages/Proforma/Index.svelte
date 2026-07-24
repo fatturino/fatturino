@@ -1,141 +1,193 @@
 <script>
-    import Authenticated from '$layouts/Authenticated.svelte'
-    import Button from '$lib/components/ui/Button.svelte'
-    import Input from '$lib/components/ui/Input.svelte'
-    import Textarea from '$lib/components/ui/Textarea.svelte'
-    import Switch from '$lib/components/ui/Switch.svelte'
-    import Dialog from '$lib/components/ui/Dialog.svelte'
-    import InvoiceDesktopContextMenu from '$lib/components/invoices/InvoiceDesktopContextMenu.svelte'
-    import SortableInvoiceTable from '$lib/components/invoices/SortableInvoiceTable.svelte'
-    import { buildInvoiceContextActions, InvoiceContentType } from '$lib/invoices/context-menu-registry.js'
-    import { formatLocalDate } from '$lib/utils/date.js'
-    import { showToast } from '$lib/toast.js'
-    import { router } from '@inertiajs/svelte'
+    import Authenticated from "$layouts/Authenticated.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
+    import Input from "$lib/components/ui/Input.svelte";
+    import Textarea from "$lib/components/ui/Textarea.svelte";
+    import Switch from "$lib/components/ui/Switch.svelte";
+    import Dialog from "$lib/components/ui/Dialog.svelte";
+    import InvoiceDesktopContextMenu from "$lib/components/invoices/InvoiceDesktopContextMenu.svelte";
+    import SortableInvoiceTable from "$lib/components/invoices/SortableInvoiceTable.svelte";
+    import {
+        buildInvoiceContextActions,
+        InvoiceContentType,
+    } from "$lib/invoices/context-menu-registry.js";
+    import { formatLocalDate } from "$lib/utils/date.js";
+    import { showToast } from "$lib/toast.js";
+    import { router } from "@inertiajs/svelte";
 
     let {
-        invoices = { data: [], current_page: 1, last_page: 1, from: 0, to: 0, total: 0, links: [] },
+        invoices = {
+            data: [],
+            current_page: 1,
+            last_page: 1,
+            from: 0,
+            to: 0,
+            total: 0,
+            links: [],
+        },
         fiscalYear = new Date().getFullYear(),
         stats = {},
-        search: initialSearch = '',
-        filterStatus: initialStatus = '',
-        sort: initialSort = 'date',
-        direction: initialDirection = 'desc',
+        search: initialSearch = "",
+        filterStatus: initialStatus = "",
+        sort: initialSort = "date",
+        direction: initialDirection = "desc",
         statusOptions = [],
-    } = $props()
+    } = $props();
 
-    let searchValue = $state(initialSearch)
-    let statusFilter = $state(initialStatus)
-    let sort = $state(initialSort)
-    let direction = $state(initialDirection)
-    const listState = $derived.by(() => ({ invoices, stats, statusOptions, paymentOptions: [] }))
-    let emailModalOpen = $state(false)
-    let emailModalLoading = $state(false)
-    let emailSending = $state(false)
-    let emailInvoice = $state(null)
-    let emailForm = $state({ recipient_email: '', cc: '', bcc: '', subject: '', body: '', attach_pdf: true })
+    let searchValue = $state(initialSearch);
+    let statusFilter = $state(initialStatus);
+    let sort = $state(initialSort);
+    let direction = $state(initialDirection);
+    const listState = $derived.by(() => ({
+        invoices,
+        stats,
+        statusOptions,
+        paymentOptions: [],
+    }));
+    let conversionModalOpen = $state(false);
+    let convertingInvoice = $state(null);
+    let converting = $state(false);
+    let emailModalOpen = $state(false);
+    let emailModalLoading = $state(false);
+    let emailSending = $state(false);
+    let emailInvoice = $state(null);
+    let emailForm = $state({
+        recipient_email: "",
+        cc: "",
+        bcc: "",
+        subject: "",
+        body: "",
+        attach_pdf: true,
+    });
 
     const statusTabs = $derived([
-        { label: 'Tutte', value: '', count: listState.invoices.total ?? 0 },
-        { label: 'Bozze', value: 'draft', count: listState.stats.draft_count ?? 0 },
-        { label: 'Inviate', value: 'sent', count: listState.stats.sent_count ?? 0 },
-        { label: 'Convertite', value: 'converted', count: listState.stats.converted_count ?? 0 },
-    ])
+        { label: "Tutte", value: "", count: listState.invoices.total ?? 0 },
+        {
+            label: "Bozze",
+            value: "draft",
+            count: listState.stats.draft_count ?? 0,
+        },
+        {
+            label: "Inviate",
+            value: "sent",
+            count: listState.stats.sent_count ?? 0,
+        },
+        {
+            label: "Convertite",
+            value: "converted",
+            count: listState.stats.converted_count ?? 0,
+        },
+    ]);
     function submitSearch() {
-        const url = new URL(window.location.href)
-        if (searchValue) url.searchParams.set('search', searchValue)
-        else url.searchParams.delete('search')
-        url.searchParams.delete('page')
-        window.location.href = url.toString()
+        const url = new URL(window.location.href);
+        if (searchValue) url.searchParams.set("search", searchValue);
+        else url.searchParams.delete("search");
+        url.searchParams.delete("page");
+        window.location.href = url.toString();
     }
 
     function clearFilters() {
-        window.location.href = '/proforma'
+        window.location.href = "/proforma";
     }
 
     function applyStatusTab(statusValue) {
-        const url = new URL(window.location.href)
-        if (statusValue) url.searchParams.set('status', statusValue)
-        else url.searchParams.delete('status')
-        url.searchParams.delete('page')
-        window.location.href = url.toString()
+        const url = new URL(window.location.href);
+        if (statusValue) url.searchParams.set("status", statusValue);
+        else url.searchParams.delete("status");
+        url.searchParams.delete("page");
+        window.location.href = url.toString();
     }
 
     function formatCurrency(value) {
-        return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format((value || 0) / 100)
+        return new Intl.NumberFormat("it-IT", {
+            style: "currency",
+            currency: "EUR",
+            minimumFractionDigits: 0,
+        }).format((value || 0) / 100);
     }
 
     function formatDate(dateStr) {
-        if (!dateStr) return '—'
-        return formatLocalDate(dateStr, 'it-IT')
+        if (!dateStr) return "—";
+        return formatLocalDate(dateStr, "it-IT");
     }
 
     function statusLabel(value) {
-        const opt = listState.statusOptions.find((o) => o.value === value)
-        return opt ? opt.label : value
+        const opt = listState.statusOptions.find((o) => o.value === value);
+        return opt ? opt.label : value;
     }
 
     function statusBadgeClass(value) {
         switch (value) {
-            case 'draft': return 'badge-draft'
-            case 'sent': return 'badge-neutral'
-            case 'converted': return 'badge-sent'
-            case 'cancelled': return 'badge-overdue'
-            default: return 'badge-neutral'
+            case "draft":
+                return "badge-draft";
+            case "sent":
+                return "badge-neutral";
+            case "converted":
+                return "badge-sent";
+            case "cancelled":
+                return "badge-overdue";
+            default:
+                return "badge-neutral";
         }
     }
 
     function emailStatusLabel(invoice) {
-        const eventType = invoice.latest_email_event?.event_type
+        const eventType = invoice.latest_email_event?.event_type;
 
         switch (eventType) {
-            case 'email_queued':
-            case 'payment_reminder_queued':
-                return 'In coda'
-            case 'email_sent':
-            case 'payment_reminder_sent':
-                return 'Inviata'
-            case 'email_failed':
-            case 'payment_reminder_failed':
-                return 'Fallita'
+            case "email_queued":
+            case "payment_reminder_queued":
+                return "In coda";
+            case "email_sent":
+            case "payment_reminder_sent":
+                return "Inviata";
+            case "email_failed":
+            case "payment_reminder_failed":
+                return "Fallita";
             default:
-                return 'Mai inviata'
+                return "Mai inviata";
         }
     }
 
     function emailStatusBadgeClass(invoice) {
-        const eventType = invoice.latest_email_event?.event_type
+        const eventType = invoice.latest_email_event?.event_type;
 
         switch (eventType) {
-            case 'email_sent':
-            case 'payment_reminder_sent':
-                return 'badge-sent'
-            case 'email_failed':
-            case 'payment_reminder_failed':
-                return 'badge-error'
-            case 'email_queued':
-            case 'payment_reminder_queued':
+            case "email_sent":
+            case "payment_reminder_sent":
+                return "badge-sent";
+            case "email_failed":
+            case "payment_reminder_failed":
+                return "badge-error";
+            case "email_queued":
+            case "payment_reminder_queued":
             default:
-                return 'badge-neutral'
+                return "badge-neutral";
         }
     }
 
     function emailStatusTitle(invoice) {
-        const event = invoice.latest_email_event
-        if (!event) return 'Nessun invio email registrato'
+        const event = invoice.latest_email_event;
+        if (!event) return "Nessun invio email registrato";
 
-        const recipient = event.recipient_email ? `Destinatario: ${event.recipient_email}` : null
-        const subject = event.subject ? `Oggetto: ${event.subject}` : null
+        const recipient = event.recipient_email
+            ? `Destinatario: ${event.recipient_email}`
+            : null;
+        const subject = event.subject ? `Oggetto: ${event.subject}` : null;
 
-        return [recipient, subject].filter(Boolean).join('\n') || emailStatusLabel(invoice)
+        return (
+            [recipient, subject].filter(Boolean).join("\n") ||
+            emailStatusLabel(invoice)
+        );
     }
 
     function hasActiveFilters() {
-        return statusFilter || searchValue
+        return statusFilter || searchValue;
     }
 
     function isTabActive(tabValue) {
-        if (tabValue === '') return !statusFilter
-        return statusFilter === tabValue
+        if (tabValue === "") return !statusFilter;
+        return statusFilter === tabValue;
     }
 
     async function postAction(url, payload = {}) {
@@ -143,71 +195,121 @@
             router.post(url, payload, {
                 preserveScroll: true,
                 preserveState: true,
-                only: ['invoices', 'stats', 'statusOptions', 'flash'],
+                only: ["invoices", "stats", "statusOptions", "flash"],
                 onError: (errors) => {
-                    const firstError = Object.values(errors ?? {})[0]
-                    const message = Array.isArray(firstError) ? firstError[0] : firstError
-                    showToast(message || 'Operazione non riuscita.', 'error')
-                    resolve(false)
+                    const firstError = Object.values(errors ?? {})[0];
+                    const message = Array.isArray(firstError)
+                        ? firstError[0]
+                        : firstError;
+                    showToast(message || "Operazione non riuscita.", "error");
+                    resolve(false);
                 },
                 onSuccess: (page) => {
-                    const successToast = page?.props?.flash?.toast
+                    const successToast = page?.props?.flash?.toast;
                     if (successToast?.message) {
-                        showToast(successToast)
+                        showToast(successToast);
                     }
 
-                    resolve(true)
+                    resolve(true);
                 },
-            })
-        })
+            });
+        });
+    }
+
+    function requestConversion(invoice) {
+        if (!["draft", "sent"].includes(invoice.status)) return;
+
+        convertingInvoice = invoice;
+        conversionModalOpen = true;
+    }
+
+    async function confirmConversion() {
+        if (!convertingInvoice) return false;
+
+        converting = true;
+        try {
+            return await new Promise((resolve) => {
+                router.post(
+                    `/proforma/${convertingInvoice.id}/convert`,
+                    {},
+                    {
+                        onError: (errors) => {
+                            const firstError = Object.values(errors ?? {})[0];
+                            const message = Array.isArray(firstError)
+                                ? firstError[0]
+                                : firstError;
+                            showToast(
+                                message || "Conversione non riuscita.",
+                                "error",
+                            );
+                            resolve(false);
+                        },
+                        onSuccess: () => resolve(true),
+                    },
+                );
+            });
+        } finally {
+            converting = false;
+        }
     }
 
     async function sendEmail(invoice) {
-        emailInvoice = invoice
-        emailModalOpen = true
-        emailModalLoading = true
+        emailInvoice = invoice;
+        emailModalOpen = true;
+        emailModalLoading = true;
 
         try {
-            const response = await fetch(`/proforma/${invoice.id}/email-preview`, {
-                headers: {
-                    'Accept': 'application/json',
+            const response = await fetch(
+                `/proforma/${invoice.id}/email-preview`,
+                {
+                    headers: {
+                        Accept: "application/json",
+                    },
                 },
-            })
-            const data = await response.json()
+            );
+            const data = await response.json();
             if (!response.ok || !data.success) {
-                throw new Error(data.error || 'Anteprima email non disponibile.')
+                throw new Error(
+                    data.error || "Anteprima email non disponibile.",
+                );
             }
 
             emailForm = {
-                recipient_email: data.preview?.recipient_email ?? '',
-                cc: data.preview?.cc ?? '',
-                bcc: data.preview?.bcc ?? '',
-                subject: data.preview?.subject ?? '',
-                body: data.preview?.body ?? '',
+                recipient_email: data.preview?.recipient_email ?? "",
+                cc: data.preview?.cc ?? "",
+                bcc: data.preview?.bcc ?? "",
+                subject: data.preview?.subject ?? "",
+                body: data.preview?.body ?? "",
                 attach_pdf: data.preview?.attach_pdf ?? true,
-            }
+            };
         } catch (error) {
-            showToast(error?.message || 'Anteprima email non disponibile.', 'error')
-            emailModalOpen = false
-            emailInvoice = null
+            showToast(
+                error?.message || "Anteprima email non disponibile.",
+                "error",
+            );
+            emailModalOpen = false;
+            emailInvoice = null;
         } finally {
-            emailModalLoading = false
+            emailModalLoading = false;
         }
     }
 
     async function submitEmailModal() {
-        if (!emailInvoice) return false
+        if (!emailInvoice) return false;
         if (!emailForm.recipient_email) {
-            showToast('Inserisci un destinatario email.', 'error')
-            return false
+            showToast("Inserisci un destinatario email.", "error");
+            return false;
         }
 
-        emailSending = true
+        emailSending = true;
         try {
-            const sent = await postAction(`/proforma/${emailInvoice.id}/send-email`, emailForm)
-            return sent
+            const sent = await postAction(
+                `/proforma/${emailInvoice.id}/send-email`,
+                emailForm,
+            );
+            return sent;
         } finally {
-            emailSending = false
+            emailSending = false;
         }
     }
 
@@ -220,51 +322,102 @@
                 pdf: `/proforma/${invoice.id}/pdf`,
             },
             callbacks: {
+                convertToInvoice: requestConversion,
                 sendEmail,
             },
-        })
+        });
     }
-
 </script>
 
 <Dialog
+    bind:open={conversionModalOpen}
+    title="Converti in fattura"
+    description={convertingInvoice
+        ? `Convertire la proforma ${convertingInvoice.number ?? "#" + convertingInvoice.id} in una fattura elettronica in bozza?
+
+Verranno copiati righe, dati fiscali e movimenti di pagamento. La proforma non sarà più modificabile.`
+        : ""}
+    confirmText="Converti in fattura"
+    onConfirm={confirmConversion}
+    isLoading={converting}
+/>
+
+<Dialog
     bind:open={emailModalOpen}
-    title={`Invia email ${emailInvoice?.number ?? (emailInvoice ? '#' + emailInvoice.id : '')}`}
+    title={`Invia email ${emailInvoice?.number ?? (emailInvoice ? "#" + emailInvoice.id : "")}`}
     confirmText="Invia email"
     onConfirm={submitEmailModal}
     isLoading={emailSending}
     contentClass="max-w-2xl"
 >
     {#if emailModalLoading}
-        <p class="text-sm text-brand-secondary">Caricamento anteprima email...</p>
+        <p class="text-sm text-brand-secondary">
+            Caricamento anteprima email...
+        </p>
     {:else}
         <div class="space-y-4">
             <label class="block">
-                <span class="text-sm font-medium text-brand-deep">Destinatario</span>
-                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.recipient_email} />
+                <span class="text-sm font-medium text-brand-deep"
+                    >Destinatario</span
+                >
+                <Input
+                    class="mt-1 block w-full"
+                    type="email"
+                    bind:value={emailForm.recipient_email}
+                />
             </label>
             <label class="block">
-                <span class="text-sm font-medium text-brand-deep">CC (opzionale)</span>
-                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.cc} />
+                <span class="text-sm font-medium text-brand-deep"
+                    >CC (opzionale)</span
+                >
+                <Input
+                    class="mt-1 block w-full"
+                    type="email"
+                    bind:value={emailForm.cc}
+                />
             </label>
             <label class="block">
-                <span class="text-sm font-medium text-brand-deep">CCN (opzionale)</span>
-                <Input class="mt-1 block w-full" type="email" bind:value={emailForm.bcc} />
+                <span class="text-sm font-medium text-brand-deep"
+                    >CCN (opzionale)</span
+                >
+                <Input
+                    class="mt-1 block w-full"
+                    type="email"
+                    bind:value={emailForm.bcc}
+                />
             </label>
             <label class="block">
                 <span class="text-sm font-medium text-brand-deep">Oggetto</span>
-                <Input class="mt-1 block w-full" type="text" bind:value={emailForm.subject} />
+                <Input
+                    class="mt-1 block w-full"
+                    type="text"
+                    bind:value={emailForm.subject}
+                />
             </label>
-            <label class="flex items-start justify-between gap-4 rounded-lg border border-border-light bg-surface-muted px-3 py-3">
+            <label
+                class="flex items-start justify-between gap-4 rounded-lg border border-border-light bg-surface-muted px-3 py-3"
+            >
                 <span>
-                    <span class="block text-sm font-medium text-brand-deep">Allega documento</span>
-                    <span class="block text-xs text-brand-secondary">Include il PDF della proforma nell'email.</span>
+                    <span class="block text-sm font-medium text-brand-deep"
+                        >Allega documento</span
+                    >
+                    <span class="block text-xs text-brand-secondary"
+                        >Include il PDF della proforma nell'email.</span
+                    >
                 </span>
-                <Switch bind:checked={emailForm.attach_pdf} ariaLabel="Allega documento" />
+                <Switch
+                    bind:checked={emailForm.attach_pdf}
+                    ariaLabel="Allega documento"
+                />
             </label>
             <label class="block">
-                <span class="text-sm font-medium text-brand-deep">Messaggio</span>
-                <Textarea class="mt-1 block w-full min-h-72 resize-y text-sm" bind:value={emailForm.body} />
+                <span class="text-sm font-medium text-brand-deep"
+                    >Messaggio</span
+                >
+                <Textarea
+                    class="mt-1 block w-full min-h-72 resize-y text-sm"
+                    bind:value={emailForm.body}
+                />
             </label>
         </div>
     {/if}
@@ -278,24 +431,57 @@
     <div class="page-shell pb-24 sm:pb-6 w-full">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             <div class="card-brand p-4 sm:p-5">
-                <p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Totale</p>
-                <p class="text-2xl font-semibold text-brand-deep">{formatCurrency(listState.stats.total_gross)}</p>
-                <p class="text-xs text-brand-secondary/70 mt-1">{listState.stats.total_count ?? 0} proforma</p>
+                <p
+                    class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2"
+                >
+                    Totale
+                </p>
+                <p class="text-2xl font-semibold text-brand-deep">
+                    {formatCurrency(listState.stats.total_gross)}
+                </p>
+                <p class="text-xs text-brand-secondary/70 mt-1">
+                    {listState.stats.total_count ?? 0} proforma
+                </p>
             </div>
             <div class="card-brand p-4 sm:p-5">
-                <p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Convertite</p>
-                <p class="text-2xl font-semibold text-brand-deep">{listState.stats.converted_count ?? 0}</p>
+                <p
+                    class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2"
+                >
+                    Convertite
+                </p>
+                <p class="text-2xl font-semibold text-brand-deep">
+                    {listState.stats.converted_count ?? 0}
+                </p>
                 <p class="text-xs text-brand-secondary/70 mt-1">in fattura</p>
             </div>
             <div class="card-brand p-4 sm:p-5">
-                <p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Valore medio</p>
-                <p class="text-2xl font-semibold text-brand-deep">{listState.stats.total_count > 0 ? formatCurrency(listState.stats.total_gross / listState.stats.total_count) : '—'}</p>
+                <p
+                    class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2"
+                >
+                    Valore medio
+                </p>
+                <p class="text-2xl font-semibold text-brand-deep">
+                    {listState.stats.total_count > 0
+                        ? formatCurrency(
+                              listState.stats.total_gross /
+                                  listState.stats.total_count,
+                          )
+                        : "—"}
+                </p>
                 <p class="text-xs text-brand-secondary/70 mt-1">per proforma</p>
             </div>
             <div class="card-brand p-4 sm:p-5">
-                <p class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2">Bozze</p>
-                <p class="text-2xl font-semibold text-brand-deep">{listState.stats.draft_count ?? 0}</p>
-                <p class="text-xs text-brand-secondary/70 mt-1">da completare</p>
+                <p
+                    class="text-[11px] text-brand-secondary/70 font-medium uppercase tracking-wide mb-2"
+                >
+                    Bozze
+                </p>
+                <p class="text-2xl font-semibold text-brand-deep">
+                    {listState.stats.draft_count ?? 0}
+                </p>
+                <p class="text-xs text-brand-secondary/70 mt-1">
+                    da completare
+                </p>
             </div>
         </div>
 
@@ -304,7 +490,11 @@
                 {#each statusTabs as tab}
                     <button
                         type="button"
-                        class="rounded-lg border px-3 py-2 text-left text-sm transition-colors {isTabActive(tab.value) ? 'border-brand-deep bg-brand-deep text-white' : 'border-border-light bg-white text-brand-deep hover:bg-surface-muted'}"
+                        class="rounded-lg border px-3 py-2 text-left text-sm transition-colors {isTabActive(
+                            tab.value,
+                        )
+                            ? 'border-brand-deep bg-brand-deep text-white'
+                            : 'border-border-light bg-white text-brand-deep hover:bg-surface-muted'}"
                         onclick={() => applyStatusTab(tab.value)}
                     >
                         <span class="font-medium">{tab.label}</span>
@@ -314,26 +504,38 @@
             </div>
             <div class="flex flex-col gap-3 lg:flex-row">
                 <div class="flex-1 min-w-0">
-                    <label class="sr-only" for="proforma-search">Cerca proforma</label>
+                    <label class="sr-only" for="proforma-search"
+                        >Cerca proforma</label
+                    >
                     <Input
                         id="proforma-search"
                         type="text"
                         class="block w-full rounded-lg border border-border px-3 py-2 text-sm"
                         placeholder="Cerca per numero o cliente"
                         bind:value={searchValue}
-                        onkeydown={(e) => { if (e.key === 'Enter') submitSearch() }}
+                        onkeydown={(e) => {
+                            if (e.key === "Enter") submitSearch();
+                        }}
                     />
                 </div>
                 <div class="flex items-center gap-2">
-                    <Button class="btn-outline text-sm" onclick={submitSearch}>Cerca</Button>
+                    <Button class="btn-outline text-sm" onclick={submitSearch}
+                        >Cerca</Button
+                    >
                     {#if hasActiveFilters()}
-                        <Button class="text-sm text-brand-secondary hover:text-brand-deep" onclick={clearFilters}>Reset</Button>
+                        <Button
+                            class="text-sm text-brand-secondary hover:text-brand-deep"
+                            onclick={clearFilters}>Reset</Button
+                        >
                     {/if}
                 </div>
             </div>
         </section>
 
-        <p class="hidden md:block mb-2 text-xs text-brand-secondary/80">Suggerimento: clic destro su una riga per aprire il menu contestuale.</p>
+        <p class="hidden md:block mb-2 text-xs text-brand-secondary/80">
+            Suggerimento: clic destro su una riga per aprire il menu
+            contestuale.
+        </p>
         <SortableInvoiceTable
             invoices={listState.invoices.data}
             {sort}
@@ -345,25 +547,78 @@
             desktopColspan={7}
         >
             {#snippet desktopHeaders()}
-                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Totale</th>
-                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Stato</th>
-                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider">Email</th>
-                <th class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right">Azioni</th>
+                <th
+                    class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right"
+                    >Totale</th
+                >
+                <th
+                    class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider"
+                    >Stato</th
+                >
+                <th
+                    class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider"
+                    >Email</th
+                >
+                <th
+                    class="px-4 py-3 font-semibold text-brand-secondary text-xs uppercase tracking-wider text-right"
+                    >Azioni</th
+                >
             {/snippet}
             {#snippet desktopRow({ invoice, formatDate })}
                 <InvoiceDesktopContextMenu actions={contextActions(invoice)}>
                     {#snippet children({ triggerProps })}
-                        <tr {...triggerProps} class="border-b border-border-light hover:bg-surface-muted/70 transition-colors cursor-context-menu">
-                            <td class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap">{invoice.number ?? '#' + invoice.id}</td>
-                            <td class="px-4 py-3 text-brand-secondary whitespace-nowrap">{formatDate(invoice.date)}</td>
-                            <td class="px-4 py-3 font-medium text-brand-deep">{invoice.contact?.name ?? '—'}</td>
-                            <td class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep">{formatCurrency(invoice.total_gross)}</td>
-                            <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span></td>
-                            <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {emailStatusBadgeClass(invoice)}" title={emailStatusTitle(invoice)}>{emailStatusLabel(invoice)}</span></td>
+                        <tr
+                            {...triggerProps}
+                            class="border-b border-border-light hover:bg-surface-muted/70 transition-colors cursor-context-menu"
+                        >
+                            <td
+                                class="px-4 py-3 font-semibold text-brand-deep whitespace-nowrap"
+                                >{invoice.number ?? "#" + invoice.id}</td
+                            >
+                            <td
+                                class="px-4 py-3 text-brand-secondary whitespace-nowrap"
+                                >{formatDate(invoice.date)}</td
+                            >
+                            <td class="px-4 py-3 font-medium text-brand-deep"
+                                >{invoice.contact?.name ?? "—"}</td
+                            >
+                            <td
+                                class="px-4 py-3 text-right font-semibold tabular-nums text-brand-deep"
+                                >{formatCurrency(invoice.total_gross)}</td
+                            >
+                            <td class="px-4 py-3"
+                                ><span
+                                    class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(
+                                        invoice.status,
+                                    )}">{statusLabel(invoice.status)}</span
+                                ></td
+                            >
+                            <td class="px-4 py-3"
+                                ><span
+                                    class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {emailStatusBadgeClass(
+                                        invoice,
+                                    )}"
+                                    title={emailStatusTitle(invoice)}
+                                    >{emailStatusLabel(invoice)}</span
+                                ></td
+                            >
                             <td class="px-4 py-3 text-right">
-                                <a href={`/proforma/${invoice.id}/edit`} class="inline-flex h-8 w-8 items-center justify-center rounded-md text-brand-secondary transition hover:bg-surface-muted hover:text-brand-deep" aria-label="Modifica proforma" title="Modifica">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path d="M13.586 2.586a2 2 0 0 1 2.828 2.828l-9.5 9.5a1 1 0 0 1-.447.263l-3 1a1 1 0 0 1-1.264-1.264l1-3a1 1 0 0 1 .263-.447l9.5-9.5ZM12.172 4 5.02 11.152l-.58 1.739 1.739-.58L13.33 5.16 12.172 4Z" />
+                                <a
+                                    href={`/proforma/${invoice.id}/edit`}
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-md text-brand-secondary transition hover:bg-surface-muted hover:text-brand-deep"
+                                    aria-label="Modifica proforma"
+                                    title="Modifica"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-4 w-4"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M13.586 2.586a2 2 0 0 1 2.828 2.828l-9.5 9.5a1 1 0 0 1-.447.263l-3 1a1 1 0 0 1-1.264-1.264l1-3a1 1 0 0 1 .263-.447l9.5-9.5ZM12.172 4 5.02 11.152l-.58 1.739 1.739-.58L13.33 5.16 12.172 4Z"
+                                        />
                                     </svg>
                                 </a>
                             </td>
@@ -375,40 +630,88 @@
                 <article class="card-brand p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <a href={`/proforma/${invoice.id}/edit`} class="text-sm font-semibold text-brand-deep hover:underline">{invoice.number ?? '#' + invoice.id}</a>
-                            <p class="text-sm text-brand-secondary/80 mt-0.5">{invoice.contact?.name ?? '—'}</p>
+                            <a
+                                href={`/proforma/${invoice.id}/edit`}
+                                class="text-sm font-semibold text-brand-deep hover:underline"
+                                >{invoice.number ?? "#" + invoice.id}</a
+                            >
+                            <p class="text-sm text-brand-secondary/80 mt-0.5">
+                                {invoice.contact?.name ?? "—"}
+                            </p>
                         </div>
-                        <span class="text-xs text-brand-secondary">{formatDate(invoice.date)}</span>
+                        <span class="text-xs text-brand-secondary"
+                            >{formatDate(invoice.date)}</span
+                        >
                     </div>
                     <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
                         <p class="text-brand-secondary">Totale</p>
-                        <p class="text-right font-semibold text-brand-deep tabular-nums">{formatCurrency(invoice.total_gross)}</p>
+                        <p
+                            class="text-right font-semibold text-brand-deep tabular-nums"
+                        >
+                            {formatCurrency(invoice.total_gross)}
+                        </p>
                     </div>
                     <div class="mt-3 flex items-center gap-2 flex-wrap">
-                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(invoice.status)}">{statusLabel(invoice.status)}</span>
-                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {emailStatusBadgeClass(invoice)}" title={emailStatusTitle(invoice)}>{emailStatusLabel(invoice)}</span>
+                        <span
+                            class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {statusBadgeClass(
+                                invoice.status,
+                            )}">{statusLabel(invoice.status)}</span
+                        >
+                        <span
+                            class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {emailStatusBadgeClass(
+                                invoice,
+                            )}"
+                            title={emailStatusTitle(invoice)}
+                            >{emailStatusLabel(invoice)}</span
+                        >
                     </div>
                     <div class="mt-3 flex items-center gap-3 text-xs">
-                        <a href={`/proforma/${invoice.id}/pdf`} class="font-medium text-brand-secondary">PDF</a>
-                        <Button class="font-medium text-brand-secondary" onclick={() => sendEmail(invoice)}>Email</Button>
-                        <a href={`/proforma/${invoice.id}/edit`} class="font-medium text-brand-accent">Modifica</a>
+                        <a
+                            href={`/proforma/${invoice.id}/pdf`}
+                            class="font-medium text-brand-secondary">PDF</a
+                        >
+                        <Button
+                            class="font-medium text-brand-secondary"
+                            onclick={() => sendEmail(invoice)}>Email</Button
+                        >
+                        {#if ["draft", "sent"].includes(invoice.status)}
+                            <Button
+                                class="font-medium text-brand-secondary"
+                                onclick={() => requestConversion(invoice)}
+                                >Converti</Button
+                            >
+                        {/if}
+                        <a
+                            href={`/proforma/${invoice.id}/edit`}
+                            class="font-medium text-brand-accent">Modifica</a
+                        >
                     </div>
                 </article>
             {/snippet}
         </SortableInvoiceTable>
 
         {#if listState.invoices.last_page > 1}
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 text-sm">
-                <p class="text-brand-secondary/70">{listState.invoices.from}–{listState.invoices.to} di {listState.invoices.total} proforma</p>
+            <div
+                class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 text-sm"
+            >
+                <p class="text-brand-secondary/70">
+                    {listState.invoices.from}–{listState.invoices.to} di {listState
+                        .invoices.total} proforma
+                </p>
                 <div class="flex gap-1 flex-wrap">
                     {#each listState.invoices.links as link}
                         {#if link.url}
-                            <a href={link.url} class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {link.active ? 'bg-brand-deep text-white' : 'text-brand-secondary hover:bg-surface-muted'}">{@html link.label}</a>
+                            <a
+                                href={link.url}
+                                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {link.active
+                                    ? 'bg-brand-deep text-white'
+                                    : 'text-brand-secondary hover:bg-surface-muted'}"
+                                >{@html link.label}</a
+                            >
                         {/if}
                     {/each}
                 </div>
             </div>
         {/if}
-
     </div>
 </Authenticated>

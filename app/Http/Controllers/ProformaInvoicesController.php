@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ConvertProformaToInvoice;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentTerms;
 use App\Enums\ProformaStatus;
@@ -48,7 +49,7 @@ class ProformaInvoicesController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('contact', fn($c) => $c->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -154,7 +155,7 @@ class ProformaInvoicesController extends Controller
     {
         $proformaInvoice->load([
             'lines',
-            'events' => fn ($query) => $query->latest('occurred_at'),
+            'events' => fn($query) => $query->latest('occurred_at'),
         ]);
 
         return Inertia::render('Proforma/Edit', [
@@ -229,6 +230,23 @@ class ProformaInvoicesController extends Controller
         return redirect()->route('proforma.index');
     }
 
+    public function convert(ProformaInvoice $proformaInvoice, ConvertProformaToInvoice $convertProforma): RedirectResponse
+    {
+        $invoice = $convertProforma->execute($proformaInvoice);
+
+        if (! $invoice) {
+            return back()->withErrors([
+                'invoice' => 'Impossibile convertire la proforma. Verifica che sia in stato Bozza o Inviata e che esista un sezionale per le fatture di vendita.',
+            ]);
+        }
+
+        return redirect()->route('sell-invoices.edit', $invoice)
+            ->with('toast', [
+                'type' => 'success',
+                'message' => "Proforma convertita in fattura #{$invoice->number}.",
+            ]);
+    }
+
     public function downloadPdf(
         ProformaInvoice $proformaInvoice,
         CourtesyPdfService $pdfService
@@ -271,7 +289,7 @@ class ProformaInvoicesController extends Controller
             'contacts' => Contact::orderBy('name')->get(['id', 'name']),
             'sequences' => Sequence::where('type', 'proforma')
                 ->get(['id', 'name', 'pattern'])
-                ->map(fn ($s) => [
+                ->map(fn($s) => [
                     'id' => $s->id,
                     'name' => $s->name,
                     'next_number' => $s->getFormattedNumber(),
@@ -279,7 +297,7 @@ class ProformaInvoicesController extends Controller
                 ->toArray(),
             'default_sequence_id' => $defaultSequence?->id,
             'vat_rates' => $isRf19
-                ? array_values(array_filter(VatRate::options(), fn (array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
+                ? array_values(array_filter(VatRate::options(), fn(array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
                 : VatRate::options(),
             'payment_methods' => PaymentMethod::options(),
             'payment_terms' => PaymentTerms::options(),
@@ -343,7 +361,7 @@ class ProformaInvoicesController extends Controller
 
     private function proformaStatusOptions(): array
     {
-        return collect(ProformaStatus::cases())->map(fn ($s) => [
+        return collect(ProformaStatus::cases())->map(fn($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();
