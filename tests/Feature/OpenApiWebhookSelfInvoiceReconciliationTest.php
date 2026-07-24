@@ -192,7 +192,7 @@ test('reconcile command skips missing self-invoice without creating documents', 
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getSupplierInvoices')
         ->once()
-        ->with(Mockery::on(fn (array $filters) => ($filters['recipient'] ?? null) === '12345678903'))
+        ->with(Mockery::on(fn(array $filters) => ($filters['recipient'] ?? null) === '12345678903'))
         ->andReturn([
             'success' => true,
             'data' => [[
@@ -230,7 +230,7 @@ test('reconcile command recovers self-invoice sent to openapi when local uuid wa
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getCustomerInvoices')
         ->once()
-        ->with(Mockery::on(fn (array $filters) => ($filters['page'] ?? null) === 1))
+        ->with(Mockery::on(fn(array $filters) => ($filters['page'] ?? null) === 1))
         ->andReturn([
             'success' => true,
             'data' => [[
@@ -265,6 +265,108 @@ test('reconcile command recovers self-invoice sent to openapi when local uuid wa
         'event_type' => 'sent',
         'status' => SdiStatus::Sent->value,
         'source_uuid' => 'recovered-outbound-uuid',
+    ]);
+});
+
+test('reconcile command recovers sales invoice sent to openapi when local status was not persisted', function () {
+    $invoice = SalesInvoice::factory()->create([
+        'number' => '2026/42',
+        'document_type' => 'TD01',
+        'date' => '2026-06-01',
+        'total_gross' => 12200,
+        'status' => InvoiceStatus::XmlValidated,
+        'sdi_status' => null,
+        'sdi_uuid' => null,
+    ]);
+
+    $service = Mockery::mock(OpenApiSdiService::class);
+    $service->shouldReceive('isConfigured')->once()->andReturnTrue();
+    $service->shouldReceive('getCustomerInvoices')
+        ->once()
+        ->andReturn([
+            'success' => true,
+            'data' => [[
+                'uuid' => 'recovered-sales-uuid',
+                'file_id' => 'file-sales-123',
+                'created_at' => now()->toIso8601String(),
+                'filename' => 'IT_SALES_RECOVERED.xml',
+            ]],
+        ]);
+    $service->shouldReceive('downloadInvoiceXml')
+        ->once()
+        ->with('recovered-sales-uuid')
+        ->andReturn([
+            'success' => true,
+            'xml' => makeInboundInvoiceXml('TD01', '2026/42'),
+        ]);
+    app()->instance(OpenApiSdiService::class, $service);
+
+    $this->artisan('openapi:reconcile', ['--recover-sends-only' => true])
+        ->assertExitCode(0);
+
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::Sent)
+        ->and($invoice->sdi_status)->toBe(SdiStatus::Sent)
+        ->and($invoice->sdi_uuid)->toBe('recovered-sales-uuid')
+        ->and($invoice->sdi_file_id)->toBe('file-sales-123')
+        ->and($invoice->sdi_primary_channel)->toBe('outbound');
+
+    $this->assertDatabaseHas('ei_outbound_logs', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'sent',
+        'status' => SdiStatus::Sent->value,
+        'source_uuid' => 'recovered-sales-uuid',
+    ]);
+});
+
+test('reconcile command restores missing sent log when local uuid was persisted', function () {
+    $invoice = SalesInvoice::factory()->create([
+        'number' => '2026/43',
+        'document_type' => 'TD01',
+        'date' => '2026-06-01',
+        'total_gross' => 12200,
+        'status' => InvoiceStatus::XmlValidated,
+        'sdi_status' => SdiStatus::Error,
+        'sdi_uuid' => 'persisted-sales-uuid',
+    ]);
+
+    $service = Mockery::mock(OpenApiSdiService::class);
+    $service->shouldReceive('isConfigured')->once()->andReturnTrue();
+    $service->shouldReceive('getCustomerInvoices')
+        ->once()
+        ->andReturn([
+            'success' => true,
+            'data' => [[
+                'uuid' => 'persisted-sales-uuid',
+                'file_id' => 'file-sales-456',
+                'created_at' => now()->toIso8601String(),
+                'filename' => 'IT_SALES_PERSISTED.xml',
+            ]],
+        ]);
+    $service->shouldReceive('downloadInvoiceXml')
+        ->once()
+        ->with('persisted-sales-uuid')
+        ->andReturn([
+            'success' => true,
+            'xml' => makeInboundInvoiceXml('TD01', '2026/43'),
+        ]);
+    app()->instance(OpenApiSdiService::class, $service);
+
+    $this->artisan('openapi:reconcile', ['--recover-sends-only' => true])
+        ->assertExitCode(0);
+
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::Sent)
+        ->and($invoice->sdi_status)->toBe(SdiStatus::Sent)
+        ->and($invoice->sdi_file_id)->toBe('file-sales-456');
+
+    $this->assertDatabaseHas('ei_outbound_logs', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'sent',
+        'status' => SdiStatus::Sent->value,
+        'source_uuid' => 'persisted-sales-uuid',
     ]);
 });
 
