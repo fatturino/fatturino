@@ -4,10 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\ConvertProformaToInvoice;
 use App\Actions\LinkProformaToInvoice;
-use App\Enums\PaymentMethod;
-use App\Enums\PaymentTerms;
 use App\Enums\ProformaStatus;
-use App\Enums\VatRate;
 use App\Http\Controllers\Concerns\HandlesDocumentEmail;
 use App\Models\Contact;
 use App\Models\ProformaInvoice;
@@ -18,7 +15,6 @@ use App\Services\DocumentEventRecorder;
 use App\Services\DocumentMailer;
 use App\Services\Domain\DocumentNumberingService;
 use App\Settings\CompanySettings;
-use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -76,18 +72,6 @@ class ProformaInvoicesController extends Controller
                 ->whereNull('proforma_id')
                 ->orderByDesc('date')
                 ->get(['id', 'number', 'contact_id', 'status', 'date', 'total_gross']),
-        ]);
-    }
-
-    public function create(): Response
-    {
-        $settings = app(InvoiceSettings::class);
-        $defaultSequence = Sequence::where('type', 'proforma')
-            ->orderByDesc('is_system')
-            ->first();
-
-        return Inertia::render('Proforma/Create', [
-            'formData' => $this->formData($defaultSequence, $settings),
         ]);
     }
 
@@ -155,19 +139,6 @@ class ProformaInvoicesController extends Controller
         app(DocumentEventRecorder::class)->created($invoice);
 
         return redirect()->route('proforma.index');
-    }
-
-    public function edit(ProformaInvoice $proformaInvoice): Response
-    {
-        $proformaInvoice->load([
-            'lines',
-            'events' => fn($query) => $query->latest('occurred_at'),
-        ]);
-
-        return Inertia::render('Proforma/Edit', [
-            'invoice' => $proformaInvoice,
-            'formData' => $this->formData(),
-        ]);
     }
 
     public function update(Request $request, ProformaInvoice $proformaInvoice): RedirectResponse
@@ -298,44 +269,6 @@ class ProformaInvoicesController extends Controller
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────
-
-    private function formData(?Sequence $defaultSequence = null, ?InvoiceSettings $settings = null): array
-    {
-        $settings = $settings ?? app(InvoiceSettings::class);
-        $companySettings = app(CompanySettings::class);
-        $isRf19 = $companySettings->company_fiscal_regime === 'RF19';
-
-        return [
-            'contacts' => Contact::orderBy('name')->get(['id', 'name']),
-            'sequences' => Sequence::where('type', 'proforma')
-                ->get(['id', 'name', 'pattern'])
-                ->map(fn($s) => [
-                    'id' => $s->id,
-                    'name' => $s->name,
-                    'next_number' => $s->getFormattedNumber(),
-                ])
-                ->toArray(),
-            'default_sequence_id' => $defaultSequence?->id,
-            'vat_rates' => $isRf19
-                ? array_values(array_filter(VatRate::options(), fn(array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
-                : VatRate::options(),
-            'payment_methods' => PaymentMethod::options(),
-            'payment_terms' => PaymentTerms::options(),
-            'settings' => [
-                'withholding_tax_enabled' => $isRf19 ? false : $settings->withholding_tax_enabled,
-                'withholding_tax_percent' => $settings->withholding_tax_percent,
-                'fund_enabled' => $settings->fund_enabled,
-                'fund_percent' => $settings->fund_percent,
-                'fund_vat_rate' => $settings->fund_vat_rate?->value,
-                'auto_stamp_duty' => $settings->auto_stamp_duty,
-                'default_payment_method' => $settings->default_payment_method,
-                'default_payment_terms' => $settings->default_payment_terms,
-                'default_bank_name' => $settings->default_bank_name,
-                'default_bank_iban' => $settings->default_bank_iban,
-            ],
-            'fiscal_regime' => $companySettings->company_fiscal_regime,
-        ];
-    }
 
     private function buildLinePayload(array $line): array
     {
