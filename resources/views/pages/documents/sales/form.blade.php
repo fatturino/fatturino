@@ -133,7 +133,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     <form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div class="space-y-6">
-            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
+            <x-documents.invoice-form.data-section>
                 <nav class="mb-5 flex gap-2 border-b border-border-light pb-4" aria-label="Sezioni fattura">
                     @foreach(['data' => 'Dati', 'payment' => 'Pagamento', 'notes' => 'Note'] as $key => $label)
                         <button type="button" wire:click="$set('tab', '{{ $key }}')" class="rounded-md px-3 py-2 text-sm font-semibold {{ $tab === $key ? 'bg-primary text-white' : 'text-content-muted' }}">{{ $label }}</button>
@@ -142,7 +142,7 @@ new #[Layout('layouts::app')] class extends Component {
                 </nav>
 
                 @if($tab === 'data')
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <x-documents.invoice-form.data-fields>
                         <label class="text-sm font-semibold">Cliente *
                             <select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm">
                                 <option value="">Seleziona cliente...</option>
@@ -158,7 +158,7 @@ new #[Layout('layouts::app')] class extends Component {
                         <label class="text-sm font-semibold">Tipo documento *
                             <select wire:model="document_type" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm">@foreach(SalesDocumentType::options() as $type)<option value="{{ $type['id'] }}">{{ $type['name'] }}</option>@endforeach</select>
                         </label>
-                    </div>
+                    </x-documents.invoice-form.data-fields>
                 @elseif($tab === 'payment')
                     <div class="grid gap-4 sm:grid-cols-2">
                         <label class="text-sm font-semibold">Metodo pagamento<select wire:model="payment_method" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona...</option>@foreach(PaymentMethod::options() as $option)<option value="{{ $option['id'] }}">{{ $option['name'] }}</option>@endforeach</select></label>
@@ -171,7 +171,7 @@ new #[Layout('layouts::app')] class extends Component {
                 @else
                     <div class="space-y-3">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-semibold">{{ $event->title }}</p><p class="text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</div>
                 @endif
-            </article>
+            </x-documents.invoice-form.data-section>
 
             <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly">
                 @foreach($lines as $index => $line)

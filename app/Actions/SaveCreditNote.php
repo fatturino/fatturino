@@ -8,6 +8,7 @@ use App\Models\FiscalDocument;
 use App\Models\Sequence;
 use App\Services\Domain\FiscalDocumentMutationService;
 use App\Settings\CompanySettings;
+use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -17,12 +18,13 @@ class SaveCreditNote
     public function __construct(
         private readonly FiscalDocumentMutationService $mutationService,
         private readonly CompanySettings $companySettings,
+        private readonly InvoiceSettings $invoiceSettings,
     ) {}
 
     /** @param array<string, mixed> $payload */
     public function create(array $payload): FiscalDocument
     {
-        $sequenceId = (int) $payload['sequence_id'];
+        $sequenceId = $this->resolveSequenceId($payload['sequence_id'] ?? null);
         $this->ensureSequence($sequenceId);
         [$header, $lines] = $this->prepare($payload, $sequenceId);
 
@@ -72,6 +74,22 @@ class SaveCreditNote
         if (! Sequence::query()->whereKey($sequenceId)->where('type', 'credit_note')->exists()) {
             throw ValidationException::withMessages(['sequence_id' => 'La sequenza selezionata non è valida per le note di credito.']);
         }
+    }
+
+    private function resolveSequenceId(mixed $sequenceId): int
+    {
+        if (filled($sequenceId)) {
+            return (int) $sequenceId;
+        }
+
+        $defaultSequenceId = $this->invoiceSettings->default_sequence_credit_notes
+            ?? Sequence::query()->where('type', 'credit_note')->orderByDesc('is_system')->value('id');
+
+        if ($defaultSequenceId === null) {
+            throw ValidationException::withMessages(['creditNote' => 'Crea o configura una sequenza per le note di credito nelle impostazioni.']);
+        }
+
+        return $defaultSequenceId;
     }
 
     private function nullIfBlank(mixed $value): mixed

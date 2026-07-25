@@ -69,19 +69,21 @@ it('updates an editable proforma without changing its sequence', function () {
         ->and($invoice->lines()->sole()->description)->toBe('Versione aggiornata');
 });
 
-it('creates a proforma with the sequence selected in the form', function () {
+it('creates a proforma with the configured default sequence', function () {
     $contact = Contact::factory()->create();
     Sequence::factory()->create(['type' => 'proforma', 'is_system' => true]);
-    $selectedSequence = Sequence::factory()->create(['type' => 'proforma', 'is_system' => false]);
+    $defaultSequence = Sequence::factory()->create(['type' => 'proforma', 'is_system' => false]);
+    $settings = app(\App\Settings\InvoiceSettings::class);
+    $settings->default_sequence_proforma = $defaultSequence->id;
+    $settings->save();
 
     Livewire::test('pages::documents.proforma.form')
         ->set('contact_id', $contact->id)
-        ->set('sequence_id', $selectedSequence->id)
         ->set('lines', [validProformaLine()])
         ->call('save')
         ->assertHasNoErrors();
 
-    expect(ProformaInvoice::query()->sole()->sequence_id)->toBe($selectedSequence->id);
+    expect(ProformaInvoice::query()->sole()->sequence_id)->toBe($defaultSequence->id);
 });
 
 it('normalizes RF19 proformas and protects their total from withholding defaults', function () {

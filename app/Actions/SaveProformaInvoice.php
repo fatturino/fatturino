@@ -8,6 +8,7 @@ use App\Models\ProformaInvoice;
 use App\Models\Sequence;
 use App\Services\Domain\FiscalDocumentMutationService;
 use App\Settings\CompanySettings;
+use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -17,6 +18,7 @@ class SaveProformaInvoice
     public function __construct(
         private readonly FiscalDocumentMutationService $mutationService,
         private readonly CompanySettings $companySettings,
+        private readonly InvoiceSettings $invoiceSettings,
     ) {}
 
     /** @param array<string, mixed> $payload */
@@ -80,7 +82,8 @@ class SaveProformaInvoice
 
     private function defaultSequenceId(): int
     {
-        $sequenceId = Sequence::query()->where('type', 'proforma')->orderByDesc('is_system')->value('id');
+        $sequenceId = $this->invoiceSettings->default_sequence_proforma
+            ?? Sequence::query()->where('type', 'proforma')->orderByDesc('is_system')->value('id');
 
         if ($sequenceId === null) {
             throw ValidationException::withMessages(['invoice' => 'Crea o configura una sequenza per le proforma nelle impostazioni.']);

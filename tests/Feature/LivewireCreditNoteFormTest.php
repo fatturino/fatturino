@@ -19,7 +19,7 @@ it('renders and creates a credit note through the Livewire form', function () {
     $this->actingAs($user)->get(route('credit-notes.create'))->assertOk()->assertSeeLivewire('pages::documents.credit-note.form');
 
     Livewire::test('pages::documents.credit-note.form')
-        ->set('contact_id', $contact->id)->set('sequence_id', $sequence->id)->set('lines', [validCreditNoteLine()])
+        ->set('contact_id', $contact->id)->set('lines', [validCreditNoteLine()])
         ->call('save')->assertHasNoErrors()->assertRedirect(route('credit-notes.index'));
 
     $this->assertDatabaseHas('fiscal_documents', ['type' => 'credit_note', 'sequence_id' => $sequence->id, 'document_type' => 'TD04', 'total_gross' => 12200]);

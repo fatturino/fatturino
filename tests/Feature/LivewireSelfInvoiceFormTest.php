@@ -23,7 +23,6 @@ it('renders and creates a self invoice through the Livewire form', function () {
 
     Livewire::test('pages::documents.self-invoice.form')
         ->set('contact_id', $contact->id)
-        ->set('sequence_id', $sequence->id)
         ->set('number', 'AF-LW-001')
         ->set('lines', [validSelfInvoiceLine()])
         ->call('save')
