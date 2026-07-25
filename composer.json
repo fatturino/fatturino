@@ -33,7 +33,8 @@
         "sentry/sentry-laravel": "^4.14",
         "spatie/laravel-backup": "^10.2",
         "spatie/laravel-settings": "^3.7",
-        "tightenco/parental": "^1.6"
+        "tightenco/parental": "^1.6",
+        "wirecharts/wirecharts": "^1.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

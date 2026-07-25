@@ -100,6 +100,22 @@ it('shows fiscal and collection information for VAT accounting regimes', functio
         ->assertSee('Andamento fatturato');
 });
 
+it('renders the revenue comparison through Wirecharts', function () {
+    $user = User::factory()->create();
+    SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'total_net' => 150000,
+        'total_gross' => 150000,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('wirecharts', false)
+        ->assertSee('wireChart(', false)
+        ->assertDontSee('<polyline', false);
+});
+
 it('hides VAT information for the RF19 fiscal regime', function () {
     $user = User::factory()->create();
     $settings = app(CompanySettings::class);

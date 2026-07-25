@@ -24,5 +24,6 @@
             <main id="main-content" class="mx-auto w-full max-w-10xl p-4 lg:p-8">{{ $slot }}</main>
         </div>
         @livewireScripts
+        @wirechartsScripts
     </body>
 </html>

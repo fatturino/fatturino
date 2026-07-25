@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f176535a6389d879223f68e7e7fb667f",
+    "content-hash": "cb484fbf9d223dd5acc0b944e271bbbf",
     "packages": [
         {
             "name": "alcohol/iso4217",
@@ -8599,6 +8599,68 @@
                 }
             ],
             "time": "2026-04-26T05:33:54+00:00"
+        },
+        {
+            "name": "wirecharts/wirecharts",
+            "version": "v1.2.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kwhorne/wirecharts.git",
+                "reference": "d45460b97baf304e070487205cfff00c7e3f010b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kwhorne/wirecharts/zipball/d45460b97baf304e070487205cfff00c7e3f010b",
+                "reference": "d45460b97baf304e070487205cfff00c7e3f010b",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^11.0|^12.0|^13.0",
+                "illuminate/view": "^11.0|^12.0|^13.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^9.0|^10.0",
+                "pestphp/pest": "^3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "WireCharts\\WireChartsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "WireCharts\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "kwhorne",
+                    "homepage": "https://github.com/kwhorne"
+                }
+            ],
+            "description": "Flux-style chart components for Laravel Livewire 4. 30+ chart types in one elegant package.",
+            "homepage": "https://wirecharts.io",
+            "keywords": [
+                "blade",
+                "charts",
+                "flux",
+                "laravel",
+                "livewire"
+            ],
+            "support": {
+                "docs": "https://wirecharts.io/docs",
+                "issues": "https://github.com/kwhorne/wirecharts/issues",
+                "source": "https://github.com/kwhorne/wirecharts"
+            },
+            "time": "2026-06-26T14:01:48+00:00"
         }
     ],
     "packages-dev": [
