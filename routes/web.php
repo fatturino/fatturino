@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AdvancedLogsController;
-use App\Http\Controllers\Api\SetupWizardController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\ContactsController;
 use App\Http\Controllers\CreditNotesController;
@@ -18,7 +17,6 @@ use App\Http\Controllers\SalesInvoicesController;
 use App\Http\Controllers\SelfInvoicesController;
 use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\ServicesController;
-use App\Http\Controllers\SetupController;
 use App\Services\PostHogTelemetryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,8 +31,7 @@ Route::post('/api/v1/openapi/webhook', [OpenApiWebhookController::class, 'handle
 // Guest-only routes
 Route::middleware('guest')->group(function () {
     Route::livewire('/login', 'pages::auth.login')->name('login');
-    Route::get('/setup', [SetupController::class, 'show'])->name('setup')->defaults('title', 'Configurazione');
-    Route::post('/setup/step', [SetupWizardController::class, 'store'])->name('setup.step');
+    Route::livewire('/setup', 'pages::setup')->name('setup');
 });
 
 // Authenticated routes
