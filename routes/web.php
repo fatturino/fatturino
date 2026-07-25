@@ -38,7 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/dashboard', 'pages::dashboard')->name('dashboard');
 
     Route::post('/fiscal-year', function (Request $request) {
-        $request->validate(['year' => 'required|integer|min:2000|max:' . (now()->year + 1)]);
+        $request->validate(['year' => 'required|integer|min:2000|max:'.(now()->year + 1)]);
         session(['fiscal_year' => (int) $request->year]);
 
         return back();
@@ -56,7 +56,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/contacts/{contact}', [ContactsController::class, 'update'])->name('contacts.update');
 
     // Sales Invoices
-    Route::get('/sell-invoices', [SalesInvoicesController::class, 'index'])->name('sell-invoices.index')->defaults('title', 'Fatture di Vendita');
+    Route::livewire('/sell-invoices', 'pages::documents.index')->name('sell-invoices.index')->defaults('type', 'sales');
     Route::get('/sell-invoices/create', [SalesInvoicesController::class, 'create'])->name('sell-invoices.create')
         ->defaults('title', 'Nuova Fattura')
         ->defaults('breadcrumbs', [['label' => 'Fatture di Vendita', 'url' => '/sell-invoices'], ['label' => 'Nuova']]);
@@ -80,7 +80,7 @@ Route::middleware('auth')->group(function () {
         ->name('sell-invoices.delete-payment');
 
     // Purchase Invoices
-    Route::get('/purchase-invoices', [PurchaseInvoicesController::class, 'index'])->name('purchase-invoices.index')->defaults('title', 'Fatture di Acquisto');
+    Route::livewire('/purchase-invoices', 'pages::documents.index')->name('purchase-invoices.index')->defaults('type', 'purchase');
     Route::get('/purchase-invoices/{purchaseInvoice}/edit', [PurchaseInvoicesController::class, 'edit'])->name('purchase-invoices.edit')
         ->defaults('title', 'Modifica Fattura di Acquisto')
         ->defaults('breadcrumbs', [['label' => 'Fatture di Acquisto', 'url' => '/purchase-invoices'], ['label' => 'Modifica']]);
@@ -94,7 +94,7 @@ Route::middleware('auth')->group(function () {
         ->name('purchase-invoices.delete-payment');
 
     // Self Invoices
-    Route::get('/self-invoices', [SelfInvoicesController::class, 'index'])->name('self-invoices.index')->defaults('title', 'Autofatture');
+    Route::livewire('/self-invoices', 'pages::documents.index')->name('self-invoices.index')->defaults('type', 'self');
     Route::get('/self-invoices/create', [SelfInvoicesController::class, 'create'])->name('self-invoices.create')
         ->defaults('title', 'Nuova Autofattura')
         ->defaults('breadcrumbs', [['label' => 'Autofatture', 'url' => '/self-invoices'], ['label' => 'Nuova']]);
@@ -116,7 +116,7 @@ Route::middleware('auth')->group(function () {
         ->name('self-invoices.delete-payment');
 
     // Credit Notes
-    Route::get('/credit-notes', [CreditNotesController::class, 'index'])->name('credit-notes.index')->defaults('title', 'Note di Credito');
+    Route::livewire('/credit-notes', 'pages::documents.index')->name('credit-notes.index')->defaults('type', 'credit');
     Route::get('/credit-notes/create', [CreditNotesController::class, 'create'])->name('credit-notes.create')
         ->defaults('title', 'Nuova Nota di Credito')
         ->defaults('breadcrumbs', [['label' => 'Note di Credito', 'url' => '/credit-notes'], ['label' => 'Nuova']]);
@@ -132,7 +132,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/credit-notes/{creditNote}/send-email', [CreditNotesController::class, 'sendEmail'])->name('credit-notes.send-email');
 
     // Proforma
-    Route::get('/proforma', [ProformaInvoicesController::class, 'index'])->name('proforma.index')->defaults('title', 'Proforma');
+    Route::livewire('/proforma', 'pages::documents.index')->name('proforma.index')->defaults('type', 'proforma');
     Route::get('/proforma/create', [ProformaInvoicesController::class, 'create'])->name('proforma.create')
         ->defaults('title', 'Nuova Proforma')
         ->defaults('breadcrumbs', [['label' => 'Proforma', 'url' => '/proforma'], ['label' => 'Nuova']]);

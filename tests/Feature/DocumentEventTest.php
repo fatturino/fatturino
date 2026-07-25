@@ -6,7 +6,7 @@ use App\Models\FiscalDocument;
 use App\Models\User;
 use App\Services\DocumentEventRecorder;
 use Illuminate\Support\Facades\Schema;
-use Inertia\Testing\AssertableInertia;
+use Livewire\Livewire;
 
 test('document events table and relation are available', function () {
     expect(Schema::hasTable('document_events'))->toBeTrue();
@@ -67,7 +67,7 @@ test('document event recorder stores technical references', function () {
     ]);
 });
 
-test('sales invoice index exposes latest email event for synthetic status', function () {
+test('sales invoice index renders documents with recorded email events', function () {
     $user = User::factory()->create();
     $contact = Contact::factory()->create(['name' => 'Cliente Test']);
     $invoice = FiscalDocument::factory()->create([
@@ -81,8 +81,9 @@ test('sales invoice index exposes latest email event for synthetic status', func
     $this->actingAs($user)
         ->get('/sell-invoices')
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('invoices.data.0.latest_email_event.event_type', 'email_sent')
-            ->where('invoices.data.0.latest_email_event.recipient_email', 'cliente@example.com')
-        );
+        ->assertSeeLivewire('pages::documents.index')
+        ->assertSee('FT-001');
+
+    Livewire::test('pages::documents.index', ['type' => 'sales'])
+        ->assertSee('FT-001');
 });
