@@ -81,7 +81,7 @@ Route::middleware('auth')->group(function () {
 
     // Purchase Invoices
     Route::livewire('/purchase-invoices', 'pages::documents.index')->name('purchase-invoices.index')->defaults('type', 'purchase');
-    Route::get('/purchase-invoices/{purchaseInvoice}/edit', [PurchaseInvoicesController::class, 'edit'])->name('purchase-invoices.edit')
+    Route::livewire('/purchase-invoices/{purchaseInvoice}/edit', 'pages::documents.purchase.form')->name('purchase-invoices.edit')
         ->defaults('title', 'Modifica Fattura di Acquisto')
         ->defaults('breadcrumbs', [['label' => 'Fatture di Acquisto', 'url' => '/purchase-invoices'], ['label' => 'Modifica']]);
     Route::put('/purchase-invoices/{purchaseInvoice}', [PurchaseInvoicesController::class, 'update'])->name('purchase-invoices.update');
@@ -95,11 +95,11 @@ Route::middleware('auth')->group(function () {
 
     // Self Invoices
     Route::livewire('/self-invoices', 'pages::documents.index')->name('self-invoices.index')->defaults('type', 'self');
-    Route::get('/self-invoices/create', [SelfInvoicesController::class, 'create'])->name('self-invoices.create')
+    Route::livewire('/self-invoices/create', 'pages::documents.self-invoice.form')->name('self-invoices.create')
         ->defaults('title', 'Nuova Autofattura')
         ->defaults('breadcrumbs', [['label' => 'Autofatture', 'url' => '/self-invoices'], ['label' => 'Nuova']]);
     Route::post('/self-invoices', [SelfInvoicesController::class, 'store'])->name('self-invoices.store');
-    Route::get('/self-invoices/{selfInvoice}/edit', [SelfInvoicesController::class, 'edit'])->name('self-invoices.edit')
+    Route::livewire('/self-invoices/{selfInvoice}/edit', 'pages::documents.self-invoice.form')->name('self-invoices.edit')
         ->defaults('title', 'Modifica Autofattura')
         ->defaults('breadcrumbs', [['label' => 'Autofatture', 'url' => '/self-invoices'], ['label' => 'Modifica']]);
     Route::put('/self-invoices/{selfInvoice}', [SelfInvoicesController::class, 'update'])->name('self-invoices.update');
@@ -117,11 +117,11 @@ Route::middleware('auth')->group(function () {
 
     // Credit Notes
     Route::livewire('/credit-notes', 'pages::documents.index')->name('credit-notes.index')->defaults('type', 'credit');
-    Route::get('/credit-notes/create', [CreditNotesController::class, 'create'])->name('credit-notes.create')
+    Route::livewire('/credit-notes/create', 'pages::documents.credit-note.form')->name('credit-notes.create')
         ->defaults('title', 'Nuova Nota di Credito')
         ->defaults('breadcrumbs', [['label' => 'Note di Credito', 'url' => '/credit-notes'], ['label' => 'Nuova']]);
     Route::post('/credit-notes', [CreditNotesController::class, 'store'])->name('credit-notes.store');
-    Route::get('/credit-notes/{creditNote}/edit', [CreditNotesController::class, 'edit'])->name('credit-notes.edit')
+    Route::livewire('/credit-notes/{creditNote}/edit', 'pages::documents.credit-note.form')->name('credit-notes.edit')
         ->defaults('title', 'Modifica Nota di Credito')
         ->defaults('breadcrumbs', [['label' => 'Note di Credito', 'url' => '/credit-notes'], ['label' => 'Modifica']]);
     Route::put('/credit-notes/{creditNote}', [CreditNotesController::class, 'update'])->name('credit-notes.update');

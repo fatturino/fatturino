@@ -19,19 +19,19 @@ class FiscalDocumentMutationService
      * @param  array<string, mixed>  $header
      * @param  array<int, array<string, mixed>>  $lines
      */
-    public function create(array $header, array $lines): FiscalDocument
+    public function create(array $header, array $lines, ?array $numbering = null): FiscalDocument
     {
-        return DB::transaction(function () use ($header, $lines) {
+        return DB::transaction(function () use ($header, $lines, $numbering) {
             $date = Carbon::parse($header['date']);
             $sequence = Sequence::query()->findOrFail($header['sequence_id']);
-            $reserved = $this->numbering->reserve($sequence, $date);
+            $resolvedNumbering = $numbering ?? $this->numbering->reserve($sequence, $date);
 
             $document = FiscalDocument::query()->create([
                 ...$header,
                 'public_id' => (string) str()->ulid(),
-                'fiscal_year' => $reserved['fiscal_year'],
-                'sequential_number' => $reserved['sequential_number'],
-                'number' => $reserved['number'],
+                'fiscal_year' => $resolvedNumbering['fiscal_year'],
+                'sequential_number' => $resolvedNumbering['sequential_number'],
+                'number' => $resolvedNumbering['number'],
                 'status' => $header['status'] ?? InvoiceStatus::Draft,
                 'payment_status' => $header['payment_status'] ?? 'unpaid',
             ]);

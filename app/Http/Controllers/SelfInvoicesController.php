@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\SaveSelfInvoice;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\VatRate;
@@ -13,13 +14,11 @@ use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentEventRecorder;
-use App\Services\Domain\DocumentNumberingService;
 use App\Services\PostHogTelemetryService;
 use App\Services\SelfInvoiceXmlService;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,7 +50,7 @@ class SelfInvoicesController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('contact', fn($c) => $c->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -81,79 +80,10 @@ class SelfInvoicesController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function store(Request $request, SaveSelfInvoice $saveSelfInvoice): RedirectResponse
     {
         $this->ensureSelfInvoicesAllowed();
-
-        $defaultSequence = Sequence::where('type', 'self_invoice')
-            ->orderByDesc('is_system')
-            ->first();
-
-        return Inertia::render('SelfInvoices/Create', [
-            'formData' => [
-                'contacts' => Contact::orderBy('name')->get(['id', 'name']),
-                'sequences' => Sequence::where('type', 'self_invoice')
-                    ->get(['id', 'name', 'pattern'])
-                    ->map(fn ($s) => [
-                        'id' => $s->id,
-                        'name' => $s->name,
-                        'next_number' => $s->getFormattedNumber(),
-                    ])
-                    ->toArray(),
-                'default_sequence_id' => $defaultSequence?->id,
-                'vat_rates' => VatRate::options(),
-                'document_types' => $this->documentTypes(),
-            ],
-        ]);
-    }
-
-    public function store(Request $request, DocumentNumberingService $documentNumbering): RedirectResponse
-    {
-        $this->ensureSelfInvoicesAllowed();
-
-        $validated = $request->validate([
-            'contact_id' => 'required|exists:contacts,id',
-            'sequence_id' => 'required|exists:sequences,id',
-            'number' => 'nullable|string',
-            'date' => 'required|date',
-            'due_date' => 'nullable|date',
-            'document_type' => 'required|string|in:TD17,TD18,TD19,TD28,TD29',
-            'related_invoice_number' => 'nullable|string|max:20',
-            'related_invoice_date' => 'nullable|date',
-            'notes' => 'nullable|string',
-            'lines' => 'required|array|min:1',
-            'lines.*.description' => 'required|string',
-            'lines.*.quantity' => 'required|numeric|min:0.01',
-            'lines.*.unit_of_measure' => 'nullable|string',
-            'lines.*.unit_price' => 'required|numeric|min:0',
-            'lines.*.vat_rate' => 'required|string',
-        ]);
-
-        $sequence = Sequence::findOrFail($validated['sequence_id']);
-        $numbering = $documentNumbering->resolve($sequence, $validated['date'], $validated['number'] ?? null);
-
-        $invoice = SelfInvoice::create([
-            'number' => $numbering['number'],
-            'sequential_number' => $numbering['sequential_number'],
-            'date' => $validated['date'],
-            'due_date' => $validated['due_date'] ?? null,
-            'contact_id' => $validated['contact_id'],
-            'sequence_id' => $validated['sequence_id'],
-            'fiscal_year' => $numbering['fiscal_year'],
-            'status' => InvoiceStatus::Draft,
-            'document_type' => $validated['document_type'],
-            'related_invoice_number' => $validated['related_invoice_number'] ?? null,
-            'related_invoice_date' => $validated['related_invoice_date'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-        ]);
-
-        foreach ($validated['lines'] as $line) {
-            $invoice->lines()->create($this->buildLinePayload($line));
-        }
-
-        $invoice->calculateTotals();
-        $invoice->refresh();
-        $invoice->markAsPaidOnIssueDate();
+        $invoice = $saveSelfInvoice->create($this->validatePayload($request, true));
         app(DocumentEventRecorder::class)->created($invoice);
         app(PostHogTelemetryService::class)->capture(
             'self_invoice_created',
@@ -164,37 +94,20 @@ class SelfInvoicesController extends Controller
         return redirect()->route('self-invoices.index');
     }
 
-    public function edit(SelfInvoice $selfInvoice): Response
+    public function update(Request $request, SelfInvoice $selfInvoice, SaveSelfInvoice $saveSelfInvoice): RedirectResponse
     {
         $this->ensureSelfInvoicesAllowed();
 
-        $selfInvoice->load([
-            'lines',
-            'events' => fn ($query) => $query->latest('occurred_at'),
-        ]);
+        $saveSelfInvoice->update($selfInvoice, $this->validatePayload($request));
 
-        return Inertia::render('SelfInvoices/Edit', [
-            'invoice' => $selfInvoice,
-            'formData' => [
-                'contacts' => Contact::orderBy('name')->get(['id', 'name']),
-                'sequences' => Sequence::where('type', 'self_invoice')->get(['id', 'name']),
-                'vat_rates' => VatRate::options(),
-                'document_types' => $this->documentTypes(),
-            ],
-        ]);
+        return redirect()->route('self-invoices.index');
     }
 
-    public function update(Request $request, SelfInvoice $selfInvoice): RedirectResponse
+    /** @return array<string, mixed> */
+    private function validatePayload(Request $request, bool $creating = false): array
     {
-        $this->ensureSelfInvoicesAllowed();
-
-        if (! $selfInvoice->isSdiEditable()) {
-            return back()->withErrors(['invoice' => 'Questa autofattura non è più modificabile.']);
-        }
-
-        $validated = $request->validate([
+        $rules = [
             'contact_id' => 'required|exists:contacts,id',
-            'sequence_id' => 'required|exists:sequences,id',
             'date' => 'required|date',
             'due_date' => 'nullable|date',
             'document_type' => 'required|string|in:TD17,TD18,TD19,TD28,TD29',
@@ -207,34 +120,14 @@ class SelfInvoicesController extends Controller
             'lines.*.unit_of_measure' => 'nullable|string',
             'lines.*.unit_price' => 'required|numeric|min:0',
             'lines.*.vat_rate' => 'required|string',
-        ]);
+        ];
 
-        $year = Carbon::parse($validated['date'])->year;
-        $nextStatus = in_array($selfInvoice->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
-            ? InvoiceStatus::Draft
-            : $selfInvoice->status;
-
-        $selfInvoice->update([
-            'date' => $validated['date'],
-            'due_date' => $validated['due_date'] ?? null,
-            'contact_id' => $validated['contact_id'],
-            'sequence_id' => $validated['sequence_id'],
-            'fiscal_year' => $year,
-            'status' => $nextStatus,
-            'document_type' => $validated['document_type'],
-            'related_invoice_number' => $validated['related_invoice_number'] ?? null,
-            'related_invoice_date' => $validated['related_invoice_date'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-        ]);
-
-        $selfInvoice->lines()->delete();
-        foreach ($validated['lines'] as $line) {
-            $selfInvoice->lines()->create($this->buildLinePayload($line));
+        if ($creating) {
+            $rules['sequence_id'] = 'required|exists:sequences,id';
+            $rules['number'] = 'nullable|string';
         }
 
-        $selfInvoice->calculateTotals();
-
-        return redirect()->route('self-invoices.index');
+        return $request->validate($rules);
     }
 
     public function downloadXml(
@@ -337,24 +230,6 @@ class SelfInvoicesController extends Controller
         ];
     }
 
-    private function buildLinePayload(array $line): array
-    {
-        $qty = (float) $line['quantity'];
-        $price = (float) $line['unit_price'];
-        $gross = $qty * $price;
-
-        return [
-            'description' => $line['description'],
-            'quantity' => $qty,
-            'unit_of_measure' => ($line['unit_of_measure'] ?? null) ?: null,
-            'unit_price' => (int) round($price * 100),
-            'discount_percent' => null,
-            'discount_amount' => null,
-            'vat_rate' => $line['vat_rate'],
-            'total' => (int) round($gross * 100),
-        ];
-    }
-
     private function stats(int $fiscalYear): array
     {
         $base = SelfInvoice::query()->whereYear('date', $fiscalYear);
@@ -367,7 +242,7 @@ class SelfInvoicesController extends Controller
 
     private function statusOptions(): array
     {
-        return collect(InvoiceStatus::cases())->map(fn ($s) => [
+        return collect(InvoiceStatus::cases())->map(fn($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();
@@ -375,7 +250,7 @@ class SelfInvoicesController extends Controller
 
     private function paymentOptions(): array
     {
-        return collect(PaymentStatus::cases())->map(fn ($s) => [
+        return collect(PaymentStatus::cases())->map(fn($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\SaveCreditNote;
 use App\Enums\InvoiceStatus;
 use App\Enums\VatRate;
 use App\Http\Controllers\Concerns\HandlesDocumentEmail;
@@ -12,12 +13,10 @@ use App\Models\Sequence;
 use App\Services\CreditNoteXmlService;
 use App\Services\DocumentEventRecorder;
 use App\Services\DocumentMailer;
-use App\Services\Domain\DocumentNumberingService;
 use App\Services\PostHogTelemetryService;
 use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,7 +48,7 @@ class CreditNotesController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('contact', fn($c) => $c->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -73,61 +72,9 @@ class CreditNotesController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function store(Request $request, SaveCreditNote $saveCreditNote): RedirectResponse
     {
-        $defaultSequence = Sequence::where('type', 'credit_note')
-            ->orderByDesc('is_system')
-            ->first();
-
-        return Inertia::render('CreditNotes/Create', [
-            'formData' => $this->formData($defaultSequence),
-        ]);
-    }
-
-    public function store(Request $request, DocumentNumberingService $documentNumbering): RedirectResponse
-    {
-        $validated = $request->validate([
-            'contact_id' => 'required|exists:contacts,id',
-            'sequence_id' => 'required|exists:sequences,id',
-            'date' => 'required|date',
-            'related_invoice_number' => 'nullable|string',
-            'related_invoice_date' => 'nullable|date',
-            'notes' => 'nullable|string',
-            'lines' => 'required|array|min:1',
-            'lines.*.description' => 'required|string',
-            'lines.*.quantity' => 'required|numeric|min:0.01',
-            'lines.*.unit_of_measure' => 'nullable|string',
-            'lines.*.unit_price' => 'required|numeric|min:0',
-            'lines.*.vat_rate' => 'required|string',
-        ]);
-        $companySettings = app(CompanySettings::class);
-        $normalizedLines = FiscalRegimePolicy::normalizeLinesForForfettario($validated['lines'], $companySettings->company_fiscal_regime);
-        $notes = FiscalRegimePolicy::requiresForfettarioLegalNotice($companySettings->company_fiscal_regime)
-            ? FiscalRegimePolicy::appendForfettarioLegalNotices($validated['notes'] ?? null)
-            : ($validated['notes'] ?? null);
-
-        $sequence = Sequence::findOrFail($validated['sequence_id']);
-        $numbering = $documentNumbering->reserve($sequence, $validated['date']);
-
-        $creditNote = CreditNote::create([
-            'number' => $numbering['number'],
-            'sequential_number' => $numbering['sequential_number'],
-            'date' => $validated['date'],
-            'contact_id' => $validated['contact_id'],
-            'sequence_id' => $validated['sequence_id'],
-            'fiscal_year' => $numbering['fiscal_year'],
-            'status' => InvoiceStatus::Draft,
-            'document_type' => 'TD04',
-            'related_invoice_number' => $validated['related_invoice_number'] ?? null,
-            'related_invoice_date' => $validated['related_invoice_date'] ?? null,
-            'notes' => $notes,
-        ]);
-
-        foreach ($normalizedLines as $line) {
-            $creditNote->lines()->create($this->buildLinePayload($line));
-        }
-
-        $creditNote->calculateTotals();
+        $creditNote = $saveCreditNote->create($this->validatePayload($request, true));
         app(DocumentEventRecorder::class)->created($creditNote);
         app(PostHogTelemetryService::class)->capture(
             'credit_note_created',
@@ -138,28 +85,18 @@ class CreditNotesController extends Controller
         return redirect()->route('credit-notes.index');
     }
 
-    public function edit(CreditNote $creditNote): Response
+    public function update(Request $request, CreditNote $creditNote, SaveCreditNote $saveCreditNote): RedirectResponse
     {
-        $creditNote->load([
-            'lines',
-            'events' => fn ($query) => $query->latest('occurred_at'),
-        ]);
+        $saveCreditNote->update($creditNote, $this->validatePayload($request));
 
-        return Inertia::render('CreditNotes/Edit', [
-            'creditNote' => $creditNote,
-            'formData' => $this->formData(),
-        ]);
+        return redirect()->route('credit-notes.index');
     }
 
-    public function update(Request $request, CreditNote $creditNote): RedirectResponse
+    /** @return array<string, mixed> */
+    private function validatePayload(Request $request, bool $creating = false): array
     {
-        if (! $creditNote->isSdiEditable()) {
-            return back()->withErrors(['creditNote' => 'Questa nota di credito non è più modificabile.']);
-        }
-
-        $validated = $request->validate([
+        $rules = [
             'contact_id' => 'required|exists:contacts,id',
-            'sequence_id' => 'required|exists:sequences,id',
             'date' => 'required|date',
             'related_invoice_number' => 'nullable|string',
             'related_invoice_date' => 'nullable|date',
@@ -170,37 +107,13 @@ class CreditNotesController extends Controller
             'lines.*.unit_of_measure' => 'nullable|string',
             'lines.*.unit_price' => 'required|numeric|min:0',
             'lines.*.vat_rate' => 'required|string',
-        ]);
-        $companySettings = app(CompanySettings::class);
-        $normalizedLines = FiscalRegimePolicy::normalizeLinesForForfettario($validated['lines'], $companySettings->company_fiscal_regime);
-        $notes = FiscalRegimePolicy::requiresForfettarioLegalNotice($companySettings->company_fiscal_regime)
-            ? FiscalRegimePolicy::appendForfettarioLegalNotices($validated['notes'] ?? null)
-            : ($validated['notes'] ?? null);
+        ];
 
-        $year = Carbon::parse($validated['date'])->year;
-        $nextStatus = in_array($creditNote->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
-            ? InvoiceStatus::Draft
-            : $creditNote->status;
-
-        $creditNote->update([
-            'date' => $validated['date'],
-            'contact_id' => $validated['contact_id'],
-            'sequence_id' => $validated['sequence_id'],
-            'fiscal_year' => $year,
-            'status' => $nextStatus,
-            'related_invoice_number' => $validated['related_invoice_number'] ?? null,
-            'related_invoice_date' => $validated['related_invoice_date'] ?? null,
-            'notes' => $notes,
-        ]);
-
-        $creditNote->lines()->delete();
-        foreach ($normalizedLines as $line) {
-            $creditNote->lines()->create($this->buildLinePayload($line));
+        if ($creating) {
+            $rules['sequence_id'] = 'required|exists:sequences,id';
         }
 
-        $creditNote->calculateTotals();
-
-        return redirect()->route('credit-notes.index');
+        return $request->validate($rules);
     }
 
     public function downloadXml(
@@ -262,47 +175,6 @@ class CreditNotesController extends Controller
 
     // ─── Helpers ───────────────────────────────────────────────────────────
 
-    private function formData(?Sequence $defaultSequence = null): array
-    {
-        $companySettings = app(CompanySettings::class);
-        $isRf19 = $companySettings->company_fiscal_regime === 'RF19';
-
-        return [
-            'contacts' => Contact::orderBy('name')->get(['id', 'name']),
-            'sequences' => Sequence::where('type', 'credit_note')
-                ->get(['id', 'name', 'pattern'])
-                ->map(fn ($s) => [
-                    'id' => $s->id,
-                    'name' => $s->name,
-                    'next_number' => $s->getFormattedNumber(),
-                ])
-                ->toArray(),
-            'default_sequence_id' => $defaultSequence?->id,
-            'vat_rates' => $isRf19
-                ? array_values(array_filter(VatRate::options(), fn (array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
-                : VatRate::options(),
-            'fiscal_regime' => $companySettings->company_fiscal_regime,
-        ];
-    }
-
-    private function buildLinePayload(array $line): array
-    {
-        $qty = (float) $line['quantity'];
-        $price = (float) $line['unit_price'];
-        $gross = $qty * $price;
-
-        return [
-            'description' => $line['description'],
-            'quantity' => $qty,
-            'unit_of_measure' => ($line['unit_of_measure'] ?? null) ?: null,
-            'unit_price' => (int) round($price * 100),
-            'discount_percent' => null,
-            'discount_amount' => null,
-            'vat_rate' => $line['vat_rate'],
-            'total' => (int) round($gross * 100),
-        ];
-    }
-
     private function stats(int $fiscalYear): array
     {
         $base = CreditNote::query()->whereYear('date', $fiscalYear);
@@ -315,7 +187,7 @@ class CreditNotesController extends Controller
 
     private function statusOptions(): array
     {
-        return collect(InvoiceStatus::cases())->map(fn ($s) => [
+        return collect(InvoiceStatus::cases())->map(fn($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();
