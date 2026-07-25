@@ -44,6 +44,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function mount(?SalesInvoice $invoice = null): void
     {
+        $invoice = $invoice?->exists ? $invoice : null;
         $this->invoice = $invoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $settings = app(InvoiceSettings::class);
         $this->date = now()->toDateString();
@@ -64,6 +65,12 @@ new #[Layout('layouts::app')] class extends Component {
         $this->vat_payability = (string) ($settings->default_vat_payability ?? 'I');
         $this->split_payment = (bool) $settings->default_split_payment;
 
+        if ($this->isRf19()) {
+            $this->withholding_tax_enabled = false;
+            $this->split_payment = false;
+            $this->vat_payability = 'I';
+        }
+
         if ($invoice) {
             foreach (['contact_id', 'document_type', 'notes', 'payment_method', 'payment_terms', 'bank_name', 'bank_iban', 'withholding_tax_percent', 'fund_type', 'fund_percent', 'fund_vat_rate', 'vat_payability'] as $field) $this->{$field} = (string) ($invoice->{$field} ?? '');
             foreach (['withholding_tax_enabled', 'fund_enabled', 'fund_has_deduction', 'stamp_duty_applied', 'stamp_duty_charged_to_customer', 'split_payment'] as $field) $this->{$field} = (bool) $invoice->{$field};
@@ -71,6 +78,7 @@ new #[Layout('layouts::app')] class extends Component {
             $this->due_date = $invoice->due_date?->toDateString() ?? '';
             $this->lines = $invoice->lines->map(fn ($line) => ['key' => (string) $line->id, 'description' => $line->description, 'quantity' => (string) $line->quantity, 'unit_of_measure' => $line->unit_of_measure ?? '', 'unit_price' => number_format($line->unit_price / 100, 2, '.', ''), 'discount_percent' => $line->discount_percent ?? '', 'vat_rate' => $line->vat_rate->value, 'details_enabled' => $line->quantity != 1 || $line->unit_of_measure !== '' || $line->discount_percent !== null, 'discount_enabled' => $line->discount_percent !== null])->all();
         }
+        if ($this->isRf19()) $this->withholding_tax_enabled = false;
         $this->lines = $this->lines ?: [$this->emptyLine()];
     }
 

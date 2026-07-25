@@ -22,7 +22,7 @@ class SaveSalesInvoice
     ) {}
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     public function create(array $payload): FiscalDocument
     {
@@ -38,17 +38,18 @@ class SaveSalesInvoice
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     public function update(SalesInvoice $invoice, array $payload): FiscalDocument
     {
         return DB::transaction(function () use ($invoice, $payload) {
+            $lockedRecord = FiscalDocument::query()->lockForUpdate()->findOrFail($invoice->id);
             /** @var SalesInvoice $lockedInvoice */
-            $lockedInvoice = SalesInvoice::query()->lockForUpdate()->findOrFail($invoice->id);
+            $lockedInvoice = (new SalesInvoice)->newFromBuilder($lockedRecord->getAttributes());
             $this->ensureEditable($lockedInvoice);
             [$header, $lines] = $this->prepare($payload, $lockedInvoice->sequence_id);
 
-            $header['status'] = $lockedInvoice->status === InvoiceStatus::XmlValidated
+            $header['status'] = in_array($lockedInvoice->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
                 ? InvoiceStatus::Draft
                 : $lockedInvoice->status;
 
@@ -57,7 +58,7 @@ class SaveSalesInvoice
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      * @return array{0: array<string, mixed>, 1: array<int, array<string, mixed>>}
      */
     private function prepare(array $payload, int $sequenceId): array
@@ -117,9 +118,9 @@ class SaveSalesInvoice
     {
         $sequenceId = $this->invoiceSettings->default_sequence_sales
             ?? Sequence::query()
-            ->where('type', 'sales')
-            ->orderByDesc('is_system')
-            ->value('id');
+                ->where('type', 'sales')
+                ->orderByDesc('is_system')
+                ->value('id');
 
         if ($sequenceId === null) {
             throw ValidationException::withMessages([

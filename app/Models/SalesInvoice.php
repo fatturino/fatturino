@@ -17,6 +17,10 @@ class SalesInvoice extends FiscalDocument
     ];
 
     protected $casts = [
+        'date' => 'date:Y-m-d',
+        'due_date' => 'date:Y-m-d',
+        'withholding_tax_enabled' => 'boolean',
+        'split_payment' => 'boolean',
         'status' => InvoiceStatus::class,
         'payment_status' => PaymentStatus::class,
         'sdi_status' => SdiStatus::class,
