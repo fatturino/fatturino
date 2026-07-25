@@ -46,6 +46,25 @@ it('loads document dates when child models expose them as strings', function () 
     Livewire::test('pages::dashboard')->assertOk();
 });
 
+it('marks collection health as pending when invoices are open but not overdue', function () {
+    $user = User::factory()->create();
+    SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'due_date' => now()->addDays(30)->toDateString(),
+        'total_net' => 600000,
+        'total_gross' => 600000,
+        'total_paid' => 0,
+        'payment_status' => 'unpaid',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Incassi in attesa')
+        ->assertSee('€ 6.000,00')
+        ->assertDontSee('Tutto incassato');
+});
+
 it('shows fiscal and collection information for VAT accounting regimes', function () {
     $user = User::factory()->create();
     $settings = app(CompanySettings::class);
