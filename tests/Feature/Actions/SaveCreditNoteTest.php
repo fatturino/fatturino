@@ -45,6 +45,6 @@ it('preserves the assigned sequence and rejects SDI-locked credit notes on updat
     expect($note->fresh()->sequence_id)->toBe($sequence->id);
 
     $note->update(['sdi_status' => SdiStatus::Delivered]);
-    expect(fn() => app(SaveCreditNote::class)->update($note, creditNotePayload($contact, $sequence)))
+    expect(fn () => app(SaveCreditNote::class)->update($note, creditNotePayload($contact, $sequence)))
         ->toThrow(ValidationException::class);
 });

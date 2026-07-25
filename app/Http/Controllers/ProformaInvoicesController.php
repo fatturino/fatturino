@@ -43,7 +43,7 @@ class ProformaInvoicesController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn($c) => $c->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -197,7 +197,7 @@ class ProformaInvoicesController extends Controller
 
     private function proformaStatusOptions(): array
     {
-        return collect(ProformaStatus::cases())->map(fn($s) => [
+        return collect(ProformaStatus::cases())->map(fn ($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();

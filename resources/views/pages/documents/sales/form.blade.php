@@ -173,61 +173,17 @@ new #[Layout('layouts::app')] class extends Component {
                 @endif
             </article>
 
-            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
-                <div class="mb-4 flex items-center justify-between"><h2 class="font-bold">Righe fattura</h2>@unless($this->readOnly)<button type="button" wire:click="addLine" class="text-sm font-semibold text-primary">Aggiungi riga</button>@endunless</div>
-                <div class="space-y-3">
-                    @foreach($lines as $index => $line)
-                        <div wire:key="line-{{ $line['key'] }}" class="space-y-2 rounded-md border border-border-light bg-surface-muted p-3">
-                            <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_10rem]">
-                                <div><label class="text-xs text-content-muted">Descrizione</label><input wire:model.live.debounce.250ms="lines.{{ $index }}.description" @disabled($this->readOnly) placeholder="Descrizione" class="mt-1 h-10 w-full rounded-md border border-border bg-white px-2 text-sm">@error("lines.$index.description")<span class="text-xs text-danger">{{ $message }}</span>@enderror</div>
-                                <div><span class="text-xs text-content-muted">Totale riga</span><div class="mt-1 h-10 rounded-md border border-border-light bg-white px-2 py-2 text-right text-sm font-semibold tabular-nums">€ {{ number_format($this->lineTotal($line), 2, ',', '.') }}</div></div>
-                            </div>
-                            <div class="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)_auto]">
-                                <label class="text-xs text-content-muted">Importo<input wire:model.live.debounce.250ms="lines.{{ $index }}.unit_price" @disabled($this->readOnly) type="number" min="0" step="0.01" class="mt-1 h-10 w-full rounded-md border border-border bg-white px-2 text-sm"></label>
-                                <label class="text-xs text-content-muted">IVA<select wire:model.live="lines.{{ $index }}.vat_rate" @disabled($this->readOnly || $this->isRf19()) class="mt-1 h-10 w-full rounded-md border border-border bg-white px-2 text-sm">@foreach(VatRate::options() as $rate)<option value="{{ $rate['id'] }}">{{ $rate['name'] }}</option>@endforeach</select></label>
-                                <div class="flex items-end gap-3">@unless($this->readOnly)<button type="button" wire:click="toggleLineDetails({{ $index }})" class="h-10 whitespace-nowrap text-sm font-semibold text-primary">{{ ($line['details_enabled'] ?? false) ? 'Nascondi dettagli' : 'Dettagli' }}</button><button type="button" wire:click="removeLine({{ $index }})" @disabled(count($lines) === 1) class="h-10 whitespace-nowrap text-sm text-danger disabled:opacity-30">Rimuovi</button>@endunless</div>
-                            </div>
-                            @if($line['details_enabled'] ?? false)
-                                <div class="grid grid-cols-2 gap-3 rounded-md border border-border-light bg-white p-3 sm:grid-cols-4">
-                                    <label class="text-xs text-content-muted">Quantità<input wire:model.live.debounce.250ms="lines.{{ $index }}.quantity" @disabled($this->readOnly) type="number" min="0.01" step="0.01" class="mt-1 h-10 w-full rounded-md border border-border bg-white px-2 text-sm"></label>
-                                    <label class="text-xs text-content-muted">UM<input wire:model.live.debounce.250ms="lines.{{ $index }}.unit_of_measure" @disabled($this->readOnly) placeholder="UM" class="mt-1 h-10 w-full rounded-md border border-border bg-white px-2 text-sm"></label>
-                                    <label class="text-xs text-content-muted">Sconto %<span class="float-right"><input wire:model.live="lines.{{ $index }}.discount_enabled" @disabled($this->readOnly) type="checkbox" class="peer sr-only"><span class="inline-block h-5 w-8 rounded-full bg-zinc-300 align-middle transition-colors peer-checked:bg-primary before:inline-block before:size-3 before:translate-x-1 before:rounded-full before:bg-white before:transition-transform before:content-[''] peer-checked:before:translate-x-4"></span></span><input wire:model.live.debounce.250ms="lines.{{ $index }}.discount_percent" @disabled($this->readOnly || !($line['discount_enabled'] ?? false)) type="number" min="0" max="100" step="0.01" class="mt-1 h-10 w-full rounded-md border border-border bg-white px-2 text-sm disabled:bg-surface-muted"></label>
-                                </div>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            </article>
+            <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly">
+                @foreach($lines as $index => $line)
+                    <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="true" :vat-disabled="$this->isRf19()" />
+                @endforeach
+            </x-documents.invoice-form.lines>
         </div>
 
         <aside class="space-y-4">
-            <article class="sticky top-20 rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Riepilogo</h2><dl class="mt-4 space-y-3 text-sm"><div class="flex justify-between"><dt>Totale netto</dt><dd class="font-bold">€ {{ number_format($this->netTotal, 2, ',', '.') }}</dd></div><div class="flex justify-between"><dt>IVA</dt><dd class="font-bold">€ {{ number_format($this->vatTotal, 2, ',', '.') }}</dd></div>@if($stamp_duty_applied)<div class="flex justify-between"><dt>Bollo {{ $stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente' }}</dt><dd class="font-bold">€ {{ number_format($this->stampDutyAmount, 2, ',', '.') }}</dd></div>@endif<div class="flex justify-between border-t border-border-light pt-3 text-base"><dt class="font-bold">Totale da pagare</dt><dd class="font-bold">€ {{ number_format($this->netDue, 2, ',', '.') }}</dd></div></dl></article>
-            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
-                <h2 class="font-bold">Opzioni fiscali</h2>
-                <div class="mt-4 space-y-4">
-                    @unless($this->isRf19())
-                        <div class="space-y-2">
-                            <label class="group flex cursor-pointer items-center justify-between gap-3 {{ $this->readOnly ? 'cursor-not-allowed opacity-60' : '' }}"><span class="text-sm font-medium text-content">Ritenuta d'acconto</span><span class="relative inline-flex"><input type="checkbox" wire:model.live="withholding_tax_enabled" @disabled($this->readOnly) class="peer sr-only"><span class="relative h-6 w-10 flex-none rounded-full bg-zinc-300 transition-all duration-150 ease-out peer-checked:bg-primary before:absolute before:left-1 before:top-1 before:size-4 before:rounded-full before:bg-white before:transition-transform before:duration-150 before:ease-out before:content-[''] peer-checked:before:translate-x-full"></span></span></label>
-                            @if($withholding_tax_enabled)<label class="block text-xs font-semibold text-content-muted">Percentuale<input wire:model.live.debounce.250ms="withholding_tax_percent" @disabled($this->readOnly) type="number" min="0" max="100" step="0.01" class="mt-1 h-10 w-full rounded-md border border-border px-2 text-sm"></label>@endif
-                        </div>
-                    @endunless
-                    <div class="space-y-2">
-                        <label class="group flex cursor-pointer items-center justify-between gap-3 {{ $this->readOnly ? 'cursor-not-allowed opacity-60' : '' }}"><span class="text-sm font-medium text-content">Cassa previdenziale</span><span class="relative inline-flex"><input type="checkbox" wire:model.live="fund_enabled" @disabled($this->readOnly) class="peer sr-only"><span class="relative h-6 w-10 flex-none rounded-full bg-zinc-300 transition-all duration-150 ease-out peer-checked:bg-primary before:absolute before:left-1 before:top-1 before:size-4 before:rounded-full before:bg-white before:transition-transform before:duration-150 before:ease-out before:content-[''] peer-checked:before:translate-x-full"></span></span></label>
-                        @if($fund_enabled)<label class="block text-xs font-semibold text-content-muted">Percentuale<input wire:model.live.debounce.250ms="fund_percent" @disabled($this->readOnly) type="number" min="0" max="100" step="0.01" class="mt-1 h-10 w-full rounded-md border border-border px-2 text-sm"></label>@endif
-                    </div>
-                    <div class="space-y-2">
-                        <label class="group flex cursor-pointer items-center justify-between gap-3 {{ $this->readOnly || $this->isRf19() ? 'cursor-not-allowed opacity-60' : '' }}"><span class="text-sm font-medium text-content">Marca da bollo</span><span class="relative inline-flex"><input type="checkbox" wire:model.live="stamp_duty_applied" @disabled($this->readOnly || $this->isRf19()) class="peer sr-only"><span class="relative h-6 w-10 flex-none rounded-full bg-zinc-300 transition-all duration-150 ease-out peer-checked:bg-primary before:absolute before:left-1 before:top-1 before:size-4 before:rounded-full before:bg-white before:transition-transform before:duration-150 before:ease-out before:content-[''] peer-checked:before:translate-x-full"></span></span></label>
-                        @if($stamp_duty_applied)<fieldset class="space-y-2 rounded-md bg-surface-muted p-3"><legend class="px-1 text-xs font-semibold text-content-muted">Addebito bollo</legend><label class="flex items-center gap-2 text-sm"><input wire:model.live="stamp_duty_charged_to_customer" @disabled($this->readOnly) type="radio" value="1"> A carico del cliente</label><label class="flex items-center gap-2 text-sm"><input wire:model.live="stamp_duty_charged_to_customer" @disabled($this->readOnly) type="radio" value="0"> A carico del cedente</label></fieldset>@endif
-                    </div>
-                    @unless($this->isRf19())
-                        <div class="space-y-2">
-                            <label class="group flex cursor-pointer items-center justify-between gap-3 {{ $this->readOnly ? 'cursor-not-allowed opacity-60' : '' }}"><span class="text-sm font-medium text-content">Split payment</span><span class="relative inline-flex"><input type="checkbox" wire:model.live="split_payment" @disabled($this->readOnly) class="peer sr-only"><span class="relative h-6 w-10 flex-none rounded-full bg-zinc-300 transition-all duration-150 ease-out peer-checked:bg-primary before:absolute before:left-1 before:top-1 before:size-4 before:rounded-full before:bg-white before:transition-transform before:duration-150 before:ease-out before:content-[''] peer-checked:before:translate-x-full"></span></span></label>
-                            <label class="block text-sm font-medium text-content">Esigibilità IVA<select wire:model.live="vat_payability" @disabled($this->readOnly || $this->split_payment) class="mt-1 h-10 w-full rounded-md border border-border bg-white px-2 text-sm">@foreach(VatPayability::options() as $option)<option value="{{ $option['id'] }}">{{ $option['name'] }}</option>@endforeach</select></label>
-                        </div>
-                    @endunless
-                </div>
-            </article>
+            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" :net-due="$this->netDue" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" />
+            <x-documents.invoice-form.fiscal-options :read-only="$this->readOnly" :is-rf19="$this->isRf19()" :withholding="true" :fund="true" :stamp-duty="true" :split-payment="true" :stamp-duty-charged-to-customer="true" :withholding-enabled="$withholding_tax_enabled" :fund-enabled="$fund_enabled" :stamp-duty-applied="$stamp_duty_applied" :split-payment-enabled="$split_payment" />
         </aside>
-        @unless($this->readOnly)<div class="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-white/95 p-3 backdrop-blur"><div class="mx-auto flex max-w-7xl justify-end gap-3"><a href="{{ route('sell-invoices.index') }}" class="rounded-md border border-border px-4 py-2 text-sm font-bold">Annulla</a><button type="submit" wire:loading.attr="disabled" class="rounded-md bg-primary px-4 py-2 text-sm font-bold text-white">{{ $invoice ? 'Aggiorna fattura' : 'Crea fattura' }}</button></div></div>@endunless
+        <x-documents.invoice-form.action-bar cancel-route="sell-invoices.index" :submit-label="$invoice ? 'Aggiorna fattura' : 'Crea fattura'" :read-only="$this->readOnly" />
     </form>
 </section>

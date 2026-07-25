@@ -28,7 +28,6 @@ use App\Services\XmlWorkflowService;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -64,7 +63,7 @@ class SalesInvoicesController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn($c) => $c->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -147,7 +146,7 @@ class SalesInvoicesController extends Controller
     {
         $invoice->load([
             'lines',
-            'events' => fn($query) => $query->latest('occurred_at'),
+            'events' => fn ($query) => $query->latest('occurred_at'),
         ]);
 
         return Inertia::render('SalesInvoices/Edit', [
@@ -295,7 +294,7 @@ class SalesInvoicesController extends Controller
             'contacts' => Contact::orderBy('name')->get(['id', 'name']),
             'sequences' => Sequence::where('type', 'sales')
                 ->get(['id', 'name', 'pattern'])
-                ->map(fn($s) => [
+                ->map(fn ($s) => [
                     'id' => $s->id,
                     'name' => $s->name,
                     'next_number' => $s->getFormattedNumber(),
@@ -303,10 +302,10 @@ class SalesInvoicesController extends Controller
                 ->toArray(),
             'default_sequence_id' => $defaultSequence?->id,
             'vat_rates' => $isRf19
-                ? array_values(array_filter(VatRate::options(), fn(array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
+                ? array_values(array_filter(VatRate::options(), fn (array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
                 : VatRate::options(),
             'document_types' => array_map(
-                fn(array $type) => ['value' => $type['id'], 'label' => $type['name']],
+                fn (array $type) => ['value' => $type['id'], 'label' => $type['name']],
                 SalesDocumentType::options()
             ),
             'fund_types' => FundType::options(),
@@ -375,7 +374,7 @@ class SalesInvoicesController extends Controller
 
     private function statusOptions(): array
     {
-        return collect(InvoiceStatus::cases())->map(fn($s) => [
+        return collect(InvoiceStatus::cases())->map(fn ($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();
@@ -383,7 +382,7 @@ class SalesInvoicesController extends Controller
 
     private function paymentOptions(): array
     {
-        return collect(PaymentStatus::cases())->map(fn($s) => [
+        return collect(PaymentStatus::cases())->map(fn ($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();

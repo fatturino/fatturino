@@ -60,7 +60,7 @@ class AppServiceProvider extends ServiceProvider
             URL::forceHttps(true);
         }
 
-        Blade::if('allowed', fn(string $action = '') => $action !== '' && app(EnvironmentCapabilities::class)->can($action));
+        Blade::if('allowed', fn (string $action = '') => $action !== '' && app(EnvironmentCapabilities::class)->can($action));
 
         $this->applyBackupCredentials();
         $this->initializePostHog();
@@ -124,7 +124,7 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerScalewayTemTransport(): void
     {
-        Mail::extend('scaleway_tem', fn(array $config) => new ScalewayTemTransport(
+        Mail::extend('scaleway_tem', fn (array $config) => new ScalewayTemTransport(
             app(HttpFactory::class),
             (string) ($config['secret_key'] ?? ''),
             (string) ($config['project_id'] ?? ''),

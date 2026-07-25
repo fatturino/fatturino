@@ -5,12 +5,10 @@ namespace App\Http\Controllers;
 use App\Actions\SavePurchaseInvoice;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
-use App\Enums\VatRate;
 use App\Http\Controllers\Concerns\HandlesDocumentPayments;
 use App\Models\Contact;
 use App\Models\Payment;
 use App\Models\PurchaseInvoice;
-use App\Models\Sequence;
 use App\Services\PostHogTelemetryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -40,7 +38,7 @@ class PurchaseInvoicesController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn($c) => $c->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -122,9 +120,9 @@ class PurchaseInvoicesController extends Controller
             ->get();
 
         $unpaidCount = $unpaidInvoices->count();
-        $unpaidAmount = (int) $unpaidInvoices->sum(fn($i) => max(0, $i->net_due - $i->total_paid));
+        $unpaidAmount = (int) $unpaidInvoices->sum(fn ($i) => max(0, $i->net_due - $i->total_paid));
 
-        $overdueCount = $unpaidInvoices->filter(fn($i) => $i->isOverdue())->count();
+        $overdueCount = $unpaidInvoices->filter(fn ($i) => $i->isOverdue())->count();
 
         return [
             'total_count' => $totalCount,
@@ -137,7 +135,7 @@ class PurchaseInvoicesController extends Controller
 
     private function statusOptions(): array
     {
-        return collect(InvoiceStatus::cases())->map(fn($s) => [
+        return collect(InvoiceStatus::cases())->map(fn ($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();
@@ -145,7 +143,7 @@ class PurchaseInvoicesController extends Controller
 
     private function paymentOptions(): array
     {
-        return collect(PaymentStatus::cases())->map(fn($s) => [
+        return collect(PaymentStatus::cases())->map(fn ($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();

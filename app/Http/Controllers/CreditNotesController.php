@@ -4,19 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Actions\SaveCreditNote;
 use App\Enums\InvoiceStatus;
-use App\Enums\VatRate;
 use App\Http\Controllers\Concerns\HandlesDocumentEmail;
 use App\Http\Controllers\Concerns\HandlesXmlSdiWorkflow;
 use App\Models\Contact;
 use App\Models\CreditNote;
-use App\Models\Sequence;
 use App\Services\CreditNoteXmlService;
 use App\Services\DocumentEventRecorder;
 use App\Services\DocumentMailer;
 use App\Services\PostHogTelemetryService;
 use App\Services\XmlWorkflowService;
-use App\Settings\CompanySettings;
-use App\Support\FiscalRegimePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,7 +44,7 @@ class CreditNotesController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn($c) => $c->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -187,7 +183,7 @@ class CreditNotesController extends Controller
 
     private function statusOptions(): array
     {
-        return collect(InvoiceStatus::cases())->map(fn($s) => [
+        return collect(InvoiceStatus::cases())->map(fn ($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();

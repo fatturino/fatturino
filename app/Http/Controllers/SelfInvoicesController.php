@@ -5,13 +5,11 @@ namespace App\Http\Controllers;
 use App\Actions\SaveSelfInvoice;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
-use App\Enums\VatRate;
 use App\Http\Controllers\Concerns\HandlesDocumentPayments;
 use App\Http\Controllers\Concerns\HandlesXmlSdiWorkflow;
 use App\Models\Contact;
 use App\Models\Payment;
 use App\Models\SelfInvoice;
-use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentEventRecorder;
 use App\Services\PostHogTelemetryService;
@@ -50,7 +48,7 @@ class SelfInvoicesController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn($c) => $c->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -242,7 +240,7 @@ class SelfInvoicesController extends Controller
 
     private function statusOptions(): array
     {
-        return collect(InvoiceStatus::cases())->map(fn($s) => [
+        return collect(InvoiceStatus::cases())->map(fn ($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();
@@ -250,7 +248,7 @@ class SelfInvoicesController extends Controller
 
     private function paymentOptions(): array
     {
-        return collect(PaymentStatus::cases())->map(fn($s) => [
+        return collect(PaymentStatus::cases())->map(fn ($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();

@@ -1,5 +1,6 @@
 <?php
 
+use App\Contracts\LoginCustomizer;
 use App\Models\User;
 use App\Services\DemoLoginCustomizer;
 use Livewire\Livewire;
@@ -21,7 +22,7 @@ it('prefills credentials when demo mode is enabled', function () {
     config()->set('demo.enabled', true);
     config()->set('demo.email', 'demo@example.test');
     config()->set('demo.password', 'demo-password');
-    app()->instance(\App\Contracts\LoginCustomizer::class, new DemoLoginCustomizer);
+    app()->instance(LoginCustomizer::class, new DemoLoginCustomizer);
 
     User::factory()->create();
 

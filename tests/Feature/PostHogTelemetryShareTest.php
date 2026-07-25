@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 test('legacy Inertia pages share telemetry context and user id for posthog bootstrap', function () {
     config()->set('app.instance_id', 'tenant-alpha');
@@ -14,7 +15,7 @@ test('legacy Inertia pages share telemetry context and user id for posthog boots
         ->get('/contacts')
         ->assertOk()
         ->assertInertia(
-            fn(\Inertia\Testing\AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->where('auth.user.id', $user->id)
                 ->where('telemetry.instanceKey', 'tenant-alpha')
                 ->where('telemetry.appName', config('app.name'))

@@ -26,5 +26,5 @@ it('updates a purchase invoice without changing its assigned sequence', function
 it('rejects updates to SDI-locked purchase invoices', function () {
     $contact = Contact::factory()->create();
     $invoice = PurchaseInvoice::factory()->create(['contact_id' => $contact->id, 'sdi_status' => SdiStatus::Delivered, 'date' => now()->toDateString()]);
-    expect(fn() => app(SavePurchaseInvoice::class)->update($invoice, purchaseInvoicePayload($contact)))->toThrow(ValidationException::class);
+    expect(fn () => app(SavePurchaseInvoice::class)->update($invoice, purchaseInvoicePayload($contact)))->toThrow(ValidationException::class);
 });

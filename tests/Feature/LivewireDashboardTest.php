@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\Models\SalesInvoice;
+use App\Models\User;
 use App\Settings\CompanySettings;
 use Livewire\Livewire;
 
