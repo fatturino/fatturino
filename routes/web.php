@@ -133,11 +133,11 @@ Route::middleware('auth')->group(function () {
 
     // Proforma
     Route::livewire('/proforma', 'pages::documents.index')->name('proforma.index')->defaults('type', 'proforma');
-    Route::get('/proforma/create', [ProformaInvoicesController::class, 'create'])->name('proforma.create')
+    Route::livewire('/proforma/create', 'pages::documents.proforma.form')->name('proforma.create')
         ->defaults('title', 'Nuova Proforma')
         ->defaults('breadcrumbs', [['label' => 'Proforma', 'url' => '/proforma'], ['label' => 'Nuova']]);
     Route::post('/proforma', [ProformaInvoicesController::class, 'store'])->name('proforma.store');
-    Route::get('/proforma/{proformaInvoice}/edit', [ProformaInvoicesController::class, 'edit'])->name('proforma.edit')
+    Route::livewire('/proforma/{proformaInvoice}/edit', 'pages::documents.proforma.form')->name('proforma.edit')
         ->defaults('title', 'Modifica Proforma')
         ->defaults('breadcrumbs', [['label' => 'Proforma', 'url' => '/proforma'], ['label' => 'Modifica']]);
     Route::put('/proforma/{proformaInvoice}', [ProformaInvoicesController::class, 'update'])->name('proforma.update');
