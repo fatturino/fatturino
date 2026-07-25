@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\SaveSalesInvoice;
 use App\Enums\FundType;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
@@ -20,7 +21,6 @@ use App\Models\Sequence;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentEventRecorder;
 use App\Services\DocumentMailer;
-use App\Services\Domain\DocumentNumberingService;
 use App\Services\InvoiceXmlService;
 use App\Services\PostHogTelemetryService;
 use App\Services\ReportService;
@@ -64,7 +64,7 @@ class SalesInvoicesController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('contact', fn($c) => $c->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -101,11 +101,10 @@ class SalesInvoicesController extends Controller
         ]);
     }
 
-    public function store(Request $request, DocumentNumberingService $documentNumbering): RedirectResponse
+    public function store(Request $request, SaveSalesInvoice $saveSalesInvoice): RedirectResponse
     {
         $validated = $request->validate([
             'contact_id' => 'required|exists:contacts,id',
-            'sequence_id' => 'required|exists:sequences,id',
             'date' => 'required|date',
             'due_date' => 'nullable|date',
             'document_type' => 'required|string',
@@ -133,50 +132,7 @@ class SalesInvoicesController extends Controller
             'lines.*.discount_percent' => 'nullable|numeric|min:0|max:100',
             'lines.*.vat_rate' => 'required|string',
         ]);
-        $companySettings = app(CompanySettings::class);
-        $normalized = FiscalRegimePolicy::normalizeDocumentPayload($validated, $companySettings->company_fiscal_regime);
-        $normalizedLines = FiscalRegimePolicy::normalizeLinesForForfettario($validated['lines'], $companySettings->company_fiscal_regime);
-        $normalized = FiscalRegimePolicy::normalizeStampDutyPayload($normalized, $normalizedLines, $companySettings->company_fiscal_regime);
-
-        $sequence = Sequence::findOrFail($normalized['sequence_id']);
-        $numbering = $documentNumbering->reserve($sequence, $normalized['date']);
-
-        $invoice = SalesInvoice::create([
-            'number' => $numbering['number'],
-            'sequential_number' => $numbering['sequential_number'],
-            'date' => $normalized['date'],
-            'due_date' => $normalized['due_date'] ?? null,
-            'contact_id' => $normalized['contact_id'],
-            'sequence_id' => $normalized['sequence_id'],
-            'fiscal_year' => $numbering['fiscal_year'],
-            'status' => InvoiceStatus::Draft,
-            'type' => 'sales',
-            'document_type' => $normalized['document_type'],
-            'notes' => $normalized['notes'] ?? null,
-            'withholding_tax_enabled' => $normalized['withholding_tax_enabled'] ?? false,
-            'withholding_tax_percent' => $normalized['withholding_tax_enabled'] ? ($normalized['withholding_tax_percent'] ?? null) : null,
-            'fund_enabled' => $normalized['fund_enabled'] ?? false,
-            'fund_type' => ($normalized['fund_enabled'] ?? false) ? ($normalized['fund_type'] ?? null) : null,
-            'fund_percent' => ($normalized['fund_enabled'] ?? false) ? ($normalized['fund_percent'] ?? null) : null,
-            'fund_vat_rate' => ($normalized['fund_enabled'] ?? false) ? ($normalized['fund_vat_rate'] ?? null) : null,
-            'fund_has_deduction' => ($normalized['fund_enabled'] ?? false) && ($normalized['fund_has_deduction'] ?? false),
-            'stamp_duty_applied' => $normalized['stamp_duty_applied'] ?? false,
-            'stamp_duty_charged_to_customer' => $normalized['stamp_duty_charged_to_customer'] ?? false,
-            'stamp_duty_amount' => ($normalized['stamp_duty_applied'] ?? false) ? FiscalRegimePolicy::STAMP_DUTY_AMOUNT_CENTS : 0,
-            'payment_method' => $normalized['payment_method'] ?? null,
-            'payment_terms' => $normalized['payment_terms'] ?? null,
-            'bank_name' => $normalized['bank_name'] ?? null,
-            'bank_iban' => $normalized['bank_iban'] ?? null,
-            'vat_payability' => ($normalized['split_payment'] ?? false) ? 'S' : $normalized['vat_payability'],
-            'split_payment' => $normalized['split_payment'] ?? false,
-        ]);
-
-        // Create invoice lines
-        foreach ($normalizedLines as $line) {
-            $invoice->lines()->create($this->buildLinePayload($line));
-        }
-
-        $invoice->calculateTotals();
+        $invoice = $saveSalesInvoice->create($validated);
         app(DocumentEventRecorder::class)->created($invoice);
         app(PostHogTelemetryService::class)->capture(
             'sales_invoice_created',
@@ -191,7 +147,7 @@ class SalesInvoicesController extends Controller
     {
         $invoice->load([
             'lines',
-            'events' => fn ($query) => $query->latest('occurred_at'),
+            'events' => fn($query) => $query->latest('occurred_at'),
         ]);
 
         return Inertia::render('SalesInvoices/Edit', [
@@ -200,15 +156,10 @@ class SalesInvoicesController extends Controller
         ]);
     }
 
-    public function update(Request $request, SalesInvoice $invoice): RedirectResponse
+    public function update(Request $request, SalesInvoice $invoice, SaveSalesInvoice $saveSalesInvoice): RedirectResponse
     {
-        if (! $invoice->isSdiEditable()) {
-            return back()->withErrors(['invoice' => 'Questa fattura non è più modificabile.']);
-        }
-
         $validated = $request->validate([
             'contact_id' => 'required|exists:contacts,id',
-            'sequence_id' => 'required|exists:sequences,id',
             'date' => 'required|date',
             'due_date' => 'nullable|date',
             'document_type' => 'required|string',
@@ -236,50 +187,7 @@ class SalesInvoicesController extends Controller
             'lines.*.discount_percent' => 'nullable|numeric|min:0|max:100',
             'lines.*.vat_rate' => 'required|string',
         ]);
-        $companySettings = app(CompanySettings::class);
-        $normalized = FiscalRegimePolicy::normalizeDocumentPayload($validated, $companySettings->company_fiscal_regime);
-        $normalizedLines = FiscalRegimePolicy::normalizeLinesForForfettario($validated['lines'], $companySettings->company_fiscal_regime);
-        $normalized = FiscalRegimePolicy::normalizeStampDutyPayload($normalized, $normalizedLines, $companySettings->company_fiscal_regime);
-
-        $year = Carbon::parse($normalized['date'])->year;
-        $nextStatus = in_array($invoice->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
-            ? InvoiceStatus::Draft
-            : $invoice->status;
-
-        $invoice->update([
-            'date' => $normalized['date'],
-            'due_date' => $normalized['due_date'] ?? null,
-            'contact_id' => $normalized['contact_id'],
-            'sequence_id' => $normalized['sequence_id'],
-            'fiscal_year' => $year,
-            'status' => $nextStatus,
-            'document_type' => $normalized['document_type'],
-            'notes' => $normalized['notes'] ?? null,
-            'withholding_tax_enabled' => $normalized['withholding_tax_enabled'] ?? false,
-            'withholding_tax_percent' => $normalized['withholding_tax_enabled'] ? ($normalized['withholding_tax_percent'] ?? null) : null,
-            'fund_enabled' => $normalized['fund_enabled'] ?? false,
-            'fund_type' => ($normalized['fund_enabled'] ?? false) ? ($normalized['fund_type'] ?? null) : null,
-            'fund_percent' => ($normalized['fund_enabled'] ?? false) ? ($normalized['fund_percent'] ?? null) : null,
-            'fund_vat_rate' => ($normalized['fund_enabled'] ?? false) ? ($normalized['fund_vat_rate'] ?? null) : null,
-            'fund_has_deduction' => ($normalized['fund_enabled'] ?? false) && ($normalized['fund_has_deduction'] ?? false),
-            'stamp_duty_applied' => $normalized['stamp_duty_applied'] ?? false,
-            'stamp_duty_charged_to_customer' => $normalized['stamp_duty_charged_to_customer'] ?? false,
-            'stamp_duty_amount' => ($normalized['stamp_duty_applied'] ?? false) ? FiscalRegimePolicy::STAMP_DUTY_AMOUNT_CENTS : 0,
-            'payment_method' => $normalized['payment_method'] ?? null,
-            'payment_terms' => $normalized['payment_terms'] ?? null,
-            'bank_name' => $normalized['bank_name'] ?? null,
-            'bank_iban' => $normalized['bank_iban'] ?? null,
-            'vat_payability' => ($normalized['split_payment'] ?? false) ? 'S' : $normalized['vat_payability'],
-            'split_payment' => $normalized['split_payment'] ?? false,
-        ]);
-
-        // Replace invoice lines (delete old, create new)
-        $invoice->lines()->delete();
-        foreach ($normalizedLines as $line) {
-            $invoice->lines()->create($this->buildLinePayload($line));
-        }
-
-        $invoice->calculateTotals();
+        $invoice = $saveSalesInvoice->update($invoice, $validated);
         app(PostHogTelemetryService::class)->capture(
             'sales_invoice_updated',
             app(PostHogTelemetryService::class)->documentProperties($invoice),
@@ -387,7 +295,7 @@ class SalesInvoicesController extends Controller
             'contacts' => Contact::orderBy('name')->get(['id', 'name']),
             'sequences' => Sequence::where('type', 'sales')
                 ->get(['id', 'name', 'pattern'])
-                ->map(fn ($s) => [
+                ->map(fn($s) => [
                     'id' => $s->id,
                     'name' => $s->name,
                     'next_number' => $s->getFormattedNumber(),
@@ -395,10 +303,10 @@ class SalesInvoicesController extends Controller
                 ->toArray(),
             'default_sequence_id' => $defaultSequence?->id,
             'vat_rates' => $isRf19
-                ? array_values(array_filter(VatRate::options(), fn (array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
+                ? array_values(array_filter(VatRate::options(), fn(array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
                 : VatRate::options(),
             'document_types' => array_map(
-                fn (array $type) => ['value' => $type['id'], 'label' => $type['name']],
+                fn(array $type) => ['value' => $type['id'], 'label' => $type['name']],
                 SalesDocumentType::options()
             ),
             'fund_types' => FundType::options(),
@@ -467,7 +375,7 @@ class SalesInvoicesController extends Controller
 
     private function statusOptions(): array
     {
-        return collect(InvoiceStatus::cases())->map(fn ($s) => [
+        return collect(InvoiceStatus::cases())->map(fn($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();
@@ -475,7 +383,7 @@ class SalesInvoicesController extends Controller
 
     private function paymentOptions(): array
     {
-        return collect(PaymentStatus::cases())->map(fn ($s) => [
+        return collect(PaymentStatus::cases())->map(fn($s) => [
             'value' => $s->value,
             'label' => $s->label(),
         ])->toArray();

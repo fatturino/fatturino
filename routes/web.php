@@ -38,7 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/dashboard', 'pages::dashboard')->name('dashboard');
 
     Route::post('/fiscal-year', function (Request $request) {
-        $request->validate(['year' => 'required|integer|min:2000|max:'.(now()->year + 1)]);
+        $request->validate(['year' => 'required|integer|min:2000|max:' . (now()->year + 1)]);
         session(['fiscal_year' => (int) $request->year]);
 
         return back();
@@ -57,11 +57,11 @@ Route::middleware('auth')->group(function () {
 
     // Sales Invoices
     Route::livewire('/sell-invoices', 'pages::documents.index')->name('sell-invoices.index')->defaults('type', 'sales');
-    Route::get('/sell-invoices/create', [SalesInvoicesController::class, 'create'])->name('sell-invoices.create')
+    Route::livewire('/sell-invoices/create', 'pages::documents.sales.form')->name('sell-invoices.create')
         ->defaults('title', 'Nuova Fattura')
         ->defaults('breadcrumbs', [['label' => 'Fatture di Vendita', 'url' => '/sell-invoices'], ['label' => 'Nuova']]);
     Route::post('/sell-invoices', [SalesInvoicesController::class, 'store'])->name('sell-invoices.store');
-    Route::get('/sell-invoices/{invoice}/edit', [SalesInvoicesController::class, 'edit'])->name('sell-invoices.edit')
+    Route::livewire('/sell-invoices/{invoice}/edit', 'pages::documents.sales.form')->name('sell-invoices.edit')
         ->defaults('title', 'Modifica Fattura')
         ->defaults('breadcrumbs', [['label' => 'Fatture di Vendita', 'url' => '/sell-invoices'], ['label' => 'Modifica']]);
     Route::put('/sell-invoices/{invoice}', [SalesInvoicesController::class, 'update'])->name('sell-invoices.update');
