@@ -17,7 +17,7 @@ class RefreshDemoDataCommand extends Command
     public function handle(): int
     {
         if (! config('demo.enabled')) {
-            $this->warn('Demo mode is disabled (FATTURINO_DEMO=false).');
+            $this->warn('Demo mode is disabled (DEMO_MODE=false).');
 
             return self::SUCCESS;
         }

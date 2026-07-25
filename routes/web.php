@@ -9,7 +9,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\InvoiceSettingsController;
-use App\Http\Controllers\LoginController;
 use App\Http\Controllers\OpenApiController;
 use App\Http\Controllers\OpenApiSettingsController;
 use App\Http\Controllers\OpenApiWebhookController;
@@ -33,8 +32,7 @@ Route::post('/api/v1/openapi/webhook', [OpenApiWebhookController::class, 'handle
 
 // Guest-only routes
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'show'])->name('login')->defaults('title', 'Accedi');
-    Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+    Route::livewire('/login', 'pages::auth.login')->name('login');
     Route::get('/setup', [SetupController::class, 'show'])->name('setup')->defaults('title', 'Configurazione');
     Route::post('/setup/step', [SetupWizardController::class, 'store'])->name('setup.step');
 });

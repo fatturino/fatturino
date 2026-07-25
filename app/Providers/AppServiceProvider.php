@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Blaze\Blaze;
 use PostHog\PostHog;
 
 class AppServiceProvider extends ServiceProvider
@@ -49,16 +50,17 @@ class AppServiceProvider extends ServiceProvider
                 $settings->webhook_url = (string) config('fe-openapi.webhook_url', $settings->webhook_url);
             }
         });
-
     }
 
     public function boot(): void
     {
+        Blaze::optimize()->in(resource_path('views/components/shell'));
+
         if (app()->isProduction()) {
             URL::forceHttps(true);
         }
 
-        Blade::if('allowed', fn (string $action = '') => $action !== '' && app(EnvironmentCapabilities::class)->can($action));
+        Blade::if('allowed', fn(string $action = '') => $action !== '' && app(EnvironmentCapabilities::class)->can($action));
 
         $this->applyBackupCredentials();
         $this->initializePostHog();
@@ -67,7 +69,6 @@ class AppServiceProvider extends ServiceProvider
         $this->loadViewsFrom(resource_path('views/vendor/fe-openapi'), 'fe-openapi');
         $this->loadTranslationsFrom(lang_path('vendor/fe-openapi'), 'fe-openapi');
         $this->loadMigrationsFrom(base_path('database/settings'));
-
     }
 
     private function registerEnvironmentBindings(): void
@@ -123,7 +124,7 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerScalewayTemTransport(): void
     {
-        Mail::extend('scaleway_tem', fn (array $config) => new ScalewayTemTransport(
+        Mail::extend('scaleway_tem', fn(array $config) => new ScalewayTemTransport(
             app(HttpFactory::class),
             (string) ($config['secret_key'] ?? ''),
             (string) ($config['project_id'] ?? ''),

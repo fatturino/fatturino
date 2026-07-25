@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @source '../js/Pages/**/*svelte';
 @source '../js/lib/**/*svelte';
+@source '../views/**/*.blade.php';
+@source '../../app/Livewire/**/*.php';
 
 /* ═══════════════════════════════════════════
    Fatturino Design System - Minimal Baseline
@@ -9,18 +11,25 @@
 @theme {
     --font-sans: 'Outfit', sans-serif;
 
-    /* Brand palette */
-    --color-brand: #111827;
-    --color-brand-secondary: #4b5563;
-    --color-brand-accent: #2563eb;
-    --color-brand-deep: #0f172a;
-    --color-brand-bg: #f3f4f6;
+    /* Theme primitives. Keep component styles bound to semantic tokens below. */
+    --color-ink: #12233F;
+    --color-indigo: #243B77;
+    --color-teal: #2F7EA8;
+    --color-aqua: #CBEAF2;
+    --color-mist: #F7FBFF;
+
+    /* Semantic theme tokens */
+    --color-brand: var(--color-ink);
+    --color-brand-secondary: #51627A;
+    --color-brand-accent: var(--color-teal);
+    --color-brand-deep: var(--color-ink);
+    --color-brand-bg: var(--color-mist);
 
     /* Surface tokens */
     --color-surface: #ffffff;
-    --color-surface-muted: #f8fafc;
-    --color-border: #d1d5db;
-    --color-border-light: #e5e7eb;
+    --color-surface-muted: #EFF8FB;
+    --color-border: #B9D9E4;
+    --color-border-light: #D9EDF3;
     --color-success: #047857;
     --color-success-bg: #ecfdf5;
     --color-danger: #b91c1c;
@@ -41,20 +50,32 @@
     /* Shell tokens */
     --glass-bg: rgba(255, 255, 255, 0.92);
     --glass-border: rgba(15, 23, 42, 0.08);
-    --glass-bg-sidebar: #3d348b;
+    --glass-bg-sidebar: var(--color-ink);
 
     /* Motion and rhythm tokens */
     --duration-fast: 150ms;
     --duration-base: 220ms;
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --radius-sm: 0.5rem;
-    --radius-md: 0.75rem;
-    --radius-lg: 1rem;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+}
+
+@theme inline {
+    --color-canvas: var(--color-brand-bg);
+    --color-content: var(--color-brand-deep);
+    --color-content-muted: var(--color-brand-secondary);
+    --color-primary: var(--color-brand-accent);
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: none;
     box-shadow: var(--shadow-input-focus);
+}
+
+/* Make every mouse-interactive control communicate that it is actionable. */
+:where(a[href], button:not(:disabled), input[type="checkbox"]:not(:disabled), input[type="radio"]:not(:disabled), input[type="range"]:not(:disabled), select:not(:disabled), summary, [role="button"]):not([aria-disabled="true"]) {
+    cursor: pointer;
 }
 
 /* ═══════════════════════════════════════════
