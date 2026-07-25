@@ -45,7 +45,7 @@ Route::middleware('auth')->group(function () {
     })->name('fiscal-year.update');
 
     // Contacts
-    Route::get('/contacts', [ContactsController::class, 'index'])->name('contacts.index')->defaults('title', 'Contatti');
+    Route::livewire('/contacts', 'pages::contacts.index')->name('contacts.index');
     Route::get('/contacts/create', [ContactsController::class, 'create'])->name('contacts.create')
         ->defaults('title', 'Nuovo Contatto')
         ->defaults('breadcrumbs', [['label' => 'Contatti', 'url' => '/contacts'], ['label' => 'Nuovo']]);
