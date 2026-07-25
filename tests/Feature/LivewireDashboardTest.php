@@ -65,6 +65,27 @@ it('marks collection health as pending when invoices are open but not overdue', 
         ->assertDontSee('Tutto incassato');
 });
 
+it('shows annual turnover net of VAT for the selected fiscal year', function () {
+    $user = User::factory()->create();
+    SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'total_net' => 1000000,
+        'total_vat' => 220000,
+        'total_gross' => 1220000,
+        'total_paid' => 1220000,
+        'payment_status' => 'paid',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Fatturato anno')
+        ->assertSee('€ 10.000,00')
+        ->assertSee('Progressivo annuale')
+        ->assertSee('IVA esclusa')
+        ->assertDontSee('Fatturato netto mese');
+});
+
 it('shows fiscal and collection information for VAT accounting regimes', function () {
     $user = User::factory()->create();
     $settings = app(CompanySettings::class);

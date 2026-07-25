@@ -67,18 +67,13 @@ new #[Layout('layouts::app')] #[Title('Dashboard')] class extends Component {
     $collectionRate = $stats['revenueYtd'] > 0
         ? min(100, $stats['collectedNetYtd'] / $stats['revenueYtd'] * 100)
         : 0;
-    $monthChange = $stats['monthChangePercent'];
     $periodLabel = $isCurrentYear ? 'da inizio anno' : "nell'anno {$fiscalYear}";
     $outstandingDetail = $hasVatAccounting
         ? $stats['openInvoicesCount'].' documenti aperti · IVA '.$this->currency($stats['outstandingVatYtd'])
         : $stats['openInvoicesCount'].' documenti aperti';
     $collectionDetail = 'Tasso incasso '.number_format($collectionRate, 1, ',', '.').'%';
-    $monthChangeDetail = ($monthChange >= 0 ? '+' : '').number_format($monthChange, 1, ',', '.').'% vs mese scorso';
-    $revenueDetail = $stats['invoicesYtd'].' fatture emesse '.$periodLabel;
+    $annualRevenueTrend = ($isCurrentYear ? 'Progressivo annuale' : 'Totale anno chiuso').' · IVA esclusa';
     $averageInvoiceDetail = $stats['invoicesThisMonth'].' fatture nel mese di riferimento';
-    $activeClientsDetail = 'su '.$stats['totalContactsCount'].' contatti totali';
-    $monthTrend = $monthChange >= 0 ? '↑ ' : '↓ ';
-    $monthTrend .= ($monthChange >= 0 ? '+' : '').number_format($monthChange, 1, ',', '.').'% rispetto al mese scorso';
     $topClientRevenue = max(array_column($stats['topClients'], 'revenue_total') ?: [1]);
     $overdueCount = $stats['paymentSummary']['overdue']['count'] ?? 0;
     $overdueNet = $stats['paymentSummary']['overdue']['outstanding_net'] ?? 0;
@@ -100,7 +95,7 @@ new #[Layout('layouts::app')] #[Title('Dashboard')] class extends Component {
     </div>
     @unless($isCurrentYear)<div class="rounded-lg border border-warning/30 bg-warning-bg p-4 text-sm text-warning">Visualizzazione in sola lettura per l'anno fiscale {{ $fiscalYear }}.</div>@endunless
     <div @class(['grid gap-4 sm:grid-cols-2', $hasVatAccounting ? 'xl:grid-cols-4' : 'xl:grid-cols-3'])>
-        <x-dashboard.kpi-card label="Fatturato netto mese" :value="$this->currency($stats['revenueThisMonth'])" :trend="$monthTrend" :trend-class="$monthChange >= 0 ? 'text-success' : 'text-danger'" :detail="$monthChangeDetail" :series="$stats['revenueTrend']['current']" />
+        <x-dashboard.kpi-card label="Fatturato anno" :value="$this->currency($stats['revenueYtd'])" :trend="$annualRevenueTrend" trend-class="text-primary" :detail="$stats['invoicesYtd'].' fatture emesse'" />
         <x-dashboard.kpi-card label="Incassato netto" :value="$this->currency($stats['collectedNetYtd'])" :trend="number_format($collectionRate, 1, ',', '.').'% incassato'" trend-class="text-success" :detail="$collectionDetail" :progress="$collectionRate" />
         <x-dashboard.kpi-card label="Da incassare" :value="$this->currency($stats['outstandingNetYtd'])" :trend="$outstandingDetail" :trend-class="$overdueCount > 0 ? 'text-danger' : 'text-content-muted'" :detail="$outstandingDetail" />
         @if($hasVatAccounting)<x-dashboard.kpi-card label="Saldo IVA" :value="$fiscalValue" :trend="$fiscalDetail" :trend-class="$stats['vatBalanceYtd'] >= 0 ? 'text-warning' : 'text-success'" :detail="$fiscalDetail" />@endif
