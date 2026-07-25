@@ -12,7 +12,7 @@ it('renders the authenticated dashboard as a Livewire page', function () {
         ->get(route('dashboard'))
         ->assertOk()
         ->assertSeeLivewire('pages::dashboard')
-        ->assertSee('Incassi, scadenze e documenti da chiudere')
+        ->assertSee('Il polso della tua attività')
         ->assertDontSee('data-page=', false);
 });
 
@@ -71,5 +71,5 @@ it('hides VAT information for the RF19 fiscal regime', function () {
     Livewire::test('pages::dashboard')
         ->assertDontSee('IVA incassata separata')
         ->assertDontSee('Saldo IVA')
-        ->assertSee("Ritenute d'acconto");
+        ->assertDontSee("Ritenute d'acconto");
 });
