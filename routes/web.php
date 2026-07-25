@@ -4,7 +4,6 @@ use App\Http\Controllers\AdvancedLogsController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\ContactsController;
 use App\Http\Controllers\CreditNotesController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\InvoiceSettingsController;
@@ -36,7 +35,7 @@ Route::middleware('guest')->group(function () {
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->defaults('title', 'Dashboard');
+    Route::livewire('/dashboard', 'pages::dashboard')->name('dashboard');
 
     Route::post('/fiscal-year', function (Request $request) {
         $request->validate(['year' => 'required|integer|min:2000|max:' . (now()->year + 1)]);
