@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\SalesInvoice;
+use App\Settings\CompanySettings;
 use Livewire\Livewire;
 
 it('renders the authenticated dashboard as a Livewire page', function () {
@@ -43,4 +44,32 @@ it('loads document dates when child models expose them as strings', function () 
     // Mounting must still serialize the dashboard data without calling format()
     // directly on the raw value.
     Livewire::test('pages::dashboard')->assertOk();
+});
+
+it('shows fiscal and collection information for VAT accounting regimes', function () {
+    $user = User::factory()->create();
+    $settings = app(CompanySettings::class);
+    $settings->company_fiscal_regime = 'RF01';
+    $settings->save();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('IVA incassata separata')
+        ->assertSee('Saldo IVA')
+        ->assertSee('Andamento fatturato');
+});
+
+it('hides VAT information for the RF19 fiscal regime', function () {
+    $user = User::factory()->create();
+    $settings = app(CompanySettings::class);
+    $settings->company_fiscal_regime = 'RF19';
+    $settings->save();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertDontSee('IVA incassata separata')
+        ->assertDontSee('Saldo IVA')
+        ->assertSee("Ritenute d'acconto");
 });
