@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Services\InvoiceXmlService;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
-use Inertia\Testing\AssertableInertia;
 
 beforeEach(function () {
     $settings = app(CompanySettings::class);
@@ -77,10 +76,8 @@ test('rf19 hides self invoice import option', function () {
     $this->actingAs($user)
         ->get('/imports')
         ->assertOk()
-        ->assertInertia(
-            fn (AssertableInertia $page) => $page
-                ->where('selfInvoiceImportEnabled', false)
-        );
+        ->assertSeeLivewire('pages::imports.index')
+        ->assertDontSee('Autofatture XML');
 });
 
 test('rf19 xml charges stamp duty as n2 2 taxable line', function () {

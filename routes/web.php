@@ -4,7 +4,6 @@ use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\ContactsController;
 use App\Http\Controllers\CreditNotesController;
 use App\Http\Controllers\EmailSettingsController;
-use App\Http\Controllers\ImportController;
 use App\Http\Controllers\InvoiceSettingsController;
 use App\Http\Controllers\OpenApiController;
 use App\Http\Controllers\OpenApiWebhookController;
@@ -158,8 +157,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/advanced', 'pages::settings.advanced')->name('settings.advanced')->defaults('title', 'Avanzate');
     Route::put('/services/backup', [ServicesController::class, 'updateBackup'])->middleware('capability:manage-backup-settings')->name('settings.services.backup');
     Route::post('/services/test-connection', [ServicesController::class, 'testConnection'])->name('settings.services.test');
-    Route::get('/imports', [ImportController::class, 'index'])->name('imports.index')->defaults('title', 'Import');
-    Route::post('/imports', [ImportController::class, 'store'])->name('imports.store');
+    Route::livewire('/imports', 'pages::imports.index')->name('imports.index')->defaults('title', 'Import');
 
     // Electronic Invoice
     Route::livewire('/electronic-invoice-settings', 'pages::settings.openapi')->name('settings.openapi')->defaults('title', 'Fatturazione Elettronica');
