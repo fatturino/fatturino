@@ -9,6 +9,7 @@ use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -17,6 +18,7 @@ use Livewire\WithPagination;
 new #[Layout('layouts::app')] class extends Component {
     use WithPagination;
 
+    #[Locked]
     public string $type;
 
     #[Url(as: 'search', except: '')]
@@ -37,6 +39,7 @@ new #[Layout('layouts::app')] class extends Component {
     /** @var array<int, int> */
     public array $selected = [];
 
+    #[Locked]
     public int $fiscalYear;
 
     public function mount(string $type): void
@@ -129,8 +132,19 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function baseQuery(): Builder
     {
+        $this->ensureAllowedType();
         $class = $this->definition()['model'];
         return $class::query()->whereYear('date', $this->fiscalYear);
+    }
+
+    private function ensureAllowedType(): void
+    {
+        abort_unless(in_array($this->type, array_keys($this->definitions()), true), 404);
+
+        if ($this->type === 'self') {
+            $settings = app(CompanySettings::class);
+            abort_unless(FiscalRegimePolicy::supportsSelfInvoices($settings->company_fiscal_regime, $settings->rf19_self_invoices_enabled), 403);
+        }
     }
 
     private function query(): Builder
