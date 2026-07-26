@@ -7,28 +7,9 @@ use App\Settings\CompanySettings;
 use App\Settings\EmailSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class EmailSettingsController extends Controller
 {
-    public function index(EmailSettings $settings): Response
-    {
-        return Inertia::render('Settings/Email', [
-            'settings' => $settings->toArray(),
-            'smtpManagedByEnv' => config('email.managed_by_env', false),
-            'mailProviderOptions' => [
-                ['value' => 'smtp', 'label' => 'SMTP'],
-                ['value' => 'scaleway_tem', 'label' => 'Scaleway TEM'],
-            ],
-            'encryptionOptions' => [
-                ['value' => '', 'label' => 'Nessuna'],
-                ['value' => 'tls', 'label' => 'TLS'],
-                ['value' => 'ssl', 'label' => 'SSL'],
-            ],
-        ]);
-    }
-
     public function update(Request $request, EmailSettings $settings): RedirectResponse
     {
         $rules = [

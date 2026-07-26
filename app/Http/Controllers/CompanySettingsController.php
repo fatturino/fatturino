@@ -10,26 +10,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class CompanySettingsController extends Controller
 {
-    public function index(CompanySettings $settings): Response
-    {
-        $atecoCodes = array_map(fn ($c) => [
-            'code' => $c,
-            'label' => AtecoCode::label($c),
-        ], $settings->company_ateco_codes ?? []);
-
-        return Inertia::render('Settings/Company', [
-            'company' => $settings->toArray(),
-            'atecoCodes' => $atecoCodes,
-            'fiscalRegimes' => FiscalRegime::options(),
-            'countries' => $this->countries(),
-        ]);
-    }
-
     public function update(Request $request, CompanySettings $settings): RedirectResponse
     {
         $validated = $request->validate([
@@ -87,40 +70,4 @@ class CompanySettingsController extends Controller
         return redirect()->route('settings.company');
     }
 
-    private function countries(): array
-    {
-        return [
-            ['value' => 'IT', 'label' => 'Italia'],
-            ['value' => 'AT', 'label' => 'Austria'],
-            ['value' => 'BE', 'label' => 'Belgio'],
-            ['value' => 'BG', 'label' => 'Bulgaria'],
-            ['value' => 'CY', 'label' => 'Cipro'],
-            ['value' => 'HR', 'label' => 'Croazia'],
-            ['value' => 'DK', 'label' => 'Danimarca'],
-            ['value' => 'EE', 'label' => 'Estonia'],
-            ['value' => 'FI', 'label' => 'Finlandia'],
-            ['value' => 'FR', 'label' => 'Francia'],
-            ['value' => 'DE', 'label' => 'Germania'],
-            ['value' => 'GR', 'label' => 'Grecia'],
-            ['value' => 'IE', 'label' => 'Irlanda'],
-            ['value' => 'LV', 'label' => 'Lettonia'],
-            ['value' => 'LT', 'label' => 'Lituania'],
-            ['value' => 'LU', 'label' => 'Lussemburgo'],
-            ['value' => 'MT', 'label' => 'Malta'],
-            ['value' => 'NL', 'label' => 'Paesi Bassi'],
-            ['value' => 'PL', 'label' => 'Polonia'],
-            ['value' => 'PT', 'label' => 'Portogallo'],
-            ['value' => 'CZ', 'label' => 'Repubblica Ceca'],
-            ['value' => 'RO', 'label' => 'Romania'],
-            ['value' => 'SK', 'label' => 'Slovacchia'],
-            ['value' => 'SI', 'label' => 'Slovenia'],
-            ['value' => 'ES', 'label' => 'Spagna'],
-            ['value' => 'SE', 'label' => 'Svezia'],
-            ['value' => 'HU', 'label' => 'Ungheria'],
-            ['value' => 'CH', 'label' => 'Svizzera'],
-            ['value' => 'GB', 'label' => 'Regno Unito'],
-            ['value' => 'US', 'label' => 'Stati Uniti'],
-            ['value' => 'CN', 'label' => 'Cina'],
-        ];
-    }
 }

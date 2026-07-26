@@ -16,60 +16,10 @@ use App\Services\DocumentMailer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ProformaInvoicesController extends Controller
 {
     use HandlesDocumentEmail;
-
-    public function index(Request $request): Response
-    {
-        $fiscalYear = (int) ($request->query('fiscal_year', now()->year));
-        $search = $request->query('search', '');
-        $filterStatus = $request->query('status', '');
-        $sort = $request->query('sort', 'date');
-        $sort = $sort === 'created_at' ? 'date' : $sort;
-        $direction = $request->query('direction', 'desc');
-        $perPage = 15;
-
-        $query = ProformaInvoice::query()
-            ->with([
-                'contact:id,name,email',
-                'latestEmailEvent',
-            ])
-            ->whereYear('date', $fiscalYear);
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
-            });
-        }
-
-        if ($filterStatus !== '') {
-            $query->where('status', $filterStatus);
-        }
-
-        $this->applySorting($query, $sort, $direction);
-
-        $invoices = $query->paginate($perPage)->withQueryString();
-
-        return Inertia::render('Proforma/Index', [
-            'invoices' => $invoices,
-            'fiscalYear' => $fiscalYear,
-            'search' => $search,
-            'filterStatus' => $filterStatus,
-            'sort' => $sort,
-            'direction' => $direction,
-            'stats' => $this->stats($fiscalYear),
-            'statusOptions' => $this->proformaStatusOptions(),
-            'linkableInvoices' => SalesInvoice::query()
-                ->whereNull('proforma_id')
-                ->orderByDesc('date')
-                ->get(['id', 'number', 'contact_id', 'status', 'date', 'total_gross']),
-        ]);
-    }
 
     public function store(Request $request, SaveProformaInvoice $saveProformaInvoice): RedirectResponse
     {
@@ -183,48 +133,4 @@ class ProformaInvoicesController extends Controller
 
     // ─── Helpers ───────────────────────────────────────────────────────────
 
-    private function stats(int $fiscalYear): array
-    {
-        $base = ProformaInvoice::query()->whereYear('date', $fiscalYear);
-
-        return [
-            'total_count' => (clone $base)->count(),
-            'total_gross' => (int) (clone $base)->sum('total_gross'),
-            'converted_count' => (clone $base)->where('status', 'converted')->count(),
-            'draft_count' => (clone $base)->where('status', 'draft')->count(),
-        ];
-    }
-
-    private function proformaStatusOptions(): array
-    {
-        return collect(ProformaStatus::cases())->map(fn ($s) => [
-            'value' => $s->value,
-            'label' => $s->label(),
-        ])->toArray();
-    }
-
-    private function applySorting($query, string $sort, string $direction): void
-    {
-        $sort = in_array($sort, ['number', 'date', 'contact'], true) ? $sort : 'date';
-        $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
-
-        if ($sort === 'number') {
-            $query->orderBy('number', $direction)->orderBy('id', $direction);
-
-            return;
-        }
-
-        if ($sort === 'contact') {
-            $query->orderBy(
-                Contact::select('name')
-                    ->whereColumn('contacts.id', 'fiscal_documents.contact_id')
-                    ->limit(1),
-                $direction
-            )->orderBy('id', $direction);
-
-            return;
-        }
-
-        $query->orderBy('date', $direction)->orderBy('id', $direction);
-    }
 }

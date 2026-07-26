@@ -8,7 +8,7 @@ it('rejects sales invoice api create without sanctum authentication', function (
     $contact = Contact::factory()->create();
     $sequence = Sequence::factory()->create();
 
-    $response = $this->postJson('/api/v1/sales-invoices', salesInvoicePayload($contact->id, $sequence->id));
+    $response = $this->postJson('/api/v1/sales-invoices', salesInvoiceApiPayload($contact->id, $sequence->id));
 
     $response->assertUnauthorized();
 });
@@ -20,15 +20,15 @@ it('supports sales invoice api create with sanctum bearer token', function () {
     $token = $user->createToken('sales-invoice-api-test-token')->plainTextToken;
 
     $response = $this
-        ->withHeader('Authorization', 'Bearer '.$token)
-        ->postJson('/api/v1/sales-invoices', salesInvoicePayload($contact->id, $sequence->id));
+        ->withHeader('Authorization', 'Bearer ' . $token)
+        ->postJson('/api/v1/sales-invoices', salesInvoiceApiPayload($contact->id, $sequence->id));
 
     $response->assertOk();
     $response->assertJsonPath('message', 'Fattura creata.');
     expect($response->json('invoice_id'))->not->toBeNull();
 });
 
-function salesInvoicePayload(int $contactId, int $sequenceId): array
+function salesInvoiceApiPayload(int $contactId, int $sequenceId): array
 {
     return [
         'contact_id' => $contactId,

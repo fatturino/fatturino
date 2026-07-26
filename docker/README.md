@@ -47,6 +47,7 @@ open http://localhost:8080
 ```
 
 All'avvio il container esegue automaticamente:
+
 - Creazione della struttura dati su `/data` (cartelle, symlink, WAL mode su SQLite)
 - Migrazioni database
 - Seed delle aliquote IVA e dei sezionali (solo al primo avvio)
@@ -56,82 +57,79 @@ All'avvio il container esegue automaticamente:
 
 ### Variabili d'ambiente
 
-| Variabile | Obbligatoria | Default | Descrizione |
-|-----------|:---:|---------|-------------|
-| `APP_KEY` | Si | - | Chiave di crittografia (generata con `key:generate --show`) |
-| `APP_URL` | Si | `http://localhost:8080` | URL pubblico dell'applicazione |
-| `APP_PORT` | No | `8080` | Porta esposta sull'host (variabile compose, non passata al container) |
-| `APP_NAME` | No | `Fatturino` | Nome applicazione |
-| `APP_ENV` | No | `production` | Ambiente Laravel (`production`, `local`) |
-| `SSL_MODE` | No | `off` | Modalita SSL del container (`off`, `full`, `flexible`) |
-| `PHP_DATE_TIMEZONE` | No | `Europe/Rome` | Timezone PHP |
-| `SMTP_MANAGED_BY_ENV` | No | `false` | Se `true`, il provider email e le credenziali sono letti solo da env (UI provider nascosta) |
-| `MAIL_MAILER` | No | `log` | Driver email (`smtp`, `scaleway_tem`, `log`, `sendmail`) |
-| `MAIL_HOST` | No | `127.0.0.1` | Host SMTP |
-| `MAIL_PORT` | No | `2525` | Porta SMTP |
-| `MAIL_USERNAME` | No | - | Username SMTP |
-| `MAIL_PASSWORD` | No | - | Password SMTP |
-| `MAIL_SCHEME` | No | - | Schema SMTP (es. `tls`) |
-| `MAIL_EHLO_DOMAIN` | No | dominio da `APP_URL` | Dominio EHLO per SMTP |
-| `MAIL_FROM_ADDRESS` | No | `hello@example.com` | Indirizzo mittente di default |
-| `MAIL_FROM_NAME` | No | `Fatturino` | Nome mittente di default |
-| `SCALEWAY_TEM_REGION` | No | `fr-par` | Regione Scaleway TEM |
-| `SCALEWAY_TEM_PROJECT_ID` | No | - | Project ID Scaleway TEM |
-| `SCALEWAY_TEM_SECRET_KEY` | No | - | Secret key Scaleway con permessi TEM |
-| `APP_INSTANCE_ID` | No | fallback a `APP_NAME` | Identificativo stabile dell'istanza per namespace telemetry multi-tenant |
-| `BACKUP_MANAGED_BY_ENV` | No | `false` | Se `true`, UI e scheduler backup disabilitati. Le credenziali S3 vanno impostate via `AWS_*` env (modalita managed). Se `false` (default), la configurazione S3 si fa da UI in Impostazioni > Servizi |
-| `POSTHOG_FRONTEND_KEY` | No | fallback a `POSTHOG_API_KEY` | API key PostHog frontend letta a runtime da Laravel/Inertia |
-| `POSTHOG_FRONTEND_HOST` | No | fallback a `POSTHOG_HOST` | `api_host` PostHog frontend |
-| `POSTHOG_UI_HOST` | No | `https://eu.posthog.com` | `ui_host` PostHog frontend per link corretti quando si usa un proxy |
-| `POSTHOG_API_KEY` | No | - | API key PostHog backend. Se vuota, SDK PHP non inizializzato |
-| `POSTHOG_HOST` | No | `https://eu.i.posthog.com` | Endpoint PostHog backend |
-| `VITE_POSTHOG_KEY` | No | - | Fallback build-time per sviluppo locale. In produzione preferire `POSTHOG_FRONTEND_KEY` |
-| `VITE_POSTHOG_HOST` | No | `https://eu.i.posthog.com` | Fallback build-time per sviluppo locale |
-| `VITE_POSTHOG_UI_HOST` | No | `https://eu.posthog.com` | Fallback build-time per sviluppo locale |
-| `AWS_ACCESS_KEY_ID` | No | - | Access key S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |
-| `AWS_SECRET_ACCESS_KEY` | No | - | Secret key S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |
-| `AWS_DEFAULT_REGION` | No | `us-east-1` | Regione S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |
-| `AWS_BUCKET` | No | - | Bucket S3 (solo se `BACKUP_MANAGED_BY_ENV=true`) |
-| `AWS_USE_PATH_STYLE_ENDPOINT` | No | `false` | Path-style endpoint per S3 compatibili (solo se `BACKUP_MANAGED_BY_ENV=true`) |
+| Variabile                     | Obbligatoria | Default                    | Descrizione                                                                                                                                                                                           |
+| ----------------------------- | :----------: | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_KEY`                     |      Si      | -                          | Chiave di crittografia (generata con `key:generate --show`)                                                                                                                                           |
+| `APP_URL`                     |      Si      | `http://localhost:8080`    | URL pubblico dell'applicazione                                                                                                                                                                        |
+| `APP_PORT`                    |      No      | `8080`                     | Porta esposta sull'host (variabile compose, non passata al container)                                                                                                                                 |
+| `APP_NAME`                    |      No      | `Fatturino`                | Nome applicazione                                                                                                                                                                                     |
+| `APP_ENV`                     |      No      | `production`               | Ambiente Laravel (`production`, `local`)                                                                                                                                                              |
+| `SSL_MODE`                    |      No      | `off`                      | Modalita SSL del container (`off`, `full`, `flexible`)                                                                                                                                                |
+| `PHP_DATE_TIMEZONE`           |      No      | `Europe/Rome`              | Timezone PHP                                                                                                                                                                                          |
+| `SMTP_MANAGED_BY_ENV`         |      No      | `false`                    | Se `true`, il provider email e le credenziali sono letti solo da env (UI provider nascosta)                                                                                                           |
+| `MAIL_MAILER`                 |      No      | `log`                      | Driver email (`smtp`, `scaleway_tem`, `log`, `sendmail`)                                                                                                                                              |
+| `MAIL_HOST`                   |      No      | `127.0.0.1`                | Host SMTP                                                                                                                                                                                             |
+| `MAIL_PORT`                   |      No      | `2525`                     | Porta SMTP                                                                                                                                                                                            |
+| `MAIL_USERNAME`               |      No      | -                          | Username SMTP                                                                                                                                                                                         |
+| `MAIL_PASSWORD`               |      No      | -                          | Password SMTP                                                                                                                                                                                         |
+| `MAIL_SCHEME`                 |      No      | -                          | Schema SMTP (es. `tls`)                                                                                                                                                                               |
+| `MAIL_EHLO_DOMAIN`            |      No      | dominio da `APP_URL`       | Dominio EHLO per SMTP                                                                                                                                                                                 |
+| `MAIL_FROM_ADDRESS`           |      No      | `hello@example.com`        | Indirizzo mittente di default                                                                                                                                                                         |
+| `MAIL_FROM_NAME`              |      No      | `Fatturino`                | Nome mittente di default                                                                                                                                                                              |
+| `SCALEWAY_TEM_REGION`         |      No      | `fr-par`                   | Regione Scaleway TEM                                                                                                                                                                                  |
+| `SCALEWAY_TEM_PROJECT_ID`     |      No      | -                          | Project ID Scaleway TEM                                                                                                                                                                               |
+| `SCALEWAY_TEM_SECRET_KEY`     |      No      | -                          | Secret key Scaleway con permessi TEM                                                                                                                                                                  |
+| `APP_INSTANCE_ID`             |      No      | fallback a `APP_NAME`      | Identificativo stabile dell'istanza per namespace telemetry multi-tenant                                                                                                                              |
+| `BACKUP_MANAGED_BY_ENV`       |      No      | `false`                    | Se `true`, UI e scheduler backup disabilitati. Le credenziali S3 vanno impostate via `AWS_*` env (modalita managed). Se `false` (default), la configurazione S3 si fa da UI in Impostazioni > Servizi |
+| `POSTHOG_FRONTEND_KEY`        |      No      | -                          | API key PostHog browser letta a runtime dal layout Livewire autenticato                                                                                                                               |
+| `POSTHOG_FRONTEND_HOST`       |      No      | fallback a `POSTHOG_HOST`  | `api_host` PostHog frontend                                                                                                                                                                           |
+| `POSTHOG_UI_HOST`             |      No      | `https://eu.posthog.com`   | `ui_host` PostHog frontend per link corretti quando si usa un proxy                                                                                                                                   |
+| `POSTHOG_API_KEY`             |      No      | -                          | API key PostHog backend. Se vuota, SDK PHP non inizializzato                                                                                                                                          |
+| `POSTHOG_HOST`                |      No      | `https://eu.i.posthog.com` | Endpoint PostHog backend                                                                                                                                                                              |
+| `AWS_ACCESS_KEY_ID`           |      No      | -                          | Access key S3 (solo se `BACKUP_MANAGED_BY_ENV=true`)                                                                                                                                                  |
+| `AWS_SECRET_ACCESS_KEY`       |      No      | -                          | Secret key S3 (solo se `BACKUP_MANAGED_BY_ENV=true`)                                                                                                                                                  |
+| `AWS_DEFAULT_REGION`          |      No      | `us-east-1`                | Regione S3 (solo se `BACKUP_MANAGED_BY_ENV=true`)                                                                                                                                                     |
+| `AWS_BUCKET`                  |      No      | -                          | Bucket S3 (solo se `BACKUP_MANAGED_BY_ENV=true`)                                                                                                                                                      |
+| `AWS_USE_PATH_STYLE_ENDPOINT` |      No      | `false`                    | Path-style endpoint per S3 compatibili (solo se `BACKUP_MANAGED_BY_ENV=true`)                                                                                                                         |
 
 ### Esempio docker-compose.yml completo
 
 ```yaml
 services:
-  fatturino:
-    image: codeberg.org/fatturino/fatturino:latest-stable
-    ports:
-      - "8080:8080"
-    volumes:
-      - fatturino-data:/data
-    environment:
-      APP_KEY: "base64:your-generated-key-here"
-      APP_URL: "https://fatturino.example.com"
-      SMTP_MANAGED_BY_ENV: "true"
-      MAIL_MAILER: "smtp"
-      MAIL_HOST: "smtp.example.com"
-      MAIL_PORT: "587"
-      MAIL_USERNAME: "user@example.com"
-      MAIL_PASSWORD: "password"
-      MAIL_FROM_ADDRESS: "fatture@example.com"
-      MAIL_FROM_NAME: "Fatturino"
-    restart: unless-stopped
+    fatturino:
+        image: codeberg.org/fatturino/fatturino:latest-stable
+        ports:
+            - "8080:8080"
+        volumes:
+            - fatturino-data:/data
+        environment:
+            APP_KEY: "base64:your-generated-key-here"
+            APP_URL: "https://fatturino.example.com"
+            SMTP_MANAGED_BY_ENV: "true"
+            MAIL_MAILER: "smtp"
+            MAIL_HOST: "smtp.example.com"
+            MAIL_PORT: "587"
+            MAIL_USERNAME: "user@example.com"
+            MAIL_PASSWORD: "password"
+            MAIL_FROM_ADDRESS: "fatture@example.com"
+            MAIL_FROM_NAME: "Fatturino"
+        restart: unless-stopped
 
 volumes:
-  fatturino-data:
+    fatturino-data:
 ```
 
 Per usare Scaleway TEM via API al posto di SMTP:
 
 ```yaml
 environment:
-  SMTP_MANAGED_BY_ENV: "true"
-  MAIL_MAILER: "scaleway_tem"
-  MAIL_FROM_ADDRESS: "fatture@example.com"
-  MAIL_FROM_NAME: "Fatturino"
-  SCALEWAY_TEM_REGION: "fr-par"
-  SCALEWAY_TEM_PROJECT_ID: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-  SCALEWAY_TEM_SECRET_KEY: "scw_secret_xxx"
+    SMTP_MANAGED_BY_ENV: "true"
+    MAIL_MAILER: "scaleway_tem"
+    MAIL_FROM_ADDRESS: "fatture@example.com"
+    MAIL_FROM_NAME: "Fatturino"
+    SCALEWAY_TEM_REGION: "fr-par"
+    SCALEWAY_TEM_PROJECT_ID: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    SCALEWAY_TEM_SECRET_KEY: "scw_secret_xxx"
 ```
 
 > Usa `latest-stable` in produzione. Il tag `latest` e' rolling dall'ultimo push su `main` (development/staging). I tag `vX.Y.Z` sono rilasci immutabili.
@@ -217,12 +215,14 @@ La configurazione si fa da UI in **Impostazioni > Servizi**:
 3. Salva. Le credenziali vengono salvate nel database e iniettate nella configurazione filesystem a runtime.
 
 Lo scheduler interno esegue:
+
 - `backup:run` con la frequenza scelta (all'orario configurato)
 - `backup:clean` ogni notte alle 03:30
 
 #### Managed (`BACKUP_MANAGED_BY_ENV=true`)
 
 Per ambienti hosting dove i backup sono orchestrati esternamente:
+
 - La UI di backup e' nascosta
 - Lo scheduler di backup e' disabilitato
 - Le credenziali S3 vanno impostate tramite le variabili d'ambiente `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, `AWS_BUCKET`
@@ -236,6 +236,7 @@ Per ambienti hosting dove i backup sono orchestrati esternamente:
 #### Pulizia automatica
 
 `backup:clean` applica la strategia di retention predefinita:
+
 - 7 giorni: tutti i backup
 - 16 giorni: backup giornalieri
 - 8 settimane: backup settimanali
@@ -286,6 +287,7 @@ APP_KEY=base64:$(openssl rand -base64 32) docker compose up -d
 ```
 
 Il Dockerfile usa un build multi-stage:
+
 1. **Stage composer**: `composer:2` installa le dipendenze PHP (necessarie per la scansione delle classi Tailwind)
 2. **Stage frontend**: `oven/bun:1` compila gli asset CSS/JS con Vite
 3. **Stage production**: `serversideup/php:8.4-fpm-nginx` con l'applicazione Laravel e le estensioni `bcmath`, `intl`, `gd`
@@ -304,9 +306,9 @@ In sviluppo locale puoi aumentare il dettaglio:
 
 ```yaml
 environment:
-  APP_ENV: "local"
-  APP_DEBUG: "true"
-  LOG_LEVEL: "debug"
+    APP_ENV: "local"
+    APP_DEBUG: "true"
+    LOG_LEVEL: "debug"
 ```
 
 ## Health Check

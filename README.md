@@ -9,8 +9,7 @@
 <p align="center">
   <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel" alt="Laravel"></a>
-  <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia.js-v2-9553E9" alt="Inertia.js"></a>
-  <a href="https://svelte.dev"><img src="https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte" alt="Svelte"></a>
+  <a href="https://livewire.laravel.com"><img src="https://img.shields.io/badge/Livewire-4-FB70A9" alt="Livewire"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php" alt="PHP"></a>
 </p>
 
@@ -35,7 +34,7 @@ Dati precompilati, nessuna registrazione richiesta, reset automatico periodico.
 ## Caratteristiche principali
 
 - **Conformità SDI**: generazione XML Fattura Elettronica e integrazione invio/ricezione
-- **Nuova UI Svelte**: frontend Inertia.js + Svelte 5 con componenti UI condivisi
+- **UI Livewire**: pagine reattive Laravel Livewire 4 con componenti Blade condivisi
 - **Gestione completa**: fatture di vendita, acquisto, autofatture, note di credito, proforma
 - **Dashboard operativa**: KPI, panoramica fatturato e focus su attività recenti
 - **Contatti e sezionali**: anagrafica clienti/fornitori, sequenze documento e impostazioni fiscali
@@ -48,14 +47,14 @@ Dati precompilati, nessuna registrazione richiesta, reset automatico periodico.
 
 ## Stack tecnologico
 
-| Layer | Tecnologia |
-|-------|-----------|
-| **Backend** | Laravel 12 (PHP 8.2+) |
-| **Frontend** | Inertia.js v2 + Svelte 5 |
-| **Build tool** | Vite 7 |
-| **Styling** | Tailwind CSS 4 |
-| **Testing** | Pest |
-| **XML** | fatturaelettronicaphp/fattura-elettronica |
+| Layer          | Tecnologia                                |
+| -------------- | ----------------------------------------- |
+| **Backend**    | Laravel 12 (PHP 8.2+)                     |
+| **Frontend**   | Laravel Livewire 4 + Blade                |
+| **Build tool** | Vite 7                                    |
+| **Styling**    | Tailwind CSS 4                            |
+| **Testing**    | Pest                                      |
+| **XML**        | fatturaelettronicaphp/fattura-elettronica |
 
 ---
 

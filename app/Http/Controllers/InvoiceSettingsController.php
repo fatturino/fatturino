@@ -14,30 +14,9 @@ use App\Support\FiscalRegimePolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class InvoiceSettingsController extends Controller
 {
-    public function index(InvoiceSettings $settings): Response
-    {
-        $companySettings = app(CompanySettings::class);
-        $isRf19 = $companySettings->company_fiscal_regime === 'RF19';
-
-        return Inertia::render('Settings/Invoice', [
-            'settings' => $settings->toArray(),
-            'sequences' => Sequence::where('type', 'sales')->orderBy('name')->get(['id', 'name']),
-            'vatRates' => $isRf19
-                ? array_values(array_filter(VatRate::options(), fn (array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
-                : VatRate::options(),
-            'paymentMethods' => PaymentMethod::options(),
-            'paymentTerms' => PaymentTerms::options(),
-            'fundTypes' => FundType::options(),
-            'vatPayabilityOptions' => VatPayability::options(),
-            'fiscalRegime' => $companySettings->company_fiscal_regime,
-        ]);
-    }
-
     public function update(Request $request, InvoiceSettings $settings): RedirectResponse
     {
         $validated = $request->validate([

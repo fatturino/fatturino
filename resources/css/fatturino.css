@@ -1,6 +1,4 @@
 @import 'tailwindcss';
-@source '../js/Pages/**/*svelte';
-@source '../js/lib/**/*svelte';
 @source '../views/**/*.blade.php';
 @source '../../app/Livewire/**/*.php';
 

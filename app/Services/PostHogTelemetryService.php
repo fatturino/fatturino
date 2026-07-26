@@ -54,11 +54,20 @@ class PostHogTelemetryService
             'appName' => (string) config('app.name'),
             'appEnv' => (string) config('app.env'),
             'appVersion' => (string) config('app.version'),
-            'posthog' => [
-                'key' => (string) config('services.posthog.frontend_key', ''),
-                'apiHost' => (string) config('services.posthog.frontend_host', 'https://eu.i.posthog.com'),
-                'uiHost' => (string) config('services.posthog.ui_host', 'https://eu.posthog.com'),
-            ],
+        ];
+    }
+
+    /**
+     * Public, browser-safe telemetry configuration for an authenticated user.
+     */
+    public function browserContext(Authenticatable $user): array
+    {
+        return [
+            ...$this->sharedContext(),
+            'distinctId' => $this->distinctIdFor($user),
+            'key' => (string) config('services.posthog.frontend_key', ''),
+            'apiHost' => (string) config('services.posthog.frontend_host', 'https://eu.i.posthog.com'),
+            'uiHost' => (string) config('services.posthog.ui_host', 'https://eu.posthog.com'),
         ];
     }
 
@@ -77,7 +86,7 @@ class PostHogTelemetryService
             $properties['sdi_status'] = (string) $sdiStatus;
         }
 
-        return array_filter($properties, static fn (mixed $value): bool => $value !== null && $value !== '');
+        return array_filter($properties, static fn(mixed $value): bool => $value !== null && $value !== '');
     }
 
     public function capture(string $event, array $properties = [], Authenticatable|int|string|null $user = null): bool
@@ -143,12 +152,12 @@ class PostHogTelemetryService
             'request_path' => $request?->path(),
             'route_name' => $request?->route()?->getName(),
             'route_uri' => $request?->route()?->uri(),
-        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+        ], static fn(mixed $value): bool => $value !== null && $value !== '');
     }
 
     private function baseProperties(array $properties = []): array
     {
-        return array_filter(array_merge($this->sharedContext(), $properties), static fn (mixed $value): bool => $value !== null && $value !== '');
+        return array_filter(array_merge($this->sharedContext(), $properties), static fn(mixed $value): bool => $value !== null && $value !== '');
     }
 
     private function documentKind(Model $document): string

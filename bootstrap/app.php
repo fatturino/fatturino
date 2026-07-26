@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequireCapability;
 use App\Services\PostHogTelemetryService;
 use Illuminate\Foundation\Application;
@@ -20,9 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'capability' => RequireCapability::class,
         ]);
 
-        $middleware->web(append: [
-            HandleInertiaRequests::class,
-        ]);
         $middleware->api(prepend: [
             EnsureFrontendRequestsAreStateful::class,
         ]);

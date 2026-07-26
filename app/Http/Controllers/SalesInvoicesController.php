@@ -32,73 +32,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class SalesInvoicesController extends Controller
 {
     use HandlesDocumentEmail;
     use HandlesDocumentPayments;
     use HandlesXmlSdiWorkflow;
-
-    public function index(Request $request): Response
-    {
-        $fiscalYear = (int) ($request->query('fiscal_year', now()->year));
-        $search = $request->query('search', '');
-        $filterStatus = $request->query('status', '');
-        $filterPayment = $request->query('payment', '');
-        $sort = $request->query('sort', 'date');
-        $sort = $sort === 'created_at' ? 'date' : $sort;
-        $direction = $request->query('direction', 'desc');
-        $perPage = 15;
-
-        $query = SalesInvoice::query()
-            ->with([
-                'contact:id,name,email',
-                'payments:id,fiscal_document_id,amount,paid_at,reference,notes,bank_name',
-                'latestEmailEvent',
-            ])
-            ->whereYear('date', $fiscalYear);
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
-            });
-        }
-
-        if ($filterStatus !== '') {
-            $query->where('status', $filterStatus);
-        }
-
-        if ($filterPayment !== '') {
-            $query->where('payment_status', $filterPayment);
-        }
-
-        $this->applySorting($query, $sort, $direction);
-
-        $invoices = $query->paginate($perPage)->withQueryString();
-
-        return Inertia::render('SalesInvoices/Index', [
-            'invoices' => $invoices,
-            'fiscalYear' => $fiscalYear,
-            'search' => $search,
-            'filterStatus' => $filterStatus,
-            'filterPayment' => $filterPayment,
-            'sort' => $sort,
-            'direction' => $direction,
-            'stats' => $this->stats($fiscalYear),
-            'statusOptions' => $this->statusOptions(),
-            'paymentOptions' => $this->paymentOptions(),
-        ]);
-    }
-
-    public function create(): Response
-    {
-        return Inertia::render('SalesInvoices/Create', [
-            'formData' => $this->formData(),
-        ]);
-    }
 
     public function store(Request $request, SaveSalesInvoice $saveSalesInvoice): RedirectResponse
     {
@@ -140,19 +79,6 @@ class SalesInvoicesController extends Controller
         );
 
         return redirect()->route('sell-invoices.index');
-    }
-
-    public function edit(SalesInvoice $invoice): Response
-    {
-        $invoice->load([
-            'lines',
-            'events' => fn ($query) => $query->latest('occurred_at'),
-        ]);
-
-        return Inertia::render('SalesInvoices/Edit', [
-            'invoice' => $invoice,
-            'formData' => $this->formData(),
-        ]);
     }
 
     public function update(Request $request, SalesInvoice $invoice, SaveSalesInvoice $saveSalesInvoice): RedirectResponse
@@ -280,136 +206,7 @@ class SalesInvoicesController extends Controller
 
     // ─── Helpers ───────────────────────────────────────────────────────────
 
-    private function formData(): array
-    {
-        $settings = app(InvoiceSettings::class);
-        $companySettings = app(CompanySettings::class);
-        $isRf19 = $companySettings->company_fiscal_regime === 'RF19';
-
-        $defaultSequence = Sequence::where('type', 'sales')
-            ->orderByDesc('is_system')
-            ->first();
-
-        return [
-            'contacts' => Contact::orderBy('name')->get(['id', 'name']),
-            'sequences' => Sequence::where('type', 'sales')
-                ->get(['id', 'name', 'pattern'])
-                ->map(fn ($s) => [
-                    'id' => $s->id,
-                    'name' => $s->name,
-                    'next_number' => $s->getFormattedNumber(),
-                ])
-                ->toArray(),
-            'default_sequence_id' => $defaultSequence?->id,
-            'vat_rates' => $isRf19
-                ? array_values(array_filter(VatRate::options(), fn (array $rate): bool => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE))
-                : VatRate::options(),
-            'document_types' => array_map(
-                fn (array $type) => ['value' => $type['id'], 'label' => $type['name']],
-                SalesDocumentType::options()
-            ),
-            'fund_types' => FundType::options(),
-            'payment_methods' => PaymentMethod::options(),
-            'payment_terms' => PaymentTerms::options(),
-            'settings' => [
-                'withholding_tax_enabled' => $isRf19 ? false : $settings->withholding_tax_enabled,
-                'withholding_tax_percent' => $settings->withholding_tax_percent,
-                'fund_enabled' => $settings->fund_enabled,
-                'fund_type' => $settings->fund_type,
-                'fund_percent' => $settings->fund_percent,
-                'fund_vat_rate' => $settings->fund_vat_rate?->value,
-                'fund_has_deduction' => $settings->fund_has_deduction,
-                'auto_stamp_duty' => $settings->auto_stamp_duty,
-                'stamp_duty_threshold' => $settings->stamp_duty_threshold,
-                'default_payment_method' => $settings->default_payment_method,
-                'default_payment_terms' => $settings->default_payment_terms,
-                'default_bank_name' => $settings->default_bank_name,
-                'default_bank_iban' => $settings->default_bank_iban,
-                'default_vat_payability' => $isRf19 ? 'I' : ($settings->default_vat_payability ?? 'I'),
-                'default_split_payment' => $isRf19 ? false : ($settings->default_split_payment ?? false),
-                'default_notes' => $settings->default_notes,
-            ],
-            'vatPayabilityOptions' => VatPayability::options(),
-            'fiscal_regime' => $companySettings->company_fiscal_regime,
-        ];
-    }
-
     /**
      * Build the persistence payload for a single invoice line (amounts in cents).
      */
-    private function buildLinePayload(array $line): array
-    {
-        $qty = (float) $line['quantity'];
-        $price = (float) $line['unit_price'];
-        $gross = $qty * $price;
-
-        $discountPercent = isset($line['discount_percent']) && $line['discount_percent'] !== null && $line['discount_percent'] !== ''
-            ? (float) $line['discount_percent']
-            : null;
-
-        $discountedTotal = $discountPercent !== null && $discountPercent > 0
-            ? $gross * (1 - $discountPercent / 100)
-            : $gross;
-
-        $discountAmount = ($discountPercent !== null && $discountPercent > 0)
-            ? (int) round(($gross - $discountedTotal) * 100)
-            : null;
-
-        return [
-            'description' => $line['description'],
-            'quantity' => $qty,
-            'unit_of_measure' => ($line['unit_of_measure'] ?? null) ?: null,
-            'unit_price' => (int) round($price * 100),
-            'discount_percent' => $discountPercent,
-            'discount_amount' => $discountAmount,
-            'vat_rate' => $line['vat_rate'],
-            'total' => (int) round($discountedTotal * 100),
-        ];
-    }
-
-    private function stats(int $fiscalYear): array
-    {
-        return app(ReportService::class)->salesInvoiceStats($fiscalYear);
-    }
-
-    private function statusOptions(): array
-    {
-        return collect(InvoiceStatus::cases())->map(fn ($s) => [
-            'value' => $s->value,
-            'label' => $s->label(),
-        ])->toArray();
-    }
-
-    private function paymentOptions(): array
-    {
-        return collect(PaymentStatus::cases())->map(fn ($s) => [
-            'value' => $s->value,
-            'label' => $s->label(),
-        ])->toArray();
-    }
-
-    private function applySorting($query, string $sort, string $direction): void
-    {
-        $sort = in_array($sort, ['number', 'date', 'contact'], true) ? $sort : 'date';
-        $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
-
-        if ($sort === 'number') {
-            $query->orderBy('number', $direction)->orderBy('id', $direction);
-
-            return;
-        }
-
-        if ($sort === 'contact') {
-            $query->orderBy(
-                Contact::select('name')
-                    ->whereColumn('contacts.id', 'fiscal_documents.contact_id')
-                    ->limit(1),
-                $direction
-            )->orderBy('id', $direction);
-
-            return;
-        }
-
-        $query->orderBy('date', $direction)->orderBy('id', $direction);
-    }
 }

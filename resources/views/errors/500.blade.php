@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700,800&display=swap" rel="stylesheet">
 
-    @vite(['resources/js/fatturino.js', 'resources/css/fatturino.css'])
+    @vite('resources/css/fatturino.css')
 </head>
 <body class="min-h-screen font-sans antialiased bg-base-100">
     <div class="min-h-screen flex items-center justify-center px-6">

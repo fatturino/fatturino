@@ -159,7 +159,7 @@ Route::middleware('auth')->group(function () {
     // Electronic Invoice
     Route::livewire('/electronic-invoice-settings', 'pages::settings.openapi')->name('settings.openapi')->defaults('title', 'Fatturazione Elettronica');
 
-    // OpenAPI API endpoints (JSON responses for SPA)
+    // OpenAPI API endpoints (JSON responses for the Livewire application)
     Route::post('/api/v1/openapi/save', [OpenApiController::class, 'save'])->middleware('capability:edit-sdi-settings');
     Route::post('/api/v1/openapi/activate', [OpenApiController::class, 'activate'])->middleware('capability:edit-sdi-settings');
     Route::post('/api/v1/openapi/deactivate', [OpenApiController::class, 'deactivate'])->middleware('capability:edit-sdi-settings');

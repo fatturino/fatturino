@@ -16,57 +16,11 @@ use App\Services\XmlWorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class CreditNotesController extends Controller
 {
     use HandlesDocumentEmail;
     use HandlesXmlSdiWorkflow;
-
-    public function index(Request $request): Response
-    {
-        $fiscalYear = (int) ($request->query('fiscal_year', now()->year));
-        $search = $request->query('search', '');
-        $filterStatus = $request->query('status', '');
-        $sort = $request->query('sort', 'date');
-        $sort = $sort === 'created_at' ? 'date' : $sort;
-        $direction = $request->query('direction', 'desc');
-        $perPage = 15;
-
-        $query = CreditNote::query()
-            ->with([
-                'contact:id,name,email',
-                'latestEmailEvent',
-            ])
-            ->whereYear('date', $fiscalYear);
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('number', 'like', "%{$search}%")
-                    ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$search}%"));
-            });
-        }
-
-        if ($filterStatus !== '') {
-            $query->where('status', $filterStatus);
-        }
-
-        $this->applySorting($query, $sort, $direction);
-
-        $creditNotes = $query->paginate($perPage)->withQueryString();
-
-        return Inertia::render('CreditNotes/Index', [
-            'creditNotes' => $creditNotes,
-            'fiscalYear' => $fiscalYear,
-            'search' => $search,
-            'filterStatus' => $filterStatus,
-            'sort' => $sort,
-            'direction' => $direction,
-            'stats' => $this->stats($fiscalYear),
-            'statusOptions' => $this->statusOptions(),
-        ]);
-    }
 
     public function store(Request $request, SaveCreditNote $saveCreditNote): RedirectResponse
     {
@@ -171,46 +125,4 @@ class CreditNotesController extends Controller
 
     // ─── Helpers ───────────────────────────────────────────────────────────
 
-    private function stats(int $fiscalYear): array
-    {
-        $base = CreditNote::query()->whereYear('date', $fiscalYear);
-
-        return [
-            'total_count' => (clone $base)->count(),
-            'total_gross' => (int) (clone $base)->sum('total_gross'),
-        ];
-    }
-
-    private function statusOptions(): array
-    {
-        return collect(InvoiceStatus::cases())->map(fn ($s) => [
-            'value' => $s->value,
-            'label' => $s->label(),
-        ])->toArray();
-    }
-
-    private function applySorting($query, string $sort, string $direction): void
-    {
-        $sort = in_array($sort, ['number', 'date', 'contact'], true) ? $sort : 'date';
-        $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
-
-        if ($sort === 'number') {
-            $query->orderBy('number', $direction)->orderBy('id', $direction);
-
-            return;
-        }
-
-        if ($sort === 'contact') {
-            $query->orderBy(
-                Contact::select('name')
-                    ->whereColumn('contacts.id', 'fiscal_documents.contact_id')
-                    ->limit(1),
-                $direction
-            )->orderBy('id', $direction);
-
-            return;
-        }
-
-        $query->orderBy('date', $direction)->orderBy('id', $direction);
-    }
 }

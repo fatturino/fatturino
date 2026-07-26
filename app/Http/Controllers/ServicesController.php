@@ -7,24 +7,9 @@ use App\Settings\BackupSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ServicesController extends Controller
 {
-    public function index(BackupSettings $backup): Response
-    {
-        return Inertia::render('Settings/Services', [
-            'backup' => $backup->toArray(),
-            'backupManagedByEnv' => (bool) config('backup.managed_by_env'),
-            'frequencyOptions' => [
-                ['value' => 'daily', 'label' => 'Giornaliero'],
-                ['value' => 'weekly', 'label' => 'Settimanale'],
-                ['value' => 'monthly', 'label' => 'Mensile'],
-            ],
-        ]);
-    }
-
     public function updateBackup(Request $request, BackupSettings $settings): RedirectResponse
     {
         $rules = [
