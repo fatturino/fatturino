@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\CompanySettingsController;
-use App\Http\Controllers\ContactsController;
 use App\Http\Controllers\CreditNotesController;
 use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\InvoiceSettingsController;
@@ -34,7 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/dashboard', 'pages::dashboard')->name('dashboard');
 
     Route::post('/fiscal-year', function (Request $request) {
-        $request->validate(['year' => 'required|integer|min:2000|max:'.(now()->year + 1)]);
+        $request->validate(['year' => 'required|integer|min:2000|max:' . (now()->year + 1)]);
         session(['fiscal_year' => (int) $request->year]);
 
         return back();
@@ -42,14 +41,12 @@ Route::middleware('auth')->group(function () {
 
     // Contacts
     Route::livewire('/contacts', 'pages::contacts.index')->name('contacts.index');
-    Route::get('/contacts/create', [ContactsController::class, 'create'])->name('contacts.create')
+    Route::livewire('/contacts/create', 'pages::contacts.create')->name('contacts.create')
         ->defaults('title', 'Nuovo Contatto')
         ->defaults('breadcrumbs', [['label' => 'Contatti', 'url' => '/contacts'], ['label' => 'Nuovo']]);
-    Route::post('/contacts', [ContactsController::class, 'store'])->name('contacts.store');
-    Route::get('/contacts/{contact}/edit', [ContactsController::class, 'edit'])->name('contacts.edit')
+    Route::livewire('/contacts/{contact}/edit', 'pages::contacts.edit')->name('contacts.edit')
         ->defaults('title', 'Modifica Contatto')
         ->defaults('breadcrumbs', [['label' => 'Contatti', 'url' => '/contacts'], ['label' => 'Modifica']]);
-    Route::put('/contacts/{contact}', [ContactsController::class, 'update'])->name('contacts.update');
 
     // Sales Invoices
     Route::livewire('/sell-invoices', 'pages::documents.index')->name('sell-invoices.index')->defaults('type', 'sales');
