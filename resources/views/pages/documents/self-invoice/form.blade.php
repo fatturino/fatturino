@@ -2,7 +2,6 @@
 
 use App\Actions\SaveSelfInvoice;
 use App\Enums\VatRate;
-use App\Models\Contact;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Services\DocumentEventRecorder;
@@ -15,68 +14,136 @@ use Livewire\Component;
 
 new #[Layout('layouts::app')] class extends Component {
     public ?SelfInvoice $invoice = null;
+
     public int|string $contact_id = '';
+
     public int|string $sequence_id = '';
+
     public string $number = '';
+
     public string $date = '';
+
     public string $due_date = '';
+
     public string $document_type = 'TD17';
+
     public string $related_invoice_number = '';
+
     public string $related_invoice_date = '';
+
     public string $notes = '';
+
     public array $lines = [];
+
     public string $tab = 'data';
 
     public function mount(?SelfInvoice $selfInvoice = null): void
     {
         $settings = app(CompanySettings::class);
         abort_unless(FiscalRegimePolicy::supportsSelfInvoices($settings->company_fiscal_regime, $settings->rf19_self_invoices_enabled), 403);
-
         $selfInvoice = $selfInvoice?->exists ? $selfInvoice : null;
-        $this->invoice = $selfInvoice?->load(['lines', 'events' => fn($query) => $query->latest('occurred_at')]);
+        $this->invoice = $selfInvoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $this->date = now()->toDateString();
         $this->sequence_id = app(InvoiceSettings::class)->default_sequence_self_invoice ?? Sequence::query()->where('type', 'self_invoice')->orderByDesc('is_system')->value('id') ?? '';
-
         if ($selfInvoice) {
-            foreach (['contact_id', 'sequence_id', 'number', 'document_type', 'related_invoice_number', 'notes'] as $field) $this->{$field} = (string) ($selfInvoice->{$field} ?? '');
+            foreach (['contact_id', 'sequence_id', 'number', 'document_type', 'related_invoice_number', 'notes'] as $field) {
+                $this->{$field} = (string) ($selfInvoice->{$field} ?? '');
+            }
             $this->date = $selfInvoice->date->toDateString();
             $this->due_date = $selfInvoice->due_date?->toDateString() ?? '';
             $this->related_invoice_date = $selfInvoice->related_invoice_date?->toDateString() ?? '';
-            $this->lines = $selfInvoice->lines->map(fn($line) => $this->lineState(['key' => (string) $line->id, 'description' => $line->description, 'quantity' => $line->quantity, 'unit_of_measure' => $line->unit_of_measure, 'unit_price' => $line->unit_price / 100, 'vat_rate' => $line->vat_rate->value]))->all();
+            $this->lines = $selfInvoice->lines->map(fn ($line) => $this->lineState(['key' => (string) $line->id, 'description' => $line->description, 'quantity' => $line->quantity, 'unit_of_measure' => $line->unit_of_measure, 'unit_price' => $line->unit_price / 100, 'vat_rate' => $line->vat_rate->value]))->all();
         }
-
         $this->lines = $this->lines ?: [$this->emptyLine()];
     }
 
-    public function addLine(): void { $this->lines[] = $this->emptyLine(); }
-    public function removeLine(int $index): void { if (count($this->lines) > 1) array_splice($this->lines, $index, 1); }
-    public function toggleLineDetails(int $index): void { $this->lines[$index]['details_enabled'] = ! ($this->lines[$index]['details_enabled'] ?? false); }
+    public function addLine(): void
+    {
+        $this->lines[] = $this->emptyLine();
+    }
+
+    public function removeLine(int $index): void
+    {
+        if (count($this->lines) > 1) {
+            array_splice($this->lines, $index, 1);
+        }
+    }
+
+    public function toggleLineDetails(int $index): void
+    {
+        $this->lines[$index]['details_enabled'] = ! ($this->lines[$index]['details_enabled'] ?? false);
+    }
 
     public function save(SaveSelfInvoice $saveSelfInvoice): mixed
     {
-        if ($this->readOnly) { $this->addError('invoice', 'Questa autofattura non è più modificabile.'); return null; }
+        if ($this->readOnly) {
+            $this->addError('invoice', 'Questa autofattura non è più modificabile.');
+
+            return null;
+        }
         $payload = $this->validate($this->rules());
         $saved = $this->invoice ? $saveSelfInvoice->update($this->invoice, $payload) : $saveSelfInvoice->create($payload);
-
         if (! $this->invoice) {
             app(DocumentEventRecorder::class)->created($saved);
             app(PostHogTelemetryService::class)->capture('self_invoice_created', app(PostHogTelemetryService::class)->documentProperties($saved), auth()->user());
         }
-
         session()->flash('success', $this->invoice ? 'Autofattura aggiornata.' : 'Autofattura creata.');
+
         return $this->redirectRoute('self-invoices.index', navigate: true);
     }
 
-    public function getReadOnlyProperty(): bool { return $this->invoice && (! $this->invoice->isSdiEditable() || $this->invoice->date->year < now()->year); }
-    public function getNetTotalProperty(): float { return round(array_sum(array_map($this->lineTotal(...), $this->lines)), 2); }
-    public function getVatTotalProperty(): float { return round(array_sum(array_map(fn($line) => $this->lineTotal($line) * $this->vatPercent($line['vat_rate'] ?? '') / 100, $this->lines)), 2); }
-    public function getGrossTotalProperty(): float { return $this->netTotal + $this->vatTotal; }
-    private function rules(): array { $rules = ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'due_date' => 'nullable|date', 'document_type' => 'required|in:TD17,TD18,TD19,TD28,TD29', 'related_invoice_number' => 'nullable|string|max:20', 'related_invoice_date' => 'nullable|date', 'notes' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.vat_rate' => 'required|string']; if (! $this->invoice) { $rules['sequence_id'] = 'required|exists:sequences,id'; $rules['number'] = 'nullable|string'; } return $rules; }
-    private function emptyLine(): array { return $this->lineState(['key' => (string) str()->uuid(), 'description' => '', 'quantity' => '1', 'unit_of_measure' => '', 'unit_price' => '0.00', 'vat_rate' => 'R22']); }
-    private function lineState(array $line): array { return [...$line, 'quantity' => (string) $line['quantity'], 'unit_of_measure' => $line['unit_of_measure'] ?? '', 'unit_price' => number_format((float) $line['unit_price'], 2, '.', ''), 'details_enabled' => $line['quantity'] != 1 || ($line['unit_of_measure'] ?? '') !== '']; }
-    private function lineTotal(array $line): float { return max(0, (float) ($line['quantity'] ?: 0)) * max(0, (float) ($line['unit_price'] ?: 0)); }
-    private function vatPercent(string $value): float { return VatRate::tryFrom($value)?->percent() ?? 0; }
-}; ?>
+    public function getReadOnlyProperty(): bool
+    {
+        return $this->invoice && (! $this->invoice->isSdiEditable() || $this->invoice->date->year < now()->year);
+    }
+
+    public function getNetTotalProperty(): float
+    {
+        return round(array_sum(array_map($this->lineTotal(...), $this->lines)), 2);
+    }
+
+    public function getVatTotalProperty(): float
+    {
+        return round(array_sum(array_map(fn ($line) => $this->lineTotal($line) * $this->vatPercent($line['vat_rate'] ?? '') / 100, $this->lines)), 2);
+    }
+
+    public function getGrossTotalProperty(): float
+    {
+        return $this->netTotal + $this->vatTotal;
+    }
+
+    private function rules(): array
+    {
+        $rules = ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'due_date' => 'nullable|date', 'document_type' => 'required|in:TD17,TD18,TD19,TD28,TD29', 'related_invoice_number' => 'nullable|string|max:20', 'related_invoice_date' => 'nullable|date', 'notes' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.vat_rate' => 'required|string'];
+        if (! $this->invoice) {
+            $rules['sequence_id'] = 'required|exists:sequences,id';
+            $rules['number'] = 'nullable|string';
+        }
+
+        return $rules;
+    }
+
+    private function emptyLine(): array
+    {
+        return $this->lineState(['key' => (string) str()->uuid(), 'description' => '', 'quantity' => '1', 'unit_of_measure' => '', 'unit_price' => '0.00', 'vat_rate' => 'R22']);
+    }
+
+    private function lineState(array $line): array
+    {
+        return [...$line, 'quantity' => (string) $line['quantity'], 'unit_of_measure' => $line['unit_of_measure'] ?? '', 'unit_price' => number_format((float) $line['unit_price'], 2, '.', ''), 'details_enabled' => $line['quantity'] != 1 || ($line['unit_of_measure'] ?? '') !== ''];
+    }
+
+    private function lineTotal(array $line): float
+    {
+        return max(0, (float) ($line['quantity'] ?: 0)) * max(0, (float) ($line['unit_price'] ?: 0));
+    }
+
+    private function vatPercent(string $value): float
+    {
+        return VatRate::tryFrom($value)?->percent() ?? 0;
+    }
+};
+?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Documenti</p><h1 class="text-lg font-bold text-content">{{ $invoice ? 'Modifica autofattura' : 'Nuova autofattura' }}</h1></div></x-slot:header>
 <section class="mx-auto max-w-7xl space-y-6 pb-24">

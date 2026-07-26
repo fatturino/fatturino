@@ -11,8 +11,11 @@ new #[Layout('layouts::app')] class extends Component {
     use WithPagination;
 
     public string $name = '';
+
     public string $type = 'sales';
+
     public string $pattern = '{SEQ}';
+
     public ?int $editingId = null;
 
     public function storeSequence(): void
@@ -51,7 +54,7 @@ new #[Layout('layouts::app')] class extends Component {
         try {
             $sequence->delete();
             session()->flash('success', 'Sezionale eliminato.');
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             $this->addError('sequence', $exception->getMessage());
         }
     }
@@ -102,7 +105,8 @@ new #[Layout('layouts::app')] class extends Component {
         $this->pattern = '{SEQ}';
         $this->resetValidation();
     }
-}; ?>
+};
+?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Numerazione documenti</p><h1 class="text-lg font-bold text-content">Sequenze</h1></div></x-slot:header>
 

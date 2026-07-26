@@ -16,22 +16,39 @@ new #[Layout('layouts::app')] class extends Component {
     use WithFileUploads;
 
     public string $company_name = '';
+
     public string $company_vat_number = '';
+
     public string $company_tax_code = '';
+
     public string $company_address = '';
+
     public string $company_postal_code = '';
+
     public string $company_city = '';
+
     public string $company_province = '';
+
     public string $company_country = 'IT';
+
     public string $company_email = '';
+
     public string $company_pec = '';
+
     public string $company_sdi_code = '';
+
     public string $company_fiscal_regime = 'RF01';
+
     public bool $rf19_self_invoices_enabled = false;
+
     public array $company_ateco_codes = [];
+
     public string $atecoCodesInput = '';
+
     public ?UploadedFile $company_logo = null;
+
     public bool $remove_logo = false;
+
     public ?string $companyLogoPath = null;
 
     public function mount(CompanySettings $settings): void
@@ -51,11 +68,13 @@ new #[Layout('layouts::app')] class extends Component {
         $this->company_ateco_codes = collect(explode(',', $this->atecoCodesInput))->map(fn (string $code) => trim($code))->filter()->values()->all();
         $validated = $this->validate();
         if ($this->remove_logo && $settings->company_logo_path) {
-            \Storage::disk('public')->delete($settings->company_logo_path);
+            Storage::disk('public')->delete($settings->company_logo_path);
             $settings->company_logo_path = null;
         }
         if ($this->company_logo) {
-            if ($settings->company_logo_path) \Storage::disk('public')->delete($settings->company_logo_path);
+            if ($settings->company_logo_path) {
+                Storage::disk('public')->delete($settings->company_logo_path);
+            }
             $settings->company_logo_path = $this->company_logo->storeAs('logos', 'company-logo.'.$this->company_logo->getClientOriginalExtension(), 'public');
         }
         $oldRegime = $settings->company_fiscal_regime;
@@ -67,7 +86,9 @@ new #[Layout('layouts::app')] class extends Component {
         $this->companyLogoPath = $settings->company_logo_path;
         $this->company_logo = null;
         $this->remove_logo = false;
-        if ($oldRegime !== $settings->company_fiscal_regime || $oldRf19 !== $settings->rf19_self_invoices_enabled) Log::info('Fiscal regime settings updated', ['user_id' => request()->user()?->id, 'old_regime' => $oldRegime, 'new_regime' => $settings->company_fiscal_regime, 'old_rf19_self_invoices_enabled' => $oldRf19, 'new_rf19_self_invoices_enabled' => $settings->rf19_self_invoices_enabled]);
+        if ($oldRegime !== $settings->company_fiscal_regime || $oldRf19 !== $settings->rf19_self_invoices_enabled) {
+            Log::info('Fiscal regime settings updated', ['user_id' => request()->user()?->id, 'old_regime' => $oldRegime, 'new_regime' => $settings->company_fiscal_regime, 'old_rf19_self_invoices_enabled' => $oldRf19, 'new_rf19_self_invoices_enabled' => $settings->rf19_self_invoices_enabled]);
+        }
         session()->flash('success', 'Impostazioni salvate.');
     }
 
@@ -76,11 +97,27 @@ new #[Layout('layouts::app')] class extends Component {
         return ['company_name' => 'required|string', 'company_vat_number' => ['nullable', new ItalianVatNumber], 'company_tax_code' => 'nullable|string', 'company_address' => 'nullable|string', 'company_postal_code' => 'nullable|string', 'company_city' => 'nullable|string', 'company_province' => 'nullable|string', 'company_country' => 'required|size:2', 'company_email' => 'nullable|email', 'company_pec' => 'nullable|string', 'company_sdi_code' => 'nullable|string', 'company_fiscal_regime' => ['required', Rule::in(array_column(FiscalRegime::options(), 'value'))], 'rf19_self_invoices_enabled' => 'boolean', 'company_ateco_codes' => 'nullable|array', 'company_ateco_codes.*' => 'string', 'company_logo' => 'nullable|image|max:1024', 'remove_logo' => 'boolean'];
     }
 
-    public function fiscalRegimes(): array { return FiscalRegime::options(); }
-    public function countries(): array { return [['value' => 'IT', 'label' => 'Italia'], ['value' => 'AT', 'label' => 'Austria'], ['value' => 'BE', 'label' => 'Belgio'], ['value' => 'BG', 'label' => 'Bulgaria'], ['value' => 'CY', 'label' => 'Cipro'], ['value' => 'HR', 'label' => 'Croazia'], ['value' => 'DK', 'label' => 'Danimarca'], ['value' => 'EE', 'label' => 'Estonia'], ['value' => 'FI', 'label' => 'Finlandia'], ['value' => 'FR', 'label' => 'Francia'], ['value' => 'DE', 'label' => 'Germania'], ['value' => 'GR', 'label' => 'Grecia'], ['value' => 'IE', 'label' => 'Irlanda'], ['value' => 'LV', 'label' => 'Lettonia'], ['value' => 'LT', 'label' => 'Lituania'], ['value' => 'LU', 'label' => 'Lussemburgo'], ['value' => 'MT', 'label' => 'Malta'], ['value' => 'NL', 'label' => 'Paesi Bassi'], ['value' => 'PL', 'label' => 'Polonia'], ['value' => 'PT', 'label' => 'Portogallo'], ['value' => 'CZ', 'label' => 'Repubblica Ceca'], ['value' => 'RO', 'label' => 'Romania'], ['value' => 'SK', 'label' => 'Slovacchia'], ['value' => 'SI', 'label' => 'Slovenia'], ['value' => 'ES', 'label' => 'Spagna'], ['value' => 'SE', 'label' => 'Svezia'], ['value' => 'HU', 'label' => 'Ungheria'], ['value' => 'CH', 'label' => 'Svizzera'], ['value' => 'GB', 'label' => 'Regno Unito'], ['value' => 'US', 'label' => 'Stati Uniti'], ['value' => 'CN', 'label' => 'Cina']]; }
-    public function atecoLabel(string $code): string { return AtecoCode::label($code); }
-    private function ensureAllowed(): void { abort_unless(app(EnvironmentCapabilities::class)->can('edit-company-settings'), 403, 'Operazione non consentita in questa modalità.'); }
-}; ?>
+    public function fiscalRegimes(): array
+    {
+        return FiscalRegime::options();
+    }
+
+    public function countries(): array
+    {
+        return [['value' => 'IT', 'label' => 'Italia'], ['value' => 'AT', 'label' => 'Austria'], ['value' => 'BE', 'label' => 'Belgio'], ['value' => 'BG', 'label' => 'Bulgaria'], ['value' => 'CY', 'label' => 'Cipro'], ['value' => 'HR', 'label' => 'Croazia'], ['value' => 'DK', 'label' => 'Danimarca'], ['value' => 'EE', 'label' => 'Estonia'], ['value' => 'FI', 'label' => 'Finlandia'], ['value' => 'FR', 'label' => 'Francia'], ['value' => 'DE', 'label' => 'Germania'], ['value' => 'GR', 'label' => 'Grecia'], ['value' => 'IE', 'label' => 'Irlanda'], ['value' => 'LV', 'label' => 'Lettonia'], ['value' => 'LT', 'label' => 'Lituania'], ['value' => 'LU', 'label' => 'Lussemburgo'], ['value' => 'MT', 'label' => 'Malta'], ['value' => 'NL', 'label' => 'Paesi Bassi'], ['value' => 'PL', 'label' => 'Polonia'], ['value' => 'PT', 'label' => 'Portogallo'], ['value' => 'CZ', 'label' => 'Repubblica Ceca'], ['value' => 'RO', 'label' => 'Romania'], ['value' => 'SK', 'label' => 'Slovacchia'], ['value' => 'SI', 'label' => 'Slovenia'], ['value' => 'ES', 'label' => 'Spagna'], ['value' => 'SE', 'label' => 'Svezia'], ['value' => 'HU', 'label' => 'Ungheria'], ['value' => 'CH', 'label' => 'Svizzera'], ['value' => 'GB', 'label' => 'Regno Unito'], ['value' => 'US', 'label' => 'Stati Uniti'], ['value' => 'CN', 'label' => 'Cina']];
+    }
+
+    public function atecoLabel(string $code): string
+    {
+        return AtecoCode::label($code);
+    }
+
+    private function ensureAllowed(): void
+    {
+        abort_unless(app(EnvironmentCapabilities::class)->can('edit-company-settings'), 403, 'Operazione non consentita in questa modalità.');
+    }
+};
+?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Configurazione</p><h1 class="text-lg font-bold text-content">Dati azienda</h1></div></x-slot:header>
 <section class="space-y-6"><form wire:submit="save" class="grid gap-6 lg:grid-cols-2">@if(session('success'))<div class="lg:col-span-2 rounded-md border border-success/20 bg-success-bg p-4 text-sm text-success">{{ session('success') }}</div>@endif

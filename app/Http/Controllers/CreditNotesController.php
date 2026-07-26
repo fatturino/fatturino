@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Actions\SaveCreditNote;
-use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Concerns\HandlesDocumentEmail;
 use App\Http\Controllers\Concerns\HandlesXmlSdiWorkflow;
-use App\Models\Contact;
 use App\Models\CreditNote;
 use App\Services\CreditNoteXmlService;
 use App\Services\DocumentEventRecorder;

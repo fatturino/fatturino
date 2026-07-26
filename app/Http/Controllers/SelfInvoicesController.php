@@ -3,11 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Actions\SaveSelfInvoice;
-use App\Enums\InvoiceStatus;
-use App\Enums\PaymentStatus;
 use App\Http\Controllers\Concerns\HandlesDocumentPayments;
 use App\Http\Controllers\Concerns\HandlesXmlSdiWorkflow;
-use App\Models\Contact;
 use App\Models\Payment;
 use App\Models\SelfInvoice;
 use App\Services\CourtesyPdfService;

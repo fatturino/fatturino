@@ -33,7 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/dashboard', 'pages::dashboard')->name('dashboard');
 
     Route::post('/fiscal-year', function (Request $request) {
-        $request->validate(['year' => 'required|integer|min:2000|max:' . (now()->year + 1)]);
+        $request->validate(['year' => 'required|integer|min:2000|max:'.(now()->year + 1)]);
         session(['fiscal_year' => (int) $request->year]);
 
         return back();

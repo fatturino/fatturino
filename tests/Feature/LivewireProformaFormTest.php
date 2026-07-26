@@ -6,6 +6,7 @@ use App\Models\ProformaInvoice;
 use App\Models\Sequence;
 use App\Models\User;
 use App\Settings\CompanySettings;
+use App\Settings\InvoiceSettings;
 use Livewire\Livewire;
 
 function validProformaLine(string $description = 'Progetto'): array
@@ -73,7 +74,7 @@ it('creates a proforma with the configured default sequence', function () {
     $contact = Contact::factory()->create();
     Sequence::factory()->create(['type' => 'proforma', 'is_system' => true]);
     $defaultSequence = Sequence::factory()->create(['type' => 'proforma', 'is_system' => false]);
-    $settings = app(\App\Settings\InvoiceSettings::class);
+    $settings = app(InvoiceSettings::class);
     $settings->default_sequence_proforma = $defaultSequence->id;
     $settings->save();
 

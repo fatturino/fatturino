@@ -1,10 +1,7 @@
 <?php
 
 use App\Actions\SaveProformaInvoice;
-use App\Enums\PaymentMethod;
-use App\Enums\PaymentTerms;
 use App\Enums\VatRate;
-use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\Sequence;
 use App\Services\DocumentEventRecorder;
@@ -15,22 +12,39 @@ use Livewire\Component;
 
 new #[Layout('layouts::app')] class extends Component {
     public ?ProformaInvoice $invoice = null;
+
     public int|string $contact_id = '';
+
     public int|string $sequence_id = '';
+
     public string $date = '';
+
     public string $due_date = '';
+
     public string $notes = '';
+
     public string $payment_method = '';
+
     public string $payment_terms = '';
+
     public string $bank_name = '';
+
     public string $bank_iban = '';
+
     public bool $withholding_tax_enabled = false;
+
     public string $withholding_tax_percent = '20.00';
+
     public bool $fund_enabled = false;
+
     public string $fund_percent = '4.00';
+
     public string $fund_vat_rate = '';
+
     public bool $stamp_duty_applied = false;
+
     public array $lines = [];
+
     public string $tab = 'data';
 
     public function mount(?ProformaInvoice $proformaInvoice = null): void
@@ -47,51 +61,142 @@ new #[Layout('layouts::app')] class extends Component {
         $this->fund_enabled = (bool) $settings->fund_enabled;
         $this->fund_vat_rate = (string) ($settings->fund_vat_rate?->value ?? '');
         $this->stamp_duty_applied = (bool) $settings->auto_stamp_duty;
-
         if ($proformaInvoice) {
-            foreach (['contact_id', 'sequence_id', 'notes', 'payment_method', 'payment_terms', 'bank_name', 'bank_iban', 'withholding_tax_percent', 'fund_percent', 'fund_vat_rate'] as $field) $this->{$field} = (string) ($proformaInvoice->{$field} ?? '');
-            foreach (['withholding_tax_enabled', 'fund_enabled', 'stamp_duty_applied'] as $field) $this->{$field} = (bool) $proformaInvoice->{$field};
+            foreach (['contact_id', 'sequence_id', 'notes', 'payment_method', 'payment_terms', 'bank_name', 'bank_iban', 'withholding_tax_percent', 'fund_percent', 'fund_vat_rate'] as $field) {
+                $this->{$field} = (string) ($proformaInvoice->{$field} ?? '');
+            }
+            foreach (['withholding_tax_enabled', 'fund_enabled', 'stamp_duty_applied'] as $field) {
+                $this->{$field} = (bool) $proformaInvoice->{$field};
+            }
             $this->date = $proformaInvoice->date->toDateString();
             $this->due_date = $proformaInvoice->due_date?->toDateString() ?? '';
             $this->lines = $proformaInvoice->lines->map(fn ($line) => $this->lineState(['key' => (string) $line->id, 'description' => $line->description, 'quantity' => $line->quantity, 'unit_of_measure' => $line->unit_of_measure, 'unit_price' => $line->unit_price / 100, 'discount_percent' => $line->discount_percent, 'vat_rate' => $line->vat_rate->value]))->all();
         }
-
-        if ($this->isRf19()) $this->withholding_tax_enabled = false;
+        if ($this->isRf19()) {
+            $this->withholding_tax_enabled = false;
+        }
         $this->lines = $this->lines ?: [$this->emptyLine()];
     }
 
-    public function addLine(): void { $this->lines[] = $this->emptyLine(); }
-    public function removeLine(int $index): void { if (count($this->lines) > 1) array_splice($this->lines, $index, 1); }
-    public function toggleLineDetails(int $index): void { $this->lines[$index]['details_enabled'] = ! ($this->lines[$index]['details_enabled'] ?? false); }
-    public function updatedLinesDiscountEnabled(bool $enabled, string $key): void { if (! $enabled) $this->lines[(int) explode('.', $key)[0]]['discount_percent'] = ''; }
-    public function updatedLines(): void { if ($this->isRf19()) $this->stamp_duty_applied = $this->netTotal > 77.47; }
+    public function addLine(): void
+    {
+        $this->lines[] = $this->emptyLine();
+    }
+
+    public function removeLine(int $index): void
+    {
+        if (count($this->lines) > 1) {
+            array_splice($this->lines, $index, 1);
+        }
+    }
+
+    public function toggleLineDetails(int $index): void
+    {
+        $this->lines[$index]['details_enabled'] = ! ($this->lines[$index]['details_enabled'] ?? false);
+    }
+
+    public function updatedLinesDiscountEnabled(bool $enabled, string $key): void
+    {
+        if (! $enabled) {
+            $this->lines[(int) explode('.', $key)[0]]['discount_percent'] = '';
+        }
+    }
+
+    public function updatedLines(): void
+    {
+        if ($this->isRf19()) {
+            $this->stamp_duty_applied = $this->netTotal > 77.47;
+        }
+    }
 
     public function save(SaveProformaInvoice $saveProformaInvoice): mixed
     {
-        if ($this->readOnly) { $this->addError('invoice', 'Questa proforma non è modificabile.'); return null; }
+        if ($this->readOnly) {
+            $this->addError('invoice', 'Questa proforma non è modificabile.');
+
+            return null;
+        }
         $payload = $this->validate($this->rules());
         $invoice = $this->invoice ? $saveProformaInvoice->update($this->invoice, $payload) : $saveProformaInvoice->create($payload);
-        if (! $this->invoice) app(DocumentEventRecorder::class)->created($invoice);
+        if (! $this->invoice) {
+            app(DocumentEventRecorder::class)->created($invoice);
+        }
         session()->flash('success', $this->invoice ? 'Proforma aggiornata.' : 'Proforma creata.');
+
         return $this->redirectRoute('proforma.index', navigate: true);
     }
 
-    public function getNetTotalProperty(): float { return round(array_sum(array_map($this->lineTotal(...), $this->lines)), 2); }
-    public function getFundAmountProperty(): float { return $this->fund_enabled ? round($this->netTotal * ((float) $this->fund_percent / 100), 2) : 0; }
-    public function getVatTotalProperty(): float { return round(array_sum(array_map(fn ($line) => $this->lineTotal($line) * $this->vatPercent($line['vat_rate'] ?? '') / 100, $this->lines)) + $this->fundAmount * $this->vatPercent($this->fund_vat_rate) / 100, 2); }
-    public function getStampDutyAmountProperty(): float { return $this->stamp_duty_applied ? 2.00 : 0.00; }
-    public function getGrossTotalProperty(): float { return $this->netTotal + $this->fundAmount + $this->vatTotal; }
-    public function getNetDueProperty(): float { return max(0, $this->grossTotal + $this->stampDutyAmount - ($this->withholding_tax_enabled ? $this->netTotal * ((float) $this->withholding_tax_percent / 100) : 0)); }
-    public function getNumberPreviewProperty(): ?string { return $this->invoice?->number ?? Sequence::query()->whereKey($this->sequence_id)->where('type', 'proforma')->first()?->getFormattedNumber((int) substr($this->date, 0, 4)); }
-    public function getReadOnlyProperty(): bool { return $this->invoice && (! in_array($this->invoice->status->value, ['draft', 'sent'], true) || $this->invoice->date->year < now()->year); }
+    public function getNetTotalProperty(): float
+    {
+        return round(array_sum(array_map($this->lineTotal(...), $this->lines)), 2);
+    }
 
-    private function rules(): array { return ['contact_id' => 'required|exists:contacts,id', 'sequence_id' => 'required|exists:sequences,id', 'date' => 'required|date', 'due_date' => 'nullable|date', 'notes' => 'nullable|string', 'withholding_tax_enabled' => 'boolean', 'withholding_tax_percent' => 'nullable|numeric|min:0|max:100', 'fund_enabled' => 'boolean', 'fund_percent' => 'nullable|numeric|min:0|max:100', 'fund_vat_rate' => 'nullable|string', 'stamp_duty_applied' => 'boolean', 'payment_method' => 'nullable|string', 'payment_terms' => 'nullable|string', 'bank_name' => 'nullable|string', 'bank_iban' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.discount_percent' => 'nullable|numeric|min:0|max:100', 'lines.*.vat_rate' => 'required|string']; }
-    private function emptyLine(): array { return $this->lineState(['key' => (string) str()->uuid(), 'description' => '', 'quantity' => 1, 'unit_of_measure' => '', 'unit_price' => '0.00', 'discount_percent' => '', 'vat_rate' => $this->isRf19() ? 'N2.2' : 'R22']); }
-    private function lineState(array $line): array { return [...$line, 'quantity' => (string) $line['quantity'], 'unit_of_measure' => $line['unit_of_measure'] ?? '', 'unit_price' => number_format((float) $line['unit_price'], 2, '.', ''), 'discount_percent' => $line['discount_percent'] ?? '', 'details_enabled' => $line['quantity'] != 1 || ($line['unit_of_measure'] ?? '') !== '' || ($line['discount_percent'] ?? null) !== null, 'discount_enabled' => ($line['discount_percent'] ?? null) !== null]; }
-    public function isRf19(): bool { return app(CompanySettings::class)->company_fiscal_regime === 'RF19'; }
-    private function lineTotal(array $line): float { return max(0, (float) ($line['quantity'] ?: 0)) * max(0, (float) ($line['unit_price'] ?: 0)) * (1 - max(0, (float) ($line['discount_percent'] ?: 0)) / 100); }
-    private function vatPercent(string $value): float { return VatRate::tryFrom($value)?->percent() ?? 0; }
-}; ?>
+    public function getFundAmountProperty(): float
+    {
+        return $this->fund_enabled ? round($this->netTotal * ((float) $this->fund_percent / 100), 2) : 0;
+    }
+
+    public function getVatTotalProperty(): float
+    {
+        return round(array_sum(array_map(fn ($line) => $this->lineTotal($line) * $this->vatPercent($line['vat_rate'] ?? '') / 100, $this->lines)) + $this->fundAmount * $this->vatPercent($this->fund_vat_rate) / 100, 2);
+    }
+
+    public function getStampDutyAmountProperty(): float
+    {
+        return $this->stamp_duty_applied ? 2.00 : 0.00;
+    }
+
+    public function getGrossTotalProperty(): float
+    {
+        return $this->netTotal + $this->fundAmount + $this->vatTotal;
+    }
+
+    public function getNetDueProperty(): float
+    {
+        return max(0, $this->grossTotal + $this->stampDutyAmount - ($this->withholding_tax_enabled ? $this->netTotal * ((float) $this->withholding_tax_percent / 100) : 0));
+    }
+
+    public function getNumberPreviewProperty(): ?string
+    {
+        return $this->invoice?->number ?? Sequence::query()->whereKey($this->sequence_id)->where('type', 'proforma')->first()?->getFormattedNumber((int) substr($this->date, 0, 4));
+    }
+
+    public function getReadOnlyProperty(): bool
+    {
+        return $this->invoice && (! in_array($this->invoice->status->value, ['draft', 'sent'], true) || $this->invoice->date->year < now()->year);
+    }
+
+    private function rules(): array
+    {
+        return ['contact_id' => 'required|exists:contacts,id', 'sequence_id' => 'required|exists:sequences,id', 'date' => 'required|date', 'due_date' => 'nullable|date', 'notes' => 'nullable|string', 'withholding_tax_enabled' => 'boolean', 'withholding_tax_percent' => 'nullable|numeric|min:0|max:100', 'fund_enabled' => 'boolean', 'fund_percent' => 'nullable|numeric|min:0|max:100', 'fund_vat_rate' => 'nullable|string', 'stamp_duty_applied' => 'boolean', 'payment_method' => 'nullable|string', 'payment_terms' => 'nullable|string', 'bank_name' => 'nullable|string', 'bank_iban' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.discount_percent' => 'nullable|numeric|min:0|max:100', 'lines.*.vat_rate' => 'required|string'];
+    }
+
+    private function emptyLine(): array
+    {
+        return $this->lineState(['key' => (string) str()->uuid(), 'description' => '', 'quantity' => 1, 'unit_of_measure' => '', 'unit_price' => '0.00', 'discount_percent' => '', 'vat_rate' => $this->isRf19() ? 'N2.2' : 'R22']);
+    }
+
+    private function lineState(array $line): array
+    {
+        return [...$line, 'quantity' => (string) $line['quantity'], 'unit_of_measure' => $line['unit_of_measure'] ?? '', 'unit_price' => number_format((float) $line['unit_price'], 2, '.', ''), 'discount_percent' => $line['discount_percent'] ?? '', 'details_enabled' => $line['quantity'] != 1 || ($line['unit_of_measure'] ?? '') !== '' || ($line['discount_percent'] ?? null) !== null, 'discount_enabled' => ($line['discount_percent'] ?? null) !== null];
+    }
+
+    public function isRf19(): bool
+    {
+        return app(CompanySettings::class)->company_fiscal_regime === 'RF19';
+    }
+
+    private function lineTotal(array $line): float
+    {
+        return max(0, (float) ($line['quantity'] ?: 0)) * max(0, (float) ($line['unit_price'] ?: 0)) * (1 - max(0, (float) ($line['discount_percent'] ?: 0)) / 100);
+    }
+
+    private function vatPercent(string $value): float
+    {
+        return VatRate::tryFrom($value)?->percent() ?? 0;
+    }
+};
+?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Vendite</p><h1 class="text-lg font-bold text-content">{{ $invoice ? 'Modifica proforma' : 'Nuova proforma' }}</h1></div></x-slot:header>
 

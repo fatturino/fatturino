@@ -16,11 +16,16 @@ new #[Layout('layouts::app')] class extends Component {
     use WithFileUploads;
 
     public string $importType = 'xml_sales';
+
     /** @var array<int, TemporaryUploadedFile> */
     public array $xmlFiles = [];
+
     public ?TemporaryUploadedFile $csvFile = null;
+
     public bool $updateExisting = false;
+
     public ?array $importResult = null;
+
     public bool $selfInvoiceImportEnabled = true;
 
     public function mount(CompanySettings $company): void
@@ -42,7 +47,6 @@ new #[Layout('layouts::app')] class extends Component {
     public function import(): void
     {
         $this->importResult = null;
-
         match ($this->importType) {
             'xml_sales' => $this->importXml('sales'),
             'xml_purchase' => $this->importXml('purchase'),
@@ -57,7 +61,6 @@ new #[Layout('layouts::app')] class extends Component {
         if ($category === 'self_invoice' && ! $this->selfInvoiceImportEnabled) {
             abort(403, 'Import autofatture disabilitato per il regime fiscale corrente.');
         }
-
         $this->validate(['xmlFiles' => 'required|array|min:1', 'xmlFiles.*' => 'required|file|mimes:xml,p7m,zip|max:10240']);
         $sequenceId = $this->resolveDefaultSequenceId($category);
         if ($sequenceId === null) {
@@ -65,7 +68,6 @@ new #[Layout('layouts::app')] class extends Component {
 
             return;
         }
-
         try {
             $service = app(InvoiceXmlImportService::class);
             foreach ($this->xmlFiles as $file) {
@@ -77,7 +79,7 @@ new #[Layout('layouts::app')] class extends Component {
             }
             $this->storeResult($this->importType, $service->getStats(), $service->getErrors(), count($this->xmlFiles), $category);
             $this->xmlFiles = [];
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->addError('xmlFiles', $exception->getMessage());
         }
     }
@@ -85,13 +87,12 @@ new #[Layout('layouts::app')] class extends Component {
     private function importFattura24Contacts(): void
     {
         $this->validate(['csvFile' => 'required|file|mimes:csv,txt|max:10240', 'updateExisting' => 'boolean']);
-
         try {
             $importer = app(Fattura24ContactImporter::class);
             $importer->import($this->csvFile->getRealPath(), $this->updateExisting);
             $this->storeResult('fattura24_contacts', $importer->getStats(), $importer->getErrors(), 1, 'contacts');
             $this->csvFile = null;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->addError('csvFile', $exception->getMessage());
         }
     }
@@ -109,9 +110,9 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function importXmlFromZip(InvoiceXmlImportService $service, string $zipPath, int $sequenceId, string $category): void
     {
-        $zip = new \ZipArchive;
+        $zip = new ZipArchive;
         if ($zip->open($zipPath) !== true) {
-            throw new \RuntimeException(__('app.imports.zip_open_error'));
+            throw new RuntimeException(__('app.imports.zip_open_error'));
         }
         $xmlFound = false;
         for ($index = 0; $index < $zip->numFiles; $index++) {
@@ -128,7 +129,7 @@ new #[Layout('layouts::app')] class extends Component {
         }
         $zip->close();
         if (! $xmlFound) {
-            throw new \RuntimeException(__('app.imports.zip_no_xml'));
+            throw new RuntimeException(__('app.imports.zip_no_xml'));
         }
     }
 
@@ -143,8 +144,8 @@ new #[Layout('layouts::app')] class extends Component {
 
         return $settings->{$key} ?? Sequence::query()->where('type', $category)->orderByDesc('is_system')->value('id');
     }
-
-}; ?>
+};
+?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Import data</p><h1 class="text-lg font-bold text-content">Importa documenti e contatti</h1></div></x-slot:header>
 <section class="max-w-4xl space-y-6">

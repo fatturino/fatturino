@@ -13,27 +13,48 @@ use Livewire\Component;
 
 new #[Layout('layouts::guest')] #[Title('Fatturino - Configurazione')] class extends Component {
     public int $step = 1;
+
     public string $name = '';
+
     public string $email = '';
+
     public string $password = '';
+
     public string $password_confirmation = '';
+
     public string $company_name = '';
+
     public string $company_vat_number = '';
+
     public string $company_tax_code = '';
+
     public string $company_fiscal_regime = 'RF01';
+
     public bool $withholding_tax_enabled = false;
+
     public bool $auto_stamp_duty = false;
+
     public string $company_address = '';
+
     public string $company_city = '';
+
     public string $company_postal_code = '';
+
     public string $company_province = '';
+
     public string $company_country = 'IT';
+
     public string $company_pec = '';
+
     public string $company_sdi_code = '0000000';
 
     public function mount(CompanySettings $settings): void
     {
-        if (User::query()->exists()) { $this->redirectRoute('login', navigate: false); return; }
+        if (User::query()->exists()) {
+            $this->redirectRoute('login', navigate: false);
+
+            return;
+        }
         $this->step = min(3, max(1, (int) session('setup_step', 1)));
         foreach (array_merge([
             'company_name' => $settings->company_name, 'company_vat_number' => $settings->company_vat_number,
@@ -42,13 +63,33 @@ new #[Layout('layouts::guest')] #[Title('Fatturino - Configurazione')] class ext
             'company_postal_code' => $settings->company_postal_code, 'company_province' => $settings->company_province,
             'company_country' => $settings->company_country ?: 'IT', 'company_pec' => $settings->company_pec,
             'company_sdi_code' => $settings->company_sdi_code ?: '0000000',
-        ], session('setup_data', [])) as $field => $value) { if (property_exists($this, $field)) $this->{$field} = (string) $value; }
+        ], session('setup_data', [])) as $field => $value) {
+            if (property_exists($this, $field)) {
+                $this->{$field} = (string) $value;
+            }
+        }
         $this->applyFiscalRegimeDefaults();
     }
 
-    public function updatedName(): void { if ($this->company_name === '') $this->company_name = $this->name; }
-    public function updatedCompanyFiscalRegime(): void { $this->applyFiscalRegimeDefaults(); }
-    public function previous(): void { if ($this->step > 1) { $this->step--; $this->resetValidation(); } }
+    public function updatedName(): void
+    {
+        if ($this->company_name === '') {
+            $this->company_name = $this->name;
+        }
+    }
+
+    public function updatedCompanyFiscalRegime(): void
+    {
+        $this->applyFiscalRegimeDefaults();
+    }
+
+    public function previous(): void
+    {
+        if ($this->step > 1) {
+            $this->step--;
+            $this->resetValidation();
+        }
+    }
 
     public function next(CompanySettings $companySettings, InvoiceSettings $invoiceSettings): void
     {
@@ -59,20 +100,51 @@ new #[Layout('layouts::guest')] #[Title('Fatturino - Configurazione')] class ext
         };
         $this->validate($rules);
         $this->persistStep();
-        if ($this->step < 3) { session(['setup_step' => ++$this->step]); return; }
+        if ($this->step < 3) {
+            session(['setup_step' => ++$this->step]);
+
+            return;
+        }
         $user = User::create(['name' => $this->name, 'email' => $this->email, 'password' => Hash::make($this->password), 'is_admin' => true]);
         $companySettings->company_name = $this->company_name;
         $companySettings->company_vat_number = ItalianVatNumber::normalize($this->company_vat_number) ?? '';
-        foreach (['company_tax_code', 'company_fiscal_regime', 'company_address', 'company_city', 'company_postal_code', 'company_province', 'company_country', 'company_pec', 'company_sdi_code'] as $field) $companySettings->{$field} = $this->{$field};
-        $companySettings->rf19_self_invoices_enabled = false; $companySettings->save();
-        $invoiceSettings->withholding_tax_enabled = $this->withholding_tax_enabled; $invoiceSettings->auto_stamp_duty = $this->auto_stamp_duty; $invoiceSettings->save();
-        Auth::login($user); session()->regenerate(); session()->forget(['setup_step', 'setup_data']);
+        foreach (['company_tax_code', 'company_fiscal_regime', 'company_address', 'company_city', 'company_postal_code', 'company_province', 'company_country', 'company_pec', 'company_sdi_code'] as $field) {
+            $companySettings->{$field} = $this->{$field};
+        }
+        $companySettings->rf19_self_invoices_enabled = false;
+        $companySettings->save();
+        $invoiceSettings->withholding_tax_enabled = $this->withholding_tax_enabled;
+        $invoiceSettings->auto_stamp_duty = $this->auto_stamp_duty;
+        $invoiceSettings->save();
+        Auth::login($user);
+        session()->regenerate();
+        session()->forget(['setup_step', 'setup_data']);
         $this->redirectRoute('dashboard', navigate: false);
     }
 
-    private function persistStep(): void { $data = session('setup_data', []); foreach (match ($this->step) { 1 => ['name','email'], 2 => ['company_name','company_vat_number','company_tax_code','company_fiscal_regime','withholding_tax_enabled','auto_stamp_duty'], 3 => ['company_address','company_city','company_postal_code','company_province','company_country','company_pec','company_sdi_code'] } as $field) $data[$field] = $field === 'company_vat_number' ? ItalianVatNumber::normalize($this->{$field}) : $this->{$field}; session(['setup_data' => $data]); }
-    private function applyFiscalRegimeDefaults(): void { if ($this->company_fiscal_regime === FiscalRegime::RF19->value) { $this->auto_stamp_duty = true; $this->withholding_tax_enabled = false; } else { $this->auto_stamp_duty = false; $this->withholding_tax_enabled = true; } }
-}; ?>
+    private function persistStep(): void
+    {
+        $data = session('setup_data', []);
+        foreach (match ($this->step) {
+            1 => ['name', 'email'], 2 => ['company_name', 'company_vat_number', 'company_tax_code', 'company_fiscal_regime', 'withholding_tax_enabled', 'auto_stamp_duty'], 3 => ['company_address', 'company_city', 'company_postal_code', 'company_province', 'company_country', 'company_pec', 'company_sdi_code']
+        } as $field) {
+            $data[$field] = $field === 'company_vat_number' ? ItalianVatNumber::normalize($this->{$field}) : $this->{$field};
+        }
+        session(['setup_data' => $data]);
+    }
+
+    private function applyFiscalRegimeDefaults(): void
+    {
+        if ($this->company_fiscal_regime === FiscalRegime::RF19->value) {
+            $this->auto_stamp_duty = true;
+            $this->withholding_tax_enabled = false;
+        } else {
+            $this->auto_stamp_duty = false;
+            $this->withholding_tax_enabled = true;
+        }
+    }
+};
+?>
 
 <main class="min-h-dvh bg-canvas p-4 lg:p-8"><div class="mx-auto grid max-w-5xl overflow-hidden border border-border-light bg-white shadow-[var(--shadow-elevated)] lg:grid-cols-[.7fr_1.3fr]">
     <aside class="bg-[linear-gradient(145deg,var(--color-ink),var(--color-indigo))] p-8 text-white lg:p-12"><img src="{{ asset('brand/logo-white.svg') }}" alt="Fatturino" class="h-9"><p class="mt-12 text-xs font-bold tracking-[.14em] text-aqua">PRIMA CONFIGURAZIONE</p><h1 class="mt-3 text-3xl font-bold">Pronti a partire.</h1><p class="mt-4 leading-6 text-white/75">Tre passaggi guidati per configurare account, azienda e fatturazione elettronica.</p></aside>

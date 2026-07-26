@@ -12,7 +12,9 @@ use Livewire\Component;
 
 new #[Layout('layouts::guest')] #[Title('Fatturino - Accedi')] class extends Component {
     public string $email = '';
+
     public string $password = '';
+
     public bool $remember = false;
 
     public function mount(LoginCustomizer $customizer): void
@@ -22,7 +24,6 @@ new #[Layout('layouts::guest')] #[Title('Fatturino - Accedi')] class extends Com
 
             return;
         }
-
         $credentials = $customizer->credentials() ?? [];
         $this->email = (string) ($credentials['email'] ?? '');
         $this->password = (string) ($credentials['password'] ?? '');
@@ -34,8 +35,7 @@ new #[Layout('layouts::guest')] #[Title('Fatturino - Accedi')] class extends Com
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
-        $throttleKey = Str::transliterate(Str::lower($credentials['email']) . '|' . request()->ip());
-
+        $throttleKey = Str::transliterate(Str::lower($credentials['email']).'|'.request()->ip());
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $this->addError('email', __('auth.throttle', [
                 'seconds' => RateLimiter::availableIn($throttleKey),
@@ -44,21 +44,19 @@ new #[Layout('layouts::guest')] #[Title('Fatturino - Accedi')] class extends Com
 
             return;
         }
-
         if (! Auth::attempt($credentials, $this->remember)) {
             RateLimiter::hit($throttleKey);
             $this->addError('email', __('auth.failed'));
 
             return;
         }
-
         RateLimiter::clear($throttleKey);
         session()->regenerate();
         $telemetry->capture('user_logged_in', [], request()->user());
-
         $this->redirectRoute('dashboard', navigate: false);
     }
-}; ?>
+};
+?>
 
 <main class="flex min-h-dvh items-center justify-center bg-[linear-gradient(135deg,var(--color-mist),white)] p-4 lg:p-8">
     <div class="grid w-full max-w-5xl overflow-hidden border border-border-light bg-white shadow-[var(--shadow-elevated)] md:grid-cols-2">

@@ -3,8 +3,8 @@
 use App\Models\Contact;
 use App\Models\SalesInvoice;
 use App\Models\User;
-use Livewire\Livewire;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
+use Livewire\Livewire;
 
 dataset('document index routes', [
     ['/sell-invoices', 'sales', 'Fatture di Vendita'],
@@ -26,7 +26,7 @@ it('renders each document index as a Livewire page', function (string $url, stri
 
     Livewire::test('pages::documents.index', ['type' => $type])
         ->assertSet('type', $type)
-        ->assertDontSee('<h2 class="mt-1 text-2xl font-bold">' . $title . '</h2>', false)
+        ->assertDontSee('<h2 class="mt-1 text-2xl font-bold">'.$title.'</h2>', false)
         ->assertSee('id="document-search"', false);
 })->with('document index routes');
 
@@ -83,8 +83,8 @@ it('locks the document type and fiscal year to the server-side route context', f
         ->assertSet('type', 'sales')
         ->assertSet('fiscalYear', now()->year);
 
-    expect(fn() => $component->set('type', 'self'))
+    expect(fn () => $component->set('type', 'self'))
         ->toThrow(CannotUpdateLockedPropertyException::class);
-    expect(fn() => $component->set('fiscalYear', now()->subYear()->year))
+    expect(fn () => $component->set('fiscalYear', now()->subYear()->year))
         ->toThrow(CannotUpdateLockedPropertyException::class);
 });

@@ -10,7 +10,6 @@ use App\Support\FiscalRegimePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -74,7 +73,9 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function sortBy(string $column): void
     {
-        if (! in_array($column, ['number', 'date', 'total_gross'], true)) return;
+        if (! in_array($column, ['number', 'date', 'total_gross'], true)) {
+            return;
+        }
         $this->direction = $this->sort === $column && $this->direction === 'asc' ? 'desc' : 'asc';
         $this->sort = $column;
     }
@@ -92,10 +93,9 @@ new #[Layout('layouts::app')] class extends Component {
         $documentIds = array_map('intval', $documentIds);
         $selectedIds = array_map('intval', $this->selected);
         $allSelected = $documentIds !== [] && count(array_intersect($documentIds, $selectedIds)) === count($documentIds);
-
         $this->selected = $allSelected
             ? array_values(array_diff($selectedIds, $documentIds))
-            : array_values(array_unique([...$selectedIds, ...$documentIds]));
+                : array_values(array_unique([...$selectedIds, ...$documentIds]));
     }
 
     public function updatingPage(): void
@@ -109,7 +109,6 @@ new #[Layout('layouts::app')] class extends Component {
         $documents = (clone $query)
             ->orderBy(in_array($this->sort, ['number', 'date', 'total_gross'], true) ? $this->sort : 'date', $this->direction === 'asc' ? 'asc' : 'desc')
             ->paginate(15);
-
         $all = $this->baseQuery();
         $total = (clone $all)->count();
         $gross = (int) (clone $all)->sum('total_gross');
@@ -121,26 +120,63 @@ new #[Layout('layouts::app')] class extends Component {
         return view('pages::documents.index', compact('documents', 'total', 'gross', 'drafts', 'sent', 'open', 'overdue'));
     }
 
-    public function title(): string { return $this->definition()['title']; }
-    public function definition(): array { return $this->definitions()[$this->type]; }
-    public function hasPayments(): bool { return $this->definition()['payments']; }
-    public function isActive(string $value): bool { return $value === '' ? $this->status === '' && $this->payment === '' : ($value === 'unpaid' || $value === 'overdue' ? $this->payment === $value : $this->status === $value); }
-    public function tabLabel(string $value): string { return match ($value) { '' => 'Tutte', 'draft' => 'Bozze', 'unpaid' => 'Da pagare', 'overdue' => 'Scadute', 'sent' => 'Inviate', 'converted' => 'Convertite', 'xml_validated' => 'Salvate', default => $value }; }
-    public function money(int|float|null $value): string { return '€ '.number_format(((int) $value) / 100, 2, ',', '.'); }
-    public function statusLabel(mixed $value): string { return match ($this->statusValue($value)) { 'draft' => 'Bozza', 'xml_validated' => 'Validata', 'sent' => 'Inviata', 'converted' => 'Convertita', 'paid' => 'Pagata', 'partial' => 'Parziale', 'unpaid' => 'Da pagare', 'overdue' => 'Scaduta', default => $this->statusValue($value) }; }
-    public function statusClass(mixed $value): string { return match ($this->statusValue($value)) { 'paid', 'sent', 'converted', 'delivered' => 'badge-sent', 'overdue', 'rejected', 'cancelled' => 'badge-overdue', 'draft', 'unpaid' => 'badge-draft', default => 'badge-neutral' }; }
+    public function title(): string
+    {
+        return $this->definition()['title'];
+    }
+
+    public function definition(): array
+    {
+        return $this->definitions()[$this->type];
+    }
+
+    public function hasPayments(): bool
+    {
+        return $this->definition()['payments'];
+    }
+
+    public function isActive(string $value): bool
+    {
+        return $value === '' ? $this->status === '' && $this->payment === '' : ($value === 'unpaid' || $value === 'overdue' ? $this->payment === $value : $this->status === $value);
+    }
+
+    public function tabLabel(string $value): string
+    {
+        return match ($value) {
+            '' => 'Tutte', 'draft' => 'Bozze', 'unpaid' => 'Da pagare', 'overdue' => 'Scadute', 'sent' => 'Inviate', 'converted' => 'Convertite', 'xml_validated' => 'Salvate', default => $value
+        };
+    }
+
+    public function money(int|float|null $value): string
+    {
+        return '€ '.number_format(((int) $value) / 100, 2, ',', '.');
+    }
+
+    public function statusLabel(mixed $value): string
+    {
+        return match ($this->statusValue($value)) {
+            'draft' => 'Bozza', 'xml_validated' => 'Validata', 'sent' => 'Inviata', 'converted' => 'Convertita', 'paid' => 'Pagata', 'partial' => 'Parziale', 'unpaid' => 'Da pagare', 'overdue' => 'Scaduta', default => $this->statusValue($value)
+        };
+    }
+
+    public function statusClass(mixed $value): string
+    {
+        return match ($this->statusValue($value)) {
+            'paid', 'sent', 'converted', 'delivered' => 'badge-sent', 'overdue', 'rejected', 'cancelled' => 'badge-overdue', 'draft', 'unpaid' => 'badge-draft', default => 'badge-neutral'
+        };
+    }
 
     private function baseQuery(): Builder
     {
         $this->ensureAllowedType();
         $class = $this->definition()['model'];
+
         return $class::query()->whereYear('date', $this->fiscalYear);
     }
 
     private function ensureAllowedType(): void
     {
         abort_unless(in_array($this->type, array_keys($this->definitions()), true), 404);
-
         if ($this->type === 'self') {
             $settings = app(CompanySettings::class);
             abort_unless(FiscalRegimePolicy::supportsSelfInvoices($settings->company_fiscal_regime, $settings->rf19_self_invoices_enabled), 403);
@@ -150,16 +186,33 @@ new #[Layout('layouts::app')] class extends Component {
     private function query(): Builder
     {
         $query = $this->baseQuery()->with(['contact:id,name,email']);
-        if ($this->hasPayments()) $query->with('payments:id,fiscal_document_id,amount,paid_at');
-        if ($this->search !== '') $query->where(fn ($q) => $q->where('number', 'like', "%{$this->search}%")->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%{$this->search}%")));
-        if ($this->status !== '') $query->where('status', $this->status);
-        if ($this->payment !== '' && $this->hasPayments()) $query->where('payment_status', $this->payment);
+        if ($this->hasPayments()) {
+            $query->with('payments:id,fiscal_document_id,amount,paid_at');
+        }
+        if ($this->search !== '') {
+            $query->where(fn ($q) => $q->where('number', 'like', "%
+{
+$this->search
+}
+%")->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%
+{
+$this->search
+}
+%")));
+        }
+        if ($this->status !== '') {
+            $query->where('status', $this->status);
+        }
+        if ($this->payment !== '' && $this->hasPayments()) {
+            $query->where('payment_status', $this->payment);
+        }
+
         return $query;
     }
 
     private function statusValue(mixed $value): string
     {
-        return $value instanceof \BackedEnum ? (string) $value->value : (string) $value;
+        return $value instanceof BackedEnum ? (string) $value->value : (string) $value;
     }
 
     private function definitions(): array
@@ -172,7 +225,8 @@ new #[Layout('layouts::app')] class extends Component {
             'credit' => ['model' => CreditNote::class, 'title' => 'Note di Credito', 'singular' => 'nota di credito', 'plural' => 'note di credito', 'contact' => 'Cliente', 'base' => 'credit-notes', 'create' => 'Nuova nota di credito', 'payments' => false, 'tabs' => ['', 'draft', 'xml_validated', 'sent']],
         ];
     }
-}; ?>
+};
+?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Documenti</p><h1 class="text-lg font-bold text-content">{{ $this->title() }}</h1></div></x-slot:header>
 

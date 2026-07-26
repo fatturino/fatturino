@@ -31,7 +31,6 @@ new #[Layout('layouts::app')] class extends Component {
         if (! in_array($column, ['name', 'vat_number', 'email', 'city'], true)) {
             return;
         }
-
         $this->direction = $this->sort === $column && $this->direction === 'asc' ? 'desc' : 'asc';
         $this->sort = $column;
     }
@@ -54,16 +53,29 @@ new #[Layout('layouts::app')] class extends Component {
     private function query(): Builder
     {
         return Contact::query()->when($this->search !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query
-            ->where('name', 'like', "%{$this->search}%")
-            ->orWhere('vat_number', 'like', "%{$this->search}%")
-            ->orWhere('email', 'like', "%{$this->search}%")));
+            ->where('name', 'like', "%
+{
+$this->search
+}
+%")
+            ->orWhere('vat_number', 'like', "%
+{
+$this->search
+}
+%")
+            ->orWhere('email', 'like', "%
+{
+$this->search
+}
+%")));
     }
 
     private function sortableColumn(): string
     {
         return in_array($this->sort, ['name', 'vat_number', 'email', 'city'], true) ? $this->sort : 'name';
     }
-}; ?>
+};
+?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Anagrafiche</p><h1 class="text-lg font-bold text-content">Contatti</h1></div></x-slot:header>
 

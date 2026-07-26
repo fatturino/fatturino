@@ -75,6 +75,8 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "format-livewire": "@php scripts/format-livewire-sfcs.php --write",
+        "lint-livewire-format": "@php scripts/format-livewire-sfcs.php --check",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

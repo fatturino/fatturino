@@ -14,9 +14,13 @@ use Livewire\Component;
 
 new #[Layout('layouts::app')] #[Title('Dashboard')] class extends Component {
     public int $fiscalYear;
+
     public bool $isCurrentYear;
+
     public bool $hasVatAccounting;
+
     public bool $selfInvoicesEnabled;
+
     public array $stats = [];
 
     public function mount(CompanySettings $companySettings): void
@@ -51,15 +55,34 @@ new #[Layout('layouts::app')] #[Title('Dashboard')] class extends Component {
                 'total_gross' => $invoice->total_gross,
                 'days_until_due' => $daysUntilDue,
             ];
-        })->all();
+        }
+        )->all();
         $stats['topClients'] = $stats['topClients']->map(fn ($client) => ['contact' => $client->contact?->name, 'revenue_total' => $client->revenue_total])->all();
         $this->stats = $stats;
     }
 
-    public function currency(int|float|null $cents): string { return '€ '.number_format(((int) $cents) / 100, 2, ',', '.'); }
-    public function paymentLabel(string $status): string { return match ($status) { 'paid' => 'Pagata', 'overdue' => 'Scaduta', default => 'Da incassare' }; }
-    private function formatDate(mixed $value): ?string { if ($value === null || $value === '') return null; return ($value instanceof CarbonInterface ? $value : Carbon::parse($value))->format('d/m/Y'); }
-}; ?>
+    public function currency(int|float|null $cents): string
+    {
+        return '€ '.number_format(((int) $cents) / 100, 2, ',', '.');
+    }
+
+    public function paymentLabel(string $status): string
+    {
+        return match ($status) {
+            'paid' => 'Pagata', 'overdue' => 'Scaduta', default => 'Da incassare'
+        };
+    }
+
+    private function formatDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return ($value instanceof CarbonInterface ? $value : Carbon::parse($value))->format('d/m/Y');
+    }
+};
+?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Panoramica</p><h1 class="text-lg font-bold text-content">Dashboard</h1></div></x-slot:header>
 

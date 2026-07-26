@@ -6,7 +6,6 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentTerms;
 use App\Enums\VatPayability;
 use App\Enums\VatRate;
-use App\Models\Sequence;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
@@ -16,23 +15,41 @@ use Livewire\Component;
 
 new #[Layout('layouts::app')] class extends Component {
     public ?int $default_sequence_sales = null;
+
     public string $default_vat_rate = '';
+
     public bool $withholding_tax_enabled = false;
+
     public string $withholding_tax_percent = '20.00';
+
     public bool $fund_enabled = false;
+
     public string $fund_type = '';
+
     public string $fund_percent = '4.00';
+
     public string $fund_vat_rate = '';
+
     public bool $fund_has_deduction = false;
+
     public bool $auto_stamp_duty = false;
+
     public string $stamp_duty_threshold = '77.47';
+
     public string $default_payment_method = '';
+
     public string $default_payment_terms = '';
+
     public string $default_bank_name = '';
+
     public string $default_bank_iban = '';
+
     public string $default_vat_payability = 'I';
+
     public bool $default_split_payment = false;
+
     public string $default_notes = '';
+
     public string $fiscalRegime = 'RF01';
 
     public function mount(InvoiceSettings $settings, CompanySettings $company): void
@@ -44,16 +61,20 @@ new #[Layout('layouts::app')] class extends Component {
 
                 continue;
             }
-            $this->{$field} = $value instanceof \BackedEnum ? $value->value : ($value ?? (is_bool($this->{$field}) ? false : ''));
+            $this->{$field} = $value instanceof BackedEnum ? $value->value : ($value ?? (is_bool($this->{$field}) ? false : ''));
         }
         $this->fiscalRegime = $company->company_fiscal_regime;
-        if ($this->isRf19()) $this->applyRf19Restrictions();
+        if ($this->isRf19()) {
+            $this->applyRf19Restrictions();
+        }
     }
 
     public function save(InvoiceSettings $settings): void
     {
         $this->ensureAllowed();
-        if ($this->isRf19()) $this->applyRf19Restrictions();
+        if ($this->isRf19()) {
+            $this->applyRf19Restrictions();
+        }
         $payload = FiscalRegimePolicy::normalizeInvoiceSettingsPayload($this->validate(), $this->fiscalRegime);
         $payload['default_vat_rate'] = filled($payload['default_vat_rate']) ? VatRate::from($payload['default_vat_rate']) : null;
         $payload['fund_vat_rate'] = filled($payload['fund_vat_rate']) ? VatRate::from($payload['fund_vat_rate']) : null;
@@ -67,15 +88,49 @@ new #[Layout('layouts::app')] class extends Component {
         return ['default_sequence_sales' => 'nullable|exists:sequences,id', 'default_vat_rate' => ['nullable', Rule::in(array_column(VatRate::options(), 'id'))], 'withholding_tax_enabled' => 'boolean', 'withholding_tax_percent' => 'nullable|string', 'fund_enabled' => 'boolean', 'fund_type' => 'nullable|string', 'fund_percent' => 'nullable|string', 'fund_vat_rate' => ['nullable', Rule::in(array_column(VatRate::options(), 'id'))], 'fund_has_deduction' => 'boolean', 'auto_stamp_duty' => 'boolean', 'stamp_duty_threshold' => 'nullable|string', 'default_payment_method' => 'nullable|string', 'default_payment_terms' => 'nullable|string', 'default_bank_name' => 'nullable|string', 'default_bank_iban' => 'nullable|string', 'default_vat_payability' => ['nullable', Rule::in(array_column(VatPayability::options(), 'id'))], 'default_split_payment' => 'boolean', 'default_notes' => 'nullable|string'];
     }
 
-    public function vatRates(): array { return $this->isRf19() ? array_values(array_filter(VatRate::options(), fn (array $rate) => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE)) : VatRate::options(); }
-    public function isRf19(): bool { return $this->fiscalRegime === 'RF19'; }
-    public function paymentMethods(): array { return PaymentMethod::options(); }
-    public function paymentTerms(): array { return PaymentTerms::options(); }
-    public function fundTypes(): array { return FundType::options(); }
-    public function vatPayabilityOptions(): array { return VatPayability::options(); }
-    private function applyRf19Restrictions(): void { $this->withholding_tax_enabled = false; $this->default_split_payment = false; $this->default_vat_payability = 'I'; }
-    private function ensureAllowed(): void { abort_unless(app(EnvironmentCapabilities::class)->can('edit-invoice-settings'), 403, 'Operazione non consentita in questa modalità.'); }
-}; ?>
+    public function vatRates(): array
+    {
+        return $this->isRf19() ? array_values(array_filter(VatRate::options(), fn (array $rate) => $rate['id'] === FiscalRegimePolicy::FORFETTARIO_VAT_RATE)) : VatRate::options();
+    }
+
+    public function isRf19(): bool
+    {
+        return $this->fiscalRegime === 'RF19';
+    }
+
+    public function paymentMethods(): array
+    {
+        return PaymentMethod::options();
+    }
+
+    public function paymentTerms(): array
+    {
+        return PaymentTerms::options();
+    }
+
+    public function fundTypes(): array
+    {
+        return FundType::options();
+    }
+
+    public function vatPayabilityOptions(): array
+    {
+        return VatPayability::options();
+    }
+
+    private function applyRf19Restrictions(): void
+    {
+        $this->withholding_tax_enabled = false;
+        $this->default_split_payment = false;
+        $this->default_vat_payability = 'I';
+    }
+
+    private function ensureAllowed(): void
+    {
+        abort_unless(app(EnvironmentCapabilities::class)->can('edit-invoice-settings'), 403, 'Operazione non consentita in questa modalità.');
+    }
+};
+?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Configurazione</p><h1 class="text-lg font-bold text-content">Impostazioni fatture</h1></div></x-slot:header>
 <form wire:submit="save" class="space-y-6">@if(session('success'))<div class="rounded-md border border-success/20 bg-success-bg p-4 text-sm text-success">{{ session('success') }}</div>@endif

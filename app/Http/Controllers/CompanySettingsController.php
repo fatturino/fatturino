@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AtecoCode;
 use App\Enums\FiscalRegime;
 use App\Rules\ItalianVatNumber;
 use App\Settings\CompanySettings;
@@ -69,5 +68,4 @@ class CompanySettingsController extends Controller
 
         return redirect()->route('settings.company');
     }
-
 }

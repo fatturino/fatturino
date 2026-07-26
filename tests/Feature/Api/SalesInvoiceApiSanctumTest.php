@@ -20,7 +20,7 @@ it('supports sales invoice api create with sanctum bearer token', function () {
     $token = $user->createToken('sales-invoice-api-test-token')->plainTextToken;
 
     $response = $this
-        ->withHeader('Authorization', 'Bearer ' . $token)
+        ->withHeader('Authorization', 'Bearer '.$token)
         ->postJson('/api/v1/sales-invoices', salesInvoiceApiPayload($contact->id, $sequence->id));
 
     $response->assertOk();
