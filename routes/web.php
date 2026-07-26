@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AdvancedLogsController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\ContactsController;
 use App\Http\Controllers\CreditNotesController;
@@ -8,13 +7,11 @@ use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\InvoiceSettingsController;
 use App\Http\Controllers\OpenApiController;
-use App\Http\Controllers\OpenApiSettingsController;
 use App\Http\Controllers\OpenApiWebhookController;
 use App\Http\Controllers\ProformaInvoicesController;
 use App\Http\Controllers\PurchaseInvoicesController;
 use App\Http\Controllers\SalesInvoicesController;
 use App\Http\Controllers\SelfInvoicesController;
-use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\ServicesController;
 use App\Services\PostHogTelemetryService;
 use Illuminate\Http\Request;
@@ -147,28 +144,25 @@ Route::middleware('auth')->group(function () {
     Route::post('/proforma/{proformaInvoice}/send-email', [ProformaInvoicesController::class, 'sendEmail'])->name('proforma.send-email');
 
     // Sequences
-    Route::get('/sequences', [SequencesController::class, 'index'])->name('sequences.index')->defaults('title', 'Sequenze');
-    Route::post('/sequences', [SequencesController::class, 'store'])->middleware('capability:manage-sequences')->name('sequences.store');
-    Route::put('/sequences/{sequence}', [SequencesController::class, 'update'])->middleware('capability:manage-sequences')->name('sequences.update');
-    Route::delete('/sequences/{sequence}', [SequencesController::class, 'destroy'])->middleware('capability:manage-sequences')->name('sequences.destroy');
+    Route::livewire('/sequences', 'pages::settings.sequences')->name('sequences.index')->defaults('title', 'Sequenze');
 
     // Settings
-    Route::get('/company-settings', [CompanySettingsController::class, 'index'])->name('settings.company')->defaults('title', 'Dati Azienda');
+    Route::livewire('/company-settings', 'pages::settings.company')->name('settings.company')->defaults('title', 'Dati Azienda');
     Route::put('/company-settings', [CompanySettingsController::class, 'update'])->middleware('capability:edit-company-settings')->name('settings.company.update');
-    Route::get('/invoice-settings', [InvoiceSettingsController::class, 'index'])->name('settings.invoice')->defaults('title', 'Impostazioni Fatture');
+    Route::livewire('/invoice-settings', 'pages::settings.invoice')->name('settings.invoice')->defaults('title', 'Impostazioni Fatture');
     Route::put('/invoice-settings', [InvoiceSettingsController::class, 'update'])->middleware('capability:edit-invoice-settings')->name('settings.invoice.update');
-    Route::get('/email-settings', [EmailSettingsController::class, 'index'])->name('settings.email')->defaults('title', 'Template Email');
+    Route::livewire('/email-settings', 'pages::settings.email')->name('settings.email')->defaults('title', 'Template Email');
     Route::put('/email-settings', [EmailSettingsController::class, 'update'])->middleware('capability:edit-email-settings')->name('settings.email.update');
     Route::post('/email-settings/test', [EmailSettingsController::class, 'testConnection'])->name('settings.email.test');
-    Route::get('/services', [ServicesController::class, 'index'])->name('settings.services')->defaults('title', 'Servizi');
-    Route::get('/advanced', [AdvancedLogsController::class, 'index'])->name('settings.advanced')->defaults('title', 'Avanzate');
+    Route::livewire('/services', 'pages::settings.services')->name('settings.services')->defaults('title', 'Servizi');
+    Route::livewire('/advanced', 'pages::settings.advanced')->name('settings.advanced')->defaults('title', 'Avanzate');
     Route::put('/services/backup', [ServicesController::class, 'updateBackup'])->middleware('capability:manage-backup-settings')->name('settings.services.backup');
     Route::post('/services/test-connection', [ServicesController::class, 'testConnection'])->name('settings.services.test');
     Route::get('/imports', [ImportController::class, 'index'])->name('imports.index')->defaults('title', 'Import');
     Route::post('/imports', [ImportController::class, 'store'])->name('imports.store');
 
     // Electronic Invoice
-    Route::get('/electronic-invoice-settings', [OpenApiSettingsController::class, 'index'])->name('settings.openapi')->defaults('title', 'Fatturazione Elettronica');
+    Route::livewire('/electronic-invoice-settings', 'pages::settings.openapi')->name('settings.openapi')->defaults('title', 'Fatturazione Elettronica');
 
     // OpenAPI API endpoints (JSON responses for SPA)
     Route::post('/api/v1/openapi/save', [OpenApiController::class, 'save'])->middleware('capability:edit-sdi-settings');
