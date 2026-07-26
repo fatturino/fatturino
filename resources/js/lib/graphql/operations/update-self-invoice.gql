@@ -1,3 +1,0 @@
-mutation UpdateSelfInvoice($id: ID!, $input: FiscalDocumentUpdateInput!) {
-  updateSelfInvoice(id: $id, input: $input) { id }
-}

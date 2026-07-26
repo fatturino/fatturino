@@ -1,3 +1,0 @@
-mutation CreateSelfInvoice($input: FiscalDocumentCreateInput!) {
-  createSelfInvoice(input: $input) { id }
-}

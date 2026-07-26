@@ -1,3 +1,0 @@
-mutation UpdateCreditNote($id: ID!, $input: FiscalDocumentUpdateInput!) {
-  updateCreditNote(id: $id, input: $input) { id }
-}
