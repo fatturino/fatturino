@@ -58,6 +58,11 @@ class SaveProformaInvoice
     {
         $normalized = FiscalRegimePolicy::normalizeDocumentPayload($payload, $this->companySettings->company_fiscal_regime);
         $lines = FiscalRegimePolicy::normalizeLinesForForfettario($payload['lines'], $this->companySettings->company_fiscal_regime);
+        $normalized = FiscalRegimePolicy::normalizeStampDutyPayload(
+            $normalized,
+            $lines,
+            $this->companySettings->company_fiscal_regime,
+        );
         $this->ensureSequence($sequenceId);
 
         return [[
@@ -72,6 +77,7 @@ class SaveProformaInvoice
             'fund_percent' => ($normalized['fund_enabled'] ?? false) ? $this->nullIfBlank($normalized['fund_percent'] ?? null) : null,
             'fund_vat_rate' => ($normalized['fund_enabled'] ?? false) ? $this->nullIfBlank($normalized['fund_vat_rate'] ?? null) : null,
             'stamp_duty_applied' => $normalized['stamp_duty_applied'] ?? false,
+            'stamp_duty_charged_to_customer' => $normalized['stamp_duty_charged_to_customer'] ?? false,
             'stamp_duty_amount' => ($normalized['stamp_duty_applied'] ?? false) ? FiscalRegimePolicy::STAMP_DUTY_AMOUNT_CENTS : 0,
             'payment_method' => $this->nullIfBlank($normalized['payment_method'] ?? null),
             'payment_terms' => $this->nullIfBlank($normalized['payment_terms'] ?? null),

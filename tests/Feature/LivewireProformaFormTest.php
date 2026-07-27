@@ -112,6 +112,33 @@ it('normalizes RF19 proformas and protects their total from withholding defaults
         ->and($invoice->lines()->sole()->vat_rate->value)->toBe('N2.2');
 });
 
+it('applies RF19 stamp duty to proformas with the same customer charge behavior as sales invoices', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    Sequence::factory()->create(['type' => 'proforma']);
+    $settings = app(CompanySettings::class);
+    $settings->company_fiscal_regime = 'RF19';
+    $settings->save();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.proforma.form')
+        ->set('contact_id', $contact->id)
+        ->set('lines', [[...validProformaLine(), 'unit_price' => '100.00']])
+        ->set('stamp_duty_charged_to_customer', false)
+        ->assertSet('stamp_duty_applied', true)
+        ->assertSee('Bollo a carico cedente')
+        ->assertSee('€ 100,00')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $invoice = ProformaInvoice::query()->sole();
+    expect($invoice->stamp_duty_applied)->toBeTrue()
+        ->and($invoice->stamp_duty_charged_to_customer)->toBeFalse()
+        ->and($invoice->stamp_duty_amount)->toBe(200)
+        ->and($invoice->net_due)->toBe(10000);
+});
+
 it('includes fund contribution and its VAT in the proforma preview', function () {
     Sequence::factory()->create(['type' => 'proforma']);
 
