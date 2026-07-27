@@ -24,9 +24,9 @@
         <p class="text-2xl font-bold">{{ $draftCount }}</p>
         <p class="text-xs text-base-content/40 mt-1">{{ __('app.dashboard.drafts_desc') }}</p>
         @if($draftCount > 0 && $isCurrentYear)
-            <a href="/sell-invoices" wire:navigate class="text-xs text-primary hover:underline mt-2 inline-block">
+            <x-app-link href="/sell-invoices" class="text-xs text-primary hover:underline mt-2 inline-block">
                 {{ __('app.dashboard.drafts_action') }}
-            </a>
+            </x-app-link>
         @endif
     </x-card>
 
@@ -41,9 +41,9 @@
         <p class="text-2xl font-bold">{{ $readyForSdiCount }}</p>
         <p class="text-xs text-base-content/40 mt-1">{{ __('app.dashboard.ready_for_sdi_desc') }}</p>
         @if($readyForSdiCount > 0 && $isCurrentYear)
-            <a href="/sell-invoices" wire:navigate class="text-xs text-primary hover:underline mt-2 inline-block">
+            <x-app-link href="/sell-invoices" class="text-xs text-primary hover:underline mt-2 inline-block">
                 {{ __('app.dashboard.ready_for_sdi_action') }}
-            </a>
+            </x-app-link>
         @endif
     </x-card>
 
@@ -58,11 +58,11 @@
         @if($recentInvoices->isNotEmpty())
             <div class="space-y-1.5">
                 @foreach($recentInvoices->take(4) as $invoice)
-                    <a href="/sell-invoices/{{ $invoice->id }}/edit"
+                    <x-app-link href="/sell-invoices/{{ $invoice->id }}/edit"
                        class="flex justify-between text-xs hover:bg-base-200/50 rounded px-1.5 py-0.5 -mx-1.5 transition-colors">
                         <span class="truncate text-base-content/70">{{ $invoice->contact?->name ?? $invoice->number }}</span>
                         <span class="font-medium shrink-0 ml-2">€ {{ number_format($invoice->total_gross / 100, 0, ',', '.') }}</span>
-                    </a>
+                    </x-app-link>
                 @endforeach
             </div>
         @else

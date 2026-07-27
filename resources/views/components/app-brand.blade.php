@@ -1,4 +1,4 @@
-<a href="/" wire:navigate class="flex items-center gap-2.5 px-5 py-4" aria-label="{{ config('app.name') }} — {{ __('app.common.home') }}">
+<x-app-link href="/" class="flex items-center gap-2.5 px-5 py-4" aria-label="{{ config('app.name') }} — {{ __('app.common.home') }}">
     <svg class="w-8 h-10 shrink-0" viewBox="0 0 28 34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <title>{{ config('app.name') }}</title>
         <defs>
@@ -16,4 +16,4 @@
         <span class="text-base font-bold text-white leading-tight">{{ config('app.name') }}</span>
         <span class="text-xs text-white/50 leading-tight">Fattura Elettronica</span>
     </div>
-</a>
+</x-app-link>

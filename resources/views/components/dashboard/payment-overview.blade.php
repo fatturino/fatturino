@@ -61,7 +61,7 @@
         </div>
         <div class="space-y-1.5">
             @foreach($upcomingDueDates as $invoice)
-                <a href="/sell-invoices/{{ $invoice->id }}/edit"
+                <x-app-link href="/sell-invoices/{{ $invoice->id }}/edit"
                    class="flex items-center justify-between text-sm hover:bg-base-200/50 rounded px-2 py-1 -mx-2 transition-colors">
                     <span class="truncate text-base-content/70">{{ $invoice->contact?->name ?? __('app.common.unknown') }}</span>
                     <div class="flex items-center gap-2 shrink-0">
@@ -70,7 +70,7 @@
                             {{ $invoice->due_date->format('d/m') }}
                         </span>
                     </div>
-                </a>
+                </x-app-link>
             @endforeach
         </div>
     @endif

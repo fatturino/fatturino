@@ -15,8 +15,7 @@ $rowLink = $buildLink(is_array($row) ? $row : $row->toArray());
 @endphp
 
 <tr wire:key="row-{{ $rowId }}"
-    class="text-base-content transition-colors {{ $rowLink ? 'cursor-pointer hover:bg-base-100' : '' }}"
-    @if($rowLink) onclick="window.location='{{ $rowLink }}'" @endif>
+    class="text-base-content transition-colors {{ $rowLink ? 'hover:bg-base-100' : '' }}">
     @if($selectable)
         @php
             $isSelected = in_array((string) $rowId, $selectedIds);
@@ -33,6 +32,9 @@ $rowLink = $buildLink(is_array($row) ? $row : $row->toArray());
     @foreach($headers as $header)
         @php $key = $header['key'] ?? null; @endphp
         <td class="px-5 py-4 text-sm {{ $header['class'] ?? '' }} {{ $key === 'actions' ? 'text-right' : 'whitespace-nowrap' }}">
+            @if($rowLink && $key !== 'actions')
+                <x-app-link :href="$rowLink" class="block -mx-5 -my-4 px-5 py-4">
+            @endif
             @if(isset($header['view']))
                 @include($header['view'], ['row' => $row])
             @elseif(isset($header['render']) && is_callable($header['render']))
@@ -40,6 +42,9 @@ $rowLink = $buildLink(is_array($row) ? $row : $row->toArray());
             @elseif($key && $key !== 'actions')
                 @php $cellVal = data_get($row, $key); @endphp
                 {{ is_scalar($cellVal) ? $cellVal : (is_null($cellVal) ? '' : json_encode($cellVal)) }}
+            @endif
+            @if($rowLink && $key !== 'actions')
+                </x-app-link>
             @endif
         </td>
     @endforeach

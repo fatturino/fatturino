@@ -58,10 +58,7 @@ if ($spinner) {
 @endphp
 
 @if($link)
-    <a href="{{ $link }}"
-       {{ $attributes->merge(['class' => "$baseClasses $variantClasses $sizeClasses"]) }}
-       @if($spinner) wire:navigate @endif
-    >
+    <x-app-link :href="$link" :full-reload="$attributes->has('download')" {{ $attributes->merge(['class' => "$baseClasses $variantClasses $sizeClasses"]) }}>
         @if($icon)
             <x-icon :name="$icon" />
         @endif
@@ -71,7 +68,7 @@ if ($spinner) {
         @if($spinner)
             <x-icon name="spinner" class="animate-spin" wire:loading wire:target="{{ $spinner }}" />
         @endif
-    </a>
+    </x-app-link>
 @else
     <button type="{{ $type }}"
             {{ $attributes->merge(['class' => "$baseClasses $variantClasses $sizeClasses"]) }}
