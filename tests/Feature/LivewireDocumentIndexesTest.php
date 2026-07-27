@@ -111,6 +111,8 @@ it('renders the compatible document actions and gates the SDI send action by wor
     $this->actingAs($user)
         ->get('/sell-invoices')
         ->assertOk()
+        ->assertSee('>Azioni<', false)
+        ->assertSee('Apri documento')
         ->assertSee('Segna incasso')
         ->assertSee('Invia email')
         ->assertSee('Verifica XML')
