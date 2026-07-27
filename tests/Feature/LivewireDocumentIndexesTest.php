@@ -134,6 +134,19 @@ it('shows the delete action only for unconverted proformas', function () {
         ->assertDontSee("action: 'delete', id: {$converted->id}", false);
 });
 
+it('shows the conversion action only for convertible proformas', function () {
+    $user = User::factory()->create();
+    $convertible = ProformaInvoice::factory()->create(['date' => now()->toDateString()]);
+    $converted = ProformaInvoice::factory()->converted()->create(['date' => now()->toDateString()]);
+
+    $this->actingAs($user)
+        ->get('/proforma')
+        ->assertOk()
+        ->assertSee('Converti in fattura')
+        ->assertSee(route('proforma.convert', $convertible), false)
+        ->assertDontSee(route('proforma.convert', $converted), false);
+});
+
 it('deletes an unconverted proforma through the document index', function () {
     $user = User::factory()->create();
     $proforma = ProformaInvoice::factory()->create(['date' => now()->toDateString()]);

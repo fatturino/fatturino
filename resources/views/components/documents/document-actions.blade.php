@@ -14,6 +14,7 @@
     $canSendToSdi = in_array($type, ['sales', 'self', 'credit'], true)
         && $document->isSdiEditable()
         && $document->status->canSendToSdi();
+    $canConvert = $type === 'proforma' && $document->isConvertible();
     $canDelete = $type === 'proforma' && $document->statusValue() !== 'converted';
     $event = "document-action";
 @endphp
@@ -61,6 +62,16 @@
                 <x-icon name="o-envelope" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
                 <span class="flex-1">Invia email</span>
             </button>
+        @endif
+
+        @if($canConvert)
+            <form method="POST" action="{{ route('proforma.convert', $document) }}" onsubmit="return confirm('Convertire la proforma {{ $document->number ?? '#'.$document->id }} in fattura?');">
+                @csrf
+                <button type="submit" role="menuitem" class="group flex w-full items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left text-sm font-medium text-base-content/70 hover:bg-primary/5 hover:text-primary">
+                    <x-icon name="o-arrow-path" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
+                    <span class="flex-1">Converti in fattura</span>
+                </button>
+            </form>
         @endif
             </div>
 
