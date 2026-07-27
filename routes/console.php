@@ -17,7 +17,7 @@ if (config('demo.enabled')) {
 }
 
 Schedule::command('openapi:reconcile')
-    ->hourlyAt(15)
+    ->twiceDailyAt(3, 15)
     ->withoutOverlapping()
     ->runInBackground();
 
