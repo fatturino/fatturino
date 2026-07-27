@@ -14,6 +14,7 @@
     $canSendToSdi = in_array($type, ['sales', 'self', 'credit'], true)
         && $document->isSdiEditable()
         && $document->status->canSendToSdi();
+    $canDelete = $type === 'proforma' && $document->statusValue() !== 'converted';
     $event = "document-action";
 @endphp
 
@@ -81,6 +82,14 @@
             </button>
         @endif
         @if($canValidateXml || $canSendToSdi)
+            </div>
+        @endif
+        @if($canDelete)
+            <div class="p-2.5">
+                <button type="button" role="menuitem" @click="open = false; $dispatch('{{ $event }}', { action: 'delete', id: {{ $document->id }} })" :disabled="busy" class="group flex w-full items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left text-sm font-medium text-error hover:bg-error/5 disabled:cursor-not-allowed disabled:opacity-50">
+                    <x-icon name="o-trash" class="size-5 shrink-0 opacity-50 group-hover:opacity-80" />
+                    <span class="flex-1">Elimina proforma</span>
+                </button>
             </div>
         @endif
         </div>

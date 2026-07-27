@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\DeleteUnconvertedProforma;
 use App\Models\CreditNote;
 use App\Models\ProformaInvoice;
 use App\Models\PurchaseInvoice;
@@ -101,6 +102,25 @@ new #[Layout('layouts::app')] class extends Component {
     public function updatingPage(): void
     {
         $this->selected = [];
+    }
+
+    public function deleteProforma(int $proformaId, DeleteUnconvertedProforma $deleteUnconvertedProforma): bool
+    {
+        abort_unless($this->type === 'proforma', 404);
+
+        $deleted = $deleteUnconvertedProforma->execute(
+            ProformaInvoice::query()->findOrFail($proformaId)
+        );
+
+        if (! $deleted) {
+            $this->addError('proforma', 'La proforma è stata convertita e non può essere eliminata.');
+
+            return false;
+        }
+
+        $this->selected = array_values(array_diff($this->selected, [$proformaId]));
+
+        return true;
     }
 
     public function render()

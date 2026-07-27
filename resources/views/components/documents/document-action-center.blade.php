@@ -63,6 +63,7 @@
                 if (detail.action === 'payment') this.openPayment();
                 if (detail.action === 'validate-xml') this.openConfirm('validate-xml');
                 if (detail.action === 'send-sdi') this.openConfirm('send-sdi');
+                if (detail.action === 'delete') this.openConfirm('delete');
             },
             documentLabel() {
                 return this.selectedDocument?.number ?? (this.selectedDocument ? `#${this.selectedDocument.id}` : '');
@@ -150,17 +151,26 @@
             },
             openConfirm(action) {
                 const sending = action === 'send-sdi';
-                this.confirm = { action, title: sending ? 'Conferma invio SDI' : 'Conferma validazione XML', submit: sending ? 'Invia a SDI' : 'Verifica XML', danger: sending, message: sending ? `Stai per inviare allo SDI ${this.documentLabel()}.\n\nQuesta azione è irreversibile. Dopo l'invio non potrai più modificarla.\n\nControlla prima di confermare:\n- Anagrafica cliente\n- Importi e aliquote IVA\n- Codice destinatario o PEC` : `Confermi la validazione XML di ${this.documentLabel()}?` };
+                const deleting = action === 'delete';
+                this.confirm = { action, title: sending ? 'Conferma invio SDI' : (deleting ? 'Elimina proforma' : 'Conferma validazione XML'), submit: sending ? 'Invia a SDI' : (deleting ? 'Elimina proforma' : 'Verifica XML'), danger: sending || deleting, message: sending ? `Stai per inviare allo SDI ${this.documentLabel()}.\n\nQuesta azione è irreversibile. Dopo l'invio non potrai più modificarla.\n\nControlla prima di confermare:\n- Anagrafica cliente\n- Importi e aliquote IVA\n- Codice destinatario o PEC` : (deleting ? `Confermi l'eliminazione della proforma ${this.documentLabel()}?\n\nL'operazione è irreversibile.` : `Confermi la validazione XML di ${this.documentLabel()}?`) };
                 this.confirmOpen = true;
             },
             closeConfirm() { if (!this.busy) { this.confirmOpen = false; this.error = ''; } },
             async executeWorkflow() {
                 this.busy = true; this.error = '';
                 try {
+                    const deleting = this.confirm.action === 'delete';
                     const endpoint = this.confirm.action === 'send-sdi' ? 'send-sdi' : 'validate-xml';
-                    const data = await this.request(`${this.base}/${this.selectedDocument.id}/${endpoint}`, { method: 'POST' });
-                    this.selectedDocument.status = data.document.status;
-                    this.selectedDocument.sdiEditable = data.document.is_sdi_editable;
+                    const data = deleting
+                        ? await this.$wire.deleteProforma(this.selectedDocument.id).then((deleted) => {
+                            if (!deleted) throw new Error('La proforma è stata convertita e non può essere eliminata.');
+                            return { message: 'Proforma eliminata.' };
+                        })
+                        : await this.request(`${this.base}/${this.selectedDocument.id}/${endpoint}`, { method: 'POST' });
+                    if (!deleting) {
+                        this.selectedDocument.status = data.document.status;
+                        this.selectedDocument.sdiEditable = data.document.is_sdi_editable;
+                    }
                     this.confirmOpen = false;
                     this.notify(data.message);
                     await this.$wire.$refresh();

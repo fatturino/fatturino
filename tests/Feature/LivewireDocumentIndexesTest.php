@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Contact;
+use App\Models\ProformaInvoice;
 use App\Models\SalesInvoice;
 use App\Models\User;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
@@ -119,6 +120,43 @@ it('renders the compatible document actions and gates the SDI send action by wor
         ->assertSee('Invia a SDI')
         ->assertSee('Conferma invio SDI')
         ->assertSee('Questa azione è irreversibile.');
+});
+
+it('shows the delete action only for unconverted proformas', function () {
+    $user = User::factory()->create();
+    $unconverted = ProformaInvoice::factory()->create(['date' => now()->toDateString()]);
+    $converted = ProformaInvoice::factory()->converted()->create(['date' => now()->toDateString()]);
+
+    $this->actingAs($user)
+        ->get('/proforma')
+        ->assertOk()
+        ->assertSee("action: 'delete', id: {$unconverted->id}", false)
+        ->assertDontSee("action: 'delete', id: {$converted->id}", false);
+});
+
+it('deletes an unconverted proforma through the document index', function () {
+    $user = User::factory()->create();
+    $proforma = ProformaInvoice::factory()->create(['date' => now()->toDateString()]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.index', ['type' => 'proforma'])
+        ->call('deleteProforma', $proforma->id);
+
+    $this->assertDatabaseMissing('fiscal_documents', ['id' => $proforma->id]);
+});
+
+it('rejects deletion of a converted proforma through the document index', function () {
+    $user = User::factory()->create();
+    $proforma = ProformaInvoice::factory()->converted()->create(['date' => now()->toDateString()]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.index', ['type' => 'proforma'])
+        ->call('deleteProforma', $proforma->id)
+        ->assertHasErrors(['proforma']);
+
+    $this->assertDatabaseHas('fiscal_documents', ['id' => $proforma->id]);
 });
 
 it('supports selecting and clearing all documents on the visible page for future bulk actions', function () {
