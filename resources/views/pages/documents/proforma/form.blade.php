@@ -1,7 +1,10 @@
 <?php
 
 use App\Actions\SaveProformaInvoice;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentTerms;
 use App\Enums\VatRate;
+use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\Sequence;
 use App\Services\DocumentEventRecorder;
@@ -16,6 +19,11 @@ new #[Layout('layouts::app')] class extends Component {
     public int|string $contact_id = '';
 
     public int|string $sequence_id = '';
+
+    /** @var array<int, array{id: int, name: string}> */
+    public array $contactOptions = [];
+
+    public ?string $numberPreview = null;
 
     public string $date = '';
 
@@ -54,6 +62,7 @@ new #[Layout('layouts::app')] class extends Component {
         $settings = app(InvoiceSettings::class);
         $this->date = now()->toDateString();
         $this->sequence_id = $settings->default_sequence_proforma ?? Sequence::query()->where('type', 'proforma')->orderByDesc('is_system')->value('id') ?? '';
+        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
         foreach (['notes' => 'default_notes', 'payment_method' => 'default_payment_method', 'payment_terms' => 'default_payment_terms', 'bank_name' => 'default_bank_name', 'bank_iban' => 'default_bank_iban', 'withholding_tax_percent' => 'withholding_tax_percent', 'fund_percent' => 'fund_percent'] as $field => $setting) {
             $this->{$field} = (string) ($settings->{$setting} ?? '');
         }
@@ -76,6 +85,7 @@ new #[Layout('layouts::app')] class extends Component {
             $this->withholding_tax_enabled = false;
         }
         $this->lines = $this->lines ?: [$this->emptyLine()];
+        $this->refreshNumberPreview();
     }
 
     public function addLine(): void
@@ -107,6 +117,11 @@ new #[Layout('layouts::app')] class extends Component {
         if ($this->isRf19()) {
             $this->stamp_duty_applied = $this->netTotal > 77.47;
         }
+    }
+
+    public function updatedDate(): void
+    {
+        $this->refreshNumberPreview();
     }
 
     public function save(SaveProformaInvoice $saveProformaInvoice): mixed
@@ -156,9 +171,10 @@ new #[Layout('layouts::app')] class extends Component {
         return max(0, $this->grossTotal + $this->stampDutyAmount - ($this->withholding_tax_enabled ? $this->netTotal * ((float) $this->withholding_tax_percent / 100) : 0));
     }
 
-    public function getNumberPreviewProperty(): ?string
+    private function refreshNumberPreview(): void
     {
-        return $this->invoice?->number ?? Sequence::query()->whereKey($this->sequence_id)->where('type', 'proforma')->first()?->getFormattedNumber((int) substr($this->date, 0, 4));
+        $this->numberPreview = $this->invoice?->number
+            ?? Sequence::query()->whereKey($this->sequence_id)->where('type', 'proforma')->first()?->getFormattedNumber((int) substr($this->date, 0, 4));
     }
 
     public function getReadOnlyProperty(): bool
@@ -208,7 +224,7 @@ new #[Layout('layouts::app')] class extends Component {
         <div class="space-y-6">
             <x-documents.invoice-form.data-section>
                 <nav class="mb-5 flex gap-2 border-b border-border-light pb-4">@foreach(['data' => 'Dati', 'payment' => 'Pagamento', 'notes' => 'Note'] as $key => $label)<button type="button" wire:click="$set('tab', '{{ $key }}')" class="rounded-md px-3 py-2 text-sm font-semibold {{ $tab === $key ? 'bg-primary text-white' : 'text-content-muted' }}">{{ $label }}</button>@endforeach @if($invoice)<button type="button" wire:click="$set('tab', 'history')" class="rounded-md px-3 py-2 text-sm font-semibold {{ $tab === 'history' ? 'bg-primary text-white' : 'text-content-muted' }}">Storico</button>@endif</nav>
-                @if($tab === 'data')<x-documents.invoice-form.data-fields><label class="text-sm font-semibold">Cliente *<select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona cliente...</option>@foreach(Contact::orderBy('name')->get(['id', 'name']) as $contact)<option value="{{ $contact->id }}">{{ $contact->name }}</option>@endforeach</select>@error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label><div class="text-sm font-semibold">Numero<div class="mt-1 h-11 rounded-md border border-border-light bg-surface-muted px-3 py-3 text-sm font-normal">{{ $this->numberPreview ?? 'Configura una sequenza proforma' }}</div></div><label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label></x-documents.invoice-form.data-fields>
+                @if($tab === 'data')<x-documents.invoice-form.data-fields><label class="text-sm font-semibold">Cliente *<select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona cliente...</option>@foreach($contactOptions as $contact)<option value="{{ $contact['id'] }}">{{ $contact['name'] }}</option>@endforeach</select>@error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label><div class="text-sm font-semibold">Numero<div class="mt-1 h-11 rounded-md border border-border-light bg-surface-muted px-3 py-3 text-sm font-normal">{{ $numberPreview ?? 'Configura una sequenza proforma' }}</div></div><label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label></x-documents.invoice-form.data-fields>
                 @elseif($tab === 'payment')<div class="grid gap-4 sm:grid-cols-2"><label class="text-sm font-semibold">Metodo pagamento<select wire:model="payment_method" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona...</option>@foreach(PaymentMethod::options() as $option)<option value="{{ $option['id'] }}">{{ $option['name'] }}</option>@endforeach</select></label><label class="text-sm font-semibold">Termini pagamento<select wire:model="payment_terms" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona...</option>@foreach(PaymentTerms::options() as $option)<option value="{{ $option['id'] }}">{{ $option['name'] }}</option>@endforeach</select></label><label class="text-sm font-semibold">Banca<input wire:model="bank_name" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">IBAN<input wire:model="bank_iban" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label></div>
                 @elseif($tab === 'notes')<label class="text-sm font-semibold">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"></textarea></label>
                 @else<div class="space-y-3">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-semibold">{{ $event->title }}</p><p class="text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</div>@endif

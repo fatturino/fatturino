@@ -2,6 +2,7 @@
 
 use App\Actions\SavePurchaseInvoice;
 use App\Enums\VatRate;
+use App\Models\Contact;
 use App\Models\PurchaseInvoice;
 use App\Services\PostHogTelemetryService;
 use Livewire\Attributes\Layout;
@@ -11,6 +12,9 @@ new #[Layout('layouts::app')] class extends Component {
     public PurchaseInvoice $invoice;
 
     public int|string $contact_id = '';
+
+    /** @var array<int, array{id: int, name: string}> */
+    public array $contactOptions = [];
 
     public string $number = '';
 
@@ -23,6 +27,7 @@ new #[Layout('layouts::app')] class extends Component {
     public function mount(PurchaseInvoice $purchaseInvoice): void
     {
         $this->invoice = $purchaseInvoice->load('lines');
+        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
         foreach (['contact_id', 'number'] as $field) {
             $this->{$field} = (string) $this->invoice->{$field};
         }
@@ -78,7 +83,7 @@ new #[Layout('layouts::app')] class extends Component {
 };
 ?>
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Acquisti</p><h1 class="text-lg font-bold text-content">Modifica fattura di acquisto</h1></div></x-slot:header>
-<section class="mx-auto max-w-7xl space-y-6 pb-24">@if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-warning">Questa fattura non è più modificabile.</div>@endif @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-danger">{{ $message }}</div>@enderror<form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><div class="space-y-6"><x-documents.invoice-form.data-section><x-documents.invoice-form.data-fields><label>Fornitore *<select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2">@foreach(Contact::orderBy('name')->get(['id','name']) as $contact)<option value="{{ $contact->id }}">{{ $contact->name }}</option>@endforeach</select></label><label>Numero *<input wire:model="number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2"></label><label>Data *<input wire:model="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2"></label><label>Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2"></label></x-documents.invoice-form.data-fields><p class="mt-4 text-xs text-content-muted">La sequenza d'importazione non è modificabile.</p></x-documents.invoice-form.data-section><x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly">
+<section class="mx-auto max-w-7xl space-y-6 pb-24">@if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-warning">Questa fattura non è più modificabile.</div>@endif @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-danger">{{ $message }}</div>@enderror<form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><div class="space-y-6"><x-documents.invoice-form.data-section><x-documents.invoice-form.data-fields><label>Fornitore *<select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2">@foreach($contactOptions as $contact)<option value="{{ $contact['id'] }}">{{ $contact['name'] }}</option>@endforeach</select></label><label>Numero *<input wire:model="number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2"></label><label>Data *<input wire:model="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2"></label><label>Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2"></label></x-documents.invoice-form.data-fields><p class="mt-4 text-xs text-content-muted">La sequenza d'importazione non è modificabile.</p></x-documents.invoice-form.data-section><x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly">
                 @foreach($lines as $index => $line)
                     <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="false" :vat-disabled="false" />
                 @endforeach

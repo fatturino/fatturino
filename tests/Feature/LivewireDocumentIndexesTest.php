@@ -26,7 +26,7 @@ it('renders each document index as a Livewire page', function (string $url, stri
 
     Livewire::test('pages::documents.index', ['type' => $type])
         ->assertSet('type', $type)
-        ->assertDontSee('<h2 class="mt-1 text-2xl font-bold">'.$title.'</h2>', false)
+        ->assertDontSee('<h2 class="mt-1 text-2xl font-bold">' . $title . '</h2>', false)
         ->assertSee('id="document-search"', false);
 })->with('document index routes');
 
@@ -45,6 +45,39 @@ it('filters sales invoices by search, status and fiscal year', function () {
         ->set('search', '')
         ->call('selectTab', 'draft')
         ->assertSee('FV-2026-001');
+});
+
+it('shows aggregate KPIs for the fiscal-year documents with a single result set', function () {
+    $user = User::factory()->create();
+
+    SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'status' => 'draft',
+        'payment_status' => 'unpaid',
+        'total_gross' => 10000,
+    ]);
+    SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'status' => 'sent',
+        'payment_status' => 'overdue',
+        'total_gross' => 20000,
+    ]);
+    SalesInvoice::factory()->create([
+        'date' => now()->subYear()->toDateString(),
+        'status' => 'draft',
+        'payment_status' => 'unpaid',
+        'total_gross' => 99900,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.index', ['type' => 'sales'])
+        ->assertSee('€ 300,00')
+        ->assertSee('2 fatture')
+        ->assertSee('€ 150,00')
+        ->assertSee('2', false)
+        ->assertSee('documenti aperti')
+        ->assertSee('da saldare');
 });
 
 it('shows the payment filter only for payable document indexes', function () {
@@ -83,8 +116,8 @@ it('locks the document type and fiscal year to the server-side route context', f
         ->assertSet('type', 'sales')
         ->assertSet('fiscalYear', now()->year);
 
-    expect(fn () => $component->set('type', 'self'))
+    expect(fn() => $component->set('type', 'self'))
         ->toThrow(CannotUpdateLockedPropertyException::class);
-    expect(fn () => $component->set('fiscalYear', now()->subYear()->year))
+    expect(fn() => $component->set('fiscalYear', now()->subYear()->year))
         ->toThrow(CannotUpdateLockedPropertyException::class);
 });

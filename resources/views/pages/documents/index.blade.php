@@ -109,13 +109,13 @@ new #[Layout('layouts::app')] class extends Component {
         $documents = (clone $query)
             ->orderBy(in_array($this->sort, ['number', 'date', 'total_gross'], true) ? $this->sort : 'date', $this->direction === 'asc' ? 'asc' : 'desc')
             ->paginate(15);
-        $all = $this->baseQuery();
-        $total = (clone $all)->count();
-        $gross = (int) (clone $all)->sum('total_gross');
-        $drafts = (clone $all)->where('status', 'draft')->count();
-        $sent = (clone $all)->where('status', 'sent')->count();
-        $open = $this->hasPayments() ? (clone $all)->whereIn('payment_status', ['unpaid', 'partial', 'overdue'])->count() : 0;
-        $overdue = $this->hasPayments() ? (clone $all)->where('payment_status', 'overdue')->count() : 0;
+        $aggregates = $this->aggregates();
+        $total = (int) $aggregates->total;
+        $gross = (int) $aggregates->gross;
+        $drafts = (int) $aggregates->drafts;
+        $sent = (int) $aggregates->sent;
+        $open = (int) ($aggregates->open ?? 0);
+        $overdue = (int) ($aggregates->overdue ?? 0);
 
         return view('pages::documents.index', compact('documents', 'total', 'gross', 'drafts', 'sent', 'open', 'overdue'));
     }
@@ -171,7 +171,9 @@ new #[Layout('layouts::app')] class extends Component {
         $this->ensureAllowedType();
         $class = $this->definition()['model'];
 
-        return $class::query()->whereYear('date', $this->fiscalYear);
+        return $class::query()
+            ->where('date', '>=', $this->fiscalYear.'-01-01')
+            ->where('date', '<', ($this->fiscalYear + 1).'-01-01');
     }
 
     private function ensureAllowedType(): void
@@ -190,15 +192,10 @@ new #[Layout('layouts::app')] class extends Component {
             $query->with('payments:id,fiscal_document_id,amount,paid_at');
         }
         if ($this->search !== '') {
-            $query->where(fn ($q) => $q->where('number', 'like', "%
-{
-$this->search
-}
-%")->orWhereHas('contact', fn ($c) => $c->where('name', 'like', "%
-{
-$this->search
-}
-%")));
+            $term = '%'.$this->search.'%';
+            $query->where(fn ($q) => $q
+                ->where('number', 'like', $term)
+                ->orWhereHas('contact', fn ($c) => $c->where('name', 'like', $term)));
         }
         if ($this->status !== '') {
             $query->where('status', $this->status);
@@ -208,6 +205,23 @@ $this->search
         }
 
         return $query;
+    }
+
+    private function aggregates(): object
+    {
+        $select = [
+            'count(*) as total',
+            'coalesce(sum(total_gross), 0) as gross',
+            "sum(case when status = 'draft' then 1 else 0 end) as drafts",
+            "sum(case when status = 'sent' then 1 else 0 end) as sent",
+        ];
+
+        if ($this->hasPayments()) {
+            $select[] = "sum(case when payment_status in ('unpaid', 'partial', 'overdue') then 1 else 0 end) as open";
+            $select[] = "sum(case when payment_status = 'overdue' then 1 else 0 end) as overdue";
+        }
+
+        return $this->baseQuery()->selectRaw(implode(', ', $select))->firstOrFail();
     }
 
     private function statusValue(mixed $value): string

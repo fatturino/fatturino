@@ -2,6 +2,7 @@
 
 use App\Actions\SaveSelfInvoice;
 use App\Enums\VatRate;
+use App\Models\Contact;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Services\DocumentEventRecorder;
@@ -16,6 +17,9 @@ new #[Layout('layouts::app')] class extends Component {
     public ?SelfInvoice $invoice = null;
 
     public int|string $contact_id = '';
+
+    /** @var array<int, array{id: int, name: string}> */
+    public array $contactOptions = [];
 
     public int|string $sequence_id = '';
 
@@ -44,6 +48,7 @@ new #[Layout('layouts::app')] class extends Component {
         $selfInvoice = $selfInvoice?->exists ? $selfInvoice : null;
         $this->invoice = $selfInvoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $this->date = now()->toDateString();
+        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
         $this->sequence_id = app(InvoiceSettings::class)->default_sequence_self_invoice ?? Sequence::query()->where('type', 'self_invoice')->orderByDesc('is_system')->value('id') ?? '';
         if ($selfInvoice) {
             foreach (['contact_id', 'sequence_id', 'number', 'document_type', 'related_invoice_number', 'notes'] as $field) {
@@ -154,7 +159,7 @@ new #[Layout('layouts::app')] class extends Component {
         <div class="space-y-6">
             <x-documents.invoice-form.data-section>
                 <nav class="mb-5 flex gap-2 border-b border-border-light pb-4">@foreach(['data' => 'Dati', 'notes' => 'Note'] as $key => $label)<button type="button" wire:click="$set('tab', '{{ $key }}')" class="rounded-md px-3 py-2 text-sm font-semibold {{ $tab === $key ? 'bg-primary text-white' : 'text-content-muted' }}">{{ $label }}</button>@endforeach @if($invoice)<button type="button" wire:click="$set('tab', 'history')" class="rounded-md px-3 py-2 text-sm font-semibold {{ $tab === 'history' ? 'bg-primary text-white' : 'text-content-muted' }}">Storico</button>@endif</nav>
-                @if($tab === 'data')<x-documents.invoice-form.data-fields><label class="text-sm font-semibold">Fornitore *<select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona fornitore...</option>@foreach(Contact::orderBy('name')->get(['id', 'name']) as $contact)<option value="{{ $contact->id }}">{{ $contact->name }}</option>@endforeach</select>@error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label><label class="text-sm font-semibold">Tipo documento *<select wire:model="document_type" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm">@foreach(['TD17' => 'Acquisto servizi dall’estero', 'TD18' => 'Acquisto beni intracomunitari', 'TD19' => 'Acquisto beni ex art.17', 'TD28' => 'San Marino con IVA', 'TD29' => 'Omessa/irregolare fatturazione'] as $value => $label)<option value="{{ $value }}">{{ $value }} - {{ $label }}</option>@endforeach</select></label>@unless($invoice)<label class="text-sm font-semibold">Numero manuale (opzionale)<input wire:model="number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label>@endunless<label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Numero fattura collegata<input wire:model="related_invoice_number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Data fattura collegata<input wire:model="related_invoice_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label></x-documents.invoice-form.data-fields>
+                @if($tab === 'data')<x-documents.invoice-form.data-fields><label class="text-sm font-semibold">Fornitore *<select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona fornitore...</option>@foreach($contactOptions as $contact)<option value="{{ $contact['id'] }}">{{ $contact['name'] }}</option>@endforeach</select>@error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label><label class="text-sm font-semibold">Tipo documento *<select wire:model="document_type" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm">@foreach(['TD17' => 'Acquisto servizi dall’estero', 'TD18' => 'Acquisto beni intracomunitari', 'TD19' => 'Acquisto beni ex art.17', 'TD28' => 'San Marino con IVA', 'TD29' => 'Omessa/irregolare fatturazione'] as $value => $label)<option value="{{ $value }}">{{ $value }} - {{ $label }}</option>@endforeach</select></label>@unless($invoice)<label class="text-sm font-semibold">Numero manuale (opzionale)<input wire:model="number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label>@endunless<label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Numero fattura collegata<input wire:model="related_invoice_number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Data fattura collegata<input wire:model="related_invoice_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label></x-documents.invoice-form.data-fields>
                 @elseif($tab === 'notes')<label class="text-sm font-semibold">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"></textarea></label>
                 @else<div class="space-y-3">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-semibold">{{ $event->title }}</p><p class="text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</div>@endif
             </x-documents.invoice-form.data-section>

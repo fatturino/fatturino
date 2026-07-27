@@ -1,7 +1,11 @@
 <?php
 
 use App\Actions\SaveSalesInvoice;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentTerms;
+use App\Enums\SalesDocumentType;
 use App\Enums\VatRate;
+use App\Models\Contact;
 use App\Models\SalesInvoice;
 use App\Models\Sequence;
 use App\Services\DocumentEventRecorder;
@@ -17,6 +21,11 @@ new #[Layout('layouts::app')] class extends Component {
     public int|string $contact_id = '';
 
     public ?int $defaultSequenceId = null;
+
+    /** @var array<int, array{id: int, name: string}> */
+    public array $contactOptions = [];
+
+    public ?string $numberPreview = null;
 
     public string $date = '';
 
@@ -67,6 +76,7 @@ new #[Layout('layouts::app')] class extends Component {
         $settings = app(InvoiceSettings::class);
         $this->date = now()->toDateString();
         $this->defaultSequenceId = $settings->default_sequence_sales;
+        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
         $this->notes = $settings->default_notes ?? '';
         $this->payment_method = (string) ($settings->default_payment_method ?? '');
         $this->payment_terms = (string) ($settings->default_payment_terms ?? '');
@@ -102,6 +112,7 @@ new #[Layout('layouts::app')] class extends Component {
             $this->withholding_tax_enabled = false;
         }
         $this->lines = $this->lines ?: [$this->emptyLine()];
+        $this->refreshNumberPreview();
     }
 
     public function addLine(): void
@@ -133,6 +144,11 @@ new #[Layout('layouts::app')] class extends Component {
         if ($this->split_payment) {
             $this->vat_payability = 'S';
         }
+    }
+
+    public function updatedDate(): void
+    {
+        $this->refreshNumberPreview();
     }
 
     public function updatedLines(): void
@@ -185,9 +201,10 @@ new #[Layout('layouts::app')] class extends Component {
         return max(0, $this->grossTotal + ($this->stamp_duty_charged_to_customer ? $this->stampDutyAmount : 0) - ($this->withholding_tax_enabled ? $this->netTotal * ((float) $this->withholding_tax_percent / 100) : 0) - ($this->split_payment ? $this->vatTotal : 0));
     }
 
-    public function getNumberPreviewProperty(): ?string
+    private function refreshNumberPreview(): void
     {
-        return $this->invoice?->number ?? Sequence::find($this->defaultSequenceId)?->getFormattedNumber((int) substr($this->date, 0, 4));
+        $this->numberPreview = $this->invoice?->number
+            ?? Sequence::find($this->defaultSequenceId)?->getFormattedNumber((int) substr($this->date, 0, 4));
     }
 
     public function getReadOnlyProperty(): bool
@@ -253,12 +270,12 @@ new #[Layout('layouts::app')] class extends Component {
                         <label class="text-sm font-semibold">Cliente *
                             <select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm">
                                 <option value="">Seleziona cliente...</option>
-                                @foreach(Contact::orderBy('name')->get(['id', 'name']) as $contact)<option value="{{ $contact->id }}">{{ $contact->name }}</option>@endforeach
+                                @foreach($contactOptions as $contact)<option value="{{ $contact['id'] }}">{{ $contact['name'] }}</option>@endforeach
                             </select>
                             @error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror
                         </label>
                         <div class="text-sm font-semibold">Numero
-                            <div class="mt-1 h-11 rounded-md border border-border-light bg-surface-muted px-3 py-3 text-sm font-normal">{{ $this->numberPreview ?? 'Configura il sezionale predefinito' }}</div>
+                            <div class="mt-1 h-11 rounded-md border border-border-light bg-surface-muted px-3 py-3 text-sm font-normal">{{ $numberPreview ?? 'Configura il sezionale predefinito' }}</div>
                         </div>
                         <label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm">@error('date')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label>
                         <label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label>
