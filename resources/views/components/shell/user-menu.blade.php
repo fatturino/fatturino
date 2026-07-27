@@ -7,7 +7,7 @@
 <div x-data="{ open: false }" class="relative inline-block">
     <button
         type="button"
-        class="inline-flex max-w-64 items-center gap-3 rounded-lg border border-border-light bg-white px-3 py-2 text-left text-sm font-semibold text-content shadow-sm transition hover:border-border hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
+        class="inline-flex max-w-64 items-center gap-3 rounded-lg border border-border-light bg-white px-3 py-2 text-left text-sm font-semibold text-content transition hover:border-border hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
         aria-label="Apri menu azienda"
         aria-haspopup="true"
         :aria-expanded="open"
