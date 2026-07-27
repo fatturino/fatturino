@@ -37,15 +37,6 @@
         class="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-lg bg-white shadow-xl ring-1 ring-black/5"
     >
         <div class="divide-y divide-border-light rounded-lg">
-            <div class="flex items-center gap-3 px-5 py-3">
-                <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <x-icon name="o-building-office-2" class="size-5" />
-                </span>
-                <div class="min-w-0 text-sm">
-                    <p class="truncate font-semibold text-content">{{ $company->company_name }}</p>
-                    <p class="truncate text-xs font-medium text-content-muted">{{ $fiscalRegime }}</p>
-                </div>
-            </div>
             <div class="space-y-1 p-2.5">
                 <x-app-link :href="route('settings.company')" role="menuitem" class="group flex items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-sm font-medium text-content-muted transition hover:bg-primary/5 hover:text-primary">
                     <x-icon name="o-cog-6-tooth" class="size-5 shrink-0 opacity-40 transition group-hover:opacity-70" />

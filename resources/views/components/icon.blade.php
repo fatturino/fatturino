@@ -184,22 +184,6 @@ $iconMap = [
 ];
 
 $phosphorName = $iconMap[$name] ?? $name;
-
-// Map w-* h-* classes to font-size for Phosphor font icons
-$sizeMap = [
-    'w-3' => 'text-xs', 'w-3.5' => 'text-xs',
-    'w-4' => 'text-base', 'w-5' => 'text-lg',
-    'w-6' => 'text-xl', 'w-7' => 'text-2xl',
-    'w-8' => 'text-2xl', 'w-10' => 'text-3xl',
-    'w-12' => 'text-4xl',
-];
-$extraClasses = '';
-foreach ($sizeMap as $w => $fs) {
-    if (str_contains($attributes->get('class', ''), $w)) {
-        $extraClasses .= ' ' . $fs;
-        break;
-    }
-}
 @endphp
 
-<i {{ $attributes->merge(['class' => 'ph ph-' . $phosphorName . $extraClasses . ' inline-flex items-center justify-center', 'aria-hidden' => 'true']) }}></i>
+<x-phosphor-icon :name="$phosphorName" {{ $attributes }} aria-hidden="true" />
