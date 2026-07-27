@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PaymentMethod;
 use App\Enums\ProformaStatus;
 use App\Models\Contact;
 use App\Models\ProformaInvoice;
@@ -68,6 +69,15 @@ it('updates an editable proforma without changing its sequence', function () {
     $invoice->refresh();
     expect($invoice->sequence_id)->toBe($sequence->id)
         ->and($invoice->lines()->sole()->description)->toBe('Versione aggiornata');
+});
+
+it('loads a payment method enum into the editable proforma form', function () {
+    $invoice = ProformaInvoice::factory()->create([
+        'payment_method' => PaymentMethod::MP05,
+    ]);
+
+    Livewire::test('pages::documents.proforma.form', ['proformaInvoice' => $invoice])
+        ->assertSet('payment_method', PaymentMethod::MP05->value);
 });
 
 it('creates a proforma with the configured default sequence', function () {

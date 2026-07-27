@@ -74,7 +74,8 @@ new #[Layout('layouts::app')] class extends Component {
         $this->stamp_duty_applied = (bool) $settings->auto_stamp_duty;
         if ($proformaInvoice) {
             foreach (['contact_id', 'sequence_id', 'notes', 'payment_method', 'payment_terms', 'bank_name', 'bank_iban', 'withholding_tax_percent', 'fund_percent', 'fund_vat_rate'] as $field) {
-                $this->{$field} = (string) ($proformaInvoice->{$field} ?? '');
+                $value = $proformaInvoice->{$field} ?? '';
+                $this->{$field} = (string) ($value instanceof \BackedEnum ? $value->value : $value);
             }
             foreach (['withholding_tax_enabled', 'fund_enabled', 'stamp_duty_applied', 'stamp_duty_charged_to_customer'] as $field) {
                 $this->{$field} = (bool) $proformaInvoice->{$field};
