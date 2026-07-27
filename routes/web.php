@@ -4,7 +4,6 @@ use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CreditNotesController;
 use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\InvoiceSettingsController;
-use App\Http\Controllers\OpenApiController;
 use App\Http\Controllers\OpenApiWebhookController;
 use App\Http\Controllers\ProformaInvoicesController;
 use App\Http\Controllers\PurchaseInvoicesController;
@@ -158,14 +157,6 @@ Route::middleware('auth')->group(function () {
 
     // Electronic Invoice
     Route::livewire('/electronic-invoice-settings', 'pages::settings.openapi')->name('settings.openapi')->defaults('title', 'Fatturazione Elettronica');
-
-    // OpenAPI API endpoints (JSON responses for the Livewire application)
-    Route::post('/api/v1/openapi/save', [OpenApiController::class, 'save'])->middleware('capability:edit-sdi-settings');
-    Route::post('/api/v1/openapi/activate', [OpenApiController::class, 'activate'])->middleware('capability:edit-sdi-settings');
-    Route::post('/api/v1/openapi/deactivate', [OpenApiController::class, 'deactivate'])->middleware('capability:edit-sdi-settings');
-    Route::post('/api/v1/openapi/check-connection', [OpenApiController::class, 'checkConnection']);
-    Route::post('/api/v1/openapi/simulate-webhook', [OpenApiController::class, 'simulateWebhook']);
-    Route::post('/api/v1/openapi/acknowledge-conservation', [OpenApiController::class, 'acknowledgeConservation']);
 
     // Logout
     Route::post('/logout', function () {
