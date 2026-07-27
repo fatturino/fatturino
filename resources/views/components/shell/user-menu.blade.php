@@ -4,34 +4,63 @@
         ?? 'Regime fiscale non configurato';
 @endphp
 
-<x-dropdown right>
-    <x-slot:trigger>
-        <button
-            type="button"
-            class="flex max-w-64 items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
-            aria-label="Apri menu azienda"
-        >
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <x-icon name="o-building-office-2" class="size-5" />
-            </span>
-            <span class="min-w-0 flex-1">
-                <span class="block truncate text-sm font-semibold text-content">{{ $company->company_name }}</span>
-                <span class="block truncate text-xs text-content-muted">{{ $fiscalRegime }}</span>
-            </span>
-            <x-icon name="o-chevron-down" class="size-4 shrink-0 text-content-muted" />
-        </button>
-    </x-slot:trigger>
+<div x-data="{ open: false }" class="relative inline-block">
+    <button
+        type="button"
+        class="inline-flex max-w-64 items-center gap-3 rounded-lg border border-border-light bg-white px-3 py-2 text-left text-sm font-semibold text-content shadow-sm transition hover:border-border hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
+        aria-label="Apri menu azienda"
+        aria-haspopup="true"
+        :aria-expanded="open"
+        @click="open = !open"
+    >
+        <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <x-icon name="o-building-office-2" class="size-5" />
+        </span>
+        <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-semibold text-content">{{ $company->company_name }}</span>
+            <span class="block truncate text-xs font-medium text-content-muted">{{ $fiscalRegime }}</span>
+        </span>
+        <x-icon name="o-chevron-down" class="size-4 shrink-0 text-content-muted" />
+    </button>
 
-    <x-app-link :href="route('settings.company')" class="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-content/70 transition-colors hover:bg-content/5 hover:text-content">
-        <x-icon name="o-cog-6-tooth" class="size-5 shrink-0" />
-        <span>Impostazioni</span>
-    </x-app-link>
-    <hr class="my-1 border-base-200">
-    <form method="POST" action="{{ route('logout') }}" data-posthog-logout>
-        @csrf
-        <button type="submit" class="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-danger transition-colors hover:bg-danger/5">
-            <x-icon name="o-arrow-right-start-on-rectangle" class="size-5 shrink-0" />
-            <span>Esci</span>
-        </button>
-    </form>
-</x-dropdown>
+    <div
+        x-cloak
+        x-show="open"
+        x-transition:enter="transition ease-out duration-100"
+        x-transition:enter-start="opacity-0 scale-90"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-75"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-90"
+        @click.away="open = false"
+        role="menu"
+        class="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-lg bg-white shadow-xl ring-1 ring-black/5"
+    >
+        <div class="divide-y divide-border-light rounded-lg">
+            <div class="flex items-center gap-3 px-5 py-3">
+                <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <x-icon name="o-building-office-2" class="size-5" />
+                </span>
+                <div class="min-w-0 text-sm">
+                    <p class="truncate font-semibold text-content">{{ $company->company_name }}</p>
+                    <p class="truncate text-xs font-medium text-content-muted">{{ $fiscalRegime }}</p>
+                </div>
+            </div>
+            <div class="space-y-1 p-2.5">
+                <x-app-link :href="route('settings.company')" role="menuitem" class="group flex items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-sm font-medium text-content-muted transition hover:bg-primary/5 hover:text-primary">
+                    <x-icon name="o-cog-6-tooth" class="size-5 shrink-0 opacity-40 transition group-hover:opacity-70" />
+                    <span class="grow">Impostazioni</span>
+                </x-app-link>
+            </div>
+            <div class="space-y-1 p-2.5">
+                <form method="POST" action="{{ route('logout') }}" data-posthog-logout>
+                    @csrf
+                    <button type="submit" role="menuitem" class="group flex w-full items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left text-sm font-medium text-danger transition hover:bg-danger/5">
+                        <x-icon name="o-arrow-right-start-on-rectangle" class="size-5 shrink-0 opacity-50 transition group-hover:opacity-80" />
+                        <span class="grow">Esci</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
