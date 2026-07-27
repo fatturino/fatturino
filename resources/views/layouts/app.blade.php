@@ -19,7 +19,7 @@
             <header class="sticky top-0 z-30 flex h-16 items-center border-b border-border-light bg-white/95 px-4 backdrop-blur lg:px-8">
                 <button type="button" class="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-border text-content lg:hidden" @click="sidebarOpen = true" aria-label="Apri menu">☰</button>
                 <div class="flex-1">@isset($header){{ $header }}@endisset</div>
-                <form method="POST" action="{{ route('logout') }}" data-posthog-logout>@csrf <button type="submit" class="cursor-pointer text-sm font-semibold text-content-muted hover:text-primary">Esci</button></form>
+                <x-shell.user-menu />
             </header>
             <main id="main-content" class="mx-auto w-full max-w-10xl p-4 lg:p-8">{{ $slot }}</main>
         </div>
