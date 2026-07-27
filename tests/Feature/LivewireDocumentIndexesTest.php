@@ -92,6 +92,33 @@ it('shows the payment filter only for payable document indexes', function () {
         ->assertDontSee('Pagamento');
 });
 
+it('renders the compatible document actions and gates the SDI send action by workflow state', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['email' => 'cliente@example.test']);
+    SalesInvoice::factory()->create([
+        'contact_id' => $contact->id,
+        'date' => now()->toDateString(),
+        'number' => 'FV-AZIONI-BOZZA',
+        'status' => 'draft',
+    ]);
+    SalesInvoice::factory()->create([
+        'contact_id' => $contact->id,
+        'date' => now()->toDateString(),
+        'number' => 'FV-AZIONI-VALIDATA',
+        'status' => 'xml_validated',
+    ]);
+
+    $this->actingAs($user)
+        ->get('/sell-invoices')
+        ->assertOk()
+        ->assertSee('Segna incasso')
+        ->assertSee('Invia email')
+        ->assertSee('Verifica XML')
+        ->assertSee('Invia a SDI')
+        ->assertSee('Conferma invio SDI')
+        ->assertSee('Questa azione è irreversibile.');
+});
+
 it('supports selecting and clearing all documents on the visible page for future bulk actions', function () {
     $user = User::factory()->create();
     $first = SalesInvoice::factory()->create(['date' => now()->toDateString()]);
