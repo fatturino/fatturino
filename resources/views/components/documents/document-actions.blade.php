@@ -65,13 +65,10 @@
         @endif
 
         @if($canConvert)
-            <form method="POST" action="{{ route('proforma.convert', $document) }}" onsubmit="return confirm('Convertire la proforma {{ $document->number ?? '#'.$document->id }} in fattura?');">
-                @csrf
-                <button type="submit" role="menuitem" class="group flex w-full items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left text-sm font-medium text-base-content/70 hover:bg-primary/5 hover:text-primary">
-                    <x-icon name="o-arrow-path" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
-                    <span class="flex-1">Converti in fattura</span>
-                </button>
-            </form>
+            <button type="button" role="menuitem" @click="open = false; $dispatch('{{ $event }}', { action: 'convert', id: {{ $document->id }} })" :disabled="busy" class="group flex w-full items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left text-sm font-medium text-base-content/70 hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50">
+                <x-icon name="o-arrow-path" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
+                <span class="flex-1">Converti in fattura</span>
+            </button>
         @endif
             </div>
 

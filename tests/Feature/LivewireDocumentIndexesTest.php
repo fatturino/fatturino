@@ -136,15 +136,22 @@ it('shows the delete action only for unconverted proformas', function () {
 
 it('shows the conversion action only for convertible proformas', function () {
     $user = User::factory()->create();
-    $convertible = ProformaInvoice::factory()->create(['date' => now()->toDateString()]);
+    $contact = Contact::factory()->create();
+    $convertible = ProformaInvoice::factory()->create(['contact_id' => $contact->id, 'date' => now()->toDateString()]);
     $converted = ProformaInvoice::factory()->converted()->create(['date' => now()->toDateString()]);
+    $linkable = SalesInvoice::factory()->create(['contact_id' => $contact->id, 'date' => now()->toDateString(), 'number' => 'FV-COLLEGABILE', 'total_gross' => 12000]);
+    $otherCustomer = SalesInvoice::factory()->create(['date' => now()->toDateString(), 'number' => 'FV-ALTRO-CLIENTE']);
 
     $this->actingAs($user)
         ->get('/proforma')
         ->assertOk()
         ->assertSee('Converti in fattura')
-        ->assertSee(route('proforma.convert', $convertible), false)
-        ->assertDontSee(route('proforma.convert', $converted), false);
+        ->assertSee('Collega una fattura esistente')
+        ->assertSee('Cerca per numero o importo')
+        ->assertSee('FV-COLLEGABILE')
+        ->assertDontSee('FV-ALTRO-CLIENTE')
+        ->assertSee("action: 'convert', id: {$convertible->id}", false)
+        ->assertDontSee("action: 'convert', id: {$converted->id}", false);
 });
 
 it('deletes an unconverted proforma through the document index', function () {

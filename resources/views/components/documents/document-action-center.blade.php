@@ -31,6 +31,24 @@
         </div>
     </div>
 
+    <div x-show="conversionOpen" class="fixed inset-0 z-[70] overflow-y-auto p-4" role="dialog" aria-modal="true" aria-labelledby="document-conversion-title">
+        <div class="fixed inset-0 bg-black/30" @click="closeConversion()"></div>
+        <div class="relative mx-auto my-6 w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
+            <div class="mb-5 flex items-center justify-between gap-4"><div><h2 id="document-conversion-title" class="text-lg font-bold text-content" x-text="`Converti in fattura ${documentLabel()}`"></h2><p class="mt-1 text-sm text-content-muted">Scegli se creare una nuova fattura o collegarne una esistente dello stesso cliente. La proforma non sarà più modificabile.</p></div><button type="button" class="rounded-md p-1 text-content-muted hover:bg-surface-muted" @click="closeConversion()" aria-label="Chiudi"><x-icon name="o-x-mark" class="size-5" /></button></div>
+            <form method="POST" :action="selectedDocument ? `${base}/${selectedDocument.id}/convert` : ''" class="space-y-4">
+                @csrf
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3"><input x-model="conversion.mode" type="radio" name="mode" value="create"><span><span class="block text-sm font-semibold">Crea una nuova fattura</span><span class="block text-xs text-content-muted">Copia righe, dati fiscali e movimenti di pagamento in una nuova bozza.</span></span></label>
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3"><input x-model="conversion.mode" type="radio" name="mode" value="link"><span><span class="block text-sm font-semibold">Collega una fattura esistente</span><span class="block text-xs text-content-muted">La fattura non verrà modificata, anche se è già inviata.</span></span></label>
+                <div x-show="conversion.mode === 'link'" class="space-y-3 rounded-lg border border-border-light bg-surface-muted p-3">
+                    <label for="conversion-search" class="block text-sm font-semibold">Cerca per numero o importo<input id="conversion-search" x-model="conversion.search" type="search" class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm" placeholder="Es. FV-2026-001 o 120,00"></label>
+                    <label for="conversion-invoice" class="block text-sm font-semibold">Fattura dello stesso cliente<select id="conversion-invoice" x-model="conversion.invoiceId" name="invoice_id" :required="conversion.mode === 'link'" class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona una fattura...</option><template x-for="invoice in eligibleLinkableInvoices()" :key="invoice.id"><option :value="invoice.id" x-text="`${invoice.number ?? `#${invoice.id}`} · ${formatDate(invoice.date)} · ${money(invoice.totalGross)}`"></option></template></select></label>
+                    <p x-show="eligibleLinkableInvoices().length === 0" class="text-xs text-content-muted">Non ci sono fatture non collegate che corrispondono alla ricerca per questo cliente.</p>
+                </div>
+                <div class="flex justify-end gap-3"><button type="button" class="btn-ghost" @click="closeConversion()">Annulla</button><button type="submit" class="btn-brand" x-text="conversion.mode === 'link' ? 'Collega fattura' : 'Crea fattura'"></button></div>
+            </form>
+        </div>
+    </div>
+
     <div x-show="confirmOpen" class="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="document-confirm-title">
         <div class="fixed inset-0 bg-black/30" @click="closeConfirm()"></div>
         <div class="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-xl"><h2 id="document-confirm-title" class="text-lg font-bold text-content" x-text="confirm.title"></h2><p class="mt-3 whitespace-pre-line text-sm leading-6 text-content-muted" x-text="confirm.message"></p><p x-show="error" x-text="error" class="mt-3 text-sm text-error"></p><div class="mt-6 flex justify-end gap-3"><button type="button" class="btn-ghost" @click="closeConfirm()">Annulla</button><button type="button" :class="confirm.danger ? 'btn-danger' : 'btn-brand'" :disabled="busy" @click="executeWorkflow()"><span x-text="busy ? 'Operazione in corso...' : confirm.submit"></span></button></div></div>
@@ -47,11 +65,13 @@
             emailOpen: false,
             emailLoading: false,
             paymentOpen: false,
+            conversionOpen: false,
             confirmOpen: false,
             notice: { show: false, message: '', type: 'success', timeout: null },
             editingPaymentId: null,
             email: { recipientEmail: '', cc: '', bcc: '', subject: '', body: '', attachPdf: true },
             payment: { amount: '', paidAt: '', reference: '', notes: '', bankName: '' },
+            conversion: { mode: 'create', invoiceId: '', search: '' },
             confirm: { action: '', title: '', message: '', submit: '', danger: false },
             handleAction(detail) {
                 const document = this.documents.find((item) => item.id === Number(detail.id));
@@ -61,6 +81,7 @@
                 this.error = '';
                 if (detail.action === 'email') this.openEmail();
                 if (detail.action === 'payment') this.openPayment();
+                if (detail.action === 'convert') this.openConversion();
                 if (detail.action === 'validate-xml') this.openConfirm('validate-xml');
                 if (detail.action === 'send-sdi') this.openConfirm('send-sdi');
                 if (detail.action === 'delete') this.openConfirm('delete');
@@ -113,6 +134,12 @@
             },
             openPayment() { this.paymentOpen = true; this.resetPaymentForm(); },
             closePayment() { if (!this.busy) { this.paymentOpen = false; this.error = ''; this.resetPaymentForm(); } },
+            openConversion() { this.conversion = { mode: 'create', invoiceId: '', search: '' }; this.conversionOpen = true; },
+            closeConversion() { if (!this.busy) { this.conversionOpen = false; this.conversion = { mode: 'create', invoiceId: '', search: '' }; } },
+            eligibleLinkableInvoices() {
+                const search = this.conversion.search.trim().toLowerCase().replace(',', '.');
+                return (this.linkableInvoices ?? []).filter((invoice) => invoice.contactId === this.selectedDocument?.contactId && (!search || `${invoice.number ?? ''} ${(invoice.totalGross / 100).toFixed(2)} ${invoice.totalGross}`.toLowerCase().includes(search)));
+            },
             paymentCopy() {
                 const receivable = this.type === 'sales';
                 const action = receivable ? 'incasso' : 'pagamento';

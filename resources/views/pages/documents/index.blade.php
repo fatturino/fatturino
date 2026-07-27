@@ -268,6 +268,7 @@ new #[Layout('layouts::app')] class extends Component {
     $actionDocuments = $documents->getCollection()->map(fn ($document) => [
         'id' => $document->id,
         'number' => $document->number,
+        'contactId' => $document->contact_id,
         'status' => $this->statusValue($document->status),
         'sdiEditable' => $document->isSdiEditable(),
         'paymentStatus' => $this->statusValue($document->payment_status),
@@ -283,6 +284,15 @@ new #[Layout('layouts::app')] class extends Component {
             'bankName' => $payment->bank_name,
         ])->values() : [],
     ])->values();
+    $linkableInvoices = $type === 'proforma'
+        ? SalesInvoice::query()
+            ->whereNull('proforma_id')
+            ->whereIn('contact_id', $documents->getCollection()->pluck('contact_id')->filter()->unique())
+            ->orderByDesc('date')
+            ->get(['id', 'number', 'contact_id', 'date', 'total_gross'])
+            ->map(fn ($invoice) => ['id' => $invoice->id, 'number' => $invoice->number, 'contactId' => $invoice->contact_id, 'date' => $invoice->date->format('Y-m-d'), 'totalGross' => (int) $invoice->total_gross])
+            ->values()
+        : [];
     $actionConfig = [
         'type' => $type,
         'base' => '/'.$definition['base'],
@@ -290,6 +300,7 @@ new #[Layout('layouts::app')] class extends Component {
         'canEmail' => in_array($type, ['sales', 'credit', 'proforma'], true),
         'canPay' => $this->hasPayments(),
         'canXml' => in_array($type, ['sales', 'self', 'credit'], true),
+        'linkableInvoices' => $linkableInvoices,
     ];
 @endphp
 <section
