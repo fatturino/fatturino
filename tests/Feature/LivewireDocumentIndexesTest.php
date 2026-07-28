@@ -125,7 +125,7 @@ it('renders the compatible document actions and gates the SDI send action by wor
         ->assertSee('Questa azione è irreversibile.');
 });
 
-it('shows the XML download action for sales invoices already sent to SDI', function () {
+it('shows the XML and PDF download actions for sales invoices already sent to SDI', function () {
     $user = User::factory()->create();
     $invoice = SalesInvoice::factory()->create([
         'date' => now()->toDateString(),
@@ -139,6 +139,8 @@ it('shows the XML download action for sales invoices already sent to SDI', funct
         ->assertOk()
         ->assertSee('Scarica XML')
         ->assertSee("href=\"/sell-invoices/{$invoice->id}/xml\"", false)
+        ->assertSee('Scarica PDF')
+        ->assertSee("href=\"/sell-invoices/{$invoice->id}/pdf\"", false)
         ->assertSee('download', false);
 });
 
