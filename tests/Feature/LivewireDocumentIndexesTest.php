@@ -4,6 +4,7 @@ use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\SalesInvoice;
 use App\Models\User;
+use App\Enums\SdiStatus;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
@@ -120,6 +121,23 @@ it('renders the compatible document actions and gates the SDI send action by wor
         ->assertSee('Invia a SDI')
         ->assertSee('Conferma invio SDI')
         ->assertSee('Questa azione è irreversibile.');
+});
+
+it('shows the XML download action for sales invoices already sent to SDI', function () {
+    $user = User::factory()->create();
+    $invoice = SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'number' => 'FV-XML-INVIATA',
+        'status' => 'sent',
+        'sdi_status' => SdiStatus::Sent,
+    ]);
+
+    $this->actingAs($user)
+        ->get('/sell-invoices')
+        ->assertOk()
+        ->assertSee('Scarica XML')
+        ->assertSee("href=\"/sell-invoices/{$invoice->id}/xml\"", false)
+        ->assertSee('download', false);
 });
 
 it('shows the delete action only for unconverted proformas', function () {

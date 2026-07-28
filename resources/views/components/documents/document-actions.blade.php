@@ -14,6 +14,7 @@
     $canSendToSdi = in_array($type, ['sales', 'self', 'credit'], true)
         && $document->isSdiEditable()
         && $document->status->canSendToSdi();
+    $canDownloadXml = in_array($type, ['sales', 'self', 'credit'], true);
     $canConvert = $type === 'proforma' && $document->isConvertible();
     $canDelete = $type === 'proforma' && $document->statusValue() !== 'converted';
     $event = "document-action";
@@ -69,6 +70,13 @@
                 <x-icon name="o-arrow-path" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
                 <span class="flex-1">Converti in fattura</span>
             </button>
+        @endif
+
+        @if($canDownloadXml)
+            <x-app-link href="/{{ $base }}/{{ $document->id }}/xml" download role="menuitem" class="group flex items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-sm font-medium text-base-content/70 hover:bg-primary/5 hover:text-primary">
+                <x-icon name="o-arrow-down-tray" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
+                <span class="grow">Scarica XML</span>
+            </x-app-link>
         @endif
             </div>
 
