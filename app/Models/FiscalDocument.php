@@ -139,7 +139,7 @@ class FiscalDocument extends Model
     public function getNetDueAttribute(): int
     {
         $due = $this->total_gross
-            + ($this->stamp_duty_charged_to_customer !== false ? ($this->stamp_duty_amount ?? 0) : 0)
+            + ($this->chargesStampDutyToCustomer() ? ($this->stamp_duty_amount ?? 0) : 0)
             - ($this->withholding_tax_amount ?? 0);
         $fundVatRate = $this->fund_vat_rate instanceof VatRate
             ? $this->fund_vat_rate
@@ -153,6 +153,18 @@ class FiscalDocument extends Model
         }
 
         return max(0, $due);
+    }
+
+    /**
+     * Whether the document adds its virtual stamp duty to the amount charged
+     * to the customer. Legacy records without an explicit choice preserve the
+     * historical default of charging the customer.
+     */
+    public function chargesStampDutyToCustomer(): bool
+    {
+        return $this->stamp_duty_charged_to_customer === null
+            ? true
+            : (bool) $this->stamp_duty_charged_to_customer;
     }
 
     public function getOverpaidAmountAttribute(): int

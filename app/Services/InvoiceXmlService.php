@@ -136,7 +136,7 @@ class InvoiceXmlService
         $instance->setDocumentNumber($invoice->number);
         // Convert cents to euros; add stamp duty only when it is charged to the customer.
         $documentTotal = $invoice->total_gross / 100;
-        if ($invoice->stamp_duty_applied && $invoice->stamp_duty_charged_to_customer !== false) {
+        if ($invoice->stamp_duty_applied && $invoice->chargesStampDutyToCustomer()) {
             $documentTotal += $invoice->stamp_duty_amount / 100;
         }
         $instance->setDocumentTotal($documentTotal);
@@ -212,7 +212,7 @@ class InvoiceXmlService
             $instance->addLine($lineItem);
         }
 
-        if ($invoice->stamp_duty_applied && $invoice->stamp_duty_charged_to_customer !== false && $invoice->stamp_duty_amount > 0) {
+        if ($invoice->stamp_duty_applied && $invoice->chargesStampDutyToCustomer() && $invoice->stamp_duty_amount > 0) {
             $stampDutyVatRate = FiscalRegimePolicy::stampDutyVatRate(
                 $this->companySettings->company_fiscal_regime
             );
@@ -267,7 +267,7 @@ class InvoiceXmlService
             $summary[$key]['tax'] += $fundAmountEuros * ($rate / 100);
         }
 
-        if ($invoice->stamp_duty_applied && $invoice->stamp_duty_charged_to_customer !== false && $invoice->stamp_duty_amount > 0) {
+        if ($invoice->stamp_duty_applied && $invoice->chargesStampDutyToCustomer() && $invoice->stamp_duty_amount > 0) {
             $stampDutyVatRate = FiscalRegimePolicy::stampDutyVatRate(
                 $this->companySettings->company_fiscal_regime
             );

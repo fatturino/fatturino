@@ -2,6 +2,7 @@
 
 use App\Actions\ConvertProformaToInvoice;
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\ProformaStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
@@ -11,6 +12,9 @@ use App\Models\Payment;
 use App\Models\ProformaInvoice;
 use App\Models\SalesInvoice;
 use App\Models\Sequence;
+use App\Services\InvoiceXmlService;
+use App\Settings\CompanySettings;
+use App\Support\FiscalRegimePolicy;
 
 test('converts a Draft proforma to a sales invoice', function () {
     Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
@@ -131,7 +135,7 @@ test('copies document details, line discounts, and payments to the new invoice',
     $invoice = app(ConvertProformaToInvoice::class)->execute($proforma);
 
     expect($invoice->document_type)->toBe('TD01')
-        ->and($invoice->due_date)->toBe('2026-09-30 00:00:00')
+        ->and($invoice->due_date?->toDateString())->toBe('2026-09-30')
         ->and($invoice->payment_method)->toBe('MP05')
         ->and($invoice->payment_terms)->toBe('TP02')
         ->and($invoice->bank_name)->toBe('Banca Test')
@@ -167,6 +171,47 @@ test('copies tax options from proforma to invoice', function () {
     expect((float) $invoice->withholding_tax_percent)->toBe(20.0);
     expect((bool) $invoice->stamp_duty_applied)->toBeTrue();
     expect($invoice->stamp_duty_amount)->toBe(200);
+});
+
+test('keeps issuer-paid RF19 stamp duty out of the converted invoice XML total', function () {
+    $settings = app(CompanySettings::class);
+    $settings->company_fiscal_regime = 'RF19';
+    $settings->save();
+
+    Sequence::factory()->create(['type' => 'sales', 'is_system' => true]);
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '0000000']);
+    $proforma = ProformaInvoice::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => ProformaStatus::Draft,
+        'total_net' => 60000,
+        'total_vat' => 0,
+        'total_gross' => 60000,
+        'stamp_duty_applied' => true,
+        'stamp_duty_charged_to_customer' => false,
+        'stamp_duty_amount' => 200,
+        'payment_method' => PaymentMethod::MP05,
+        'notes' => FiscalRegimePolicy::FORFETTARIO_VAT_NOTICE,
+    ]);
+    $proforma->lines()->create([
+        'description' => 'Consulenza',
+        'quantity' => 1,
+        'unit_price' => 60000,
+        'vat_rate' => VatRate::N2_2->value,
+        'total' => 60000,
+    ]);
+
+    $invoice = app(ConvertProformaToInvoice::class)->execute($proforma);
+    $xml = app(InvoiceXmlService::class)->generate($invoice->load(['contact', 'lines']));
+
+    expect($invoice)->toBeInstanceOf(SalesInvoice::class)
+        ->and($invoice->stamp_duty_charged_to_customer)->toBeFalse()
+        ->and($invoice->chargesStampDutyToCustomer())->toBeFalse()
+        ->and($invoice->net_due)->toBe(60000)
+        ->and($xml)->toContain('<ImportoBollo>2.00</ImportoBollo>')
+        ->and($xml)->toContain('<ImportoTotaleDocumento>600.00</ImportoTotaleDocumento>')
+        ->and($xml)->toContain('<ImportoPagamento>600.00</ImportoPagamento>')
+        ->and($xml)->not->toContain('<Descrizione>'.FiscalRegimePolicy::STAMP_DUTY_DESCRIPTION.'</Descrizione>')
+        ->and($xml)->not->toContain('<ImponibileImporto>602.00</ImponibileImporto>');
 });
 
 test('sets proforma status to Converted after successful conversion', function () {
