@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\CreatePostHogLogger;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -18,7 +19,9 @@ return [
     |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    // A PostHog key identifies a managed/cloud deployment. Self-hosted instances
+    // keep the container-native stderr output without any external log traffic.
+    'default' => env('POSTHOG_API_KEY') ? 'posthog' : 'stderr',
 
     /*
     |--------------------------------------------------------------------------
@@ -105,6 +108,14 @@ return [
             'processors' => [PsrLogMessageProcessor::class],
         ],
 
+        'posthog' => [
+            'driver' => 'custom',
+            'via' => CreatePostHogLogger::class,
+            'token' => env('POSTHOG_API_KEY'),
+            'host' => env('POSTHOG_HOST', 'https://eu.i.posthog.com'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
         'syslog' => [
             'driver' => 'syslog',
             'level' => env('LOG_LEVEL', 'debug'),
@@ -128,10 +139,9 @@ return [
         ],
 
         'fe-openapi' => [
-            'driver' => env('APP_ENV') === 'production' ? 'stderr' : 'daily',
-            'path' => storage_path('logs/plugin-fe-openapi.log'),
-            'level' => env('LOG_LEVEL', 'debug'),
-            'days' => 14,
+            'driver' => 'stack',
+            'channels' => [env('POSTHOG_API_KEY') ? 'posthog' : 'stderr'],
+            'ignore_exceptions' => false,
         ],
 
     ],

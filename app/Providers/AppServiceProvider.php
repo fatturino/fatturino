@@ -32,13 +32,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(SdiProvider::class, OpenApiSdiProvider::class);
 
         $this->mergeConfigFrom(config_path('fe-openapi.php'), 'fe-openapi');
-        $this->app->make('config')->set('logging.channels.fe-openapi', [
-            'driver' => app()->isProduction() ? 'stderr' : 'daily',
-            'path' => storage_path('logs/plugin-fe-openapi.log'),
-            'level' => 'debug',
-            'days' => 14,
-        ]);
-
         $this->registerEnvironmentBindings();
 
         // In managed environments OpenAPI settings are sourced from env only.
