@@ -389,6 +389,7 @@ class ReconcileCommand extends Command
 
                 $submission = SdiOutboundSubmission::query()
                     ->whereIn('status', [
+                        SdiSubmissionStatus::Pending,
                         SdiSubmissionStatus::ProviderAccepted,
                         SdiSubmissionStatus::OutcomeUnknown,
                         SdiSubmissionStatus::LocalPersistFailed,
@@ -820,6 +821,7 @@ class ReconcileCommand extends Command
         $submission ??= SdiOutboundSubmission::query()
             ->where('fiscal_document_id', $document->id)
             ->whereIn('status', [
+                SdiSubmissionStatus::Pending,
                 SdiSubmissionStatus::ProviderAccepted,
                 SdiSubmissionStatus::OutcomeUnknown,
                 SdiSubmissionStatus::LocalPersistFailed,

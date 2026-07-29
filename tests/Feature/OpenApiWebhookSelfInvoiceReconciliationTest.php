@@ -3,10 +3,12 @@
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
+use App\Enums\SdiSubmissionStatus;
 use App\Models\EiInboundLog;
 use App\Models\PurchaseInvoice;
 use App\Models\SalesInvoice;
 use App\Models\SdiUuidLink;
+use App\Models\SdiOutboundSubmission;
 use App\Models\SelfInvoice;
 use App\Services\OpenApiSdiService;
 use App\Settings\CompanySettings;
@@ -368,6 +370,95 @@ test('reconcile command restores missing sent log when local uuid was persisted'
         'status' => SdiStatus::Sent->value,
         'source_uuid' => 'persisted-sales-uuid',
     ]);
+});
+
+test('reconcile completes a local persistence failure after provider acceptance', function () {
+    $invoice = SalesInvoice::factory()->create([
+        'number' => '2026/44',
+        'document_type' => 'TD01',
+        'date' => now()->toDateString(),
+        'total_gross' => 12200,
+        'status' => InvoiceStatus::XmlValidated,
+        'sdi_status' => null,
+    ]);
+    $xml = makeInboundInvoiceXml('TD01', '2026/44');
+    $submission = SdiOutboundSubmission::create([
+        'fiscal_document_id' => $invoice->id,
+        'idempotency_key' => (string) str()->ulid(),
+        'provider' => 'openapi',
+        'status' => SdiSubmissionStatus::LocalPersistFailed,
+        'active_document_lock' => (string) $invoice->id,
+        'xml_sha256' => hash('sha256', $xml),
+        'business_fingerprint' => app(\App\Services\BusinessFingerprintService::class)->buildFromXml($xml),
+        'provider_uuid' => 'accepted-before-db-failure',
+        'provider_file_id' => 'accepted-file-id',
+        'provider_accepted_at' => now(),
+    ]);
+
+    $service = Mockery::mock(OpenApiSdiService::class);
+    $service->shouldReceive('isConfigured')->once()->andReturnTrue();
+    $service->shouldReceive('getCustomerInvoices')->once()->andReturn([
+        'success' => true,
+        'data' => [[
+            'uuid' => 'accepted-before-db-failure',
+            'file_id' => 'accepted-file-id',
+            'created_at' => now()->toIso8601String(),
+        ]],
+    ]);
+    $service->shouldReceive('downloadInvoiceXml')->once()->with('accepted-before-db-failure')->andReturn([
+        'success' => true,
+        'xml' => $xml,
+    ]);
+    app()->instance(OpenApiSdiService::class, $service);
+
+    $this->artisan('openapi:reconcile', ['--recover-sends-only' => true])->assertExitCode(0);
+
+    $invoice->refresh();
+    $submission->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::Sent->value)
+        ->and($invoice->sdi_uuid)->toBe('accepted-before-db-failure')
+        ->and($submission->status)->toBe(SdiSubmissionStatus::Completed)
+        ->and($submission->active_document_lock)->toBeNull()
+        ->and($submission->reconciled_at)->not->toBeNull();
+});
+
+test('reconcile completes a pending submission left by a crash after provider acceptance', function () {
+    $invoice = SalesInvoice::factory()->create([
+        'number' => '2026/45',
+        'document_type' => 'TD01',
+        'date' => now()->toDateString(),
+        'total_gross' => 12200,
+        'status' => InvoiceStatus::XmlValidated,
+    ]);
+    $xml = makeInboundInvoiceXml('TD01', '2026/45');
+    $submission = SdiOutboundSubmission::create([
+        'fiscal_document_id' => $invoice->id,
+        'idempotency_key' => (string) str()->ulid(),
+        'provider' => 'pending',
+        'status' => SdiSubmissionStatus::Pending,
+        'active_document_lock' => (string) $invoice->id,
+        'xml_sha256' => hash('sha256', $xml),
+        'business_fingerprint' => app(\App\Services\BusinessFingerprintService::class)->buildFromXml($xml),
+    ]);
+
+    $service = Mockery::mock(OpenApiSdiService::class);
+    $service->shouldReceive('isConfigured')->once()->andReturnTrue();
+    $service->shouldReceive('getCustomerInvoices')->once()->andReturn(['success' => true, 'data' => [[
+        'uuid' => 'accepted-before-status-persist',
+        'file_id' => 'pending-file-id',
+        'created_at' => now()->toIso8601String(),
+    ]]]);
+    $service->shouldReceive('downloadInvoiceXml')->once()->andReturn(['success' => true, 'xml' => $xml]);
+    app()->instance(OpenApiSdiService::class, $service);
+
+    $this->artisan('openapi:reconcile', ['--recover-sends-only' => true])->assertExitCode(0);
+
+    $submission->refresh();
+
+    expect($submission->status)->toBe(SdiSubmissionStatus::Completed)
+        ->and($submission->active_document_lock)->toBeNull()
+        ->and($submission->provider_uuid)->toBe('accepted-before-status-persist');
 });
 
 test('customer notification NS reopens outbound invoice for correction and resend', function () {
