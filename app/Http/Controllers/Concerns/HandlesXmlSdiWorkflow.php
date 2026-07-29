@@ -5,10 +5,9 @@ namespace App\Http\Controllers\Concerns;
 use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
 use App\Models\EiOutboundLog;
-use App\Services\BusinessFingerprintService;
 use App\Services\DocumentEventRecorder;
 use App\Services\PostHogTelemetryService;
-use App\Services\SdiUuidLinkService;
+use App\Services\SdiSubmissionService;
 use App\Services\XmlWorkflowService;
 use App\Support\InvoiceAuditDispatcher;
 use Illuminate\Http\JsonResponse;
@@ -109,19 +108,28 @@ trait HandlesXmlSdiWorkflow
         $document->loadMissing(['contact', 'lines']);
         $xml = $xmlService->generate($document);
         $fileName = $xmlService->generateFileName($document);
-        $sendResult = $xmlWorkflow->send($xml, $fileName);
+        $submissionResult = app(SdiSubmissionService::class)->send(
+            $document,
+            $xml,
+            $fileName,
+            $xmlWorkflow,
+            $sentMessage,
+        );
 
-        if (! ($sendResult['success'] ?? false)) {
-            $errorMessage = $sendResult['error_message'] ?? 'Invio allo SDI fallito.';
+        if (! ($submissionResult['success'] ?? false)) {
+            $errorMessage = $submissionResult['error_message'] ?? 'Invio allo SDI fallito.';
             $outboundLog = null;
 
-            $this->runSdiSideEffect('record outbound send failure log', function () use (&$outboundLog, $document, $errorMessage, $sendResult) {
+            $this->runSdiSideEffect('record outbound send failure log', function () use (&$outboundLog, $document, $errorMessage, $submissionResult) {
                 $outboundLog = EiOutboundLog::create([
                     'fiscal_document_id' => $document->id,
-                    'event_type' => 'send_failed',
+                    'event_type' => ! empty($submissionResult['outcome_unknown']) ? 'send_outcome_unknown' : 'send_failed',
                     'status' => SdiStatus::Error->value,
                     'message' => $errorMessage,
-                    'raw_payload' => $sendResult,
+                    'raw_payload' => array_filter([
+                        'submission_id' => $submissionResult['submission']->id ?? null,
+                        'submission_status' => $submissionResult['submission']->status?->value ?? null,
+                    ]),
                 ]);
             }, $document);
 
@@ -144,46 +152,19 @@ trait HandlesXmlSdiWorkflow
             return back()->withErrors(['action' => $errorMessage]);
         }
 
-        $fingerprint = app(BusinessFingerprintService::class)->buildFromXml($xml);
-
-        $document->update([
-            'status' => InvoiceStatus::Sent,
-            'sdi_status' => SdiStatus::Sent,
-            'sdi_uuid' => $sendResult['uuid'] ?? $document->sdi_uuid,
-            'sdi_file_id' => $sendResult['file_id'] ?? $document->sdi_file_id,
-            'sdi_message' => $sendResult['message'] ?? $sentMessage,
-            'business_fingerprint' => $fingerprint,
-            'sdi_primary_channel' => 'outbound',
-        ]);
-
         $providerId = $xmlWorkflow->providerId();
-        $outboundLog = null;
+        $outboundLog = EiOutboundLog::query()
+            ->where('fiscal_document_id', $document->id)
+            ->where('event_type', 'sent')
+            ->where('status', SdiStatus::Sent->value)
+            ->first();
 
-        $this->runSdiSideEffect('record outbound sent log', function () use (&$outboundLog, $document, $sendResult, $sentMessage, $fingerprint) {
-            $outboundLog = EiOutboundLog::firstOrCreate([
-                'fiscal_document_id' => $document->id,
-                'event_type' => 'sent',
-                'status' => SdiStatus::Sent->value,
-            ], [
-                'source_uuid' => $document->sdi_uuid,
-                'message' => $sendResult['message'] ?? $sentMessage,
-                'business_fingerprint' => $fingerprint,
-                'raw_payload' => $sendResult,
-            ]);
-        }, $document);
-
-        $this->runSdiSideEffect('record document event', function () use ($document, $outboundLog, $sendResult, $sentMessage) {
+        $this->runSdiSideEffect('record document event', function () use ($document, $outboundLog, $submissionResult, $sentMessage) {
             app(DocumentEventRecorder::class)->sdiSent(
                 $document,
                 $outboundLog?->id,
-                $sendResult['message'] ?? $sentMessage
+                $submissionResult['sent_message'] ?? $sentMessage
             );
-        }, $document);
-
-        $this->runSdiSideEffect('link outbound uuid', function () use ($document, $fingerprint) {
-            if (! empty($document->sdi_uuid)) {
-                app(SdiUuidLinkService::class)->linkOutbound($document->id, $document->sdi_uuid, $fingerprint, 'manual');
-            }
         }, $document);
 
         $this->runSdiSideEffect('dispatch audit', function () use ($document, $providerId) {

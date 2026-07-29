@@ -3,6 +3,7 @@
 use App\Contracts\SdiProvider;
 use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
+use App\Enums\SdiSubmissionStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\EiOutboundLog;
@@ -282,6 +283,45 @@ test('send to sdi endpoint logs send_failed and returns uniform json on provider
     expect($log)->not->toBeNull()
         ->and($log->status)->toBe(SdiStatus::Error)
         ->and($log->message)->toBe('Provider offline');
+});
+
+test('a retry after an ambiguous provider outcome does not invoke the provider twice', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::XmlValidated,
+    ]);
+    $invoice->lines()->create([
+        'description' => 'Servizio',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+    $invoice->calculateTotals();
+
+    $provider = Mockery::mock(SdiProvider::class);
+    $provider->shouldReceive('sendInvoice')->once()->andReturn([
+        'success' => false,
+        'outcome_unknown' => true,
+        'error_message' => 'Timeout della connessione',
+    ]);
+    app()->instance(SdiProvider::class, $provider);
+
+    $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi")
+        ->assertStatus(422)
+        ->assertJsonPath('success', false);
+
+    $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi")
+        ->assertStatus(422)
+        ->assertJsonPath('success', false);
+
+    $this->assertDatabaseHas('sdi_outbound_submissions', [
+        'fiscal_document_id' => $invoice->id,
+        'status' => SdiSubmissionStatus::OutcomeUnknown->value,
+        'active_document_lock' => (string) $invoice->id,
+    ]);
 });
 
 test('updating a rejected invoice resets workflow status to draft so it can be revalidated', function () {
