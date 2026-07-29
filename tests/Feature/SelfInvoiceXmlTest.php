@@ -147,20 +147,30 @@ class SelfInvoiceXmlTest extends TestCase
         $this->assertStringContainsString('_', $filename);
     }
 
+    public function test_local_validation_accepts_a_20_character_related_invoice_number()
+    {
+        $invoice = $this->makeInvoiceWithLine('TD17');
+        $invoice->update([
+            'related_invoice_number' => str_repeat('A', 20),
+        ]);
+
+        $xml = app(SelfInvoiceXmlService::class)->generate($invoice->fresh('lines', 'contact'));
+        $result = app(LocalXmlValidator::class)->validate($xml);
+
+        $this->assertTrue($result['valid']);
+    }
+
     public function test_local_validation_rejects_related_invoice_number_longer_than_20_characters()
     {
         $invoice = $this->makeInvoiceWithLine('TD17');
         $invoice->update([
-            'related_invoice_number' => 'a636c2e7cd6a42b79f2c5241b7db3b14',
+            'related_invoice_number' => str_repeat('A', 21),
         ]);
 
         $xml = app(SelfInvoiceXmlService::class)->generate($invoice->fresh('lines', 'contact'));
         $result = app(LocalXmlValidator::class)->validate($xml);
 
         $this->assertFalse($result['valid']);
-        $this->assertContains(
-            'Il numero del documento collegato supera 20 caratteri e non e conforme allo schema SDI.',
-            $result['errors']
-        );
+        $this->assertContains(__('app.invoices.xml_errors.related_document_number_too_long'), $result['errors']);
     }
 }

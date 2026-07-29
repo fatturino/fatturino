@@ -192,7 +192,7 @@ test('reconcile command skips missing self-invoice without creating documents', 
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getSupplierInvoices')
         ->once()
-        ->with(Mockery::on(fn (array $filters) => ($filters['recipient'] ?? null) === '12345678903'))
+        ->with(Mockery::on(fn(array $filters) => ($filters['recipient'] ?? null) === '12345678903'))
         ->andReturn([
             'success' => true,
             'data' => [[
@@ -230,7 +230,7 @@ test('reconcile command recovers self-invoice sent to openapi when local uuid wa
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getCustomerInvoices')
         ->once()
-        ->with(Mockery::on(fn (array $filters) => ($filters['page'] ?? null) === 1))
+        ->with(Mockery::on(fn(array $filters) => ($filters['page'] ?? null) === 1))
         ->andReturn([
             'success' => true,
             'data' => [[
@@ -272,7 +272,7 @@ test('reconcile command recovers sales invoice sent to openapi when local status
     $invoice = SalesInvoice::factory()->create([
         'number' => '2026/42',
         'document_type' => 'TD01',
-        'date' => '2026-06-01',
+        'date' => now()->toDateString(),
         'total_gross' => 12200,
         'status' => InvoiceStatus::XmlValidated,
         'sdi_status' => null,
@@ -306,8 +306,8 @@ test('reconcile command recovers sales invoice sent to openapi when local status
 
     $invoice->refresh();
 
-    expect($invoice->status)->toBe(InvoiceStatus::Sent)
-        ->and($invoice->sdi_status)->toBe(SdiStatus::Sent)
+    expect($invoice->status)->toBe(InvoiceStatus::Sent->value)
+        ->and($invoice->sdi_status)->toBe(SdiStatus::Sent->value)
         ->and($invoice->sdi_uuid)->toBe('recovered-sales-uuid')
         ->and($invoice->sdi_file_id)->toBe('file-sales-123')
         ->and($invoice->sdi_primary_channel)->toBe('outbound');
@@ -324,7 +324,7 @@ test('reconcile command restores missing sent log when local uuid was persisted'
     $invoice = SalesInvoice::factory()->create([
         'number' => '2026/43',
         'document_type' => 'TD01',
-        'date' => '2026-06-01',
+        'date' => now()->toDateString(),
         'total_gross' => 12200,
         'status' => InvoiceStatus::XmlValidated,
         'sdi_status' => SdiStatus::Error,
@@ -358,8 +358,8 @@ test('reconcile command restores missing sent log when local uuid was persisted'
 
     $invoice->refresh();
 
-    expect($invoice->status)->toBe(InvoiceStatus::Sent)
-        ->and($invoice->sdi_status)->toBe(SdiStatus::Sent)
+    expect($invoice->status)->toBe(InvoiceStatus::Sent->value)
+        ->and($invoice->sdi_status)->toBe(SdiStatus::Sent->value)
         ->and($invoice->sdi_file_id)->toBe('file-sales-456');
 
     $this->assertDatabaseHas('ei_outbound_logs', [
@@ -415,6 +415,8 @@ function supplierInvoiceWebhookPayload(string $uuid): array
 
 function makeInboundInvoiceXml(string $documentType, string $number, string $customerVat = '12345678903'): string
 {
+    $date = now()->toDateString();
+
     return <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <FatturaElettronica versione="FPR12">
@@ -471,7 +473,7 @@ function makeInboundInvoiceXml(string $documentType, string $number, string $cus
       <DatiGeneraliDocumento>
         <TipoDocumento>{$documentType}</TipoDocumento>
         <Divisa>EUR</Divisa>
-        <Data>2026-06-01</Data>
+        <Data>{$date}</Data>
         <Numero>{$number}</Numero>
         <ImportoTotaleDocumento>122.00</ImportoTotaleDocumento>
       </DatiGeneraliDocumento>

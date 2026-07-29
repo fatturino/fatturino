@@ -19,6 +19,7 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_CONFIG_CACHE" value="/tmp/fatturino-testing-config.php"/>
         <env name="APP_NAME" value="Fatturino"/>
         <env name="APP_LOCALE" value="it"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
