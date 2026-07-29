@@ -2,6 +2,7 @@
 
 use App\Contracts\SdiProvider;
 use App\Enums\InvoiceStatus;
+use App\Enums\SdiSubmissionStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\CreditNote;
@@ -97,6 +98,46 @@ test('credit note validate xml sets status to xml_validated', function () {
     ]);
     expect($creditNote->fresh()->status)->toBe(InvoiceStatus::XmlValidated);
 });
+
+test('self invoices and credit notes use the durable SDI submission workflow', function (string $modelClass, string $routePrefix, array $attributes) {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+    $document = $modelClass::factory()->create(array_merge([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::XmlValidated,
+    ], $attributes));
+    $document->lines()->create([
+        'description' => 'Documento SDI',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+    $document->calculateTotals();
+
+    $provider = Mockery::mock(SdiProvider::class);
+    $provider->shouldReceive('id')->once()->andReturn('mock-provider');
+    $provider->shouldReceive('sendInvoice')->once()->andReturn([
+        'success' => true,
+        'uuid' => 'uuid-' . $routePrefix,
+        'file_id' => 'file-' . $routePrefix,
+        'message' => 'Accettata dal provider',
+    ]);
+    app()->instance(SdiProvider::class, $provider);
+
+    $this->actingAs($user)->postJson("/{$routePrefix}/{$document->id}/send-sdi")
+        ->assertOk()
+        ->assertJsonPath('document.status', InvoiceStatus::Sent->value);
+
+    $this->assertDatabaseHas('sdi_outbound_submissions', [
+        'fiscal_document_id' => $document->id,
+        'status' => SdiSubmissionStatus::Completed->value,
+        'active_document_lock' => null,
+    ]);
+})->with([
+    'self invoice' => [SelfInvoice::class, 'self-invoices', ['document_type' => 'TD17']],
+    'credit note' => [CreditNote::class, 'credit-notes', []],
+]);
 
 afterEach(function () {
     Mockery::close();

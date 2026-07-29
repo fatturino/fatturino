@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
+use App\Enums\SdiSubmissionStatus;
 use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
+use App\Models\SdiOutboundSubmission;
 use App\Models\PurchaseInvoice;
 use App\Models\SelfInvoice;
 use App\Services\BusinessFingerprintService;
@@ -118,7 +120,7 @@ class ReconcileCommand extends Command
             ]);
 
             if (! $result['success']) {
-                $this->error("Failed to fetch supplier invoices page {$page}: ".($result['error'] ?? 'unknown'));
+                $this->error("Failed to fetch supplier invoices page {$page}: " . ($result['error'] ?? 'unknown'));
                 $stats['errors']++;
 
                 break;
@@ -239,7 +241,7 @@ class ReconcileCommand extends Command
                         $errorMessage = implode('; ', $importErrors);
                         $this->warn("  Import failed for {$uuid}: {$errorMessage}");
                         if ($showDetails) {
-                            $this->line('  <fg=gray>  XML preview: '.substr($downloadResult['xml'], 0, 300).'</>');
+                            $this->line('  <fg=gray>  XML preview: ' . substr($downloadResult['xml'], 0, 300) . '</>');
                         }
                         $stats['errors']++;
 
@@ -259,7 +261,7 @@ class ReconcileCommand extends Command
                         $skipReason = ($importStats['skipped'] ?? 0) > 0 ? 'duplicate' : 'skipped by importer';
                         $this->line("  Skipped (already imported, {$skipReason}): {$filename}");
                         if ($showDetails) {
-                            $this->line('  <fg=gray>  Import stats: '.json_encode($importStats).'</>');
+                            $this->line('  <fg=gray>  Import stats: ' . json_encode($importStats) . '</>');
                         }
                         $stats['skipped']++;
 
@@ -322,7 +324,7 @@ class ReconcileCommand extends Command
             ]);
 
             if (! $result['success']) {
-                $this->error("Failed to fetch customer invoices page {$page}: ".($result['error'] ?? 'unknown'));
+                $this->error("Failed to fetch customer invoices page {$page}: " . ($result['error'] ?? 'unknown'));
                 $stats['errors']++;
 
                 break;
@@ -379,13 +381,24 @@ class ReconcileCommand extends Command
                 $stats['checked']++;
                 $downloadResult = $service->downloadInvoiceXml($uuid);
                 if (! $downloadResult['success']) {
-                    $this->warn("  Failed to download outbound invoice {$uuid}: ".($downloadResult['error'] ?? 'unknown'));
+                    $this->warn("  Failed to download outbound invoice {$uuid}: " . ($downloadResult['error'] ?? 'unknown'));
                     $stats['errors']++;
 
                     continue;
                 }
 
+                $submission = SdiOutboundSubmission::query()
+                    ->whereIn('status', [
+                        SdiSubmissionStatus::ProviderAccepted,
+                        SdiSubmissionStatus::OutcomeUnknown,
+                        SdiSubmissionStatus::LocalPersistFailed,
+                    ])
+                    ->where('business_fingerprint', app(BusinessFingerprintService::class)->buildFromXml($downloadResult['xml']))
+                    ->latest('id')
+                    ->first();
+
                 $document = $documentWithUuid
+                    ?? $submission?->fiscalDocument
                     ?? $this->findRecoverableSelfInvoice($downloadResult['xml'], $cutoffDate)
                     ?? $this->findRecoverableOutboundDocument($downloadResult['xml'], $cutoffDate);
 
@@ -409,7 +422,7 @@ class ReconcileCommand extends Command
                 }
 
                 try {
-                    $this->markDocumentAsSentFromOpenApi($document, $record, $downloadResult['xml']);
+                    $this->markDocumentAsSentFromOpenApi($document, $record, $downloadResult['xml'], $submission);
                     $this->line("  Recovered {$document->type} document #{$document->id} with UUID {$uuid}");
                     $stats['recovered']++;
                 } catch (\Exception $e) {
@@ -471,7 +484,7 @@ class ReconcileCommand extends Command
             $result = $service->getInvoiceNotifications($invoice->sdi_uuid);
 
             if (! $result['success']) {
-                $this->warn("  Failed to fetch notifications for invoice #{$invoice->id}: ".($result['error'] ?? 'unknown'));
+                $this->warn("  Failed to fetch notifications for invoice #{$invoice->id}: " . ($result['error'] ?? 'unknown'));
                 $stats['errors']++;
 
                 continue;
@@ -770,7 +783,7 @@ class ReconcileCommand extends Command
             ->first();
     }
 
-    private function markDocumentAsSentFromOpenApi(FiscalDocument $document, array $record, string $xml): void
+    private function markDocumentAsSentFromOpenApi(FiscalDocument $document, array $record, string $xml, ?SdiOutboundSubmission $submission = null): void
     {
         $uuid = $record['uuid'] ?? null;
         $fileId = $record['file_id'] ?? null;
@@ -797,7 +810,31 @@ class ReconcileCommand extends Command
             'source_uuid' => $uuid,
             'message' => $message,
             'business_fingerprint' => $fingerprint,
-            'raw_payload' => ['source' => 'reconcile', 'invoice' => $record],
+            'raw_payload' => array_filter([
+                'source' => 'reconcile',
+                'uuid' => $uuid,
+                'file_id' => $fileId,
+            ]),
+        ]);
+
+        $submission ??= SdiOutboundSubmission::query()
+            ->where('fiscal_document_id', $document->id)
+            ->whereIn('status', [
+                SdiSubmissionStatus::ProviderAccepted,
+                SdiSubmissionStatus::OutcomeUnknown,
+                SdiSubmissionStatus::LocalPersistFailed,
+            ])
+            ->latest('id')
+            ->first();
+
+        $submission?->update([
+            'status' => SdiSubmissionStatus::Completed,
+            'provider_uuid' => $uuid,
+            'provider_file_id' => $fileId,
+            'active_document_lock' => null,
+            'completed_at' => now(),
+            'reconciled_at' => now(),
+            'support_message' => $message,
         ]);
 
         if (! empty($uuid)) {
@@ -820,7 +857,7 @@ class ReconcileCommand extends Command
      */
     private function extractXmlField(string $xml, string $tag): ?string
     {
-        if (preg_match('/<'.$tag.'[^>]*>([^<]+)<\/'.$tag.'>/', $xml, $matches)) {
+        if (preg_match('/<' . $tag . '[^>]*>([^<]+)<\/' . $tag . '>/', $xml, $matches)) {
             return trim($matches[1]);
         }
 
