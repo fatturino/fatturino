@@ -6,6 +6,7 @@ use App\Models\FiscalDocument;
 use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 trait HandlesDocumentPayments
 {
@@ -19,26 +20,27 @@ trait HandlesDocumentPayments
             'bank_name' => 'nullable|string|max:120',
         ]);
 
-        $document->payments()->create([
-            'amount' => (int) round(((float) $validated['amount']) * 100),
-            'paid_at' => $validated['paid_at'] ?? null,
-            'reference' => $validated['reference'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-            'bank_name' => $validated['bank_name'] ?? null,
-        ]);
+        $document = DB::transaction(function () use ($document, $validated) {
+            $document = $this->lockDocument($document);
 
-        $document->recalculatePaymentStatus();
-        $document->refresh();
+            $document->payments()->create([
+                'amount' => (int) round(((float) $validated['amount']) * 100),
+                'paid_at' => $validated['paid_at'] ?? null,
+                'reference' => $validated['reference'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'bank_name' => $validated['bank_name'] ?? null,
+            ]);
+
+            $document->recalculatePaymentStatus();
+
+            return $document->fresh();
+        });
 
         return $this->paymentResponse($document);
     }
 
     protected function updateDocumentPayment(Request $request, FiscalDocument $document, Payment $payment): JsonResponse
     {
-        if ((int) $payment->fiscal_document_id !== (int) $document->id) {
-            abort(404);
-        }
-
         $validated = $request->validate([
             'amount' => 'required|numeric|gt:0',
             'paid_at' => 'nullable|date',
@@ -47,29 +49,41 @@ trait HandlesDocumentPayments
             'bank_name' => 'nullable|string|max:120',
         ]);
 
-        $payment->update([
-            'amount' => (int) round(((float) $validated['amount']) * 100),
-            'paid_at' => $validated['paid_at'] ?? null,
-            'reference' => $validated['reference'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-            'bank_name' => $validated['bank_name'] ?? null,
-        ]);
+        $document = DB::transaction(function () use ($document, $payment, $validated) {
+            $document = $this->lockDocument($document);
+            $payment = $document->payments()->find($payment->getKey());
 
-        $document->recalculatePaymentStatus();
-        $document->refresh();
+            abort_unless($payment, 404);
+
+            $payment->update([
+                'amount' => (int) round(((float) $validated['amount']) * 100),
+                'paid_at' => $validated['paid_at'] ?? null,
+                'reference' => $validated['reference'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'bank_name' => $validated['bank_name'] ?? null,
+            ]);
+
+            $document->recalculatePaymentStatus();
+
+            return $document->fresh();
+        });
 
         return $this->paymentResponse($document);
     }
 
     protected function deleteDocumentPayment(FiscalDocument $document, Payment $payment): JsonResponse
     {
-        if ((int) $payment->fiscal_document_id !== (int) $document->id) {
-            abort(404);
-        }
+        $document = DB::transaction(function () use ($document, $payment) {
+            $document = $this->lockDocument($document);
+            $payment = $document->payments()->find($payment->getKey());
 
-        $payment->delete();
-        $document->recalculatePaymentStatus();
-        $document->refresh();
+            abort_unless($payment, 404);
+
+            $payment->delete();
+            $document->recalculatePaymentStatus();
+
+            return $document->fresh();
+        });
 
         return $this->paymentResponse($document);
     }
@@ -91,5 +105,12 @@ trait HandlesDocumentPayments
                 'bank_name',
             ]),
         ]);
+    }
+
+    private function lockDocument(FiscalDocument $document): FiscalDocument
+    {
+        return FiscalDocument::query()
+            ->lockForUpdate()
+            ->findOrFail($document->getKey());
     }
 }

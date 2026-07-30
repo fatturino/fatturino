@@ -114,3 +114,55 @@ test('delete payment endpoint removes payment and recalculates totals', function
 
     expect(Payment::query()->whereKey($payment->id)->exists())->toBeFalse();
 })->with('paymentDocuments');
+
+test('concurrent payment mutations leave persisted totals synchronized with payment records', function (string $modelClass, string $basePath) {
+    $user = User::factory()->create();
+    $document = createDocumentWithTotal($modelClass, 10000);
+
+    $firstResponse = $this->actingAs($user)->postJson("{$basePath}/{$document->id}/payments", [
+        'amount' => 10.01,
+    ]);
+    $secondResponse = $this->actingAs($user)->postJson("{$basePath}/{$document->id}/payments", [
+        'amount' => 20.02,
+    ]);
+
+    $firstResponse->assertOk()->assertJsonPath('total_paid', 1001);
+    $secondResponse->assertOk()->assertJsonPath('total_paid', 3003);
+
+    $payments = $document->payments()->orderBy('id')->get();
+    $secondPayment = $payments->last();
+
+    $this->actingAs($user)->putJson("{$basePath}/{$document->id}/payments/{$secondPayment->id}", [
+        'amount' => 35.25,
+    ])->assertOk()->assertJsonPath('total_paid', 4526);
+
+    $document->refresh();
+
+    expect($document->total_paid)->toBe(4526)
+        ->and((int) $document->payments()->sum('amount'))->toBe(4526)
+        ->and($document->paymentStatusValue())->toBe('partial');
+})->with('paymentDocuments');
+
+test('payment mutations cannot target a payment belonging to another routed document', function (string $modelClass, string $basePath) {
+    $user = User::factory()->create();
+    $routedDocument = createDocumentWithTotal($modelClass, 10000);
+    $otherDocument = createDocumentWithTotal($modelClass, 10000);
+    $payment = $otherDocument->payments()->create(['amount' => 1000]);
+    $otherDocument->recalculatePaymentStatus();
+
+    $this->actingAs($user)->putJson("{$basePath}/{$routedDocument->id}/payments/{$payment->id}", [
+        'amount' => 50,
+    ])->assertNotFound();
+
+    $this->actingAs($user)->deleteJson("{$basePath}/{$routedDocument->id}/payments/{$payment->id}")
+        ->assertNotFound();
+
+    $routedDocument->refresh();
+    $otherDocument->refresh();
+    $payment->refresh();
+
+    expect($payment->fiscal_document_id)->toBe($otherDocument->id)
+        ->and($payment->amount)->toBe(1000)
+        ->and($routedDocument->total_paid)->toBe(0)
+        ->and($otherDocument->total_paid)->toBe(1000);
+})->with('paymentDocuments');
