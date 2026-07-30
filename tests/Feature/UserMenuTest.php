@@ -16,7 +16,7 @@ it('renders the company identity, fiscal regime, settings link, and logout actio
         ->toContain('RF19 - Forfettario')
         ->toContain(route('settings.company'))
         ->toContain('Impostazioni')
-        ->toContain('action="' . route('logout') . '"')
+        ->toContain('action="'.route('logout').'"')
         ->toContain('>Esci</span>');
 });
 

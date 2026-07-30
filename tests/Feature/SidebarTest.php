@@ -10,9 +10,9 @@ it('renders an icon next to every sidebar navigation link', function () {
         ->toContain('>Dashboard</span>')
         ->toContain('>Contatti</span>')
         ->toContain('>Avanzate</span>')
-        ->toContain('href="' . route('dashboard') . '"')
-        ->toContain('href="' . route('contacts.index') . '"')
-        ->toContain('href="' . route('settings.advanced') . '"');
+        ->toContain('href="'.route('dashboard').'"')
+        ->toContain('href="'.route('contacts.index').'"')
+        ->toContain('href="'.route('settings.advanced').'"');
 
     expect(substr_count($html, '<svg'))->toBe(15);
 });

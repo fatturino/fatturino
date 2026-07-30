@@ -320,7 +320,7 @@ class FiscalDocument extends Model
         foreach ($this->lines as $line) {
             $rate = (float) ($line->vat_rate?->percent() ?? 0);
             $nature = $line->vat_rate?->nature();
-            $key = $rate . '_' . ($nature ?? '');
+            $key = $rate.'_'.($nature ?? '');
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [
@@ -342,7 +342,7 @@ class FiscalDocument extends Model
                 : VatRate::tryFrom((string) $this->fund_vat_rate);
             $fundRate = (float) ($fundVatRate?->percent() ?? 0);
             $fundNature = $fundVatRate?->nature();
-            $fundKey = $fundRate . '_' . ($fundNature ?? '');
+            $fundKey = $fundRate.'_'.($fundNature ?? '');
 
             if (! isset($summary[$fundKey])) {
                 $summary[$fundKey] = [

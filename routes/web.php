@@ -18,8 +18,10 @@ use Illuminate\Support\Facades\Route;
 // Root redirects to login (landing page is on the separate fatturino-web site)
 Route::redirect('/', '/login');
 
-// Webhook (no auth)
-Route::post('/api/v1/openapi/webhook', [OpenApiWebhookController::class, 'handle'])->name('openapi.webhook');
+// The middleware authenticates and validates this provider callback before any persistence.
+Route::post('/api/v1/openapi/webhook', [OpenApiWebhookController::class, 'handle'])
+    ->middleware('openapi.webhook')
+    ->name('openapi.webhook');
 
 // Guest-only routes
 Route::middleware('guest')->group(function () {

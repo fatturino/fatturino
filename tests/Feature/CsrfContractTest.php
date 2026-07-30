@@ -5,8 +5,8 @@ use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
     Route::middleware(['web', 'auth'])->group(function () {
-        Route::post('/_test/csrf-contract/web', fn() => response()->json(['ok' => true]));
-        Route::put('/_test/csrf-contract/json', fn() => response()->json(['ok' => true]));
+        Route::post('/_test/csrf-contract/web', fn () => response()->json(['ok' => true]));
+        Route::put('/_test/csrf-contract/json', fn () => response()->json(['ok' => true]));
     });
 });
 

@@ -119,8 +119,8 @@ test('self invoices and credit notes use the durable SDI submission workflow', f
     $provider->shouldReceive('id')->once()->andReturn('mock-provider');
     $provider->shouldReceive('sendInvoice')->once()->andReturn([
         'success' => true,
-        'uuid' => 'uuid-' . $routePrefix,
-        'file_id' => 'file-' . $routePrefix,
+        'uuid' => 'uuid-'.$routePrefix,
+        'file_id' => 'file-'.$routePrefix,
         'message' => 'Accettata dal provider',
     ]);
     app()->instance(SdiProvider::class, $provider);

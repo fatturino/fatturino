@@ -21,6 +21,11 @@ Schedule::command('openapi:reconcile')
     ->withoutOverlapping()
     ->runInBackground();
 
+Schedule::command('openapi:prune-webhook-payloads')
+    ->dailyAt('03:45')
+    ->withoutOverlapping()
+    ->runInBackground();
+
 // Register backup schedule only when: not managed by env (self-hosted) and enabled in settings.
 // In managed mode backup cadence is controlled via env.
 // Guard with try/catch so the console still works during first-run migrations.

@@ -7,9 +7,10 @@ use App\Enums\SdiSubmissionStatus;
 use App\Models\EiInboundLog;
 use App\Models\PurchaseInvoice;
 use App\Models\SalesInvoice;
-use App\Models\SdiUuidLink;
 use App\Models\SdiOutboundSubmission;
+use App\Models\SdiUuidLink;
 use App\Models\SelfInvoice;
+use App\Services\BusinessFingerprintService;
 use App\Services\OpenApiSdiService;
 use App\Settings\CompanySettings;
 use App\Settings\OpenApiSettings;
@@ -194,7 +195,7 @@ test('reconcile command skips missing self-invoice without creating documents', 
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getSupplierInvoices')
         ->once()
-        ->with(Mockery::on(fn(array $filters) => ($filters['recipient'] ?? null) === '12345678903'))
+        ->with(Mockery::on(fn (array $filters) => ($filters['recipient'] ?? null) === '12345678903'))
         ->andReturn([
             'success' => true,
             'data' => [[
@@ -232,7 +233,7 @@ test('reconcile command recovers self-invoice sent to openapi when local uuid wa
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();
     $service->shouldReceive('getCustomerInvoices')
         ->once()
-        ->with(Mockery::on(fn(array $filters) => ($filters['page'] ?? null) === 1))
+        ->with(Mockery::on(fn (array $filters) => ($filters['page'] ?? null) === 1))
         ->andReturn([
             'success' => true,
             'data' => [[
@@ -389,7 +390,7 @@ test('reconcile completes a local persistence failure after provider acceptance'
         'status' => SdiSubmissionStatus::LocalPersistFailed,
         'active_document_lock' => (string) $invoice->id,
         'xml_sha256' => hash('sha256', $xml),
-        'business_fingerprint' => app(\App\Services\BusinessFingerprintService::class)->buildFromXml($xml),
+        'business_fingerprint' => app(BusinessFingerprintService::class)->buildFromXml($xml),
         'provider_uuid' => 'accepted-before-db-failure',
         'provider_file_id' => 'accepted-file-id',
         'provider_accepted_at' => now(),
@@ -439,7 +440,7 @@ test('reconcile completes a pending submission left by a crash after provider ac
         'status' => SdiSubmissionStatus::Pending,
         'active_document_lock' => (string) $invoice->id,
         'xml_sha256' => hash('sha256', $xml),
-        'business_fingerprint' => app(\App\Services\BusinessFingerprintService::class)->buildFromXml($xml),
+        'business_fingerprint' => app(BusinessFingerprintService::class)->buildFromXml($xml),
     ]);
 
     $service = Mockery::mock(OpenApiSdiService::class);

@@ -122,7 +122,7 @@ class SdiSubmissionService
                 if (! $lockedDocument->isSdiEditable() || $lockedDocument->status !== InvoiceStatus::XmlValidated) {
                     return [
                         'success' => false,
-                        'submission' => new SdiOutboundSubmission(),
+                        'submission' => new SdiOutboundSubmission,
                         'error_message' => 'Il documento non è più disponibile per l’invio SDI.',
                     ];
                 }
@@ -157,7 +157,7 @@ class SdiSubmissionService
 
             return [
                 'success' => false,
-                'submission' => $active ?? new SdiOutboundSubmission(),
+                'submission' => $active ?? new SdiOutboundSubmission,
                 'error_message' => 'Esiste già un invio SDI in corso o da riconciliare per questo documento.',
             ];
         }
@@ -195,7 +195,7 @@ class SdiSubmissionService
             'file_id' => $providerResult['file_id'] ?? null,
             'http_status' => $providerResult['http_status'] ?? null,
             'error_code' => $providerResult['error_code'] ?? null,
-        ], static fn(mixed $value): bool => $value !== null);
+        ], static fn (mixed $value): bool => $value !== null);
     }
 
     private function supportMessage(string $message): string

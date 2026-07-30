@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\RequireCapability;
+use App\Http\Middleware\ValidateOpenApiWebhook;
 use App\Services\PostHogTelemetryService;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -17,10 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'capability' => RequireCapability::class,
+            'openapi.webhook' => ValidateOpenApiWebhook::class,
         ]);
 
         $middleware->api(prepend: [
             EnsureFrontendRequestsAreStateful::class,
+        ]);
+        $middleware->validateCsrfTokens(except: [
+            'api/v1/openapi/webhook',
         ]);
         // Trust all proxies — required for correct URL generation behind reverse proxy (Uncloud/Caddy)
         $middleware->trustProxies(at: '*');

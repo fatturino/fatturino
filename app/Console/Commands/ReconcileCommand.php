@@ -7,8 +7,8 @@ use App\Enums\SdiStatus;
 use App\Enums\SdiSubmissionStatus;
 use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
-use App\Models\SdiOutboundSubmission;
 use App\Models\PurchaseInvoice;
+use App\Models\SdiOutboundSubmission;
 use App\Models\SelfInvoice;
 use App\Services\BusinessFingerprintService;
 use App\Services\DocumentEventRecorder;
@@ -120,7 +120,7 @@ class ReconcileCommand extends Command
             ]);
 
             if (! $result['success']) {
-                $this->error("Failed to fetch supplier invoices page {$page}: " . ($result['error'] ?? 'unknown'));
+                $this->error("Failed to fetch supplier invoices page {$page}: ".($result['error'] ?? 'unknown'));
                 $stats['errors']++;
 
                 break;
@@ -241,7 +241,7 @@ class ReconcileCommand extends Command
                         $errorMessage = implode('; ', $importErrors);
                         $this->warn("  Import failed for {$uuid}: {$errorMessage}");
                         if ($showDetails) {
-                            $this->line('  <fg=gray>  XML preview: ' . substr($downloadResult['xml'], 0, 300) . '</>');
+                            $this->line('  <fg=gray>  XML preview: '.substr($downloadResult['xml'], 0, 300).'</>');
                         }
                         $stats['errors']++;
 
@@ -261,7 +261,7 @@ class ReconcileCommand extends Command
                         $skipReason = ($importStats['skipped'] ?? 0) > 0 ? 'duplicate' : 'skipped by importer';
                         $this->line("  Skipped (already imported, {$skipReason}): {$filename}");
                         if ($showDetails) {
-                            $this->line('  <fg=gray>  Import stats: ' . json_encode($importStats) . '</>');
+                            $this->line('  <fg=gray>  Import stats: '.json_encode($importStats).'</>');
                         }
                         $stats['skipped']++;
 
@@ -324,7 +324,7 @@ class ReconcileCommand extends Command
             ]);
 
             if (! $result['success']) {
-                $this->error("Failed to fetch customer invoices page {$page}: " . ($result['error'] ?? 'unknown'));
+                $this->error("Failed to fetch customer invoices page {$page}: ".($result['error'] ?? 'unknown'));
                 $stats['errors']++;
 
                 break;
@@ -381,7 +381,7 @@ class ReconcileCommand extends Command
                 $stats['checked']++;
                 $downloadResult = $service->downloadInvoiceXml($uuid);
                 if (! $downloadResult['success']) {
-                    $this->warn("  Failed to download outbound invoice {$uuid}: " . ($downloadResult['error'] ?? 'unknown'));
+                    $this->warn("  Failed to download outbound invoice {$uuid}: ".($downloadResult['error'] ?? 'unknown'));
                     $stats['errors']++;
 
                     continue;
@@ -485,7 +485,7 @@ class ReconcileCommand extends Command
             $result = $service->getInvoiceNotifications($invoice->sdi_uuid);
 
             if (! $result['success']) {
-                $this->warn("  Failed to fetch notifications for invoice #{$invoice->id}: " . ($result['error'] ?? 'unknown'));
+                $this->warn("  Failed to fetch notifications for invoice #{$invoice->id}: ".($result['error'] ?? 'unknown'));
                 $stats['errors']++;
 
                 continue;
@@ -859,7 +859,7 @@ class ReconcileCommand extends Command
      */
     private function extractXmlField(string $xml, string $tag): ?string
     {
-        if (preg_match('/<' . $tag . '[^>]*>([^<]+)<\/' . $tag . '>/', $xml, $matches)) {
+        if (preg_match('/<'.$tag.'[^>]*>([^<]+)<\/'.$tag.'>/', $xml, $matches)) {
             return trim($matches[1]);
         }
 
