@@ -5,10 +5,9 @@ namespace App\Actions;
 use App\Enums\ProformaStatus;
 use App\Models\FiscalDocument;
 use App\Models\ProformaInvoice;
-use App\Models\Sequence;
+use App\Services\DocumentSequenceResolver;
 use App\Services\Domain\FiscalDocumentMutationService;
 use App\Settings\CompanySettings;
-use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -18,15 +17,13 @@ class SaveProformaInvoice
     public function __construct(
         private readonly FiscalDocumentMutationService $mutationService,
         private readonly CompanySettings $companySettings,
-        private readonly InvoiceSettings $invoiceSettings,
+        private readonly DocumentSequenceResolver $sequenceResolver,
     ) {}
 
     /** @param array<string, mixed> $payload */
     public function create(array $payload): FiscalDocument
     {
-        $sequenceId = isset($payload['sequence_id']) && $payload['sequence_id'] !== ''
-            ? (int) $payload['sequence_id']
-            : $this->defaultSequenceId();
+        $sequenceId = $this->sequenceResolver->resolve('proforma')->id;
         [$header, $lines] = $this->prepare($payload, $sequenceId);
 
         return $this->mutationService->create([
@@ -63,8 +60,6 @@ class SaveProformaInvoice
             $lines,
             $this->companySettings->company_fiscal_regime,
         );
-        $this->ensureSequence($sequenceId);
-
         return [[
             'date' => $normalized['date'],
             'due_date' => $normalized['due_date'] ?? null,
@@ -84,25 +79,6 @@ class SaveProformaInvoice
             'bank_name' => $this->nullIfBlank($normalized['bank_name'] ?? null),
             'bank_iban' => $this->nullIfBlank($normalized['bank_iban'] ?? null),
         ], array_map($this->buildLinePayload(...), $lines)];
-    }
-
-    private function defaultSequenceId(): int
-    {
-        $sequenceId = $this->invoiceSettings->default_sequence_proforma
-            ?? Sequence::query()->where('type', 'proforma')->orderByDesc('is_system')->value('id');
-
-        if ($sequenceId === null) {
-            throw ValidationException::withMessages(['invoice' => 'Crea o configura una sequenza per le proforma nelle impostazioni.']);
-        }
-
-        return $sequenceId;
-    }
-
-    private function ensureSequence(int $sequenceId): void
-    {
-        if (! Sequence::query()->whereKey($sequenceId)->where('type', 'proforma')->exists()) {
-            throw ValidationException::withMessages(['sequence_id' => 'La sequenza selezionata non è valida per le proforma.']);
-        }
     }
 
     private function ensureEditable(ProformaInvoice $invoice): void

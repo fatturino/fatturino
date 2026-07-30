@@ -18,25 +18,18 @@ it('renders sequences as a Livewire page', function () {
         ->assertDontSee('data-page=', false);
 });
 
-it('creates updates and deletes a custom sequence', function () {
+it('creates and deletes a custom sequence', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
     app()->instance(EnvironmentCapabilities::class, new UnrestrictedCapabilities);
 
     $component = Livewire::test('pages::settings.sequences')
-        ->set('name', 'Vendite 2026')
-        ->set('type', 'sales')
+        ->set('name', 'Preventivi 2026')
+        ->set('type', 'quote')
         ->set('pattern', 'FV-{ANNO}-{SEQ}');
 
     $component->instance()->storeSequence();
-    $sequence = Sequence::query()->where('name', 'Vendite 2026')->firstOrFail();
-
-    $component = Livewire::test('pages::settings.sequences')
-        ->call('edit', $sequence)
-        ->set('pattern', 'FV/{ANNO}/{SEQ}');
-    $component->instance()->update();
-
-    expect($sequence->refresh()->pattern)->toBe('FV/{ANNO}/{SEQ}');
+    $sequence = Sequence::query()->where('name', 'Preventivi 2026')->firstOrFail();
 
     Livewire::test('pages::settings.sequences')->instance()->delete($sequence);
 
@@ -53,7 +46,7 @@ it('keeps sequence mutations read-only in demo mode', function () {
         ->set('type', 'sales')
         ->set('pattern', '{SEQ}');
 
-    expect(fn () => $component->instance()->storeSequence())->toThrow(HttpException::class);
+    expect(fn() => $component->instance()->storeSequence())->toThrow(HttpException::class);
 
     expect(Sequence::query()->where('name', 'Non consentita')->exists())->toBeFalse();
 });

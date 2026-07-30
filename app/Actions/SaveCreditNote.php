@@ -5,10 +5,9 @@ namespace App\Actions;
 use App\Enums\InvoiceStatus;
 use App\Models\CreditNote;
 use App\Models\FiscalDocument;
-use App\Models\Sequence;
+use App\Services\DocumentSequenceResolver;
 use App\Services\Domain\FiscalDocumentMutationService;
 use App\Settings\CompanySettings;
-use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -18,14 +17,13 @@ class SaveCreditNote
     public function __construct(
         private readonly FiscalDocumentMutationService $mutationService,
         private readonly CompanySettings $companySettings,
-        private readonly InvoiceSettings $invoiceSettings,
+        private readonly DocumentSequenceResolver $sequenceResolver,
     ) {}
 
     /** @param array<string, mixed> $payload */
     public function create(array $payload): FiscalDocument
     {
-        $sequenceId = $this->resolveSequenceId($payload['sequence_id'] ?? null);
-        $this->ensureSequence($sequenceId);
+        $sequenceId = $this->sequenceResolver->resolve('credit_note')->id;
         [$header, $lines] = $this->prepare($payload, $sequenceId);
 
         return $this->mutationService->create([...$header, 'type' => 'credit_note', 'status' => InvoiceStatus::Draft], $lines);
@@ -67,29 +65,6 @@ class SaveCreditNote
             'related_invoice_date' => $payload['related_invoice_date'] ?? null,
             'notes' => $notes,
         ], array_map($this->buildLinePayload(...), $lines)];
-    }
-
-    private function ensureSequence(int $sequenceId): void
-    {
-        if (! Sequence::query()->whereKey($sequenceId)->where('type', 'credit_note')->exists()) {
-            throw ValidationException::withMessages(['sequence_id' => 'La sequenza selezionata non è valida per le note di credito.']);
-        }
-    }
-
-    private function resolveSequenceId(mixed $sequenceId): int
-    {
-        if (filled($sequenceId)) {
-            return (int) $sequenceId;
-        }
-
-        $defaultSequenceId = $this->invoiceSettings->default_sequence_credit_notes
-            ?? Sequence::query()->where('type', 'credit_note')->orderByDesc('is_system')->value('id');
-
-        if ($defaultSequenceId === null) {
-            throw ValidationException::withMessages(['creditNote' => 'Crea o configura una sequenza per le note di credito nelle impostazioni.']);
-        }
-
-        return $defaultSequenceId;
     }
 
     private function nullIfBlank(mixed $value): mixed

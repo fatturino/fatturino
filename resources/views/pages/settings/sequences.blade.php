@@ -1,6 +1,8 @@
 <?php
 
 use App\Contracts\EnvironmentCapabilities;
+use App\Services\DocumentSequenceResolver;
+use App\Settings\InvoiceSettings;
 use App\Models\Sequence;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -29,6 +31,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function edit(Sequence $sequence): void
     {
+        abort_if($this->isDefault($sequence), 403, 'Il sezionale predefinito non è modificabile.');
         $this->editingId = $sequence->id;
         $this->name = $sequence->name;
         $this->type = $sequence->type;
@@ -40,6 +43,7 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $this->ensureAllowed();
         $sequence = Sequence::findOrFail($this->editingId);
+        abort_if($this->isDefault($sequence), 403, 'Il sezionale predefinito non è modificabile.');
         if ($sequence->is_system) {
             $this->type = $sequence->type;
         }
@@ -51,12 +55,35 @@ new #[Layout('layouts::app')] class extends Component {
     public function delete(Sequence $sequence): void
     {
         $this->ensureAllowed();
+        if ($this->isDefault($sequence)) {
+            $this->addError('sequence', 'Impossibile eliminare il sezionale predefinito. Imposta prima un altro sezionale come predefinito.');
+
+            return;
+        }
         try {
             $sequence->delete();
             session()->flash('success', 'Sezionale eliminato.');
         } catch (Exception $exception) {
             $this->addError('sequence', $exception->getMessage());
         }
+    }
+
+    public function setDefault(Sequence $sequence, DocumentSequenceResolver $resolver): void
+    {
+        $this->ensureAllowed();
+        $settingKey = $resolver->settingKey($sequence->type);
+
+        abort_unless($settingKey !== null, 422, 'Questo tipo di documento non ha una sequenza predefinita configurabile.');
+
+        $settings = app(InvoiceSettings::class);
+        $settings->{$settingKey} = $sequence->id;
+        $settings->save();
+        session()->flash('success', "Sezionale predefinito per {$this->typeLabel($sequence->type)} aggiornato.");
+    }
+
+    public function isDefault(Sequence $sequence): bool
+    {
+        return app(DocumentSequenceResolver::class)->isDefault($sequence);
     }
 
     public function cancel(): void
@@ -91,6 +118,11 @@ new #[Layout('layouts::app')] class extends Component {
             ['value' => 'credit_note', 'label' => __('app.sequences.type_credit_note')],
             ['value' => 'quote', 'label' => __('app.sequences.type_quote')],
         ];
+    }
+
+    private function typeLabel(string $type): string
+    {
+        return collect($this->typeOptions())->firstWhere('value', $type)['label'] ?? $type;
     }
 
     private function ensureAllowed(): void
@@ -129,7 +161,31 @@ new #[Layout('layouts::app')] class extends Component {
     </article>
 
     <article class="overflow-hidden rounded-xl border border-border-light bg-white shadow-[var(--shadow-card)]">
-        <div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-surface-muted text-xs uppercase tracking-wide text-content-muted"><tr><th class="px-5 py-3">Nome</th><th class="px-5 py-3">Formato</th><th class="px-5 py-3">Tipo</th><th class="px-5 py-3 text-right">Azioni</th></tr></thead><tbody class="divide-y divide-border-light">@forelse($sequences as $sequence)<tr><td class="px-5 py-4 font-semibold">{{ $sequence->name }} @if($sequence->is_system)<span class="ml-2 rounded-full bg-surface-muted px-2 py-1 text-xs text-content-muted">Sistema</span>@endif</td><td class="px-5 py-4 font-mono text-content-muted">{{ $sequence->pattern }}</td><td class="px-5 py-4 text-content-muted">{{ collect($this->typeOptions())->firstWhere('value', $sequence->type)['label'] ?? $sequence->type }}</td><td class="px-5 py-4 text-right">@if($canManage)<button wire:click="edit({{ $sequence->id }})" class="text-sm font-semibold text-primary">Modifica</button>@if(! $sequence->is_system)<button wire:click="delete({{ $sequence->id }})" wire:confirm="Eliminare il sezionale '{{ $sequence->name }}'?" class="ml-4 text-sm font-semibold text-danger">Elimina</button>@endif@endif</td></tr>@empty<tr><td colspan="4" class="px-5 py-12 text-center text-sm text-content-muted">Nessun sezionale ancora creato.</td></tr>@endforelse</tbody></table></div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+                <thead class="bg-surface-muted text-xs uppercase tracking-wide text-content-muted"><tr><th class="px-5 py-3">Nome</th><th class="px-5 py-3">Formato</th><th class="px-5 py-3">Tipo</th><th class="px-5 py-3 text-right">Azioni</th></tr></thead>
+                <tbody class="divide-y divide-border-light">
+                    @forelse($sequences as $sequence)
+                        <tr>
+                            <td class="px-5 py-4 font-semibold">{{ $sequence->name }} @if($sequence->is_system)<span class="ml-2 rounded-full bg-surface-muted px-2 py-1 text-xs text-content-muted">Sistema</span>@endif @if($this->isDefault($sequence))<span class="ml-2 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">Predefinito</span>@endif</td>
+                            <td class="px-5 py-4 font-mono text-content-muted">{{ $sequence->pattern }}</td>
+                            <td class="px-5 py-4 text-content-muted">{{ $this->typeLabel($sequence->type) }}</td>
+                            <td class="px-5 py-4 text-right">
+                                @if($canManage)
+                                    @if(! $this->isDefault($sequence) && app(DocumentSequenceResolver::class)->settingKey($sequence->type))<button wire:click="setDefault({{ $sequence->id }})" class="text-sm font-semibold text-primary">Imposta predefinito</button>@endif
+                                    @if(! $this->isDefault($sequence))
+                                        <button wire:click="edit({{ $sequence->id }})" class="ml-4 text-sm font-semibold text-primary">Modifica</button>
+                                        @if(! $sequence->is_system)<button wire:click="delete({{ $sequence->id }})" wire:confirm="Eliminare il sezionale '{{ $sequence->name }}'?" class="ml-4 text-sm font-semibold text-danger">Elimina</button>@endif
+                                    @endif
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4" class="px-5 py-12 text-center text-sm text-content-muted">Nessun sezionale ancora creato.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
         @if($sequences->hasPages())<div class="border-t border-border-light px-5 py-4">{{ $sequences->links() }}</div>@endif
     </article>
 </section>

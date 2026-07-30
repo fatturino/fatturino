@@ -7,11 +7,10 @@ use App\Enums\SalesDocumentType;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\SalesInvoice;
-use App\Models\Sequence;
+use App\Services\DocumentSequenceResolver;
 use App\Services\DocumentEventRecorder;
 use App\Services\PostHogTelemetryService;
 use App\Settings\CompanySettings;
-use App\Settings\InvoiceSettings;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -19,8 +18,6 @@ new #[Layout('layouts::app')] class extends Component {
     public ?SalesInvoice $invoice = null;
 
     public int|string $contact_id = '';
-
-    public ?int $defaultSequenceId = null;
 
     /** @var array<int, array{id: int, name: string}> */
     public array $contactOptions = [];
@@ -73,9 +70,8 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $invoice = $invoice?->exists ? $invoice : null;
         $this->invoice = $invoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
-        $settings = app(InvoiceSettings::class);
+        $settings = app(\App\Settings\InvoiceSettings::class);
         $this->date = now()->toDateString();
-        $this->defaultSequenceId = $settings->default_sequence_sales;
         $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
         $this->notes = $settings->default_notes ?? '';
         $this->payment_method = (string) ($settings->default_payment_method ?? '');
@@ -204,7 +200,7 @@ new #[Layout('layouts::app')] class extends Component {
     private function refreshNumberPreview(): void
     {
         $this->numberPreview = $this->invoice?->number
-            ?? Sequence::find($this->defaultSequenceId)?->getFormattedNumber((int) substr($this->date, 0, 4));
+            ?? app(DocumentSequenceResolver::class)->resolve('sales')->getFormattedNumber((int) substr($this->date, 0, 4));
     }
 
     public function getReadOnlyProperty(): bool

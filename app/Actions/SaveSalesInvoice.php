@@ -5,10 +5,9 @@ namespace App\Actions;
 use App\Enums\InvoiceStatus;
 use App\Models\FiscalDocument;
 use App\Models\SalesInvoice;
-use App\Models\Sequence;
+use App\Services\DocumentSequenceResolver;
 use App\Services\Domain\FiscalDocumentMutationService;
 use App\Settings\CompanySettings;
-use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -18,7 +17,7 @@ class SaveSalesInvoice
     public function __construct(
         private readonly FiscalDocumentMutationService $mutationService,
         private readonly CompanySettings $companySettings,
-        private readonly InvoiceSettings $invoiceSettings,
+        private readonly DocumentSequenceResolver $sequenceResolver,
     ) {}
 
     /**
@@ -26,7 +25,7 @@ class SaveSalesInvoice
      */
     public function create(array $payload): FiscalDocument
     {
-        [$header, $lines] = $this->prepare($payload, $this->defaultSalesSequenceId());
+        [$header, $lines] = $this->prepare($payload, $this->sequenceResolver->resolve('sales')->id);
 
         $invoice = $this->mutationService->create([
             ...$header,
@@ -77,8 +76,6 @@ class SaveSalesInvoice
             $this->companySettings->company_fiscal_regime,
         );
 
-        $this->ensureSalesSequence($sequenceId);
-
         return [[
             'date' => $normalized['date'],
             'due_date' => $normalized['due_date'] ?? null,
@@ -103,32 +100,6 @@ class SaveSalesInvoice
             'vat_payability' => ($normalized['split_payment'] ?? false) ? 'S' : $normalized['vat_payability'],
             'split_payment' => $normalized['split_payment'] ?? false,
         ], array_map($this->buildLinePayload(...), $normalizedLines)];
-    }
-
-    private function ensureSalesSequence(int $sequenceId): void
-    {
-        $valid = Sequence::query()->whereKey($sequenceId)->where('type', 'sales')->exists();
-
-        if (! $valid) {
-            throw ValidationException::withMessages(['sequence_id' => 'La sequenza selezionata non è valida per le fatture di vendita.']);
-        }
-    }
-
-    private function defaultSalesSequenceId(): int
-    {
-        $sequenceId = $this->invoiceSettings->default_sequence_sales
-            ?? Sequence::query()
-                ->where('type', 'sales')
-                ->orderByDesc('is_system')
-                ->value('id');
-
-        if ($sequenceId === null) {
-            throw ValidationException::withMessages([
-                'invoice' => 'Crea o configura una sequenza per le fatture di vendita nelle impostazioni.',
-            ]);
-        }
-
-        return $sequenceId;
     }
 
     private function ensureEditable(SalesInvoice $invoice): void

@@ -5,14 +5,13 @@ use App\Enums\SdiStatus;
 use App\Models\Contact;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
+use App\Settings\InvoiceSettings;
 use Illuminate\Validation\ValidationException;
 
 function selfInvoicePayload(Contact $contact, Sequence $sequence): array
 {
     return [
         'contact_id' => $contact->id,
-        'sequence_id' => $sequence->id,
-        'number' => 'AF-MAN-001',
         'date' => now()->toDateString(),
         'due_date' => null,
         'document_type' => 'TD17',
@@ -29,13 +28,17 @@ function selfInvoicePayload(Contact $contact, Sequence $sequence): array
     ];
 }
 
-it('creates a self invoice with its manual number and issue-date payment', function () {
+it('creates a self invoice with the configured default sequence and issue-date payment', function () {
     $contact = Contact::factory()->create();
     $sequence = Sequence::factory()->create(['type' => 'self_invoice']);
+    $settings = app(InvoiceSettings::class);
+    $settings->default_sequence_self_invoice = $sequence->id;
+    $settings->save();
 
     $invoice = app(SaveSelfInvoice::class)->create(selfInvoicePayload($contact, $sequence));
 
-    expect($invoice->number)->toBe('AF-MAN-001')
+    expect($invoice->sequence_id)->toBe($sequence->id)
+        ->and($invoice->number)->toBe('1')
         ->and($invoice->total_gross)->toBe(12200)
         ->and($invoice->payment_status->value)->toBe('paid')
         ->and($invoice->payments)->toHaveCount(1)
@@ -60,6 +63,6 @@ it('rejects updates to self invoices locked by SDI', function () {
     $sequence = Sequence::factory()->create(['type' => 'self_invoice']);
     $invoice = SelfInvoice::factory()->create(['contact_id' => $contact->id, 'sequence_id' => $sequence->id, 'sdi_status' => SdiStatus::Delivered, 'date' => now()->toDateString()]);
 
-    expect(fn () => app(SaveSelfInvoice::class)->update($invoice, selfInvoicePayload($contact, $sequence)))
+    expect(fn() => app(SaveSelfInvoice::class)->update($invoice, selfInvoicePayload($contact, $sequence)))
         ->toThrow(ValidationException::class);
 });

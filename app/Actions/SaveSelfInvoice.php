@@ -5,11 +5,10 @@ namespace App\Actions;
 use App\Enums\InvoiceStatus;
 use App\Models\FiscalDocument;
 use App\Models\SelfInvoice;
-use App\Models\Sequence;
+use App\Services\DocumentSequenceResolver;
 use App\Services\Domain\DocumentNumberingService;
 use App\Services\Domain\FiscalDocumentMutationService;
 use App\Settings\CompanySettings;
-use App\Settings\InvoiceSettings;
 use App\Support\FiscalRegimePolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -20,20 +19,16 @@ class SaveSelfInvoice
         private readonly FiscalDocumentMutationService $mutationService,
         private readonly DocumentNumberingService $numbering,
         private readonly CompanySettings $companySettings,
-        private readonly InvoiceSettings $invoiceSettings,
+        private readonly DocumentSequenceResolver $sequenceResolver,
     ) {}
 
     /** @param array<string, mixed> $payload */
     public function create(array $payload): FiscalDocument
     {
         $this->ensureAllowed();
-        $sequenceId = $this->resolveSequenceId($payload['sequence_id'] ?? null);
-        $this->ensureSequence($sequenceId);
-        $numbering = $this->numbering->resolve(
-            Sequence::query()->findOrFail($sequenceId),
-            $payload['date'],
-            $payload['number'] ?? null,
-        );
+        $sequence = $this->sequenceResolver->resolve('self_invoice');
+        $sequenceId = $sequence->id;
+        $numbering = $this->numbering->reserve($sequence, $payload['date']);
         [$header, $lines] = $this->prepare($payload, $sequenceId);
 
         $invoice = $this->mutationService->create([
@@ -90,29 +85,6 @@ class SaveSelfInvoice
         if (! FiscalRegimePolicy::supportsSelfInvoices($this->companySettings->company_fiscal_regime, $this->companySettings->rf19_self_invoices_enabled)) {
             throw ValidationException::withMessages(['invoice' => 'Le autofatture sono disabilitate per il regime fiscale corrente.']);
         }
-    }
-
-    private function ensureSequence(int $sequenceId): void
-    {
-        if (! Sequence::query()->whereKey($sequenceId)->where('type', 'self_invoice')->exists()) {
-            throw ValidationException::withMessages(['sequence_id' => 'La sequenza selezionata non è valida per le autofatture.']);
-        }
-    }
-
-    private function resolveSequenceId(mixed $sequenceId): int
-    {
-        if (filled($sequenceId)) {
-            return (int) $sequenceId;
-        }
-
-        $defaultSequenceId = $this->invoiceSettings->default_sequence_self_invoice
-            ?? Sequence::query()->where('type', 'self_invoice')->orderByDesc('is_system')->value('id');
-
-        if ($defaultSequenceId === null) {
-            throw ValidationException::withMessages(['invoice' => 'Crea o configura una sequenza per le autofatture nelle impostazioni.']);
-        }
-
-        return $defaultSequenceId;
     }
 
     private function nullIfBlank(mixed $value): mixed

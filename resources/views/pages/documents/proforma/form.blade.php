@@ -6,7 +6,7 @@ use App\Enums\PaymentTerms;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\ProformaInvoice;
-use App\Models\Sequence;
+use App\Services\DocumentSequenceResolver;
 use App\Services\DocumentEventRecorder;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
@@ -17,8 +17,6 @@ new #[Layout('layouts::app')] class extends Component {
     public ?ProformaInvoice $invoice = null;
 
     public int|string $contact_id = '';
-
-    public int|string $sequence_id = '';
 
     /** @var array<int, array{id: int, name: string}> */
     public array $contactOptions = [];
@@ -63,7 +61,6 @@ new #[Layout('layouts::app')] class extends Component {
         $this->invoice = $proformaInvoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $settings = app(InvoiceSettings::class);
         $this->date = now()->toDateString();
-        $this->sequence_id = $settings->default_sequence_proforma ?? Sequence::query()->where('type', 'proforma')->orderByDesc('is_system')->value('id') ?? '';
         $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
         foreach (['notes' => 'default_notes', 'payment_method' => 'default_payment_method', 'payment_terms' => 'default_payment_terms', 'bank_name' => 'default_bank_name', 'bank_iban' => 'default_bank_iban', 'withholding_tax_percent' => 'withholding_tax_percent', 'fund_percent' => 'fund_percent'] as $field => $setting) {
             $this->{$field} = (string) ($settings->{$setting} ?? '');
@@ -73,7 +70,7 @@ new #[Layout('layouts::app')] class extends Component {
         $this->fund_vat_rate = (string) ($settings->fund_vat_rate?->value ?? '');
         $this->stamp_duty_applied = (bool) $settings->auto_stamp_duty;
         if ($proformaInvoice) {
-            foreach (['contact_id', 'sequence_id', 'notes', 'payment_method', 'payment_terms', 'bank_name', 'bank_iban', 'withholding_tax_percent', 'fund_percent', 'fund_vat_rate'] as $field) {
+            foreach (['contact_id', 'notes', 'payment_method', 'payment_terms', 'bank_name', 'bank_iban', 'withholding_tax_percent', 'fund_percent', 'fund_vat_rate'] as $field) {
                 $value = $proformaInvoice->{$field} ?? '';
                 $this->{$field} = (string) ($value instanceof \BackedEnum ? $value->value : $value);
             }
@@ -177,7 +174,7 @@ new #[Layout('layouts::app')] class extends Component {
     private function refreshNumberPreview(): void
     {
         $this->numberPreview = $this->invoice?->number
-            ?? Sequence::query()->whereKey($this->sequence_id)->where('type', 'proforma')->first()?->getFormattedNumber((int) substr($this->date, 0, 4));
+            ?? app(DocumentSequenceResolver::class)->resolve('proforma')->getFormattedNumber((int) substr($this->date, 0, 4));
     }
 
     public function getReadOnlyProperty(): bool
@@ -187,7 +184,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function rules(): array
     {
-        return ['contact_id' => 'required|exists:contacts,id', 'sequence_id' => 'required|exists:sequences,id', 'date' => 'required|date', 'due_date' => 'nullable|date', 'notes' => 'nullable|string', 'withholding_tax_enabled' => 'boolean', 'withholding_tax_percent' => 'nullable|numeric|min:0|max:100', 'fund_enabled' => 'boolean', 'fund_percent' => 'nullable|numeric|min:0|max:100', 'fund_vat_rate' => 'nullable|string', 'stamp_duty_applied' => 'boolean', 'stamp_duty_charged_to_customer' => 'boolean', 'payment_method' => 'nullable|string', 'payment_terms' => 'nullable|string', 'bank_name' => 'nullable|string', 'bank_iban' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.discount_percent' => 'nullable|numeric|min:0|max:100', 'lines.*.vat_rate' => 'required|string'];
+        return ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'due_date' => 'nullable|date', 'notes' => 'nullable|string', 'withholding_tax_enabled' => 'boolean', 'withholding_tax_percent' => 'nullable|numeric|min:0|max:100', 'fund_enabled' => 'boolean', 'fund_percent' => 'nullable|numeric|min:0|max:100', 'fund_vat_rate' => 'nullable|string', 'stamp_duty_applied' => 'boolean', 'stamp_duty_charged_to_customer' => 'boolean', 'payment_method' => 'nullable|string', 'payment_terms' => 'nullable|string', 'bank_name' => 'nullable|string', 'bank_iban' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.discount_percent' => 'nullable|numeric|min:0|max:100', 'lines.*.vat_rate' => 'required|string'];
     }
 
     private function emptyLine(): array

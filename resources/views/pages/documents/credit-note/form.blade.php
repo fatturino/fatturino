@@ -4,11 +4,10 @@ use App\Actions\SaveCreditNote;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\CreditNote;
-use App\Models\Sequence;
+use App\Services\DocumentSequenceResolver;
 use App\Services\DocumentEventRecorder;
 use App\Services\PostHogTelemetryService;
 use App\Settings\CompanySettings;
-use App\Settings\InvoiceSettings;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -20,7 +19,7 @@ new #[Layout('layouts::app')] class extends Component {
     /** @var array<int, array{id: int, name: string}> */
     public array $contactOptions = [];
 
-    public int|string $sequence_id = '';
+    public ?string $numberPreview = null;
 
     public string $date = '';
 
@@ -39,9 +38,8 @@ new #[Layout('layouts::app')] class extends Component {
         $this->invoice = $creditNote?->exists ? $creditNote->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]) : null;
         $this->date = now()->toDateString();
         $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
-        $this->sequence_id = app(InvoiceSettings::class)->default_sequence_credit_notes ?? Sequence::query()->where('type', 'credit_note')->orderByDesc('is_system')->value('id') ?? '';
         if ($this->invoice) {
-            foreach (['contact_id', 'sequence_id', 'related_invoice_number', 'notes'] as $field) {
+            foreach (['contact_id', 'related_invoice_number', 'notes'] as $field) {
                 $this->{$field} = (string) ($this->invoice->{$field} ?? '');
             }
             $this->date = $this->invoice->date->toDateString();
@@ -49,6 +47,7 @@ new #[Layout('layouts::app')] class extends Component {
             $this->lines = $this->invoice->lines->map(fn ($line) => $this->state(['key' => (string) $line->id, 'description' => $line->description, 'quantity' => $line->quantity, 'unit_of_measure' => $line->unit_of_measure, 'unit_price' => $line->unit_price / 100, 'vat_rate' => $line->vat_rate->value]))->all();
         }
         $this->lines = $this->lines ?: [$this->emptyLine()];
+        $this->refreshNumberPreview();
     }
 
     public function addLine(): void
@@ -66,6 +65,11 @@ new #[Layout('layouts::app')] class extends Component {
     public function toggleLineDetails(int $index): void
     {
         $this->lines[$index]['details_enabled'] = ! ($this->lines[$index]['details_enabled'] ?? false);
+    }
+
+    public function updatedDate(): void
+    {
+        $this->refreshNumberPreview();
     }
 
     public function save(SaveCreditNote $saveCreditNote): mixed
@@ -107,16 +111,18 @@ new #[Layout('layouts::app')] class extends Component {
     private function rules(): array
     {
         $rules = ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'related_invoice_number' => 'nullable|string', 'related_invoice_date' => 'nullable|date', 'notes' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.vat_rate' => 'required|string'];
-        if (! $this->invoice) {
-            $rules['sequence_id'] = 'required|exists:sequences,id';
-        }
-
         return $rules;
     }
 
     private function emptyLine(): array
     {
         return $this->state(['key' => (string) str()->uuid(), 'description' => '', 'quantity' => '1', 'unit_of_measure' => '', 'unit_price' => '0.00', 'vat_rate' => $this->isRf19() ? 'N2.2' : 'R22']);
+    }
+
+    private function refreshNumberPreview(): void
+    {
+        $this->numberPreview = $this->invoice?->number
+            ?? app(DocumentSequenceResolver::class)->resolve('credit_note')->getFormattedNumber((int) substr($this->date, 0, 4));
     }
 
     private function state(array $line): array
@@ -142,7 +148,7 @@ new #[Layout('layouts::app')] class extends Component {
 ?>
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Vendite</p><h1 class="text-lg font-bold text-content">{{ $invoice ? 'Modifica nota di credito' : 'Nuova nota di credito' }}</h1></div></x-slot:header>
 <section class="mx-auto max-w-7xl space-y-6 pb-24">@if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-sm text-warning">Questa nota di credito non è più modificabile.</div>@endif @error('creditNote')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror
-<form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><div class="space-y-6"><x-documents.invoice-form.data-section><nav class="mb-5 flex gap-2 border-b border-border-light pb-4">@foreach(['data'=>'Dati','notes'=>'Note'] as $key=>$label)<button type="button" wire:click="$set('tab','{{ $key }}')" class="rounded-md px-3 py-2 text-sm font-semibold {{ $tab===$key?'bg-primary text-white':'text-content-muted' }}">{{ $label }}</button>@endforeach @if($invoice)<button type="button" wire:click="$set('tab','history')" class="rounded-md px-3 py-2 text-sm font-semibold">Storico</button>@endif</nav>@if($tab==='data')<x-documents.invoice-form.data-fields><label>Cliente *<select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border p-2"><option value="">Seleziona cliente...</option>@foreach($contactOptions as $contact)<option value="{{ $contact['id'] }}">{{ $contact['name'] }}</option>@endforeach</select></label>@unless($invoice)@endunless<label>Data *<input wire:model="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border p-2"></label><label>Numero fattura originaria<input wire:model="related_invoice_number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border p-2"></label><label>Data fattura originaria<input wire:model="related_invoice_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border p-2"></label></x-documents.invoice-form.data-fields>@elseif($tab==='notes')<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="w-full rounded-md border p-2"></textarea>@else<div class="space-y-3">@forelse($invoice->events as $event)<p>{{ $event->title }} · {{ $event->occurred_at?->format('d/m/Y H:i') }}</p>@empty<p>Nessun evento registrato.</p>@endforelse</div>@endif</x-documents.invoice-form.data-section><x-documents.invoice-form.lines title="Righe nota di credito" :read-only="$this->readOnly">
+<form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><div class="space-y-6"><x-documents.invoice-form.data-section><nav class="mb-5 flex gap-2 border-b border-border-light pb-4">@foreach(['data'=>'Dati','notes'=>'Note'] as $key=>$label)<button type="button" wire:click="$set('tab','{{ $key }}')" class="rounded-md px-3 py-2 text-sm font-semibold {{ $tab===$key?'bg-primary text-white':'text-content-muted' }}">{{ $label }}</button>@endforeach @if($invoice)<button type="button" wire:click="$set('tab','history')" class="rounded-md px-3 py-2 text-sm font-semibold">Storico</button>@endif</nav>@if($tab==='data')<x-documents.invoice-form.data-fields><label>Cliente *<select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border p-2"><option value="">Seleziona cliente...</option>@foreach($contactOptions as $contact)<option value="{{ $contact['id'] }}">{{ $contact['name'] }}</option>@endforeach</select></label><div class="text-sm font-semibold">Numero<div class="mt-1 h-11 rounded-md border border-border-light bg-surface-muted px-3 py-3 text-sm font-normal">{{ $numberPreview ?? 'Configura il sezionale predefinito' }}</div></div><label>Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border p-2"></label><label>Numero fattura originaria<input wire:model="related_invoice_number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border p-2"></label><label>Data fattura originaria<input wire:model="related_invoice_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border p-2"></label></x-documents.invoice-form.data-fields>@elseif($tab==='notes')<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="w-full rounded-md border p-2"></textarea>@else<div class="space-y-3">@forelse($invoice->events as $event)<p>{{ $event->title }} · {{ $event->occurred_at?->format('d/m/Y H:i') }}</p>@empty<p>Nessun evento registrato.</p>@endforelse</div>@endif</x-documents.invoice-form.data-section><x-documents.invoice-form.lines title="Righe nota di credito" :read-only="$this->readOnly">
                 @foreach($lines as $index => $line)
                     <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="false" :vat-disabled="$this->isRf19()" />
                 @endforeach
