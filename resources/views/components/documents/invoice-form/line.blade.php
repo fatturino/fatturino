@@ -23,7 +23,7 @@
 
     <div class="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)_auto]">
         <label class="text-xs text-content-muted">Importo<input wire:model.live.debounce.250ms="lines.{{ $index }}.unit_price" @disabled($readOnly) type="number" min="0" step="0.01" class="mt-1 h-10 w-full rounded-md border border-border bg-white px-2 text-sm"></label>
-        <label class="text-xs text-content-muted">IVA<select wire:model.change="lines.{{ $index }}.vat_rate" @disabled($readOnly || $vatDisabled) class="mt-1 h-10 w-full rounded-md border border-border bg-white px-2 text-sm">@foreach(\App\Enums\VatRate::options() as $rate)<option value="{{ $rate['id'] }}">{{ $rate['name'] }}</option>@endforeach</select></label>
+        <label class="text-xs text-content-muted">IVA<x-select wire:model.change="lines.{{ $index }}.vat_rate" :disabled="$readOnly || $vatDisabled" :options="\App\Enums\VatRate::options()" /></label>
         @unless($readOnly)
             <div class="flex items-end gap-3">
                 <button type="button" wire:click="toggleLineDetails({{ $index }})" class="h-10 whitespace-nowrap text-sm font-semibold text-primary">{{ ($line['details_enabled'] ?? false) ? 'Nascondi dettagli' : 'Dettagli' }}</button>

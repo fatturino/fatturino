@@ -46,7 +46,7 @@ it('keeps sequence mutations read-only in demo mode', function () {
         ->set('type', 'sales')
         ->set('pattern', '{SEQ}');
 
-    expect(fn() => $component->instance()->storeSequence())->toThrow(HttpException::class);
+    expect(fn () => $component->instance()->storeSequence())->toThrow(HttpException::class);
 
     expect(Sequence::query()->where('name', 'Non consentita')->exists())->toBeFalse();
 });

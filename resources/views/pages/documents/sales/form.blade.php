@@ -264,10 +264,7 @@ new #[Layout('layouts::app')] class extends Component {
                 @if($tab === 'data')
                     <x-documents.invoice-form.data-fields>
                         <label class="text-sm font-semibold">Cliente *
-                            <select wire:model="contact_id" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm">
-                                <option value="">Seleziona cliente...</option>
-                                @foreach($contactOptions as $contact)<option value="{{ $contact['id'] }}">{{ $contact['name'] }}</option>@endforeach
-                            </select>
+                            <x-select wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" placeholder="Seleziona cliente..." />
                             @error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror
                         </label>
                         <div class="text-sm font-semibold">Numero
@@ -276,13 +273,13 @@ new #[Layout('layouts::app')] class extends Component {
                         <label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm">@error('date')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label>
                         <label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label>
                         <label class="text-sm font-semibold">Tipo documento *
-                            <select wire:model="document_type" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm">@foreach(SalesDocumentType::options() as $type)<option value="{{ $type['id'] }}">{{ $type['name'] }}</option>@endforeach</select>
+                            <x-select wire:model="document_type" :disabled="$this->readOnly" :options="SalesDocumentType::options()" />
                         </label>
                     </x-documents.invoice-form.data-fields>
                 @elseif($tab === 'payment')
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <label class="text-sm font-semibold">Metodo pagamento<select wire:model="payment_method" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona...</option>@foreach(PaymentMethod::options() as $option)<option value="{{ $option['id'] }}">{{ $option['name'] }}</option>@endforeach</select></label>
-                        <label class="text-sm font-semibold">Termini pagamento<select wire:model="payment_terms" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm"><option value="">Seleziona...</option>@foreach(PaymentTerms::options() as $option)<option value="{{ $option['id'] }}">{{ $option['name'] }}</option>@endforeach</select></label>
+                        <label class="text-sm font-semibold">Metodo pagamento<x-select wire:model="payment_method" :disabled="$this->readOnly" :options="PaymentMethod::options()" placeholder="Seleziona..." /></label>
+                        <label class="text-sm font-semibold">Termini pagamento<x-select wire:model="payment_terms" :disabled="$this->readOnly" :options="PaymentTerms::options()" placeholder="Seleziona..." /></label>
                         <label class="text-sm font-semibold">Banca<input wire:model="bank_name" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label>
                         <label class="text-sm font-semibold">IBAN<input wire:model="bank_iban" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label>
                     </div>

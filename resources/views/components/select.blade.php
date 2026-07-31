@@ -7,10 +7,11 @@
     'inline' => false,
     'optionValue' => null,
     'optionLabel' => null,
+    'disabled' => false,
 ])
 
 @php
-$wrapperClasses = $inline ? 'flex items-center gap-3' : 'w-full';
+$wrapperClasses = $inline ? 'flex items-center gap-3' : 'space-y-1';
 
 $error = null;
 try {
@@ -115,7 +116,7 @@ $placeholderText = $placeholder ?? __('app.common.select');
     class="{{ $wrapperClasses }} relative"
 >
     @if($label)
-        <label class="text-sm font-medium text-base-content/70 mb-1 block">{{ $label }}</label>
+        <label class="inline-block font-medium text-sm">{{ $label }}</label>
     @endif
 
     <div class="relative">
@@ -123,34 +124,52 @@ $placeholderText = $placeholder ?? __('app.common.select');
         <button
             x-ref="button"
             @click="open = !open"
+            @disabled($disabled)
             type="button"
-            class="relative flex items-center w-full h-11 px-3 py-2 text-left text-sm bg-white border rounded-md shadow-sm cursor-default
-                   {{ $error ? 'border-error' : 'border-base-300' }}
-                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50
+            class="group flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-left text-sm leading-6 focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/50 focus:outline-none
+                   {{ $error ? 'border-danger' : '' }}
+                   dark:border-zinc-600 dark:bg-zinc-800 dark:focus:border-indigo-500
                    {{ $icon ? 'pl-10' : '' }}"
+            aria-haspopup="listbox"
+            aria-controls="tk-select-menu-list"
         >
             @if($icon)
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-base-content/40">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
                     <x-icon :name="$icon" class="w-4 h-4" />
                 </span>
             @endif
-            <span class="block truncate" :class="{ 'text-base-content/40': !selectedTitle }" x-text="selectedTitle || '{{ $placeholderText }}'"></span>
-            <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <x-icon name="o-chevron-up-down" class="w-4 h-4 text-base-content/30" />
-            </span>
+            <span class="grow truncate" :class="{ 'text-zinc-500 dark:text-zinc-400': !selectedTitle }" x-text="selectedTitle || '{{ $placeholderText }}'"></span>
+            <svg
+                class="hi-mini hi-chevron-up-down inline-block size-5 flex-none opacity-40 transition group-hover:opacity-60 group-active:scale-90"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+            >
+                <path
+                    fill-rule="evenodd"
+                    d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z"
+                    clip-rule="evenodd"
+                />
+            </svg>
         </button>
 
         {{-- Dropdown --}}
         <ul
+            id="tk-select-menu-list"
             x-show="open"
-            x-transition:enter="transition ease-out duration-50"
-            x-transition:enter-start="opacity-0 -translate-y-1"
-            x-transition:enter-end="opacity-100"
+            x-transition:enter="transition ease-out duration-100"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
             x-transition:leave="transition ease-in duration-75"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
             @click.away="open = false"
-            class="absolute z-50 w-full py-1 mt-1 overflow-auto text-sm bg-white rounded-md shadow-lg border border-base-200 max-h-56 focus:outline-none"
+            class="absolute inset-x-0 z-10 mt-2 max-h-60 origin-top overflow-y-auto rounded-lg bg-white py-2.5 shadow-xl ring-1 ring-black/5 focus:outline-none dark:bg-zinc-800 dark:shadow-zinc-900 dark:ring-zinc-700"
+            aria-labelledby="tk-select-menu-button"
+            aria-orientation="vertical"
+            role="listbox"
+            tabindex="0"
             x-cloak
         >
             <template x-for="item in options" :key="item.value">
@@ -159,24 +178,41 @@ $placeholderText = $placeholder ?? __('app.common.select');
                     :id="'select-opt-' + item.value"
                     @mousemove="activeIndex = options.indexOf(item)"
                     :class="{
-                        'bg-primary/10 text-primary font-medium': isActive(item),
-                        'text-base-content': !isActive(item)
+                        'font-semibold text-zinc-950 dark:text-white': selectedValue == item.value,
+                        'text-zinc-600 dark:text-zinc-300': selectedValue != item.value
                     }"
-                    class="relative flex items-center h-full py-2 pl-8 pr-3 cursor-default select-none hover:bg-base-200/50"
+                    class="group flex cursor-pointer items-center justify-between gap-2 border-y border-transparent px-3 text-sm hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none active:border-indigo-100 dark:hover:bg-zinc-700/75 dark:focus:bg-zinc-700/75 dark:active:border-zinc-600"
+                    role="option"
+                    tabindex="-1"
                 >
-                    {{-- Checkmark --}}
-                    <span x-show="selectedValue == item.value" class="absolute left-0 ml-2.5 text-primary">
-                        <x-icon name="o-check" class="w-4 h-4" />
-                    </span>
-                    <span class="block truncate" x-text="item.title"></span>
+                    <div class="grow truncate py-1.5" x-text="item.title"></div>
+                    <div
+                        :class="{ 'visible text-indigo-600 dark:text-indigo-500': selectedValue == item.value, 'invisible': selectedValue != item.value }"
+                        class="pointer-events-none size-5 flex-none"
+                        aria-hidden="true"
+                    >
+                        <svg
+                            class="hi-mini hi-check-circle inline-block size-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                    </div>
                 </li>
             </template>
         </ul>
     </div>
 
     @if($error)
-        <p class="text-error text-xs mt-1">{{ $error }}</p>
+        <p class="text-danger text-xs mt-1">{{ $error }}</p>
     @elseif($hint)
-        <p class="text-base-content/40 text-xs mt-1">{{ $hint }}</p>
+        <p class="text-zinc-400 text-xs mt-1">{{ $hint }}</p>
     @endif
 </div>

@@ -63,6 +63,6 @@ it('rejects updates to self invoices locked by SDI', function () {
     $sequence = Sequence::factory()->create(['type' => 'self_invoice']);
     $invoice = SelfInvoice::factory()->create(['contact_id' => $contact->id, 'sequence_id' => $sequence->id, 'sdi_status' => SdiStatus::Delivered, 'date' => now()->toDateString()]);
 
-    expect(fn() => app(SaveSelfInvoice::class)->update($invoice, selfInvoicePayload($contact, $sequence)))
+    expect(fn () => app(SaveSelfInvoice::class)->update($invoice, selfInvoicePayload($contact, $sequence)))
         ->toThrow(ValidationException::class);
 });

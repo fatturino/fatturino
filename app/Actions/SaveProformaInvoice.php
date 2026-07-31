@@ -60,6 +60,7 @@ class SaveProformaInvoice
             $lines,
             $this->companySettings->company_fiscal_regime,
         );
+
         return [[
             'date' => $normalized['date'],
             'due_date' => $normalized['due_date'] ?? null,
