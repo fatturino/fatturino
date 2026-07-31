@@ -189,8 +189,8 @@ class ReportService
         $quarters = [];
 
         for ($q = 1; $q <= 4; $q++) {
-            $start = sprintf('%04d-%02d-01', $year, ($q - 1) * 3 + 1);
-            $end = sprintf('%04d-%02d-%02d', $year, $q * 3, (new \DateTime("$year-" . ($q * 3) . '-01'))->format('t'));
+            $start = Carbon::create($year, ($q - 1) * 3 + 1, 1)->startOfDay();
+            $end = Carbon::create($year, $q * 3, 1)->endOfMonth();
 
             $collected = (int) FiscalDocument::whereBetween('date', [$start, $end])
                 ->where('type', '!=', 'purchase')
@@ -222,12 +222,12 @@ class ReportService
         $netRevenue = fn(SalesInvoice $i): int => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0));
 
         for ($m = 1; $m <= 12; $m++) {
-            $start = sprintf('%04d-%02d-01', $year, $m);
-            $end = sprintf('%04d-%02d-%02d', $year, $m, (new \DateTime("$year-$m-01"))->format('t'));
+            $start = Carbon::create($year, $m, 1)->startOfDay();
+            $end = Carbon::create($year, $m, 1)->endOfMonth();
             $current[] = (int) SalesInvoice::whereBetween('date', [$start, $end])->get()->sum($netRevenue);
 
-            $prevStart = sprintf('%04d-%02d-01', $year - 1, $m);
-            $prevEnd = sprintf('%04d-%02d-%02d', $year - 1, $m, (new \DateTime(($year - 1) . "-$m-01"))->format('t'));
+            $prevStart = Carbon::create($year - 1, $m, 1)->startOfDay();
+            $prevEnd = Carbon::create($year - 1, $m, 1)->endOfMonth();
             $previous[] = (int) SalesInvoice::whereBetween('date', [$prevStart, $prevEnd])->get()->sum($netRevenue);
         }
 
@@ -484,8 +484,8 @@ class ReportService
         $elapsedCount = 0;
 
         for ($m = 1; $m <= 12; $m++) {
-            $start = sprintf('%04d-%02d-01', $year, $m);
-            $end = sprintf('%04d-%02d-%02d', $year, $m, (new \DateTime("$year-$m-01"))->format('t'));
+            $start = Carbon::create($year, $m, 1)->startOfDay();
+            $end = Carbon::create($year, $m, 1)->endOfMonth();
             $revenue = (int) SalesInvoice::whereBetween('date', [$start, $end])
                 ->get()->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
 
