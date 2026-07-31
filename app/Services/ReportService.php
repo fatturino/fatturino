@@ -497,6 +497,8 @@ class ReportService
                 'actual' => $actual,
                 'projected' => $projected,
                 'average' => null,
+                'consolidated' => null,
+                'future' => null,
                 'total' => null,
             ];
         }
@@ -509,11 +511,18 @@ class ReportService
 
         $total = (int) (array_sum($projected));
 
+        $futureTotal = 0;
+        for ($m = $elapsedMonths; $m < 12; $m++) {
+            $futureTotal += $projected[$m];
+        }
+
         return [
             'labels' => $labels,
             'actual' => $actual,
             'projected' => $projected,
             'average' => $average,
+            'consolidated' => $elapsedTotal,
+            'future' => $futureTotal,
             'total' => $total,
         ];
     }

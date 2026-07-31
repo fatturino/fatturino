@@ -5,6 +5,8 @@
     $actualValues = $revenueProjection['actual'] ?? [];
     $projectedValues = $revenueProjection['projected'] ?? [];
     $average = $revenueProjection['average'] ?? null;
+    $consolidated = $revenueProjection['consolidated'] ?? null;
+    $future = $revenueProjection['future'] ?? null;
     $total = $revenueProjection['total'] ?? null;
     $hasProjection = $average !== null;
 
@@ -17,7 +19,6 @@
     // Build series: actual bars + projected bars (only future months differ)
     $actualData = [];
     $futureData = [];
-    $elapsedCount = count(array_filter($actualValues, fn ($v) => $v !== null));
 
     foreach ($actualEur as $i => $value) {
         if ($value !== null) {
@@ -55,8 +56,10 @@
         ];
     }
 
-    $formattedTotal = $total !== null ? '€ ' . number_format($total / 100, 2, ',', '.') : null;
-    $formattedAverage = $average !== null ? '€ ' . number_format($average / 100, 2, ',', '.') : null;
+    $formatEur = fn ($cents) => '€ ' . number_format((int) $cents / 100, 2, ',', '.');
+    $formattedConsolidated = $consolidated !== null ? $formatEur($consolidated) : null;
+    $formattedFuture = $future !== null ? $formatEur($future) : null;
+    $formattedTotal = $total !== null ? $formatEur($total) : null;
 @endphp
 
 <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
@@ -69,13 +72,17 @@
     </div>
 
     @if($hasProjection && $hasData)
-        <div class="mt-4 grid grid-cols-2 gap-3">
+        <div class="mt-4 grid grid-cols-3 gap-3">
             <div class="rounded-lg bg-surface-muted p-3 text-center">
-                <p class="text-xs font-bold uppercase tracking-[.08em] text-content-muted">Media mensile</p>
-                <p class="mt-1 text-lg font-bold tabular-nums text-content">{{ $formattedAverage }}</p>
+                <p class="text-xs font-bold uppercase tracking-[.08em] text-content-muted">Consolidato YTD</p>
+                <p class="mt-1 text-lg font-bold tabular-nums text-content">{{ $formattedConsolidated }}</p>
+            </div>
+            <div class="rounded-lg bg-surface-muted p-3 text-center">
+                <p class="text-xs font-bold uppercase tracking-[.08em] text-content-muted">Previsione residua</p>
+                <p class="mt-1 text-lg font-bold tabular-nums text-content">{{ $formattedFuture }}</p>
             </div>
             <div class="rounded-lg bg-primary/5 p-3 text-center">
-                <p class="text-xs font-bold uppercase tracking-[.08em] text-content-muted">Proiezione al 31/12</p>
+                <p class="text-xs font-bold uppercase tracking-[.08em] text-content-muted">Fatturato probabile</p>
                 <p class="mt-1 text-lg font-bold tabular-nums text-primary">{{ $formattedTotal }}</p>
             </div>
         </div>
