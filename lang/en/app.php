@@ -1054,7 +1054,7 @@ return [
 
         // Helper text
         'test_connection_hint' => 'Sends a test email to the sender address to verify the connection.',
-        'placeholders_hint' => 'Available variables: {CLIENTE}, {NUMERO_DOCUMENTO}, {DATA_DOCUMENTO}, {IMPORTO_NETTO}, {IMPORTO_IVA}, {IMPORTO_TOTALE}, {AZIENDA}, {PARTITA_IVA_AZIENDA}, {EMAIL_CLIENTE}',
+        'placeholders_hint' => 'Available variables: {CLIENTE}, {NUMERO_DOCUMENTO}, {DATA_DOCUMENTO}, {IMPORTO_NETTO}, {IMPORTO_IVA}, {IMPORTO_TOTALE}, {AZIENDA}, {PARTITA_IVA_AZIENDA}, {EMAIL_CLIENTE}, {FATTURE_NON_SALDATE}',
         'attach_pdf' => 'Attach courtesy PDF',
     ],
 

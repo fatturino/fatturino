@@ -1108,7 +1108,7 @@ return [
 
         // Helper text
         'test_connection_hint' => 'Invia un\'email di prova all\'indirizzo mittente per verificare la connessione.',
-        'placeholders_hint' => 'Variabili disponibili: {CLIENTE}, {NUMERO_DOCUMENTO}, {DATA_DOCUMENTO}, {IMPORTO_NETTO}, {IMPORTO_IVA}, {IMPORTO_TOTALE}, {AZIENDA}, {PARTITA_IVA_AZIENDA}, {EMAIL_CLIENTE}',
+        'placeholders_hint' => 'Variabili disponibili: {CLIENTE}, {NUMERO_DOCUMENTO}, {DATA_DOCUMENTO}, {IMPORTO_NETTO}, {IMPORTO_IVA}, {IMPORTO_TOTALE}, {AZIENDA}, {PARTITA_IVA_AZIENDA}, {EMAIL_CLIENTE}, {FATTURE_NON_SALDATE}',
         'attach_pdf' => 'Allega PDF cortesia',
     ],
 
