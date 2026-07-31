@@ -159,6 +159,8 @@
                     this.applyPaymentResponse(data);
                     this.notify(updating ? `${this.capitalize(this.paymentCopy().action)} aggiornato.` : `${this.capitalize(this.paymentCopy().action)} registrato.`);
                     this.resetPaymentForm();
+                    this.paymentOpen = false;
+                    await this.$wire.$refresh();
                 } catch (error) { this.error = error.message; } finally { this.busy = false; }
             },
             async deletePayment(entry) {
