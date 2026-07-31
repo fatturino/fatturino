@@ -34,7 +34,7 @@ class ReportService
         return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
-        ])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
+        ])->get()->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
     }
 
     /**
@@ -50,7 +50,7 @@ class ReportService
         return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
-        ])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
+        ])->get()->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
     }
 
     /**
@@ -63,7 +63,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return (int) SalesInvoice::whereBetween('date', [$start, $end])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
+        return (int) SalesInvoice::whereBetween('date', [$start, $end])->get()->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
     }
 
     /**
@@ -219,14 +219,16 @@ class ReportService
         $previous = [];
         $labels = ['G', 'F', 'M', 'A', 'M', 'G', 'L', 'A', 'S', 'O', 'N', 'D'];
 
+        $netRevenue = fn(SalesInvoice $i): int => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0));
+
         for ($m = 1; $m <= 12; $m++) {
             $start = sprintf('%04d-%02d-01', $year, $m);
             $end = sprintf('%04d-%02d-%02d', $year, $m, (new \DateTime("$year-$m-01"))->format('t'));
-            $current[] = (int) SalesInvoice::whereBetween('date', [$start, $end])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
+            $current[] = (int) SalesInvoice::whereBetween('date', [$start, $end])->get()->sum($netRevenue);
 
             $prevStart = sprintf('%04d-%02d-01', $year - 1, $m);
             $prevEnd = sprintf('%04d-%02d-%02d', $year - 1, $m, (new \DateTime(($year - 1) . "-$m-01"))->format('t'));
-            $previous[] = (int) SalesInvoice::whereBetween('date', [$prevStart, $prevEnd])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
+            $previous[] = (int) SalesInvoice::whereBetween('date', [$prevStart, $prevEnd])->get()->sum($netRevenue);
         }
 
         return [
@@ -244,13 +246,20 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return SalesInvoice::whereBetween('date', [$start, $end])
-            ->selectRaw('contact_id, SUM(total_gross - total_vat) as revenue_total')
-            ->groupBy('contact_id')
-            ->orderByDesc('revenue_total')
+        $invoices = SalesInvoice::whereBetween('date', [$start, $end])
             ->with('contact')
-            ->limit($limit)
             ->get();
+
+        return $invoices
+            ->groupBy('contact_id')
+            ->map(fn($group, $key) => (object) [
+                'contact_id' => (int) $key,
+                'contact' => $group->first()->contact,
+                'revenue_total' => $group->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0))),
+            ])
+            ->sortByDesc('revenue_total')
+            ->take($limit)
+            ->values();
     }
 
     /**
@@ -478,7 +487,7 @@ class ReportService
             $start = sprintf('%04d-%02d-01', $year, $m);
             $end = sprintf('%04d-%02d-%02d', $year, $m, (new \DateTime("$year-$m-01"))->format('t'));
             $revenue = (int) SalesInvoice::whereBetween('date', [$start, $end])
-                ->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
+                ->get()->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
 
             if ($m <= $elapsedMonths) {
                 $actual[] = $revenue;
