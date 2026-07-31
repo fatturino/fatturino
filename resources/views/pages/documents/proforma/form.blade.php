@@ -166,9 +166,14 @@ new #[Layout('layouts::app')] class extends Component {
         return $this->netTotal + $this->fundAmount + $this->vatTotal;
     }
 
+    public function getWithholdingAmountProperty(): float
+    {
+        return $this->withholding_tax_enabled ? round($this->netTotal * ((float) $this->withholding_tax_percent / 100), 2) : 0;
+    }
+
     public function getNetDueProperty(): float
     {
-        return max(0, $this->grossTotal + ($this->stamp_duty_charged_to_customer ? $this->stampDutyAmount : 0) - ($this->withholding_tax_enabled ? $this->netTotal * ((float) $this->withholding_tax_percent / 100) : 0));
+        return max(0, $this->grossTotal + ($this->stamp_duty_charged_to_customer ? $this->stampDutyAmount : 0) - $this->withholdingAmount);
     }
 
     private function refreshNumberPreview(): void
@@ -236,7 +241,7 @@ new #[Layout('layouts::app')] class extends Component {
             </x-documents.invoice-form.lines>
         </div>
         <aside class="space-y-4">
-            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" :fund-amount="$fund_enabled ? $this->fundAmount : 0" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" :net-due="$this->netDue" />
+            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" :fund-amount="$fund_enabled ? $this->fundAmount : 0" :fund-percent="$fund_enabled ? $fund_percent : null" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" :withholding-amount="$this->withholdingAmount" :withholding-percent="$withholding_tax_enabled ? $withholding_tax_percent : null" :net-due="$this->netDue" />
             <x-documents.invoice-form.fiscal-options :read-only="$this->readOnly" :is-rf19="$this->isRf19()" :withholding="true" :fund="true" :stamp-duty="true" :stamp-duty-charged-to-customer="true" :withholding-enabled="$withholding_tax_enabled" :fund-enabled="$fund_enabled" :stamp-duty-applied="$stamp_duty_applied" />
         </aside>
         <x-documents.invoice-form.action-bar cancel-route="proforma.index" :submit-label="$invoice ? 'Aggiorna proforma' : 'Crea proforma'" :read-only="$this->readOnly" />

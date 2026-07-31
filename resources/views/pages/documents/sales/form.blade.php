@@ -177,9 +177,17 @@ new #[Layout('layouts::app')] class extends Component {
         return round(array_sum(array_map(fn ($line) => max(0, (float) ($line['quantity'] ?: 0)) * max(0, (float) ($line['unit_price'] ?: 0)) * (1 - max(0, (float) ($line['discount_percent'] ?: 0)) / 100), $this->lines)), 2);
     }
 
+    public function getFundAmountProperty(): float
+    {
+        return $this->fund_enabled ? round($this->netTotal * ((float) $this->fund_percent / 100), 2) : 0;
+    }
+
     public function getVatTotalProperty(): float
     {
-        return round(array_sum(array_map(fn ($line) => $this->lineTotal($line) * $this->vatPercent($line['vat_rate'] ?? '') / 100, $this->lines)), 2);
+        $linesVat = array_sum(array_map(fn ($line) => $this->lineTotal($line) * $this->vatPercent($line['vat_rate'] ?? '') / 100, $this->lines));
+        $fundVat = $this->fundAmount * $this->vatPercent($this->fund_vat_rate) / 100;
+
+        return round($linesVat + $fundVat, 2);
     }
 
     public function getStampDutyAmountProperty(): float
@@ -189,12 +197,22 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function getGrossTotalProperty(): float
     {
-        return $this->netTotal + $this->vatTotal;
+        return $this->netTotal + $this->fundAmount + $this->vatTotal;
+    }
+
+    public function getWithholdingAmountProperty(): float
+    {
+        return $this->withholding_tax_enabled ? round($this->netTotal * ((float) $this->withholding_tax_percent / 100), 2) : 0;
+    }
+
+    public function getSplitPaymentAmountProperty(): float
+    {
+        return $this->split_payment ? $this->vatTotal : 0;
     }
 
     public function getNetDueProperty(): float
     {
-        return max(0, $this->grossTotal + ($this->stamp_duty_charged_to_customer ? $this->stampDutyAmount : 0) - ($this->withholding_tax_enabled ? $this->netTotal * ((float) $this->withholding_tax_percent / 100) : 0) - ($this->split_payment ? $this->vatTotal : 0));
+        return max(0, $this->grossTotal + ($this->stamp_duty_charged_to_customer ? $this->stampDutyAmount : 0) - $this->withholdingAmount - $this->splitPaymentAmount);
     }
 
     private function refreshNumberPreview(): void
@@ -298,7 +316,7 @@ new #[Layout('layouts::app')] class extends Component {
         </div>
 
         <aside class="space-y-4">
-            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" :net-due="$this->netDue" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" />
+            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" :net-due="$this->netDue" :fund-amount="$fund_enabled ? $this->fundAmount : 0" :fund-percent="$fund_enabled ? $fund_percent : null" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" :withholding-amount="$this->withholdingAmount" :withholding-percent="$withholding_tax_enabled ? $withholding_tax_percent : null" :split-payment-amount="$this->splitPaymentAmount" />
             <x-documents.invoice-form.fiscal-options :read-only="$this->readOnly" :is-rf19="$this->isRf19()" :withholding="true" :fund="true" :stamp-duty="true" :split-payment="true" :stamp-duty-charged-to-customer="true" :withholding-enabled="$withholding_tax_enabled" :fund-enabled="$fund_enabled" :stamp-duty-applied="$stamp_duty_applied" :split-payment-enabled="$split_payment" />
         </aside>
         <x-documents.invoice-form.action-bar cancel-route="sell-invoices.index" :submit-label="$invoice ? 'Aggiorna fattura' : 'Crea fattura'" :read-only="$this->readOnly" />
