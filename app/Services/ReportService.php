@@ -34,7 +34,7 @@ class ReportService
         return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
-        ])->sum(\DB::raw('total_gross - total_vat'));
+        ])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
     }
 
     /**
@@ -50,7 +50,7 @@ class ReportService
         return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
-        ])->sum(\DB::raw('total_gross - total_vat'));
+        ])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
     }
 
     /**
@@ -63,7 +63,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return (int) SalesInvoice::whereBetween('date', [$start, $end])->sum(\DB::raw('total_gross - total_vat'));
+        return (int) SalesInvoice::whereBetween('date', [$start, $end])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
     }
 
     /**
@@ -222,11 +222,11 @@ class ReportService
         for ($m = 1; $m <= 12; $m++) {
             $start = sprintf('%04d-%02d-01', $year, $m);
             $end = sprintf('%04d-%02d-%02d', $year, $m, (new \DateTime("$year-$m-01"))->format('t'));
-            $current[] = (int) SalesInvoice::whereBetween('date', [$start, $end])->sum(\DB::raw('total_gross - total_vat'));
+            $current[] = (int) SalesInvoice::whereBetween('date', [$start, $end])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
 
             $prevStart = sprintf('%04d-%02d-01', $year - 1, $m);
             $prevEnd = sprintf('%04d-%02d-%02d', $year - 1, $m, (new \DateTime(($year - 1) . "-$m-01"))->format('t'));
-            $previous[] = (int) SalesInvoice::whereBetween('date', [$prevStart, $prevEnd])->sum(\DB::raw('total_gross - total_vat'));
+            $previous[] = (int) SalesInvoice::whereBetween('date', [$prevStart, $prevEnd])->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
         }
 
         return [
@@ -478,7 +478,7 @@ class ReportService
             $start = sprintf('%04d-%02d-01', $year, $m);
             $end = sprintf('%04d-%02d-%02d', $year, $m, (new \DateTime("$year-$m-01"))->format('t'));
             $revenue = (int) SalesInvoice::whereBetween('date', [$start, $end])
-                ->sum(\DB::raw('total_gross - total_vat'));
+                ->sum(\DB::raw('COALESCE(total_gross, 0) - COALESCE(total_vat, 0)'));
 
             if ($m <= $elapsedMonths) {
                 $actual[] = $revenue;
