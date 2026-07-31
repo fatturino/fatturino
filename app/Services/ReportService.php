@@ -190,7 +190,7 @@ class ReportService
 
         for ($q = 1; $q <= 4; $q++) {
             $start = sprintf('%04d-%02d-01', $year, ($q - 1) * 3 + 1);
-            $end = sprintf('%04d-%02d-%02d', $year, $q * 3, (new \DateTime("$year-".($q * 3).'-01'))->format('t'));
+            $end = sprintf('%04d-%02d-%02d', $year, $q * 3, (new \DateTime("$year-" . ($q * 3) . '-01'))->format('t'));
 
             $collected = (int) FiscalDocument::whereBetween('date', [$start, $end])
                 ->where('type', '!=', 'purchase')
@@ -225,7 +225,7 @@ class ReportService
             $current[] = (int) SalesInvoice::whereBetween('date', [$start, $end])->sum(\DB::raw('total_gross - total_vat'));
 
             $prevStart = sprintf('%04d-%02d-01', $year - 1, $m);
-            $prevEnd = sprintf('%04d-%02d-%02d', $year - 1, $m, (new \DateTime(($year - 1)."-$m-01"))->format('t'));
+            $prevEnd = sprintf('%04d-%02d-%02d', $year - 1, $m, (new \DateTime(($year - 1) . "-$m-01"))->format('t'));
             $previous[] = (int) SalesInvoice::whereBetween('date', [$prevStart, $prevEnd])->sum(\DB::raw('total_gross - total_vat'));
         }
 
@@ -324,7 +324,7 @@ class ReportService
             'overdue_count' => 0,
             'overdue_net' => 0,
             'overdue_vat' => 0,
-            'draft_count' => $invoices->filter(fn (SalesInvoice $invoice): bool => $invoice->statusValue() === 'draft')->count(),
+            'draft_count' => $invoices->filter(fn(SalesInvoice $invoice): bool => $invoice->statusValue() === 'draft')->count(),
         ];
 
         foreach ($invoices as $invoice) {
@@ -431,10 +431,10 @@ class ReportService
             }
 
             $salesInvoices = $salesQuery->get();
-            $inflows = (int) $salesInvoices->sum(fn ($i) => max(0, $i->net_due - $i->total_paid));
+            $inflows = (int) $salesInvoices->sum(fn($i) => max(0, $i->net_due - $i->total_paid));
 
             $purchaseInvoices = $purchaseQuery->get();
-            $outflows = (int) $purchaseInvoices->sum(fn ($i) => max(0, $i->total_gross - $i->total_paid));
+            $outflows = (int) $purchaseInvoices->sum(fn($i) => max(0, $i->total_gross - $i->total_paid));
 
             $buckets[] = [
                 'key' => $bucketDef['key'],
@@ -446,6 +446,76 @@ class ReportService
         }
 
         return $buckets;
+    }
+
+    /**
+     * Revenue projection to end of year based on monthly average of elapsed months.
+     *
+     * For the current year, computes the average net revenue per elapsed month
+     * and projects it onto the remaining months. For past years, returns only
+     * actual values with no projection.
+     *
+     * Returns:
+     *   - actual:    array of 12 integers (cents), null for future months
+     *   - projected: array of 12 integers (cents), actual for elapsed, projected for future
+     *   - labels:    array of 12 single-char month labels
+     *   - average:   monthly average in cents (null if no elapsed months or past year)
+     *   - total:     projected full-year total in cents (null if past year)
+     */
+    public function revenueProjection(int $year = 0): array
+    {
+        $year = $year ?: now()->year;
+        $isCurrentYear = $year === now()->year;
+        $labels = ['G', 'F', 'M', 'A', 'M', 'G', 'L', 'A', 'S', 'O', 'N', 'D'];
+        $actual = [];
+        $projected = [];
+
+        $elapsedMonths = $isCurrentYear ? now()->month : 12;
+        $elapsedTotal = 0;
+        $elapsedCount = 0;
+
+        for ($m = 1; $m <= 12; $m++) {
+            $start = sprintf('%04d-%02d-01', $year, $m);
+            $end = sprintf('%04d-%02d-%02d', $year, $m, (new \DateTime("$year-$m-01"))->format('t'));
+            $revenue = (int) SalesInvoice::whereBetween('date', [$start, $end])
+                ->sum(\DB::raw('total_gross - total_vat'));
+
+            if ($m <= $elapsedMonths) {
+                $actual[] = $revenue;
+                $projected[] = $revenue;
+                $elapsedTotal += $revenue;
+                $elapsedCount++;
+            } else {
+                $actual[] = null;
+                $projected[] = 0; // placeholder, will be filled below
+            }
+        }
+
+        if (! $isCurrentYear || $elapsedCount === 0 || $elapsedTotal === 0) {
+            return [
+                'labels' => $labels,
+                'actual' => $actual,
+                'projected' => $projected,
+                'average' => null,
+                'total' => null,
+            ];
+        }
+
+        $average = (int) round($elapsedTotal / $elapsedCount);
+
+        for ($m = $elapsedMonths; $m < 12; $m++) {
+            $projected[$m] = $average;
+        }
+
+        $total = (int) (array_sum($projected));
+
+        return [
+            'labels' => $labels,
+            'actual' => $actual,
+            'projected' => $projected,
+            'average' => $average,
+            'total' => $total,
+        ];
     }
 
     /**
@@ -498,6 +568,7 @@ class ReportService
             'upcomingDueDates' => $this->upcomingDueDates(5, $year),
             'cashflowForecast' => $this->cashflowForecast(),
             'revenueTrend' => $this->monthlyRevenueTrend($year),
+            'revenueProjection' => $this->revenueProjection($year),
             'draftCount' => FiscalDocument::where('status', 'draft')->whereYear('date', $year)->count(),
             'readyForSdiCount' => FiscalDocument::where('status', 'xml_validated')->whereYear('date', $year)->count(),
             'hasInvoices' => $invoicesYtd > 0,
