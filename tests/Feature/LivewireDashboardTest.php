@@ -86,6 +86,27 @@ it('shows annual turnover net of VAT for the selected fiscal year', function () 
         ->assertDontSee('Fatturato netto mese');
 });
 
+it('shows net amounts and separate VAT in recent invoices and due dates', function () {
+    $user = User::factory()->create();
+    SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'due_date' => now()->addDays(7)->toDateString(),
+        'total_net' => 100000,
+        'total_vat' => 22000,
+        'total_gross' => 122000,
+        'total_paid' => 0,
+        'payment_status' => 'unpaid',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Netto')
+        ->assertSee('€ 1.000,00')
+        ->assertSee('IVA € 220,00')
+        ->assertDontSee('€ 1.220,00');
+});
+
 it('shows fiscal and collection information for VAT accounting regimes', function () {
     $user = User::factory()->create();
     $settings = app(CompanySettings::class);

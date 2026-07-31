@@ -56,13 +56,17 @@ it('shows aggregate KPIs for the fiscal-year documents with a single result set'
         'date' => now()->toDateString(),
         'status' => 'draft',
         'payment_status' => 'unpaid',
-        'total_gross' => 10000,
+        'total_net' => 10000,
+        'total_vat' => 2200,
+        'total_gross' => 12200,
     ]);
     SalesInvoice::factory()->create([
         'date' => now()->toDateString(),
         'status' => 'sent',
         'payment_status' => 'overdue',
-        'total_gross' => 20000,
+        'total_net' => 20000,
+        'total_vat' => 4400,
+        'total_gross' => 24400,
     ]);
     SalesInvoice::factory()->create([
         'date' => now()->subYear()->toDateString(),
@@ -74,9 +78,12 @@ it('shows aggregate KPIs for the fiscal-year documents with a single result set'
     $this->actingAs($user);
 
     Livewire::test('pages::documents.index', ['type' => 'sales'])
+        ->assertSee('Totale netto')
         ->assertSee('€ 300,00')
+        ->assertSee('IVA € 66,00')
         ->assertSee('2 fatture')
         ->assertSee('€ 150,00')
+        ->assertSee('IVA media € 33,00')
         ->assertSee('2', false)
         ->assertSee('documenti aperti')
         ->assertSee('da saldare');
