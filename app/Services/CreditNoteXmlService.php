@@ -130,7 +130,10 @@ class CreditNoteXmlService
             $documentTotal += $creditNote->stamp_duty_amount / 100;
         }
         $instance->setDocumentTotal($documentTotal);
-        $instance->addDescription($creditNote->notes ?? 'Nota di Credito n. '.$creditNote->number);
+        $description = trim($creditNote->notes ?? '');
+        if ($description !== '') {
+            $instance->addDescription($description);
+        }
 
         // Virtual stamp duty (DatiBollo)
         if ($creditNote->stamp_duty_applied) {
@@ -210,7 +213,7 @@ class CreditNoteXmlService
         foreach ($creditNote->lines as $line) {
             $rate = $line->vat_rate?->percent() ?? 0;
             $nature = $line->vat_rate?->nature() ?? '';
-            $key = $rate.'_'.$nature;
+            $key = $rate . '_' . $nature;
             if (! isset($summary[$key])) {
                 $summary[$key] = [
                     'rate' => $rate,
@@ -229,7 +232,7 @@ class CreditNoteXmlService
             $stampDutyVatRate = FiscalRegimePolicy::stampDutyVatRate(
                 $this->companySettings->company_fiscal_regime
             );
-            $key = '0_'.$stampDutyVatRate;
+            $key = '0_' . $stampDutyVatRate;
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [

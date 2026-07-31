@@ -135,7 +135,10 @@ class SelfInvoiceXmlService
         $instance->setDocumentDate($invoice->date);
         $instance->setDocumentNumber($invoice->number);
         $instance->setDocumentTotal($invoice->total_gross / 100);
-        $instance->addDescription($invoice->notes ?? 'Autofattura n. '.$invoice->number);
+        $description = trim($invoice->notes ?? '');
+        if ($description !== '') {
+            $instance->addDescription($description);
+        }
 
         // DatiFattureCollegate — mandatory for self-invoices: reference to original foreign invoice
         if ($invoice->related_invoice_number && $invoice->related_invoice_date) {
@@ -176,7 +179,7 @@ class SelfInvoiceXmlService
         foreach ($invoice->lines as $line) {
             $rate = $line->vat_rate?->percent() ?? 0;
             $nature = $line->vat_rate?->nature() ?? '';
-            $key = $rate.'_'.$nature;
+            $key = $rate . '_' . $nature;
             if (! isset($summary[$key])) {
                 $summary[$key] = [
                     'rate' => $rate,
