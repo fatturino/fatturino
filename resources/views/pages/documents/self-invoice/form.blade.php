@@ -17,7 +17,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public int|string $contact_id = '';
 
-    /** @var array<int, array{id: int, name: string}> */
+    /** @var array<int, array{id: int, name: string, subtitle: string|null}> */
     public array $contactOptions = [];
 
     public ?string $numberPreview = null;
@@ -45,7 +45,12 @@ new #[Layout('layouts::app')] class extends Component {
         $selfInvoice = $selfInvoice?->exists ? $selfInvoice : null;
         $this->invoice = $selfInvoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $this->date = now()->toDateString();
-        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
+        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name', 'vat_number'])
+            ->map(fn (Contact $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'subtitle' => $c->vat_number ? 'P.IVA ' . $c->vat_number : null,
+            ])->toArray();
         if ($selfInvoice) {
             foreach (['contact_id', 'document_type', 'related_invoice_number', 'notes'] as $field) {
                 $this->{$field} = (string) ($selfInvoice->{$field} ?? '');

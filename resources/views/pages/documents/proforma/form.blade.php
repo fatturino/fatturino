@@ -18,7 +18,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public int|string $contact_id = '';
 
-    /** @var array<int, array{id: int, name: string}> */
+    /** @var array<int, array{id: int, name: string, subtitle: string|null}> */
     public array $contactOptions = [];
 
     public ?string $numberPreview = null;
@@ -61,7 +61,12 @@ new #[Layout('layouts::app')] class extends Component {
         $this->invoice = $proformaInvoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $settings = app(InvoiceSettings::class);
         $this->date = now()->toDateString();
-        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
+        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name', 'vat_number'])
+            ->map(fn (Contact $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'subtitle' => $c->vat_number ? 'P.IVA ' . $c->vat_number : null,
+            ])->toArray();
         foreach (['notes' => 'default_notes', 'payment_method' => 'default_payment_method', 'payment_terms' => 'default_payment_terms', 'bank_name' => 'default_bank_name', 'bank_iban' => 'default_bank_iban', 'withholding_tax_percent' => 'withholding_tax_percent', 'fund_percent' => 'fund_percent'] as $field => $setting) {
             $this->{$field} = (string) ($settings->{$setting} ?? '');
         }

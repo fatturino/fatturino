@@ -173,3 +173,15 @@ it('renders historical and SDI-locked sales invoices as read-only', function () 
         ->assertSee('Questa fattura non è più modificabile.')
         ->assertDontSee('Aggiorna fattura');
 });
+
+it('shows contact VAT number as subtitle in the customer select', function () {
+    $user = User::factory()->create();
+    Contact::factory()->create(['name' => 'Test SRL', 'vat_number' => 'IT12345678903']);
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->assertSee('Test SRL')
+        ->assertSee('P.IVA IT12345678903', escape: false, stripInitialData: false);
+});

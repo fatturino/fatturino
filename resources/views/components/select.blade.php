@@ -38,14 +38,17 @@ foreach ($options as $key => $val) {
             $v = $v ?? $arr[0] ?? $key;
             $l = $l ?? $arr[1] ?? (string) $val;
         }
+        $sub = data_get($val, 'subtitle');
         $normalizedOptions[] = [
             'title' => (string) $l,
             'value' => (string) $v,
+            'subtitle' => $sub !== null ? (string) $sub : null,
         ];
     } else {
         $normalizedOptions[] = [
             'title' => (string) $val,
             'value' => (string) $key,
+            'subtitle' => null,
         ];
     }
 }
@@ -185,7 +188,10 @@ $placeholderText = $placeholder ?? __('app.common.select');
                     role="option"
                     tabindex="-1"
                 >
-                    <div class="grow truncate py-1.5" x-text="item.title"></div>
+                    <div class="grow truncate py-1.5">
+                        <div x-text="item.title"></div>
+                        <div x-show="item.subtitle" x-text="item.subtitle" class="text-xs text-content-muted"></div>
+                    </div>
                     <div
                         :class="{ 'visible text-indigo-600 dark:text-indigo-500': selectedValue == item.value, 'invisible': selectedValue != item.value }"
                         class="pointer-events-none size-5 flex-none"

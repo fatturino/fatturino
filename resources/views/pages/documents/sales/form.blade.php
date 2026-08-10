@@ -19,7 +19,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public int|string $contact_id = '';
 
-    /** @var array<int, array{id: int, name: string}> */
+    /** @var array<int, array{id: int, name: string, subtitle: string|null}> */
     public array $contactOptions = [];
 
     public ?string $numberPreview = null;
@@ -72,7 +72,12 @@ new #[Layout('layouts::app')] class extends Component {
         $this->invoice = $invoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $settings = app(\App\Settings\InvoiceSettings::class);
         $this->date = now()->toDateString();
-        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name'])->toArray();
+        $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name', 'vat_number'])
+            ->map(fn (Contact $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'subtitle' => $c->vat_number ? 'P.IVA ' . $c->vat_number : null,
+            ])->toArray();
         $this->notes = $settings->default_notes ?? '';
         $this->payment_method = (string) ($settings->default_payment_method ?? '');
         $this->payment_terms = (string) ($settings->default_payment_terms ?? '');
