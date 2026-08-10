@@ -8,6 +8,8 @@
     'optionValue' => null,
     'optionLabel' => null,
     'disabled' => false,
+    'searchable' => false,
+    'searchPlaceholder' => null,
 ])
 
 @php
@@ -54,6 +56,7 @@ foreach ($options as $key => $val) {
 }
 $optionsJson = json_encode($normalizedOptions);
 $placeholderText = $placeholder ?? __('app.common.select');
+$searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
 @endphp
 
 <div
@@ -70,10 +73,18 @@ $placeholderText = $placeholder ?? __('app.common.select');
             this.$watch('selectedValue', () => this.updateSelected());
             this.$watch('open', (val) => {
                 if (val) {
-                    this.activeIndex = this.options.findIndex(o => o.value == this.selectedValue);
+                    this.search = '';
+                    this.activeIndex = this.filteredOptions.findIndex(o => o.value == this.selectedValue);
                     if (this.activeIndex < 0) this.activeIndex = 0;
-                    this.$nextTick(() => this.scrollToActive());
+                    this.$nextTick(() => {
+                        if (this.searchable) this.$refs.searchInput?.focus();
+                        this.scrollToActive();
+                    });
                 }
+            });
+            this.$watch("search", () => {
+                this.activeIndex = this.filteredOptions.length > 0 ? 0 : null;
+                this.$nextTick(() => this.scrollToActive());
             });
         },
 
@@ -90,7 +101,7 @@ $placeholderText = $placeholder ?? __('app.common.select');
         },
 
         activeNext() {
-            if (this.activeIndex < this.options.length - 1) {
+            if (this.activeIndex < this.filteredOptions.length - 1) {
                 this.activeIndex++;
                 this.scrollToActive();
             }
@@ -109,13 +120,13 @@ $placeholderText = $placeholder ?? __('app.common.select');
         },
 
         isActive(item) {
-            return this.activeIndex !== null && this.options[this.activeIndex]?.value === item.value;
+            return this.activeIndex !== null && this.filteredOptions[this.activeIndex]?.value === item.value;
         }
     }"
     @keydown.escape="if(open) open = false"
     @keydown.down.prevent="if(open) { activeNext() } else { open = true }"
     @keydown.up.prevent="if(open) { activePrev() } else { open = true }"
-    @keydown.enter.prevent="if(open && activeIndex !== null) { select(options[activeIndex]) }"
+    @keydown.enter.prevent="if(open && activeIndex !== null) { select(filteredOptions[activeIndex]) }"
     class="{{ $wrapperClasses }} relative"
 >
     @if($label)
@@ -175,11 +186,25 @@ $placeholderText = $placeholder ?? __('app.common.select');
             tabindex="0"
             x-cloak
         >
-            <template x-for="item in options" :key="item.value">
+                        {{-- Search input --}}
+            <div x-show="searchable" class="px-3 pb-2">
+                <input
+                    x-ref="searchInput"
+                    x-model="search"
+                    type="search"
+                    class="block h-9 w-full rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-500"
+                    placeholder="{{ $searchPlaceholderText }}"
+                    @keydown.down.prevent="activeNext()"
+                    @keydown.up.prevent="activePrev()"
+                    @keydown.enter.prevent="if(activeIndex !== null) { select(filteredOptions[activeIndex]) }"
+                >
+            </div>
+
+            <template x-for="item in filteredOptions" :key="item.value">
                 <li
                     @click="select(item)"
                     :id="'select-opt-' + item.value"
-                    @mousemove="activeIndex = options.indexOf(item)"
+                    @mousemove="activeIndex = filteredOptions.indexOf(item)"
                     :class="{
                         'font-semibold text-zinc-950 dark:text-white': selectedValue == item.value,
                         'text-zinc-600 dark:text-zinc-300': selectedValue != item.value
@@ -213,6 +238,10 @@ $placeholderText = $placeholder ?? __('app.common.select');
                     </div>
                 </li>
             </template>
+            {{-- Empty state --}}
+            <li x-show="filteredOptions.length === 0" class="px-3 py-2 text-sm text-zinc-400 dark:text-zinc-500">
+                Nessun risultato trovato
+            </li>
         </ul>
     </div>
 
