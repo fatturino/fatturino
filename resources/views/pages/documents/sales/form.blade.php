@@ -287,7 +287,7 @@ new #[Layout('layouts::app')] class extends Component {
                 @if($tab === 'data')
                     <x-documents.invoice-form.data-fields>
                         <label class="text-sm font-semibold">Cliente *
-                            <x-select wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" placeholder="Seleziona cliente..." />
+                            <x-select wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" />
                             @error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror
                         </label>
                         <div class="text-sm font-semibold">Numero
