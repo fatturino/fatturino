@@ -67,6 +67,17 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
         activeIndex: null,
         options: {{ $optionsJson }},
         dropdownPosition: 'bottom',
+        searchable: {{ $searchable ? 'true' : 'false' }},
+        search: '',
+
+        get filteredOptions() {
+            if (!this.searchable || !this.search) return this.options;
+            const query = this.search.toLowerCase();
+            return this.options.filter(option =>
+                option.title.toLowerCase().includes(query) ||
+                (option.subtitle && option.subtitle.toLowerCase().includes(query))
+            );
+        },
 
         init() {
             this.updateSelected();
@@ -82,7 +93,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
                     });
                 }
             });
-            this.$watch("search", () => {
+            this.$watch('search', () => {
                 this.activeIndex = this.filteredOptions.length > 0 ? 0 : null;
                 this.$nextTick(() => this.scrollToActive());
             });
@@ -115,7 +126,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
         },
 
         scrollToActive() {
-            const el = document.getElementById('select-opt-' + this.options[this.activeIndex]?.value);
+            const el = document.getElementById('select-opt-' + this.filteredOptions[this.activeIndex]?.value);
             if (el) el.scrollIntoView({ block: 'nearest' });
         },
 
