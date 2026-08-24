@@ -121,12 +121,15 @@ new #[Layout('layouts::app')] class extends Component {
     public function addLine(): void
     {
         $this->lines[] = $this->emptyLine();
+        $this->dispatch('sales-line-added', key: $this->lines[array_key_last($this->lines)]['key']);
     }
 
     public function removeLine(int $index): void
     {
         if (count($this->lines) > 1) {
             array_splice($this->lines, $index, 1);
+            $nextIndex = min($index, count($this->lines) - 1);
+            $this->dispatch('sales-line-removed', key: $this->lines[$nextIndex]['key']);
         }
     }
 
@@ -268,8 +271,6 @@ new #[Layout('layouts::app')] class extends Component {
 
 @php
     $editorStatus = $invoice?->status?->label() ?? 'Bozza';
-    $openPayment = filled($payment_method) || filled($payment_terms) || filled($bank_name) || filled($bank_iban);
-    $openNotes = filled($notes);
 @endphp
 
 <section class="mx-auto max-w-7xl space-y-6 pb-24">
@@ -281,7 +282,7 @@ new #[Layout('layouts::app')] class extends Component {
     @endif
     @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror
 
-    <form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <form wire:submit="save" x-data="{ dirty: false }" @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }" @input="dirty = true" @change="dirty = true" @sales-line-added.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-removed.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] 2xl:gap-6 2xl:grid-cols-[minmax(0,1fr)_20rem]">
         <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
             <x-documents.invoice-form.data-section variant="editor">
                 <div class="flex items-start justify-between gap-4">
@@ -299,7 +300,7 @@ new #[Layout('layouts::app')] class extends Component {
                     </label>
                 </div>
 
-                <x-documents.invoice-form.data-fields variant="editor" class="mt-5">
+                <x-documents.invoice-form.data-fields variant="sales-editor" class="mt-5">
                     <div class="text-sm font-medium text-content">Numero
                         <div class="mt-1 flex h-11 items-center rounded-lg border border-border bg-surface-muted px-3 text-sm font-normal text-content">{{ $numberPreview ?? 'Configura il sezionale predefinito' }}</div>
                     </div>
@@ -309,18 +310,21 @@ new #[Layout('layouts::app')] class extends Component {
                 </x-documents.invoice-form.data-fields>
             </x-documents.invoice-form.data-section>
 
-            <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly" variant="editor" class="mt-6">
+            <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly" variant="sales-editor" class="mt-6">
                 @foreach($lines as $index => $line)
-                    <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="true" :vat-disabled="$this->isRf19()" variant="editor" />
+                    <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="true" :vat-disabled="$this->isRf19()" variant="sales-editor" />
                 @endforeach
             </x-documents.invoice-form.lines>
         </article>
 
         <aside class="space-y-4">
-            <x-documents.invoice-form.totals variant="editor" :net-total="$this->netTotal" :vat-total="$this->vatTotal" :net-due="$this->netDue" :fund-amount="$fund_enabled ? $this->fundAmount : 0" :fund-percent="$fund_enabled ? $fund_percent : null" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" :withholding-amount="$this->withholdingAmount" :withholding-percent="$withholding_tax_enabled ? $withholding_tax_percent : null" :split-payment-amount="$this->splitPaymentAmount" />
+            <div class="lg:sticky lg:top-20 lg:space-y-4">
+            <x-documents.invoice-form.totals variant="sales-editor" :sticky="false" :net-total="$this->netTotal" :vat-total="$this->vatTotal" :net-due="$this->netDue" :fund-amount="$fund_enabled ? $this->fundAmount : 0" :fund-percent="$fund_enabled ? $fund_percent : null" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" :withholding-amount="$this->withholdingAmount" :withholding-percent="$withholding_tax_enabled ? $withholding_tax_percent : null" :split-payment-amount="$this->splitPaymentAmount" />
+            <x-documents.invoice-form.action-bar variant="sales-editor" cancel-route="sell-invoices.index" :submit-label="$invoice ? 'Aggiorna fattura' : 'Crea fattura'" :read-only="$this->readOnly" :net-due="$this->netDue" />
+            </div>
 
-            <details @if($openPayment) open @endif class="rounded-xl border border-border bg-white">
-                <summary class="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-content marker:hidden">Pagamento <x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
+            <details class="rounded-xl border border-border bg-white">
+                <summary class="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-content marker:hidden"><span>Pagamento</span><span class="ml-auto text-xs font-medium text-content-muted">{{ filled($payment_method) ? 'Precompilato' : 'Da definire' }}</span><x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
                 <div class="grid gap-4 border-t border-border px-5 pb-5 pt-4 sm:grid-cols-2">
                     <label class="text-sm font-medium text-content">Metodo pagamento<x-select wire:model="payment_method" :disabled="$this->readOnly" :options="PaymentMethod::options()" placeholder="Seleziona..." /></label>
                     <label class="text-sm font-medium text-content">Termini pagamento<x-select wire:model="payment_terms" :disabled="$this->readOnly" :options="PaymentTerms::options()" placeholder="Seleziona..." /></label>
@@ -329,12 +333,12 @@ new #[Layout('layouts::app')] class extends Component {
                 </div>
             </details>
 
-            <details @if($openNotes) open @endif class="rounded-xl border border-border bg-white">
-                <summary class="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-content marker:hidden">Note <x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
+            <details class="rounded-xl border border-border bg-white">
+                <summary class="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-content marker:hidden"><span>Note</span><span class="ml-auto text-xs font-medium text-content-muted">{{ filled($notes) ? 'Presenti' : 'Vuote' }}</span><x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
                 <div class="border-t border-border px-5 pb-5 pt-4"><label class="block text-sm font-medium text-content">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-lg border border-border-strong bg-white px-3 py-2 text-sm text-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></textarea></label></div>
             </details>
 
-            <x-documents.invoice-form.fiscal-options variant="editor" :read-only="$this->readOnly" :is-rf19="$this->isRf19()" :withholding="true" :fund="true" :stamp-duty="true" :split-payment="true" :stamp-duty-charged-to-customer="true" :withholding-enabled="$withholding_tax_enabled" :fund-enabled="$fund_enabled" :stamp-duty-applied="$stamp_duty_applied" :split-payment-enabled="$split_payment" />
+            <x-documents.invoice-form.fiscal-options variant="sales-editor" :show-fund-details="true" :read-only="$this->readOnly" :is-rf19="$this->isRf19()" :withholding="true" :fund="true" :stamp-duty="true" :split-payment="true" :stamp-duty-charged-to-customer="true" :withholding-enabled="$withholding_tax_enabled" :fund-enabled="$fund_enabled" :stamp-duty-applied="$stamp_duty_applied" :split-payment-enabled="$split_payment" />
 
             @if($invoice)
                 <details class="rounded-xl border border-border bg-white">
@@ -343,6 +347,5 @@ new #[Layout('layouts::app')] class extends Component {
                 </details>
             @endif
         </aside>
-        <x-documents.invoice-form.action-bar variant="editor" cancel-route="sell-invoices.index" :submit-label="$invoice ? 'Aggiorna fattura' : 'Crea fattura'" :read-only="$this->readOnly" />
     </form>
 </section>

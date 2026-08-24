@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\InvoiceStatus;
+use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\SalesInvoice;
 use App\Models\Sequence;
@@ -65,6 +66,30 @@ it('renders the sales invoice as a document editor with always-visible metadata 
         ->assertDontSee('aria-label="Sezioni fattura"', escape: false);
 });
 
+it('uses the sales-only editor layout with compact disclosures and summary actions', function () {
+    $user = User::factory()->create();
+    configureSalesInvoiceFormSequence();
+    $settings = app(InvoiceSettings::class);
+    $settings->default_payment_method = 'MP05';
+    $settings->default_notes = 'Note precompilate';
+    $settings->fund_enabled = true;
+    $settings->fund_type = 'TC01';
+    $settings->fund_vat_rate = VatRate::R22;
+    $settings->save();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->assertSee('items-start', escape: false)
+        ->assertSee('Mostra unità di misura e sconto')
+        ->assertSee('Da pagare')
+        ->assertSee('Precompilato')
+        ->assertSee('Presenti')
+        ->assertSee('Tipo cassa')
+        ->assertSee('IVA cassa')
+        ->assertSee('Soggetta a ritenuta');
+});
+
 it('keeps quantity in the primary invoice line editor and details as a disclosure', function () {
     $user = User::factory()->create();
     configureSalesInvoiceFormSequence();
@@ -74,10 +99,24 @@ it('keeps quantity in the primary invoice line editor and details as a disclosur
     Livewire::test('pages::documents.sales.form')
         ->set('lines', [validSalesInvoiceLine()])
         ->assertSee('lines.0.quantity', escape: false)
-        ->assertSee('Dettagli')
+        ->assertSee('Mostra unità di misura e sconto')
         ->call('toggleLineDetails', 0)
         ->assertSee('Unità di misura')
         ->assertSee('Sconto %');
+});
+
+it('emits a focus event after adding or removing an invoice line', function () {
+    $user = User::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->set('lines', [validSalesInvoiceLine(), validSalesInvoiceLine('Seconda riga')])
+        ->call('addLine')
+        ->assertDispatched('sales-line-added')
+        ->call('removeLine', 1)
+        ->assertDispatched('sales-line-removed');
 });
 
 it('creates a sales invoice through the Livewire form using the configured sales sequence', function () {

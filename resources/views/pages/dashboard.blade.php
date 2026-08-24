@@ -161,5 +161,5 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
         <div class="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4 text-sm"><div><span class="font-medium text-content">Saldo IVA {{ $periodLabel }}</span><span class="ml-2 tabular-nums text-content-muted">{{ $this->currency(abs($stats['vatBalanceYtd'])) }} {{ $stats['vatBalanceYtd'] >= 0 ? 'da versare' : 'a credito' }}</span></div><span class="text-xs text-content-muted">IVA incassata separata: {{ $this->currency($stats['collectedVatYtd']) }}</span></div>
     @endif
 
-    <x-dashboard.revenue-chart :revenue-trend="$stats['revenueTrend']" :fiscal-year="$fiscalYear" />
+    <x-dashboard.revenue-chart :revenue-trend="$stats['revenueTrend']" :revenue-projection="$stats['revenueProjection']" :revenue-ytd="$stats['revenueYtd']" :fiscal-year="$fiscalYear" />
 </section>

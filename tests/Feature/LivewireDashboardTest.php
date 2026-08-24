@@ -87,7 +87,7 @@ it('shows annual turnover net of VAT for the selected fiscal year', function () 
         ->assertSee('€ 10.000,00')
         ->assertSee('da inizio anno')
         ->assertSee('IVA esclusa')
-        ->assertDontSee('Proiezione fatturato');
+        ->assertSee('Proiezione anno');
 });
 
 it('shows net amounts and separate VAT in recent invoices and due dates', function () {
@@ -199,7 +199,24 @@ it('renders the revenue comparison through Wirecharts', function () {
         ->assertSee('wirecharts', false)
         ->assertSee('wireChart(', false)
         ->assertDontSee('<polyline', false)
-        ->assertDontSee('Proiezione fatturato');
+        ->assertSee('Proiezione anno');
+});
+
+it('shows the forecast only for the active fiscal year with turnover', function () {
+    $user = User::factory()->create();
+    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'total_net' => 100000, 'total_gross' => 100000]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Fatturati')
+        ->assertSee('Proiezione anno')
+        ->assertSee('Previsione');
+
+    $this->withSession(['fiscal_year' => now()->subYear()->year])
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee('Proiezione anno');
 });
 
 it('hides VAT information for the RF19 fiscal regime', function () {

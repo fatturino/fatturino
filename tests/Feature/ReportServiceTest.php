@@ -431,3 +431,45 @@ test('getDashboardStats includes vatOnPurchasesYtd and vatBalanceYtd', function 
     expect($stats['vatOnPurchasesYtd'])->toBe(1000);
     expect($stats['vatBalanceYtd'])->toBe(1200);
 });
+
+test('revenue projection uses elapsed calendar months and excludes VAT', function () {
+    Carbon::setTestNow('2026-03-15');
+    makeInvoice('2026-01-10', 12200, ['total_vat' => 2200]);
+    makeInvoice('2026-03-10', 24400, ['total_vat' => 4400]);
+
+    $projection = $this->service->revenueProjection(2026);
+
+    expect($projection['actual'])->toHaveCount(12)
+        ->and($projection['actual'][0])->toBe(10000)
+        ->and($projection['actual'][1])->toBe(0)
+        ->and($projection['actual'][2])->toBe(20000)
+        ->and($projection['actual'][3])->toBeNull()
+        ->and($projection['average'])->toBe(10000)
+        ->and($projection['consolidated'])->toBe(30000)
+        ->and($projection['future'])->toBe(90000)
+        ->and($projection['total'])->toBe(120000);
+});
+
+test('revenue projection has no forecast without current-year turnover', function () {
+    Carbon::setTestNow('2026-01-15');
+
+    $projection = $this->service->revenueProjection(2026);
+
+    expect($projection['actual'][0])->toBe(0)
+        ->and($projection['actual'][1])->toBeNull()
+        ->and($projection['average'])->toBeNull()
+        ->and($projection['consolidated'])->toBeNull()
+        ->and($projection['future'])->toBeNull()
+        ->and($projection['total'])->toBeNull();
+});
+
+test('revenue projection does not forecast closed fiscal years', function () {
+    makeInvoice('2025-01-10', 10000);
+
+    $projection = $this->service->revenueProjection(2025);
+
+    expect($projection['actual'])->toHaveCount(12)
+        ->and($projection['actual'][0])->toBe(10000)
+        ->and($projection['average'])->toBeNull()
+        ->and($projection['total'])->toBeNull();
+});

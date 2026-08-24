@@ -12,14 +12,16 @@
     'splitPaymentAmount' => 0,
     'note' => null,
     'variant' => 'default',
+    'sticky' => true,
 ])
 
 <article @class([
-    'sticky top-20 rounded-xl border bg-white p-5',
+    'rounded-xl border bg-white p-5',
+    'sticky top-20' => $sticky,
     'border-border-light shadow-[var(--shadow-card)]' => $variant !== 'editor',
-    'border-border' => $variant === 'editor',
+    'border-border' => in_array($variant, ['editor', 'sales-editor'], true),
 ])>
-    <h2 @class(['text-content', 'font-semibold' => $variant === 'editor', 'font-bold' => $variant !== 'editor'])>Riepilogo</h2>
+    <h2 @class(['text-content', 'font-semibold' => in_array($variant, ['editor', 'sales-editor'], true), 'font-bold' => ! in_array($variant, ['editor', 'sales-editor'], true)])>Riepilogo</h2>
     <dl class="mt-4 space-y-3 text-sm">
         <div class="flex justify-between"><dt>Totale netto</dt><dd @class(['tabular-nums', 'font-medium' => $variant === 'editor', 'font-bold' => $variant !== 'editor'])>€ {{ number_format($netTotal, 2, ',', '.') }}</dd></div>
         @if($fundAmount > 0)<div class="flex justify-between"><dt>Cassa previdenziale{{ $fundPercent ? ' ('.$fundPercent.'%)' : '' }}</dt><dd @class(['tabular-nums', 'font-medium' => $variant === 'editor', 'font-bold' => $variant !== 'editor'])>€ {{ number_format($fundAmount, 2, ',', '.') }}</dd></div>@endif
