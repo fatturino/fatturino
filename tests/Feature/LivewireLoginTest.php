@@ -42,3 +42,44 @@ it('authenticates valid credentials and redirects to the dashboard', function ()
 
     $this->assertAuthenticatedAs($user);
 });
+
+it('renders an accessible sign-in form with the Fatturino identity', function () {
+    User::factory()->create();
+
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertSee('Accedi al tuo account')
+        ->assertSee('Fatturazione senza attrito')
+        ->assertSee('for="email"', false)
+        ->assertSee('autocomplete="email"', false)
+        ->assertSee('autocomplete="current-password"', false)
+        ->assertSee('wire:loading.attr="disabled"', false);
+});
+
+it('validates the required login credentials', function () {
+    User::factory()->create();
+
+    Livewire::test('pages::auth.login')
+        ->set('email', 'not-an-email')
+        ->set('password', '')
+        ->call('authenticate')
+        ->assertHasErrors([
+            'email' => 'email',
+            'password' => 'required',
+        ]);
+
+    $this->assertGuest();
+});
+
+it('rejects invalid credentials without authenticating the user', function () {
+    $user = User::factory()->create(['password' => 'secret-password']);
+
+    Livewire::test('pages::auth.login')
+        ->set('email', $user->email)
+        ->set('password', 'wrong-password')
+        ->call('authenticate')
+        ->assertHasErrors('email')
+        ->assertNoRedirect();
+
+    $this->assertGuest();
+});
