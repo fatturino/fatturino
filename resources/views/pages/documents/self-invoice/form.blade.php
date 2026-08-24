@@ -158,28 +158,35 @@ new #[Layout('layouts::app')] class extends Component {
 };
 ?>
 
-<x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Documenti</p><h1 class="text-lg font-bold text-content">{{ $invoice ? 'Modifica autofattura' : 'Nuova autofattura' }}</h1></div></x-slot:header>
+<x-slot:header><div><p class="text-xs font-medium text-content-muted">Documenti</p><h1 class="text-lg font-semibold text-content">{{ $invoice ? 'Modifica autofattura' : 'Nuova autofattura' }}</h1></div></x-slot:header>
+@php($openNotes = filled($notes))
 <section class="mx-auto max-w-7xl space-y-6 pb-24">
     @if(session('success'))<div class="rounded-md border border-success/20 bg-success-bg p-4 text-sm text-success">{{ session('success') }}</div>@endif
     @if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-sm text-warning">Questa autofattura non è più modificabile.</div>@endif
     @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror
-    <form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div class="space-y-6">
-            <x-documents.invoice-form.data-section>
-                <nav class="mb-5 flex gap-2 border-b border-border-light pb-4">@foreach(['data' => 'Dati', 'notes' => 'Note'] as $key => $label)<button type="button" wire:click="$set('tab', '{{ $key }}')" class="rounded-md px-3 py-2 text-sm font-semibold {{ $tab === $key ? 'bg-primary text-white' : 'text-content-muted' }}">{{ $label }}</button>@endforeach @if($invoice)<button type="button" wire:click="$set('tab', 'history')" class="rounded-md px-3 py-2 text-sm font-semibold {{ $tab === 'history' ? 'bg-primary text-white' : 'text-content-muted' }}">Storico</button>@endif</nav>
-                @if($tab === 'data')<x-documents.invoice-form.data-fields><x-select label="Fornitore *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" placeholder="Seleziona fornitore..." /><div class="text-sm font-semibold">Numero<div class="mt-1 h-11 rounded-md border border-border-light bg-surface-muted px-3 py-3 text-sm font-normal">{{ $numberPreview ?? 'Configura il sezionale predefinito' }}</div></div><x-select label="Tipo documento *" wire:model="document_type" :disabled="$this->readOnly" :options="['TD17' => 'TD17 - Acquisto servizi dall’estero', 'TD18' => 'TD18 - Acquisto beni intracomunitari', 'TD19' => 'TD19 - Acquisto beni ex art.17', 'TD28' => 'TD28 - San Marino con IVA', 'TD29' => 'TD29 - Omessa/irregolare fatturazione']" /><label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Numero fattura collegata<input wire:model="related_invoice_number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">Data fattura collegata<input wire:model="related_invoice_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label></x-documents.invoice-form.data-fields>
-                @elseif($tab === 'notes')<label class="text-sm font-semibold">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"></textarea></label>
-                @else<div class="space-y-3">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-semibold">{{ $event->title }}</p><p class="text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</div>@endif
+    <form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
+            <x-documents.invoice-form.data-section variant="editor">
+                <div class="flex items-start justify-between gap-4"><div><h2 class="text-base font-semibold text-content">Dati autofattura</h2><p class="mt-1 text-sm text-content-muted">Fornitore, tipo documento e riferimenti della fattura collegata.</p></div><span class="inline-flex items-center gap-2 text-xs font-medium text-content-muted"><span class="size-1.5 rounded-full bg-primary"></span>{{ $invoice?->status?->label() ?? 'Bozza' }}</span></div>
+                <x-documents.invoice-form.data-fields variant="editor" class="mt-5">
+                    <x-select label="Fornitore *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" placeholder="Seleziona fornitore..." />
+                    <label>Numero<div class="mt-1 flex h-11 items-center rounded-lg border border-border-strong bg-surface-muted px-3 text-sm text-content-muted">{{ $numberPreview ?? 'Configura il sezionale predefinito' }}</div></label>
+                    <x-select label="Tipo documento *" wire:model="document_type" :disabled="$this->readOnly" :options="['TD17' => 'TD17 - Acquisto servizi dall’estero', 'TD18' => 'TD18 - Acquisto beni intracomunitari', 'TD19' => 'TD19 - Acquisto beni ex art.17', 'TD28' => 'TD28 - San Marino con IVA', 'TD29' => 'TD29 - Omessa/irregolare fatturazione']" />
+                    <label>Data *<input wire:model.live="date" type="date" @disabled($this->readOnly)></label>
+                    <label>Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly)></label>
+                    <label>Numero fattura collegata<input wire:model="related_invoice_number" @disabled($this->readOnly)></label>
+                    <label>Data fattura collegata<input wire:model="related_invoice_date" type="date" @disabled($this->readOnly)></label>
+                </x-documents.invoice-form.data-fields>
             </x-documents.invoice-form.data-section>
-            <x-documents.invoice-form.lines title="Righe autofattura" :read-only="$this->readOnly">
-                @foreach($lines as $index => $line)
-                    <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="false" :vat-disabled="false" />
-                @endforeach
+            <x-documents.invoice-form.lines title="Righe autofattura" :read-only="$this->readOnly" variant="editor" class="mt-6">
+                @foreach($lines as $index => $line)<x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="false" :vat-disabled="false" variant="editor" />@endforeach
             </x-documents.invoice-form.lines>
-        </div>
+        </article>
         <aside class="space-y-4">
-            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" :gross-total="$this->grossTotal" note="L'autofattura viene registrata come saldata alla data di emissione." />
+            <x-documents.invoice-form.totals variant="editor" :net-total="$this->netTotal" :vat-total="$this->vatTotal" :gross-total="$this->grossTotal" note="L'autofattura viene registrata come saldata alla data di emissione." />
+            <details @if($openNotes) open @endif class="rounded-xl border border-border bg-white"><summary class="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-content marker:hidden">Note <x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary><div class="border-t border-border px-5 pb-5 pt-4"><label class="block text-sm font-medium text-content">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-lg border border-border-strong bg-white px-3 py-2 text-sm text-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></textarea></label></div></details>
+            @if($invoice)<details class="rounded-xl border border-border bg-white"><summary class="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-content marker:hidden">Storico <x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary><div class="space-y-3 border-t border-border px-5 pb-5 pt-4">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-medium text-content">{{ $event->title }}</p><p class="mt-0.5 text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</div></details>@endif
         </aside>
-        <x-documents.invoice-form.action-bar cancel-route="self-invoices.index" :submit-label="$invoice ? 'Aggiorna autofattura' : 'Crea autofattura'" :read-only="$this->readOnly" />
+        <x-documents.invoice-form.action-bar variant="editor" cancel-route="self-invoices.index" :submit-label="$invoice ? 'Aggiorna autofattura' : 'Crea autofattura'" :read-only="$this->readOnly" />
     </form>
 </section>

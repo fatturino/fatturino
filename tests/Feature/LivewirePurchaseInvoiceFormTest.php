@@ -27,6 +27,24 @@ it('renders and updates a purchase invoice through the Livewire form', function 
         ->and($invoice->fresh()->lines()->sole()->unit_of_measure)->toBe('pz');
 });
 
+it('renders the purchase invoice as a document editor with line details', function () {
+    $user = User::factory()->create();
+    $invoice = PurchaseInvoice::factory()->create(['date' => now()->toDateString()]);
+    $invoice->lines()->create(['description' => 'Acquisto', 'quantity' => 1, 'unit_price' => 10000, 'vat_rate' => 'R22', 'total' => 10000]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.purchase.form', ['purchaseInvoice' => $invoice])
+        ->assertSee('Dati fattura di acquisto')
+        ->assertSee('La sequenza d\'importazione non è modificabile.', escape: false)
+        ->assertSee('Descrizione')
+        ->assertSee('Quantità')
+        ->assertSee('Prezzo')
+        ->assertSee('Dettagli')
+        ->call('toggleLineDetails', 0)
+        ->assertSee('Unità di misura');
+});
+
 it('renders SDI-locked purchase invoices as read-only', function () {
     $user = User::factory()->create();
     $invoice = PurchaseInvoice::factory()->create(['sdi_status' => SdiStatus::Delivered, 'date' => now()->toDateString()]);

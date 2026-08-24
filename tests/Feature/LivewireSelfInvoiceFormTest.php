@@ -23,13 +23,31 @@ it('renders and creates a self invoice through the Livewire form', function () {
 
     Livewire::test('pages::documents.self-invoice.form')
         ->set('contact_id', $contact->id)
-        ->set('number', 'AF-LW-001')
         ->set('lines', [validSelfInvoiceLine()])
         ->call('save')
         ->assertHasNoErrors()
         ->assertRedirect(route('self-invoices.index'));
 
-    $this->assertDatabaseHas('fiscal_documents', ['type' => 'self_invoice', 'sequence_id' => $sequence->id, 'number' => 'AF-LW-001', 'total_gross' => 12200]);
+    $this->assertDatabaseHas('fiscal_documents', ['type' => 'self_invoice', 'sequence_id' => $sequence->id, 'number' => '1', 'total_gross' => 12200]);
+});
+
+it('renders the self invoice as a document editor with linked invoice references', function () {
+    $user = User::factory()->create();
+    Sequence::factory()->create(['type' => 'self_invoice']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.self-invoice.form')
+        ->assertSee('Dati autofattura')
+        ->assertSee('Tipo documento *')
+        ->assertSee('Numero fattura collegata')
+        ->assertSee('Data fattura collegata')
+        ->assertSee('Descrizione')
+        ->assertSee('Quantità')
+        ->assertSee('Prezzo')
+        ->assertSee('Note')
+        ->call('toggleLineDetails', 0)
+        ->assertSee('Unità di misura');
 });
 
 it('updates an editable self invoice without changing its sequence', function () {

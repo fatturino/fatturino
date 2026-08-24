@@ -38,12 +38,12 @@ new #[Layout('layouts::app')] class extends Component {
         }
         $this->date = $this->invoice->date->toDateString();
         $this->due_date = $this->invoice->due_date?->toDateString() ?? '';
-        $this->lines = $this->invoice->lines->map(fn ($l) => ['key' => (string) $l->id, 'description' => $l->description, 'quantity' => (string) $l->quantity, 'unit_of_measure' => $l->unit_of_measure ?? '', 'unit_price' => number_format($l->unit_price / 100, 2, '.', ''), 'vat_rate' => $l->vat_rate->value])->all();
+        $this->lines = $this->invoice->lines->map(fn ($line) => $this->lineState(['key' => (string) $line->id, 'description' => $line->description, 'quantity' => $line->quantity, 'unit_of_measure' => $line->unit_of_measure, 'unit_price' => $line->unit_price / 100, 'vat_rate' => $line->vat_rate->value]))->all();
     }
 
     public function addLine(): void
     {
-        $this->lines[] = ['key' => (string) str()->uuid(), 'description' => '', 'quantity' => '1', 'unit_of_measure' => '', 'unit_price' => '0.00', 'vat_rate' => 'R22'];
+        $this->lines[] = $this->lineState(['key' => (string) str()->uuid(), 'description' => '', 'quantity' => '1', 'unit_of_measure' => '', 'unit_price' => '0.00', 'vat_rate' => 'R22']);
     }
 
     public function removeLine(int $index): void
@@ -51,6 +51,11 @@ new #[Layout('layouts::app')] class extends Component {
         if (count($this->lines) > 1) {
             array_splice($this->lines, $index, 1);
         }
+    }
+
+    public function toggleLineDetails(int $index): void
+    {
+        $this->lines[$index]['details_enabled'] = ! ($this->lines[$index]['details_enabled'] ?? false);
     }
 
     public function save(SavePurchaseInvoice $save): mixed
@@ -85,14 +90,34 @@ new #[Layout('layouts::app')] class extends Component {
     {
         return max(0, (float) ($line['quantity'] ?: 0)) * max(0, (float) ($line['unit_price'] ?: 0));
     }
+
+    private function lineState(array $line): array
+    {
+        return [...$line, 'quantity' => (string) $line['quantity'], 'unit_of_measure' => $line['unit_of_measure'] ?? '', 'unit_price' => number_format((float) $line['unit_price'], 2, '.', ''), 'details_enabled' => $line['quantity'] != 1 || ($line['unit_of_measure'] ?? '') !== ''];
+    }
 };
 ?>
-<x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Acquisti</p><h1 class="text-lg font-bold text-content">Modifica fattura di acquisto</h1></div></x-slot:header>
-<section class="mx-auto max-w-7xl space-y-6 pb-24">@if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-warning">Questa fattura non è più modificabile.</div>@endif @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-danger">{{ $message }}</div>@enderror<form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><div class="space-y-6"><x-documents.invoice-form.data-section><x-documents.invoice-form.data-fields><x-select label="Fornitore *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" />
-                    <label>Numero *<input wire:model="number" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2"></label><label>Data *<input wire:model="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2"></label><label>Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded border p-2"></label></x-documents.invoice-form.data-fields><p class="mt-4 text-xs text-content-muted">La sequenza d'importazione non è modificabile.</p></x-documents.invoice-form.data-section><x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly">
-                @foreach($lines as $index => $line)
-                    <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="false" :vat-disabled="false" />
-                @endforeach
-            </x-documents.invoice-form.lines></div><aside class="space-y-4">
-            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" />
-        </aside><x-documents.invoice-form.action-bar cancel-route="purchase-invoices.index" submit-label="Aggiorna fattura" :read-only="$this->readOnly" /></form></section>
+<x-slot:header><div><p class="text-xs font-medium text-content-muted">Acquisti</p><h1 class="text-lg font-semibold text-content">Modifica fattura di acquisto</h1></div></x-slot:header>
+<section class="mx-auto max-w-7xl space-y-6 pb-24">
+    @if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-warning">Questa fattura non è più modificabile.</div>@endif
+    @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-danger">{{ $message }}</div>@enderror
+    <form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
+            <x-documents.invoice-form.data-section variant="editor">
+                <div class="flex items-start justify-between gap-4"><div><h2 class="text-base font-semibold text-content">Dati fattura di acquisto</h2><p class="mt-1 text-sm text-content-muted">Fornitore, numero e condizioni del documento.</p></div><span class="inline-flex items-center gap-2 text-xs font-medium text-content-muted"><span class="size-1.5 rounded-full bg-primary"></span>{{ $invoice->status?->label() ?? 'Bozza' }}</span></div>
+                <x-documents.invoice-form.data-fields variant="editor" class="mt-5">
+                    <x-select label="Fornitore *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" placeholder="Seleziona fornitore..." />
+                    <label>Numero *<input wire:model="number" @disabled($this->readOnly)></label>
+                    <label>Data *<input wire:model="date" type="date" @disabled($this->readOnly)></label>
+                    <label>Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly)></label>
+                </x-documents.invoice-form.data-fields>
+                <p class="mt-4 text-xs text-content-muted">La sequenza d'importazione non è modificabile.</p>
+            </x-documents.invoice-form.data-section>
+            <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly" variant="editor" class="mt-6">
+                @foreach($lines as $index => $line)<x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="false" :vat-disabled="false" variant="editor" />@endforeach
+            </x-documents.invoice-form.lines>
+        </article>
+        <aside class="space-y-4"><x-documents.invoice-form.totals variant="editor" :net-total="$this->netTotal" :vat-total="$this->vatTotal" /></aside>
+        <x-documents.invoice-form.action-bar variant="editor" cancel-route="purchase-invoices.index" submit-label="Aggiorna fattura" :read-only="$this->readOnly" />
+    </form>
+</section>
