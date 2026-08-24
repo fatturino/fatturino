@@ -12,7 +12,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('layouts::app')] #[Title('Dashboard')] class extends Component {
+new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
     public int $fiscalYear;
 
     public bool $isCurrentYear;
@@ -40,38 +40,33 @@ new #[Layout('layouts::app')] #[Title('Dashboard')] class extends Component {
         $stats['hasSdi'] = app(SdiProvider::class)->isActivated();
         $stats['hasContacts'] = Contact::exists();
         $stats['recentInvoices'] = $stats['recentInvoices']->map(fn ($invoice) => [
-            'id' => $invoice->id, 'number' => $invoice->number, 'contact' => $invoice->contact?->name,
-            'due_date' => $this->formatDate($invoice->due_date) ?? $this->formatDate($invoice->date),
-            'total_net' => $invoice->total_gross - $invoice->total_vat, 'total_vat' => $invoice->total_vat, 'payment_status' => $invoice->paymentStatusValue(),
+            'id' => $invoice->id,
+            'number' => $invoice->number,
+            'contact' => $invoice->contact?->name,
+            'date' => $this->formatDate($invoice->date),
+            'total_net' => (int) $invoice->total_gross - (int) $invoice->total_vat,
+            'total_vat' => (int) $invoice->total_vat,
+            'payment_status' => $invoice->paymentStatusValue(),
         ])->all();
         $stats['upcomingDueDates'] = $stats['upcomingDueDates']->map(function ($invoice) {
             $dueDate = $invoice->due_date === null ? null : Carbon::parse($invoice->due_date)->startOfDay();
-            $daysUntilDue = $dueDate === null ? null : now()->startOfDay()->diffInDays($dueDate, false);
 
             return [
                 'id' => $invoice->id,
+                'number' => $invoice->number,
                 'contact' => $invoice->contact?->name,
                 'due_date' => $this->formatDate($invoice->due_date),
-                'total_net' => $invoice->total_gross - $invoice->total_vat,
-                'total_vat' => $invoice->total_vat,
-                'days_until_due' => $daysUntilDue,
+                'remaining_balance' => $invoice->remainingBalance(),
+                'days_until_due' => $dueDate === null ? null : now()->startOfDay()->diffInDays($dueDate, false),
             ];
         }
         )->all();
-        $stats['topClients'] = $stats['topClients']->map(fn ($client) => ['contact' => $client->contact?->name, 'revenue_total' => $client->revenue_total])->all();
         $this->stats = $stats;
     }
 
     public function currency(int|float|null $cents): string
     {
         return '€ '.number_format(((int) $cents) / 100, 2, ',', '.');
-    }
-
-    public function paymentLabel(string $status): string
-    {
-        return match ($status) {
-            'paid' => 'Pagata', 'overdue' => 'Scaduta', default => 'Da incassare'
-        };
     }
 
     private function formatDate(mixed $value): ?string
@@ -85,55 +80,86 @@ new #[Layout('layouts::app')] #[Title('Dashboard')] class extends Component {
 };
 ?>
 
-<x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Panoramica</p><h1 class="text-lg font-bold text-content">Dashboard</h1></div></x-slot:header>
+<x-slot:header>
+    <div>
+        <p class="text-xs font-medium text-content-muted">Panoramica</p>
+        <h1 class="text-lg font-semibold text-content">Oggi</h1>
+    </div>
+</x-slot:header>
 
 @php
-    $collectionRate = $stats['revenueYtd'] > 0
-        ? min(100, $stats['collectedNetYtd'] / $stats['revenueYtd'] * 100)
-        : 0;
     $periodLabel = $isCurrentYear ? 'da inizio anno' : "nell'anno {$fiscalYear}";
-    $outstandingDetail = $hasVatAccounting
-        ? $stats['openInvoicesCount'].' documenti aperti · IVA '.$this->currency($stats['outstandingVatYtd'])
-        : $stats['openInvoicesCount'].' documenti aperti';
-    $collectionDetail = 'Tasso incasso '.number_format($collectionRate, 1, ',', '.').'%';
-    $annualRevenueTrend = ($isCurrentYear ? 'Progressivo annuale' : 'Totale anno chiuso').' · IVA esclusa';
-    $averageInvoiceDetail = $stats['invoicesThisMonth'].' fatture nel mese di riferimento';
-    $topClientRevenue = max(array_column($stats['topClients'], 'revenue_total') ?: [1]);
     $overdueCount = $stats['paymentSummary']['overdue']['count'] ?? 0;
     $overdueNet = $stats['paymentSummary']['overdue']['outstanding_net'] ?? 0;
-    $openNet = max(0, $stats['outstandingNetYtd'] - $overdueNet);
-    $collectionHealthLabel = $overdueCount > 0
-        ? 'Solleciti necessari'
-        : ($openNet > 0 ? 'Incassi in attesa' : 'Tutto incassato');
-    $collectionHealthClass = $overdueCount > 0
-        ? 'bg-danger-bg text-danger'
-        : ($openNet > 0 ? 'bg-warning-bg text-warning' : 'bg-success-bg text-success');
-    $fiscalValue = $this->currency(abs($stats['vatBalanceYtd']));
-    $fiscalDetail = $stats['vatBalanceYtd'] >= 0 ? 'Saldo IVA da versare' : 'Saldo IVA a credito';
+    $partialCount = $stats['paymentSummary']['partial']['count'] ?? 0;
+    $summaryItems = [
+        ['label' => 'Fatturato', 'value' => $this->currency($stats['revenueYtd']), 'detail' => $stats['invoicesYtd'].' '.($stats['invoicesYtd'] === 1 ? 'fattura emessa' : 'fatture emesse'), 'period' => $periodLabel.' · IVA esclusa', 'href' => '/sell-invoices'],
+        ['label' => 'Da incassare', 'value' => $this->currency($stats['outstandingNetYtd']), 'detail' => $stats['openInvoicesCount'].' '.($stats['openInvoicesCount'] === 1 ? 'documento aperto' : 'documenti aperti'), 'period' => $periodLabel.' · netto residuo', 'href' => '/sell-invoices?payment=open'],
+        ['label' => 'Scaduto', 'value' => $this->currency($overdueNet), 'detail' => $overdueCount.' '.($overdueCount === 1 ? 'documento da sollecitare' : 'documenti da sollecitare'), 'period' => $periodLabel.' · netto residuo', 'href' => '/sell-invoices?payment=overdue', 'tone' => $overdueCount > 0 ? 'danger' : 'default'],
+    ];
+    $attentionItems = [];
+    $attentionAction = $isCurrentYear ? 'Apri' : 'Consulta';
+    if ($overdueCount > 0) {
+        $attentionItems[] = ['title' => 'Fatture scadute', 'detail' => $overdueCount.' '.($overdueCount === 1 ? 'fattura richiede un sollecito' : 'fatture richiedono un sollecito'), 'value' => $this->currency($overdueNet), 'href' => '/sell-invoices?payment=overdue', 'tone' => 'danger', 'action' => $attentionAction.' scadute'];
+    }
+    if ($stats['readyForSdiCount'] > 0) {
+        $attentionItems[] = $stats['hasSdi']
+            ? ['title' => 'Fatture pronte per SDI', 'detail' => $stats['readyForSdiCount'].' '.($stats['readyForSdiCount'] === 1 ? 'fattura validata è pronta per l’invio' : 'fatture validate sono pronte per l’invio'), 'value' => null, 'href' => '/sell-invoices?status=xml_validated', 'tone' => 'info', 'action' => $attentionAction.' da inviare']
+            : ['title' => 'Invio SDI da configurare', 'detail' => $stats['readyForSdiCount'].' '.($stats['readyForSdiCount'] === 1 ? 'fattura validata attende la configurazione del servizio' : 'fatture validate attendono la configurazione del servizio'), 'value' => null, 'href' => route('settings.openapi'), 'tone' => 'warning', 'action' => $isCurrentYear ? 'Configura SDI' : 'Consulta'];
+    }
+    if ($partialCount > 0) {
+        $attentionItems[] = ['title' => 'Incassi parziali', 'detail' => $partialCount.' '.($partialCount === 1 ? 'fattura ha un residuo da incassare' : 'fatture hanno un residuo da incassare'), 'value' => null, 'href' => '/sell-invoices?payment=partial', 'tone' => 'warning', 'action' => $attentionAction.' parziali'];
+    }
+    $firstDueDate = collect($stats['upcomingDueDates'])->first(fn ($invoice) => ($invoice['days_until_due'] ?? -1) >= 0);
 @endphp
 
 <section class="space-y-6">
-    <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Dashboard operativa · {{ $fiscalYear }}</p><h2 class="mt-1 text-2xl font-bold text-content">Il polso della tua attività</h2><p class="mt-1 text-sm text-content-muted">Incassi, scadenze e andamento economico in un unico punto.</p></div>
-        <div class="flex flex-wrap gap-2"><x-app-link :href="route('sell-invoices.create')" class="rounded-md bg-primary px-4 py-2 text-sm font-bold text-white">Nuova fattura</x-app-link>@if($selfInvoicesEnabled)<x-app-link :href="route('self-invoices.create')" class="rounded-md border border-border bg-white px-4 py-2 text-sm font-bold">Nuova autofattura</x-app-link>@endif<x-app-link :href="route('contacts.create')" class="rounded-md border border-border bg-white px-4 py-2 text-sm font-bold">Nuovo contatto</x-app-link></div>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <p class="text-xs font-medium text-content-muted">Anno fiscale {{ $fiscalYear }}</p>
+            <p class="mt-1 text-sm text-content-muted">{{ $isCurrentYear ? 'Priorità, incassi e documenti aggiornati per oggi.' : "Riepilogo dell'anno fiscale {$fiscalYear}." }}</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs text-content-muted" aria-live="polite">Aggiornato ora</span>
+            <button wire:click="loadStats" wire:loading.attr="disabled" type="button" class="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-3 text-sm font-medium text-content transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20"><span wire:loading.remove wire:target="loadStats">Aggiorna</span><span wire:loading wire:target="loadStats">Aggiornamento…</span></button>
+            @if($isCurrentYear)
+                <x-app-link :href="route('sell-invoices.create')" class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20">Nuova fattura</x-app-link>
+            @endif
+        </div>
     </div>
-    @unless($isCurrentYear)<div class="rounded-lg border border-warning/30 bg-warning-bg p-4 text-sm text-warning">Visualizzazione in sola lettura per l'anno fiscale {{ $fiscalYear }}.</div>@endunless
-    <div @class(['grid gap-4 sm:grid-cols-2', $hasVatAccounting ? 'xl:grid-cols-4' : 'xl:grid-cols-3'])>
-        <x-dashboard.kpi-card label="Fatturato anno" :value="$this->currency($stats['revenueYtd'])" :trend="$annualRevenueTrend" trend-class="text-primary" :detail="$stats['invoicesYtd'].' fatture emesse'" />
-        <x-dashboard.kpi-card label="Incassato netto" :value="$this->currency($stats['collectedNetYtd'])" :trend="number_format($collectionRate, 1, ',', '.').'% incassato'" trend-class="text-success" :detail="$collectionDetail" :progress="$collectionRate" />
-        <x-dashboard.kpi-card label="Da incassare" :value="$this->currency($stats['outstandingNetYtd'])" :trend="$outstandingDetail" :trend-class="$overdueCount > 0 ? 'text-danger' : 'text-content-muted'" :detail="$outstandingDetail" />
-        @if($hasVatAccounting)<x-dashboard.kpi-card label="Saldo IVA" :value="$fiscalValue" :trend="$fiscalDetail" :trend-class="$stats['vatBalanceYtd'] >= 0 ? 'text-warning' : 'text-success'" :detail="$fiscalDetail" />@endif
-    </div>
+
+    @unless($isCurrentYear)
+        <p class="rounded-lg border border-warning/30 bg-warning-bg px-4 py-3 text-sm text-warning">Visualizzazione in sola lettura per l'anno fiscale {{ $fiscalYear }}.</p>
+    @endunless
+
+    @if(! $stats['hasInvoices'] && ! $stats['hasContacts'])
+        <div class="rounded-xl border border-info/20 bg-info-bg p-5"><h2 class="font-semibold text-content">Inizia dalla tua prima fattura</h2><p class="mt-1 text-sm text-content-muted">Crea un contatto e poi registra una fattura: qui vedrai incassi, scadenze e attività recente.</p>@if($isCurrentYear)<div class="mt-4 flex flex-wrap gap-2"><x-app-link :href="route('contacts.create')" class="inline-flex h-10 items-center rounded-lg border border-border bg-white px-3 text-sm font-medium text-content">Nuovo contatto</x-app-link><x-app-link :href="route('sell-invoices.create')" class="inline-flex h-10 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white">Nuova fattura</x-app-link></div>@endif</div>
+    @endif
+
+    <x-dashboard.summary :items="$summaryItems" />
 
     <div class="grid gap-6 xl:grid-cols-12">
-        <div class="xl:col-span-6"><x-dashboard.revenue-chart :revenue-trend="$stats['revenueTrend']" :fiscal-year="$fiscalYear" /></div>
-        <div class="xl:col-span-6"><x-dashboard.revenue-projection-chart :revenue-projection="$stats['revenueProjection']" :fiscal-year="$fiscalYear" /></div>
+        <div class="xl:col-span-7"><x-dashboard.attention-queue :items="$attentionItems" :first-due-date="$firstDueDate" /></div>
+        <div class="xl:col-span-5">
+            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
+                <div class="flex items-start justify-between gap-4"><div><h2 class="font-semibold text-content">Prossime scadenze</h2><p class="mt-1 text-sm text-content-muted">Per data di pagamento prevista</p></div><x-app-link href="/sell-invoices?payment=open" class="shrink-0 text-sm font-medium text-primary hover:underline">Vedi aperte</x-app-link></div>
+                <div class="mt-4 divide-y divide-border-light">
+                    @forelse($stats['upcomingDueDates'] as $invoice)
+                        @php($days = $invoice['days_until_due'])
+                        <x-app-link :href="route('sell-invoices.edit', $invoice['id'])" class="dashboard-list-link -mx-2 flex items-center gap-3 border-0 px-2"><span @class(['flex size-10 shrink-0 flex-col items-center justify-center rounded-full text-center', 'bg-danger-bg text-danger' => $days !== null && $days < 0, 'bg-warning-bg text-warning' => $days !== null && $days >= 0 && $days <= 7, 'bg-surface-muted text-content-muted' => $days === null || $days > 7])><span class="text-sm font-bold">{{ $days === null ? '—' : abs($days) }}</span><span class="text-[9px] font-bold uppercase">{{ $days === null ? '' : 'gg' }}</span></span><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-content">{{ $invoice['contact'] ?? 'Cliente non associato' }}</span><span class="mt-0.5 block text-xs text-content-muted">{{ $days === null ? $invoice['due_date'] : ($days < 0 ? 'Scaduta da '.abs($days).' giorni' : ($days === 0 ? 'In scadenza oggi' : 'Scade tra '.$days.' giorni')) }}</span></span><span class="shrink-0 text-right text-sm font-semibold tabular-nums text-content">{{ $this->currency($invoice['remaining_balance']) }}</span></x-app-link>
+                    @empty
+                        <p class="py-8 text-center text-sm text-content-muted">Nessuna scadenza aperta nel periodo.</p>
+                    @endforelse
+                </div>
+            </article>
+        </div>
     </div>
 
-    <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><div class="flex items-center justify-between"><div><h2 class="font-bold">Da tenere d'occhio</h2><p class="mt-1 text-sm text-content-muted">Priorità sui documenti aperti</p></div><span class="rounded-full bg-surface-muted px-2.5 py-1 text-xs font-bold text-content-muted">{{ $stats['openInvoicesCount'] }} aperti</span></div><div class="mt-5 grid gap-4 sm:grid-cols-3"><x-app-link href="/sell-invoices?payment=overdue" class="dashboard-action-link"><span>Fatture scadute</span><span class="badge badge-overdue">{{ $overdueCount }}</span></x-app-link><x-app-link href="/sell-invoices?status=draft" class="dashboard-action-link"><span>Bozze da chiudere</span><span class="badge badge-draft">{{ $stats['draftCount'] }}</span></x-app-link><x-app-link href="/sell-invoices?status=xml_validated" class="dashboard-action-link"><span>Pronte per SDI</span><span class="badge badge-neutral">{{ $stats['readyForSdiCount'] }}</span></x-app-link></div><div class="mt-5 border-t border-border-light pt-4"><p class="text-xs font-bold uppercase tracking-[.08em] text-content-muted">Valore medio fattura</p><p class="mt-1 text-xl font-bold tabular-nums">{{ $this->currency($stats['averageInvoiceValue']) }}</p><p class="mt-1 text-sm text-content-muted">{{ $averageInvoiceDetail }}</p></div></article>
+    <x-dashboard.recent-document-list :invoices="$stats['recentInvoices']" />
 
-    <div class="grid gap-6 xl:grid-cols-12"><article class="overflow-hidden rounded-xl border border-border-light bg-white shadow-[var(--shadow-card)] xl:col-span-8"><div class="flex items-center justify-between border-b border-border-light px-5 py-4"><div><h2 class="font-bold">Fatture recenti</h2><p class="mt-1 text-sm text-content-muted">Gli ultimi documenti emessi</p></div><x-app-link :href="route('sell-invoices.index')" class="text-sm font-semibold text-primary">Vedi tutte</x-app-link></div><div class="hidden grid-cols-12 gap-3 border-b border-border-light bg-surface-muted px-5 py-2 text-[11px] font-bold uppercase tracking-[.08em] text-content-muted sm:grid"><span class="col-span-4">Documento</span><span class="col-span-2">Stato</span><span class="col-span-2">Scadenza</span><span class="col-span-4 text-right">Netto</span></div><div class="divide-y divide-border-light">@forelse(array_slice($stats['recentInvoices'], 0, 6) as $invoice)<x-app-link :href="route('sell-invoices.edit', $invoice['id'])" class="block px-5 py-4 transition-colors hover:bg-surface-muted sm:grid sm:grid-cols-12 sm:items-center sm:gap-3"><div class="min-w-0 sm:col-span-4"><p class="font-semibold">{{ $invoice['number'] ?? '#'.$invoice['id'] }}</p><p class="truncate text-sm text-content-muted">{{ $invoice['contact'] ?? 'Cliente non associato' }}</p></div><div class="mt-2 sm:col-span-2 sm:mt-0"><span class="badge {{ $invoice['payment_status'] === 'overdue' ? 'badge-overdue' : ($invoice['payment_status'] === 'paid' ? 'badge-sent' : 'badge-draft') }}">{{ $this->paymentLabel($invoice['payment_status']) }}</span></div><p class="mt-2 text-sm text-content-muted sm:col-span-2 sm:mt-0">{{ $invoice['due_date'] }}</p><div class="mt-2 tabular-nums sm:col-span-4 sm:mt-0 sm:text-right"><p class="font-semibold">{{ $this->currency($invoice['total_net']) }}</p><p class="mt-0.5 text-xs font-medium text-content-muted">IVA {{ $this->currency($invoice['total_vat']) }}</p></div></x-app-link>@empty<p class="p-8 text-sm text-content-muted">Nessuna fattura disponibile.</p>@endforelse</div></article>
-        <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] xl:col-span-4"><div class="flex items-center justify-between"><div><h2 class="font-bold">Clienti migliori</h2><p class="mt-1 text-sm text-content-muted">Per fatturato netto</p></div><x-app-link :href="route('contacts.index')" class="text-sm font-semibold text-primary">Vedi tutti</x-app-link></div><div class="mt-4 space-y-1">@forelse($stats['topClients'] as $index => $client)@php($clientShare = $topClientRevenue > 0 ? $client['revenue_total'] / $topClientRevenue * 100 : 0)<div class="relative overflow-hidden rounded-md px-3 py-3"><div class="absolute inset-y-0 left-0 bg-surface-muted" style="width: {{ $clientShare }}%"></div><div class="relative flex items-center justify-between gap-3"><p class="min-w-0 truncate text-sm font-medium"><span class="mr-2 text-content-muted">{{ $index + 1 }}</span>{{ $client['contact'] ?? 'Cliente' }}</p><span class="shrink-0 text-sm font-bold tabular-nums">{{ $this->currency($client['revenue_total']) }}</span></div></div>@empty<p class="py-8 text-center text-sm text-content-muted">Nessun cliente con fatturato disponibile.</p>@endforelse</div></article></div>
+    @if($hasVatAccounting)
+        <div class="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4 text-sm"><div><span class="font-medium text-content">Saldo IVA {{ $periodLabel }}</span><span class="ml-2 tabular-nums text-content-muted">{{ $this->currency(abs($stats['vatBalanceYtd'])) }} {{ $stats['vatBalanceYtd'] >= 0 ? 'da versare' : 'a credito' }}</span></div><span class="text-xs text-content-muted">IVA incassata separata: {{ $this->currency($stats['collectedVatYtd']) }}</span></div>
+    @endif
 
-    <div class="grid gap-6 lg:grid-cols-2"><article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><div class="flex items-start justify-between gap-4"><div><h2 class="font-bold">Salute incassi</h2><p class="mt-1 text-sm text-content-muted">Rischio sul portafoglio aperto</p></div><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $collectionHealthClass }}">{{ $collectionHealthLabel }}</span></div><div class="mt-5 flex items-end justify-between gap-4"><div><p class="text-3xl font-bold tabular-nums">{{ number_format($collectionRate, 1, ',', '.') }}%</p><p class="mt-1 text-sm text-content-muted">tasso di incasso {{ $periodLabel }}</p></div><p class="text-right text-sm text-content-muted">{{ $this->currency($stats['collectedNetYtd']) }}<br>incassati</p></div><div class="mt-4 h-2 overflow-hidden rounded-full bg-surface-muted"><div class="h-full rounded-full bg-primary" style="width: {{ $collectionRate }}%"></div></div><div class="mt-5 grid gap-3 sm:grid-cols-2"><x-app-link href="/sell-invoices?payment=overdue" class="rounded-md border border-danger/20 bg-danger-bg px-3 py-3"><p class="text-xs font-bold uppercase tracking-[.08em] text-danger">Scaduto</p><p class="mt-1 font-bold tabular-nums text-danger">{{ $this->currency($overdueNet) }}</p><p class="mt-1 text-xs text-danger">{{ $overdueCount }} documenti da sollecitare</p></x-app-link><x-app-link href="/sell-invoices?payment=unpaid" class="rounded-md border border-border-light bg-surface-muted px-3 py-3"><p class="text-xs font-bold uppercase tracking-[.08em] text-content-muted">In attesa</p><p class="mt-1 font-bold tabular-nums">{{ $this->currency($openNet) }}</p><p class="mt-1 text-xs text-content-muted">{{ $openNet > 0 ? 'ancora nei termini' : 'nessun incasso aperto' }}</p></x-app-link></div>@if($hasVatAccounting)<p class="mt-4 text-xs text-content-muted">IVA incassata separata: {{ $this->currency($stats['collectedVatYtd']) }}</p>@endif</article><article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><div class="flex items-start justify-between"><div><h2 class="font-bold">Scadenze</h2><p class="mt-1 text-sm text-content-muted">Ordinate per urgenza</p></div><x-app-link href="/sell-invoices?payment=unpaid" class="text-sm font-semibold text-primary">Vedi aperte</x-app-link></div><div class="mt-5 space-y-1">@forelse($stats['upcomingDueDates'] as $invoice)@php($days = $invoice['days_until_due'])<x-app-link :href="route('sell-invoices.edit', $invoice['id'])" class="group flex items-center gap-3 rounded-md px-2 py-3 transition-colors hover:bg-surface-muted"><div class="flex size-10 shrink-0 flex-col items-center justify-center rounded-full {{ $days !== null && $days < 0 ? 'bg-danger-bg text-danger' : ($days !== null && $days <= 7 ? 'bg-warning-bg text-warning' : 'bg-surface-muted text-content-muted') }}"><span class="text-sm font-bold">{{ $days === null ? '—' : abs($days) }}</span><span class="text-[9px] font-bold uppercase">{{ $days === null ? '' : 'gg' }}</span></div><div class="min-w-0 flex-1"><p class="truncate text-sm font-semibold">{{ $invoice['contact'] ?? 'Cliente' }}</p><p class="mt-0.5 text-xs text-content-muted">{{ $days === null ? $invoice['due_date'] : ($days < 0 ? 'Scaduta da '.abs($days).' giorni' : ($days === 0 ? 'In scadenza oggi' : 'Scade tra '.$days.' giorni')) }}</p></div><div class="text-right tabular-nums"><p class="text-sm font-bold">{{ $this->currency($invoice['total_net']) }}</p><p class="mt-0.5 text-xs text-content-muted">IVA {{ $this->currency($invoice['total_vat']) }}</p></div></x-app-link>@empty<p class="py-8 text-center text-sm text-content-muted">Nessuna scadenza imminente.</p>@endforelse</div></article></div>
+    <x-dashboard.revenue-chart :revenue-trend="$stats['revenueTrend']" :fiscal-year="$fiscalYear" />
 </section>

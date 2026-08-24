@@ -49,6 +49,24 @@ it('filters sales invoices by search, status and fiscal year', function () {
         ->assertSee('FV-2026-001');
 });
 
+it('filters open sales invoices across unpaid, partial, and overdue payment states', function () {
+    $user = User::factory()->create();
+    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'number' => 'FV-APERTA-NON-PAGATA', 'payment_status' => 'unpaid']);
+    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'number' => 'FV-APERTA-PARZIALE', 'payment_status' => 'partial']);
+    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'number' => 'FV-APERTA-SCADUTA', 'payment_status' => 'overdue']);
+    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'number' => 'FV-PAGATA', 'payment_status' => 'paid']);
+
+    $this->actingAs($user);
+
+    Livewire::withQueryParams(['payment' => 'open'])
+        ->test('pages::documents.index', ['type' => 'sales'])
+        ->assertSet('payment', 'open')
+        ->assertSee('FV-APERTA-NON-PAGATA')
+        ->assertSee('FV-APERTA-PARZIALE')
+        ->assertSee('FV-APERTA-SCADUTA')
+        ->assertDontSee('FV-PAGATA');
+});
+
 it('shows a compact fiscal-year summary instead of aggregate KPI cards', function () {
     $user = User::factory()->create();
 

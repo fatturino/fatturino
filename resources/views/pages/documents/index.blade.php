@@ -243,7 +243,9 @@ new #[Layout('layouts::app')] class extends Component {
             $query->where('status', $this->status);
         }
         if ($this->payment !== '' && $this->hasPayments()) {
-            $query->where('payment_status', $this->payment);
+            $this->payment === 'open'
+                ? $query->whereIn('payment_status', ['unpaid', 'partial', 'overdue'])
+                    : $query->where('payment_status', $this->payment);
         }
 
         return $query;

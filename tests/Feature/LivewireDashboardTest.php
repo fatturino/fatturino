@@ -12,7 +12,8 @@ it('renders the authenticated dashboard as a Livewire page', function () {
         ->get(route('dashboard'))
         ->assertOk()
         ->assertSeeLivewire('pages::dashboard')
-        ->assertSee('Il polso della tua attività')
+        ->assertSee('Oggi')
+        ->assertSee('Aggiornato ora')
         ->assertDontSee('data-page=', false);
 });
 
@@ -46,7 +47,7 @@ it('loads document dates when child models expose them as strings', function () 
     Livewire::test('pages::dashboard')->assertOk();
 });
 
-it('marks collection health as pending when invoices are open but not overdue', function () {
+it('shows a drill-down financial summary with valid zero values', function () {
     $user = User::factory()->create();
     SalesInvoice::factory()->create([
         'date' => now()->toDateString(),
@@ -60,9 +61,12 @@ it('marks collection health as pending when invoices are open but not overdue', 
     $this->actingAs($user);
 
     Livewire::test('pages::dashboard')
-        ->assertSee('Incassi in attesa')
+        ->assertSee('Fatturato')
+        ->assertSee('Da incassare')
+        ->assertSee('Scaduto')
         ->assertSee('€ 6.000,00')
-        ->assertDontSee('Tutto incassato');
+        ->assertSee('/sell-invoices?payment=open', false)
+        ->assertSee('/sell-invoices?payment=overdue', false);
 });
 
 it('shows annual turnover net of VAT for the selected fiscal year', function () {
@@ -79,11 +83,11 @@ it('shows annual turnover net of VAT for the selected fiscal year', function () 
     $this->actingAs($user);
 
     Livewire::test('pages::dashboard')
-        ->assertSee('Fatturato anno')
+        ->assertSee('Fatturato')
         ->assertSee('€ 10.000,00')
-        ->assertSee('Progressivo annuale')
+        ->assertSee('da inizio anno')
         ->assertSee('IVA esclusa')
-        ->assertDontSee('Fatturato netto mese');
+        ->assertDontSee('Proiezione fatturato');
 });
 
 it('shows net amounts and separate VAT in recent invoices and due dates', function () {
@@ -101,10 +105,70 @@ it('shows net amounts and separate VAT in recent invoices and due dates', functi
     $this->actingAs($user);
 
     Livewire::test('pages::dashboard')
-        ->assertSee('Netto')
+        ->assertSee('Documenti recenti')
         ->assertSee('€ 1.000,00')
-        ->assertSee('IVA € 220,00')
-        ->assertDontSee('€ 1.220,00');
+        ->assertSee('IVA € 220,00');
+});
+
+it('orders operational attention by overdue, SDI-ready, and partial collection work', function () {
+    $user = User::factory()->create();
+    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'payment_status' => 'overdue', 'total_net' => 10000, 'total_gross' => 10000, 'total_paid' => 0]);
+    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'status' => 'xml_validated']);
+    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'payment_status' => 'partial', 'total_net' => 10000, 'total_gross' => 10000, 'total_paid' => 5000]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::dashboard')->html();
+
+    expect($html)
+        ->toContain('Richiede attenzione')
+        ->toContain('Fatture scadute')
+        ->toContain('Incassi parziali')
+        ->toContain('/sell-invoices?payment=partial')
+        ->and(strpos($html, 'Fatture scadute'))->toBeLessThan(strpos($html, 'Incassi parziali'));
+});
+
+it('shows the first upcoming due date with its remaining balance', function () {
+    $user = User::factory()->create();
+    SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'due_date' => now()->addDays(3)->toDateString(),
+        'payment_status' => 'partial',
+        'total_net' => 10000,
+        'total_gross' => 10000,
+        'total_paid' => 4000,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Prossima scadenza')
+        ->assertSee('Scade tra 3 giorni')
+        ->assertSee('€ 60,00');
+});
+
+it('guides a first-time user without treating zero values as an error', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Inizia dalla tua prima fattura')
+        ->assertSee('Nessuna urgenza per ora')
+        ->assertSee('€ 0,00');
+});
+
+it('keeps dashboard actions consultative for a closed fiscal year', function () {
+    $user = User::factory()->create();
+    $year = now()->year - 1;
+    SalesInvoice::factory()->create(['date' => now()->subYear()->toDateString(), 'payment_status' => 'overdue']);
+
+    $this->actingAs($user)->withSession(['fiscal_year' => $year]);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee("Visualizzazione in sola lettura per l'anno fiscale {$year}.", false)
+        ->assertDontSee('Nuova fattura')
+        ->assertSee('Consulta scadute');
 });
 
 it('shows fiscal and collection information for VAT accounting regimes', function () {
@@ -134,7 +198,8 @@ it('renders the revenue comparison through Wirecharts', function () {
         ->assertOk()
         ->assertSee('wirecharts', false)
         ->assertSee('wireChart(', false)
-        ->assertDontSee('<polyline', false);
+        ->assertDontSee('<polyline', false)
+        ->assertDontSee('Proiezione fatturato');
 });
 
 it('hides VAT information for the RF19 fiscal regime', function () {
