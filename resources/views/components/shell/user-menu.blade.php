@@ -7,7 +7,7 @@
 <div x-data="{ open: false }" class="relative inline-block">
     <button
         type="button"
-        class="inline-flex max-w-64 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm text-content transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
+        class="inline-flex max-w-64 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm text-content transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20 max-sm:size-9 max-sm:justify-center max-sm:p-0"
         aria-label="Apri menu azienda"
         aria-haspopup="true"
         :aria-expanded="open"
@@ -16,11 +16,11 @@
         <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-subtle text-primary">
             <x-icon name="o-building-office-2" class="size-5" />
         </span>
-        <span class="min-w-0 flex-1">
+        <span class="min-w-0 flex-1 max-sm:hidden">
             <span class="block truncate text-sm font-medium text-content">{{ $company->company_name }}</span>
             <span class="block truncate text-xs text-content-muted">{{ $fiscalRegime }}</span>
         </span>
-        <x-icon name="o-chevron-down" class="size-4 shrink-0 text-content-muted" />
+        <x-icon name="o-chevron-down" class="size-4 shrink-0 text-content-muted max-sm:hidden" />
     </button>
 
     <div

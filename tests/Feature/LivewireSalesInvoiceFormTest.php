@@ -45,6 +45,41 @@ it('renders the sales invoice create page as a Livewire form', function () {
         ->assertSee('Righe fattura');
 });
 
+it('renders the sales invoice as a document editor with always-visible metadata and line columns', function () {
+    $user = User::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->assertSee('Dati fattura')
+        ->assertSee('Cliente, numero e condizioni del documento.')
+        ->assertSee('Bozza')
+        ->assertSee('Descrizione')
+        ->assertSee('Quantità')
+        ->assertSee('Prezzo')
+        ->assertSee('Totale')
+        ->assertSee('Pagamento')
+        ->assertSee('Note')
+        ->assertSee('Opzioni fiscali')
+        ->assertDontSee('aria-label="Sezioni fattura"', escape: false);
+});
+
+it('keeps quantity in the primary invoice line editor and details as a disclosure', function () {
+    $user = User::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->set('lines', [validSalesInvoiceLine()])
+        ->assertSee('lines.0.quantity', escape: false)
+        ->assertSee('Dettagli')
+        ->call('toggleLineDetails', 0)
+        ->assertSee('Unità di misura')
+        ->assertSee('Sconto %');
+});
+
 it('creates a sales invoice through the Livewire form using the configured sales sequence', function () {
     $user = User::factory()->create();
     $contact = Contact::factory()->create();
