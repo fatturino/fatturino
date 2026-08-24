@@ -16,12 +16,12 @@
         <div x-data="{ sidebarOpen: false }" class="min-h-dvh lg:pl-64">
             <div x-cloak x-show="sidebarOpen" class="fixed inset-0 z-40 bg-ink/40 lg:hidden" @click="sidebarOpen = false"></div>
             <x-shell.sidebar />
-            <header class="sticky top-0 z-30 flex h-16 items-center border-b border-border-light bg-white/95 px-4 backdrop-blur lg:px-8">
-                <button type="button" class="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-border text-content lg:hidden" @click="sidebarOpen = true" aria-label="Apri menu">☰</button>
-                <div class="flex-1">@isset($header){{ $header }}@endisset</div>
+            <header class="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-border bg-white/95 px-4 backdrop-blur lg:px-8">
+                <button type="button" class="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-content transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20 lg:hidden" @click="sidebarOpen = true" aria-label="Apri menu">☰</button>
+                <div class="min-w-0 flex-1">@isset($header){{ $header }}@endisset</div>
                 <x-shell.user-menu />
             </header>
-            <main id="main-content" class="mx-auto w-full max-w-10xl p-4 lg:p-8">{{ $slot }}</main>
+            <main id="main-content" class="mx-auto w-full max-w-[90rem] p-4 sm:p-6 lg:p-8">{{ $slot }}</main>
         </div>
         @livewireScripts
         @wirechartsScripts

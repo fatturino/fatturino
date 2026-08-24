@@ -15,18 +15,17 @@
 ])
 
 @php
-$baseClasses = 'inline-flex items-center justify-center font-medium tracking-wide transition-colors duration-200 rounded-md focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
+$baseClasses = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50';
 
 $variantClasses = match($variant) {
-    'primary' => 'text-primary-content bg-primary hover:bg-primary/90 focus:ring-primary',
-    'secondary' => 'text-secondary-content bg-secondary hover:bg-secondary/90 focus:ring-secondary',
-    'ghost' => 'text-base-content/70 bg-transparent hover:bg-base-300/50 hover:text-base-content focus:ring-base-300',
-    'outline' => 'text-base-content bg-transparent border border-base-300 hover:bg-base-200 focus:ring-base-300',
-    'danger' => 'text-error-content bg-error hover:bg-error/90 focus:ring-error',
-    'warning' => 'text-warning-content bg-warning hover:bg-warning/90 focus:ring-warning',
-    'success' => 'text-success-content bg-success hover:bg-success/90 focus:ring-success',
-    'info' => 'text-info-content bg-info hover:bg-info/90 focus:ring-info',
-    default => 'text-primary-content bg-primary hover:bg-primary/90 focus:ring-primary',
+    'primary' => 'bg-primary text-white hover:bg-primary-hover',
+    'secondary', 'outline' => 'border border-border bg-white text-content hover:border-border-strong hover:bg-surface-muted',
+    'ghost' => 'bg-transparent text-content-muted hover:bg-surface-muted hover:text-content',
+    'danger' => 'bg-danger text-white hover:bg-[#912018] focus:ring-danger/20',
+    'warning' => 'bg-warning text-white hover:bg-[#854B06] focus:ring-warning/20',
+    'success' => 'bg-success text-white hover:bg-[#055F3A] focus:ring-success/20',
+    'info' => 'bg-info text-white hover:bg-[#144CA5] focus:ring-info/20',
+    default => 'bg-primary text-white hover:bg-primary-hover',
 };
 
 $sizeClasses = match($size) {
@@ -37,17 +36,16 @@ $sizeClasses = match($size) {
     default => 'px-4 py-2 text-sm gap-2',
 };
 
-// Circle button when only icon, no label
-$isCircle = !$label && $icon;
-if ($isCircle) {
+// Icon-only controls follow the same rounded control language as other buttons.
+$isIconOnly = !$label && $icon;
+if ($isIconOnly) {
     $sizeClasses = match($size) {
-        'xs' => 'p-1 text-xs',
-        'sm' => 'p-2 text-sm',
-        'md' => 'p-2.5 text-sm',
-        'lg' => 'p-3 text-base',
-        default => 'p-2 text-sm',
+        'xs' => 'size-7 text-xs',
+        'sm' => 'size-8 text-sm',
+        'md' => 'size-9 text-sm',
+        'lg' => 'size-11 text-base',
+        default => 'size-8 text-sm',
     };
-    $sizeClasses .= ' rounded-full';
 }
 
 // Spinner target for Livewire loading states
@@ -58,7 +56,7 @@ if ($spinner) {
 @endphp
 
 @if($link)
-    <x-app-link :href="$link" :full-reload="$attributes->has('download')" {{ $attributes->merge(['class' => "$baseClasses $variantClasses $sizeClasses"]) }}>
+    <x-app-link :href="$link" :full-reload="$attributes->has('download')" @if($isIconOnly && $ariaLabel) aria-label="{{ $ariaLabel }}" @endif {{ $attributes->merge(['class' => "$baseClasses $variantClasses $sizeClasses"]) }}>
         @if($icon)
             <x-icon :name="$icon" />
         @endif
@@ -71,6 +69,7 @@ if ($spinner) {
     </x-app-link>
 @else
     <button type="{{ $type }}"
+            @if($isIconOnly && $ariaLabel) aria-label="{{ $ariaLabel }}" @endif
             {{ $attributes->merge(['class' => "$baseClasses $variantClasses $sizeClasses"]) }}
             @if($spinner) wire:loading.attr="disabled" wire:target="{{ $spinner }}" @endif
     >

@@ -3,52 +3,85 @@
 @source '../../app/Livewire/**/*.php';
 
 /* ═══════════════════════════════════════════
-   Fatturino Design System - Minimal Baseline
+   Fatturino UI Foundation
    ═══════════════════════════════════════════ */
 
 @theme {
     --font-sans: 'Outfit', sans-serif;
 
-    /* Theme primitives. Keep component styles bound to semantic tokens below. */
-    --color-ink: #12233F;
-    --color-indigo: #243B77;
-    --color-teal: #2F7EA8;
-    --color-aqua: #CBEAF2;
-    --color-mist: #F7FBFF;
+    /* Indigo is reserved for interaction, not structural surfaces. */
+    --color-indigo-50: #F5F4FF;
+    --color-indigo-100: #ECEAFF;
+    --color-indigo-200: #D8D4FA;
+    --color-indigo-300: #B9B3F0;
+    --color-indigo-400: #9188E1;
+    --color-indigo-500: #6D63D0;
+    --color-indigo-600: #5951BA;
+    --color-indigo-700: #484295;
+    --color-indigo-800: #393675;
+    --color-indigo-900: #2D2D5C;
+    --color-indigo-950: #1A1B3C;
 
-    /* Semantic theme tokens */
-    --color-brand: var(--color-ink);
-    --color-brand-secondary: #51627A;
-    --color-brand-accent: var(--color-teal);
-    --color-brand-deep: var(--color-ink);
-    --color-brand-bg: var(--color-mist);
+    /* Semantic application tokens. */
+    --color-app-background: #F7F8FA;
+    --color-surface: #FFFFFF;
+    --color-surface-muted: #F3F5F8;
+    --color-border: #E1E5EC;
+    --color-border-strong: #C7CED9;
+    --color-text-primary: #172033;
+    --color-text-secondary: #526077;
+    --color-text-muted: #6B7280;
+    --color-primary: var(--color-indigo-600);
+    --color-primary-hover: var(--color-indigo-700);
+    --color-primary-subtle: var(--color-indigo-50);
+    --color-success: #067647;
+    --color-success-bg: #ECFDF3;
+    --color-warning: #A15C07;
+    --color-warning-bg: #FFF8EB;
+    --color-danger: #B42318;
+    --color-danger-bg: #FEF3F2;
+    --color-info: #175CD3;
+    --color-info-bg: #EFF8FF;
+    --color-sidebar-background: #12233F;
+    --color-sidebar-text: #F8FAFC;
+    --color-sidebar-muted: #AAB5C4;
+    --color-sidebar-active: #27345E;
 
-    /* Surface tokens */
-    --color-surface: #ffffff;
-    --color-surface-muted: #EFF8FB;
-    --color-border: #B9D9E4;
-    --color-border-light: #D9EDF3;
-    --color-success: #047857;
-    --color-success-bg: #ecfdf5;
-    --color-danger: #b91c1c;
-    --color-danger-bg: #fef2f2;
-    --color-warning: #b45309;
-    --color-warning-bg: #fffbeb;
-    --color-info: #1d4ed8;
-    --color-info-bg: #eff6ff;
+    /* Compatibility aliases retained while consumers are migrated incrementally. */
+    --color-ink: var(--color-sidebar-background);
+    --color-teal: var(--color-primary);
+    --color-aqua: var(--color-indigo-200);
+    --color-mist: var(--color-app-background);
+    --color-brand: var(--color-primary);
+    --color-brand-secondary: var(--color-text-secondary);
+    --color-brand-accent: var(--color-primary);
+    --color-brand-deep: var(--color-text-primary);
+    --color-brand-bg: var(--color-app-background);
+    --color-border-light: var(--color-border);
+    --color-content: var(--color-text-primary);
+    --color-content-muted: var(--color-text-secondary);
+    --color-error: var(--color-danger);
+    --color-error-content: #FFFFFF;
+    --color-primary-content: #FFFFFF;
+    --color-secondary: var(--color-surface-muted);
+    --color-secondary-content: var(--color-text-primary);
+    --color-base-100: var(--color-surface);
+    --color-base-200: var(--color-surface-muted);
+    --color-base-300: var(--color-border);
+    --color-base-content: var(--color-text-primary);
 
-    /* Shadow tokens */
-    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 10px rgba(15, 23, 42, 0.04);
-    --shadow-elevated: 0 6px 16px rgba(15, 23, 42, 0.08);
-    --shadow-modal: 0 14px 32px rgba(15, 23, 42, 0.16);
-    --shadow-button: 0 1px 2px rgba(15, 23, 42, 0.12);
-    --shadow-button-hover: 0 2px 6px rgba(15, 23, 42, 0.16);
-    --shadow-input-focus: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    /* Elevation is reserved for transient overlays. */
+    --shadow-card: none;
+    --shadow-elevated: 0 10px 24px rgba(23, 32, 51, 0.12);
+    --shadow-modal: 0 18px 40px rgba(23, 32, 51, 0.18);
+    --shadow-button: none;
+    --shadow-button-hover: none;
+    --shadow-input-focus: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
 
     /* Shell tokens */
-    --glass-bg: rgba(255, 255, 255, 0.92);
-    --glass-border: rgba(15, 23, 42, 0.08);
-    --glass-bg-sidebar: var(--color-ink);
+    --glass-bg: rgba(255, 255, 255, 0.94);
+    --glass-border: var(--color-border);
+    --glass-bg-sidebar: var(--color-sidebar-background);
 
     /* Motion and rhythm tokens */
     --duration-fast: 150ms;
@@ -56,18 +89,17 @@
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --radius-sm: 0.375rem;
     --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
 }
 
 @theme inline {
-    --color-canvas: var(--color-brand-bg);
-    --color-content: var(--color-brand-deep);
-    --color-content-muted: var(--color-brand-secondary);
-    --color-primary: var(--color-brand-accent);
+    --color-canvas: var(--color-app-background);
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: none;
+    outline-offset: 2px;
     box-shadow: var(--shadow-input-focus);
 }
 
@@ -84,16 +116,16 @@
     background: var(--glass-bg-sidebar);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    color: #e5e7eb;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--color-sidebar-text);
 }
 
 .fatturino-sidebar .active-nav {
-    background: rgba(118, 120, 237, 0.34);
-    color: white;
-    font-weight: 600;
+    background: var(--color-sidebar-active);
+    color: var(--color-sidebar-text);
+    font-weight: 500;
     border-radius: 0.5rem;
-    box-shadow: inset 0 0 0 1px rgba(247, 184, 1, 0.35);
+    box-shadow: inset 2px 0 0 var(--color-indigo-300);
 }
 
 .fatturino-sidebar a:not(.active-nav):hover {
@@ -102,11 +134,10 @@
 }
 
 .fatturino-sidebar .nav-section-label {
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.06em;
-    opacity: 0.55;
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.01em;
+    color: var(--color-sidebar-muted);
 }
 
 /* ═══════════════════════════════════════════
@@ -118,14 +149,15 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--color-border-light);
-    box-shadow: var(--shadow-card);
+    box-shadow: none;
 }
 
 @media (min-width: 1024px) {
     .fatturino-header {
-        margin: 0.75rem 1rem 0;
-        border: 1px solid var(--color-border-light);
-        border-radius: 0.75rem;
+        margin: 0;
+        border-inline: 0;
+        border-top: 0;
+        border-radius: 0;
     }
 }
 
@@ -136,8 +168,8 @@
 .card-brand {
     background: var(--color-surface);
     border: 1px solid var(--color-border-light);
-    border-radius: 0.75rem; /* 12px */
-    box-shadow: var(--shadow-card);
+    border-radius: var(--radius-xl);
+    box-shadow: none;
 }
 
 .page-shell {
@@ -196,14 +228,14 @@
 .card-interactive {
     background: var(--color-surface);
     border: 1px solid var(--color-border-light);
-    border-radius: 0.75rem;
-    box-shadow: var(--shadow-card);
-    transition: box-shadow 200ms ease-out, transform 200ms ease-out;
+    border-radius: var(--radius-xl);
+    box-shadow: none;
+    transition: background-color 160ms ease-out, border-color 160ms ease-out;
 }
 
 .card-interactive:hover {
-    box-shadow: var(--shadow-elevated);
-    transform: translateY(-0.125rem);
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-muted);
 }
 
 /* Nested card inside another card — no shadow, muted bg */
@@ -214,39 +246,36 @@
 }
 
 /* ═══════════════════════════════════════════
-   Buttons — Soft UI Evolution
+   Buttons
    ═══════════════════════════════════════════ */
 
 .btn-brand {
-    background-color: var(--color-brand);
+    background-color: var(--color-primary);
     color: white;
-    border-radius: 0.5rem; /* 8px */
+    border-radius: var(--radius-lg);
     padding: 0.5rem 1rem;
     font-weight: 500;
-    box-shadow: var(--shadow-button);
-    transition: background-color var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+    transition: background-color var(--duration-fast) var(--ease-out);
     cursor: pointer;
 }
 
 .btn-brand:hover {
-    background-color: oklch(38.81% 0.139 282.45 / 0.92);
-    box-shadow: var(--shadow-button-hover);
-    transform: translateY(-0.5px);
+    background-color: var(--color-primary-hover);
 }
 
 .btn-brand:active {
-    transform: scale(0.98);
+    background-color: var(--color-indigo-800);
 }
 
 .btn-brand:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(61, 52, 139, 0.3), var(--shadow-button);
+    box-shadow: var(--shadow-input-focus);
 }
 
 .btn-ghost {
     background: transparent;
-    color: oklch(32.06% 0.105 282.33 / 0.7);
-    border-radius: 0.5rem;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-lg);
     padding: 0.5rem 1rem;
     font-weight: 500;
     transition: background-color 200ms ease-out, color 200ms ease-out;
@@ -255,19 +284,19 @@
 
 .btn-ghost:hover {
     background: var(--color-surface-muted);
-    color: var(--color-brand-deep);
+    color: var(--color-text-primary);
 }
 
 .btn-ghost:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(61, 52, 139, 0.15);
+    box-shadow: var(--shadow-input-focus);
 }
 
 .btn-outline {
     background: transparent;
     border: 1px solid var(--color-border);
-    color: var(--color-brand-deep);
-    border-radius: 0.5rem;
+    color: var(--color-text-primary);
+    border-radius: var(--radius-lg);
     padding: 0.5rem 1rem;
     font-weight: 500;
     transition: background-color 200ms ease-out, border-color 200ms ease-out;
@@ -276,7 +305,7 @@
 
 .btn-outline:hover {
     background: var(--color-surface-muted);
-    border-color: oklch(32.06% 0.105 282.33 / 0.2);
+    border-color: var(--color-border-strong);
 }
 
 .btn-brand:disabled,
@@ -291,27 +320,25 @@
 
 .btn-outline:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(61, 52, 139, 0.15);
+    box-shadow: var(--shadow-input-focus);
 }
 
 .btn-danger {
-    background-color: #dc2626;
+    background-color: var(--color-danger);
     color: white;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-lg);
     padding: 0.5rem 1rem;
     font-weight: 500;
-    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2);
-    transition: background-color 200ms ease-out, box-shadow 200ms ease-out;
+    transition: background-color var(--duration-fast) var(--ease-out);
     cursor: pointer;
 }
 
 .btn-danger:hover {
-    background-color: oklch(57.71% 0.215 27.33 / 0.92);
-    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.25);
+    background-color: #912018;
 }
 
 .btn-danger:active {
-    transform: scale(0.98);
+    background-color: #7A1A14;
 }
 
 /* ═══════════════════════════════════════════
@@ -321,22 +348,22 @@
 .input-field {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 0.5rem; /* 8px */
+    border-radius: var(--radius-lg);
     min-height: 2.75rem; /* 44px touch target */
     padding: 0 0.75rem;
     font-size: 0.875rem;
-    color: var(--color-brand-deep);
-    box-shadow: inset 0 1px 2px rgba(45, 42, 110, 0.04);
+    color: var(--color-text-primary);
+    box-shadow: none;
     transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
 }
 
 .input-field::placeholder {
-    color: oklch(32.06% 0.105 282.33 / 0.3);
+    color: var(--color-text-muted);
 }
 
 .input-field:focus {
     outline: none;
-    border-color: oklch(38.81% 0.139 282.45 / 0.5);
+    border-color: var(--color-primary);
     box-shadow: var(--shadow-input-focus);
 }
 
@@ -355,12 +382,12 @@
 }
 
 .input-error {
-    border-color: #dc2626;
+    border-color: var(--color-danger);
 }
 
 .input-error:focus {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 16%, transparent);
 }
 
 /* ═══════════════════════════════════════════

@@ -7,18 +7,18 @@
 <div x-data="{ open: false }" class="relative inline-block">
     <button
         type="button"
-        class="inline-flex max-w-64 items-center gap-3 rounded-lg border border-border-light bg-white px-3 py-2 text-left text-sm font-semibold text-content transition hover:border-border hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
+        class="inline-flex max-w-64 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm text-content transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
         aria-label="Apri menu azienda"
         aria-haspopup="true"
         :aria-expanded="open"
         @click="open = !open"
     >
-        <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-subtle text-primary">
             <x-icon name="o-building-office-2" class="size-5" />
         </span>
         <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm font-semibold text-content">{{ $company->company_name }}</span>
-            <span class="block truncate text-xs font-medium text-content-muted">{{ $fiscalRegime }}</span>
+            <span class="block truncate text-sm font-medium text-content">{{ $company->company_name }}</span>
+            <span class="block truncate text-xs text-content-muted">{{ $fiscalRegime }}</span>
         </span>
         <x-icon name="o-chevron-down" class="size-4 shrink-0 text-content-muted" />
     </button>
@@ -34,11 +34,11 @@
         x-transition:leave-end="opacity-0 scale-90"
         @click.away="open = false"
         role="menu"
-        class="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-lg bg-white shadow-xl ring-1 ring-black/5"
+        class="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-xl border border-border bg-white shadow-[var(--shadow-elevated)]"
     >
-        <div class="divide-y divide-border-light rounded-lg">
+        <div class="divide-y divide-border">
             <div class="space-y-1 p-2.5">
-                <x-app-link :href="route('settings.company')" role="menuitem" class="group flex items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-sm font-medium text-content-muted transition hover:bg-primary/5 hover:text-primary">
+                <x-app-link :href="route('settings.company')" role="menuitem" class="group flex items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-sm font-medium text-content-muted transition hover:bg-primary-subtle hover:text-primary">
                     <x-icon name="o-cog-6-tooth" class="size-5 shrink-0 opacity-40 transition group-hover:opacity-70" />
                     <span class="grow">Impostazioni</span>
                 </x-app-link>

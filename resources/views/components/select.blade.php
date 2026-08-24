@@ -141,7 +141,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
     class="{{ $wrapperClasses }} relative"
 >
     @if($label)
-        <label class="inline-block font-medium text-sm">{{ $label }}</label>
+        <label class="inline-block text-sm font-medium text-content">{{ $label }}</label>
     @endif
 
     <div class="relative">
@@ -151,19 +151,18 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
             @click="open = !open"
             @disabled($disabled)
             type="button"
-            class="group flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-left text-sm leading-6 focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/50 focus:outline-none
+            class="group flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-border-strong bg-white px-3 text-left text-sm leading-6 text-content transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-content-muted
                    {{ $error ? 'border-danger' : '' }}
-                   dark:border-zinc-600 dark:bg-zinc-800 dark:focus:border-indigo-500
                    {{ $icon ? 'pl-10' : '' }}"
             aria-haspopup="listbox"
             aria-controls="tk-select-menu-list"
         >
             @if($icon)
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
+                <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-content-muted">
                     <x-icon :name="$icon" class="w-4 h-4" />
                 </span>
             @endif
-            <span class="grow truncate" :class="{ 'text-zinc-500 dark:text-zinc-400': !selectedTitle }" x-text="selectedTitle || '{{ $placeholderText }}'"></span>
+            <span class="grow truncate" :class="{ 'text-content-muted': !selectedTitle }" x-text="selectedTitle || '{{ $placeholderText }}'"></span>
             <svg
                 class="hi-mini hi-chevron-up-down inline-block size-5 flex-none opacity-40 transition group-hover:opacity-60 group-active:scale-90"
                 xmlns="http://www.w3.org/2000/svg"
@@ -190,7 +189,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
             @click.away="open = false"
-            class="absolute inset-x-0 z-10 mt-2 max-h-60 origin-top overflow-y-auto rounded-lg bg-white py-2.5 shadow-xl ring-1 ring-black/5 focus:outline-none dark:bg-zinc-800 dark:shadow-zinc-900 dark:ring-zinc-700"
+            class="absolute inset-x-0 z-10 mt-2 max-h-60 origin-top overflow-y-auto rounded-xl border border-border bg-white py-2 shadow-[var(--shadow-elevated)] focus:outline-none"
             aria-labelledby="tk-select-menu-button"
             aria-orientation="vertical"
             role="listbox"
@@ -203,7 +202,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
                     x-ref="searchInput"
                     x-model="search"
                     type="search"
-                    class="block h-9 w-full rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-500"
+                    class="block h-9 w-full rounded-md border border-border bg-white px-2.5 py-1 text-sm text-content placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     placeholder="{{ $searchPlaceholderText }}"
                     @keydown.down.prevent="activeNext()"
                     @keydown.up.prevent="activePrev()"
@@ -217,10 +216,10 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
                     :id="'select-opt-' + item.value"
                     @mousemove="activeIndex = filteredOptions.indexOf(item)"
                     :class="{
-                        'font-semibold text-zinc-950 dark:text-white': selectedValue == item.value,
-                        'text-zinc-600 dark:text-zinc-300': selectedValue != item.value
+                        'font-medium text-content': selectedValue == item.value,
+                        'text-content-muted': selectedValue != item.value
                     }"
-                    class="group flex cursor-pointer items-center justify-between gap-2 border-y border-transparent px-3 text-sm hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none active:border-indigo-100 dark:hover:bg-zinc-700/75 dark:focus:bg-zinc-700/75 dark:active:border-zinc-600"
+                    class="group flex cursor-pointer items-center justify-between gap-2 border-y border-transparent px-3 text-sm hover:bg-primary-subtle focus:bg-primary-subtle focus:outline-none active:border-indigo-100"
                     role="option"
                     tabindex="-1"
                 >
@@ -229,7 +228,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
                         <div x-show="item.subtitle" x-text="item.subtitle" class="text-xs text-content-muted"></div>
                     </div>
                     <div
-                        :class="{ 'visible text-indigo-600 dark:text-indigo-500': selectedValue == item.value, 'invisible': selectedValue != item.value }"
+                        :class="{ 'visible text-primary': selectedValue == item.value, 'invisible': selectedValue != item.value }"
                         class="pointer-events-none size-5 flex-none"
                         aria-hidden="true"
                     >
@@ -250,7 +249,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
                 </li>
             </template>
             {{-- Empty state --}}
-            <li x-show="filteredOptions.length === 0" class="px-3 py-2 text-sm text-zinc-400 dark:text-zinc-500">
+            <li x-show="filteredOptions.length === 0" class="px-3 py-2 text-sm text-content-muted">
                 Nessun risultato trovato
             </li>
         </ul>
@@ -259,6 +258,6 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
     @if($error)
         <p class="text-danger text-xs mt-1">{{ $error }}</p>
     @elseif($hint)
-        <p class="text-zinc-400 text-xs mt-1">{{ $hint }}</p>
+        <p class="mt-1 text-xs text-content-muted">{{ $hint }}</p>
     @endif
 </div>

@@ -4,13 +4,13 @@
     'separator' => false,
 ])
 
-<div {{ $attributes->merge(['class' => 'rounded-xl border border-base-200 bg-white text-base-content shadow']) }}>
+<div {{ $attributes->merge(['class' => 'rounded-xl border border-border bg-white text-content']) }}>
     @if($title)
-        <div class="px-5 py-4 @if($separator) border-b border-base-300 @endif flex items-center justify-between">
+        <div class="flex items-center justify-between px-5 py-4 @if($separator) border-b border-border @endif">
             <div>
                 <h2 class="text-lg font-semibold">{{ $title }}</h2>
                 @if($subtitle)
-                    <p class="text-sm text-base-content/60 mt-0.5">{{ $subtitle }}</p>
+                    <p class="mt-0.5 text-sm text-content-muted">{{ $subtitle }}</p>
                 @endif
             </div>
             @if(isset($menu))
@@ -24,7 +24,7 @@
     </div>
 
     @if(isset($actions))
-        <div class="px-5 py-3 border-t border-base-200 flex items-center gap-3 justify-end">
+        <div class="flex items-center justify-end gap-3 border-t border-border px-5 py-3">
             {{ $actions }}
         </div>
     @endif
