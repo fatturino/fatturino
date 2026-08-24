@@ -10,18 +10,31 @@ use Livewire\Component;
 
 new #[Layout('layouts::app')] class extends Component {
     public bool $sandbox;
+
     public bool $activated;
+
     public bool $managedByEnv;
+
     public bool $demoMode;
+
     public bool $conservationAcknowledged;
+
     public bool $hasWebhookSecret;
+
     public string $apiToken = '';
+
     public string $companySdiCode = '';
+
     public string $webhookUrl = '';
+
     public string $webhookCallbackUrl = '';
+
     public string $simulationType = 'supplier-invoice';
+
     public string $invoiceUuid = '';
+
     public string $message = '';
+
     public bool $messageIsSuccess = true;
 
     public function mount(OpenApiSettings $settings, CompanySettings $company): void
@@ -100,7 +113,6 @@ new #[Layout('layouts::app')] class extends Component {
             'webhookUrl' => 'nullable|url|max:2048',
             'apiToken' => $requireToken ? 'required|string' : 'nullable|string',
         ];
-
         $this->validate($rules);
     }
 
@@ -113,15 +125,12 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $this->messageIsSuccess = $result['success'];
         $this->message = $result['message'];
-
         if (array_key_exists('activated', $result)) {
             $this->activated = $result['activated'];
         }
-
         if (array_key_exists('hasWebhookSecret', $result)) {
             $this->hasWebhookSecret = $result['hasWebhookSecret'];
         }
-
         if ($result['success'] && ! $this->managedByEnv) {
             $this->apiToken = '';
             $this->refreshWebhookCallbackUrl();

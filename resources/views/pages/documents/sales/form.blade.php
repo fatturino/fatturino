@@ -1,18 +1,20 @@
 <?php
 
 use App\Actions\SaveSalesInvoice;
-use App\Enums\PaymentMethod;
-use App\Enums\PaymentTerms;
-use App\Enums\SalesDocumentType;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\SalesInvoice;
-use App\Services\DocumentSequenceResolver;
 use App\Services\DocumentEventRecorder;
+use App\Services\DocumentSequenceResolver;
 use App\Services\PostHogTelemetryService;
 use App\Settings\CompanySettings;
+use App\Settings\InvoiceSettings;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentTerms;
+use App\Enums\SalesDocumentType;
 
 new #[Layout('layouts::app')] class extends Component {
     public ?SalesInvoice $invoice = null;
@@ -70,13 +72,13 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $invoice = $invoice?->exists ? $invoice : null;
         $this->invoice = $invoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
-        $settings = app(\App\Settings\InvoiceSettings::class);
+        $settings = app(InvoiceSettings::class);
         $this->date = now()->toDateString();
         $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name', 'vat_number'])
             ->map(fn (Contact $c) => [
                 'id' => $c->id,
                 'name' => $c->name,
-                'subtitle' => $c->vat_number ? 'P.IVA ' . $c->vat_number : null,
+                'subtitle' => $c->vat_number ? 'P.IVA '.$c->vat_number : null,
             ])->toArray();
         $this->notes = $settings->default_notes ?? '';
         $this->payment_method = (string) ($settings->default_payment_method ?? '');
@@ -222,8 +224,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function refreshNumberPreview(): void
     {
-        $this->numberPreview = $this->invoice?->number
-            ?? app(DocumentSequenceResolver::class)->resolve('sales')->getFormattedNumber((int) substr($this->date, 0, 4));
+        $this->numberPreview = $this->invoice?->number ?? app(DocumentSequenceResolver::class)->resolve('sales')->getFormattedNumber((int) substr($this->date, 0, 4));
     }
 
     public function getReadOnlyProperty(): bool

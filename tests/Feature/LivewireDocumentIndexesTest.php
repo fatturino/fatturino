@@ -240,19 +240,15 @@ it('rejects deletion of a converted proforma through the document index', functi
     $this->assertDatabaseHas('fiscal_documents', ['id' => $proforma->id]);
 });
 
-it('supports selecting and clearing all documents on the visible page for future bulk actions', function () {
+it('does not expose incomplete bulk selection controls', function () {
     $user = User::factory()->create();
-    $first = SalesInvoice::factory()->create(['date' => now()->toDateString()]);
-    $second = SalesInvoice::factory()->create(['date' => now()->toDateString()]);
+    SalesInvoice::factory()->create(['date' => now()->toDateString()]);
 
     $this->actingAs($user);
 
     Livewire::test('pages::documents.index', ['type' => 'sales'])
-        ->assertSee('id="select-page"', false)
-        ->call('togglePageSelection', [$first->id, $second->id])
-        ->assertSet('selected', [$first->id, $second->id])
-        ->call('togglePageSelection', [$first->id, $second->id])
-        ->assertSet('selected', []);
+        ->assertDontSee('id="select-page"', false)
+        ->assertDontSee('wire:model.live="selected"', false);
 });
 
 it('locks the document type and fiscal year to the server-side route context', function () {

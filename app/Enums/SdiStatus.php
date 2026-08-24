@@ -112,7 +112,7 @@ enum SdiStatus: string
     }
 
     /**
-     * Timeline connector color for DaisyUI timeline component
+     * Timeline connector color class
      */
     public function timelineColor(): string
     {

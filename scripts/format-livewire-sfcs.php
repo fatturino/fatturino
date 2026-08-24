@@ -80,6 +80,7 @@ fwrite(STDOUT, "Livewire SFC PHP preambles are formatted.\n");
 
 function formatPreamble(string $preamble): string
 {
+    $imports = extractImports($preamble);
     $temporaryFile = tempnam(sys_get_temp_dir(), 'fatturino-livewire-sfc-');
 
     if ($temporaryFile === false) {
@@ -93,10 +94,43 @@ function formatPreamble(string $preamble): string
         file_put_contents($temporaryFile, normalizeTernaryIndentation((string) file_get_contents($temporaryFile)));
         runPint($temporaryFile);
 
-        return rtrim(restoreSfcClassDeclaration((string) file_get_contents($temporaryFile)))."\n?>";
+        $formatted = restoreSfcClassDeclaration((string) file_get_contents($temporaryFile));
+
+        return rtrim(restoreMissingImports($formatted, $imports))."\n?>";
     } finally {
         @unlink($temporaryFile);
     }
+}
+
+/** @return array<int, string> */
+function extractImports(string $source): array
+{
+    preg_match_all('/^use\s+[^;]+;$/m', $source, $matches);
+
+    return $matches[0];
+}
+
+/** @param array<int, string> $imports */
+function restoreMissingImports(string $source, array $imports): string
+{
+    $missingImports = array_values(array_filter(
+        $imports,
+        fn (string $import): bool => ! str_contains($source, $import),
+    ));
+
+    if ($missingImports === []) {
+        return $source;
+    }
+
+    $classOffset = strpos($source, 'new ');
+
+    if ($classOffset === false) {
+        throw new RuntimeException('Unable to restore Blade-only imports in a Livewire SFC preamble.');
+    }
+
+    return substr($source, 0, $classOffset)
+        .implode("\n", $missingImports)."\n\n"
+        .substr($source, $classOffset);
 }
 
 function runPint(string $path): void
@@ -125,7 +159,7 @@ function normalizeTernaryIndentation(string $source): string
     $lines = explode("\n", $source);
 
     foreach ($lines as $index => $line) {
-        if (! preg_match('/^\s*[?:]\s+/', $line)) {
+        if (! preg_match('/^\s*(?:\?\??|:)\s+/', $line)) {
             continue;
         }
 

@@ -4,8 +4,8 @@ use App\Actions\SaveCreditNote;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\CreditNote;
-use App\Services\DocumentSequenceResolver;
 use App\Services\DocumentEventRecorder;
+use App\Services\DocumentSequenceResolver;
 use App\Services\PostHogTelemetryService;
 use App\Settings\CompanySettings;
 use Livewire\Attributes\Layout;
@@ -41,7 +41,7 @@ new #[Layout('layouts::app')] class extends Component {
             ->map(fn (Contact $c) => [
                 'id' => $c->id,
                 'name' => $c->name,
-                'subtitle' => $c->vat_number ? 'P.IVA ' . $c->vat_number : null,
+                'subtitle' => $c->vat_number ? 'P.IVA '.$c->vat_number : null,
             ])->toArray();
         if ($this->invoice) {
             foreach (['contact_id', 'related_invoice_number', 'notes'] as $field) {
@@ -116,6 +116,7 @@ new #[Layout('layouts::app')] class extends Component {
     private function rules(): array
     {
         $rules = ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'related_invoice_number' => 'nullable|string', 'related_invoice_date' => 'nullable|date', 'notes' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.vat_rate' => 'required|string'];
+
         return $rules;
     }
 
@@ -126,8 +127,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function refreshNumberPreview(): void
     {
-        $this->numberPreview = $this->invoice?->number
-            ?? app(DocumentSequenceResolver::class)->resolve('credit_note')->getFormattedNumber((int) substr($this->date, 0, 4));
+        $this->numberPreview = $this->invoice?->number ?? app(DocumentSequenceResolver::class)->resolve('credit_note')->getFormattedNumber((int) substr($this->date, 0, 4));
     }
 
     private function state(array $line): array

@@ -1,9 +1,9 @@
 <?php
 
 use App\Contracts\EnvironmentCapabilities;
+use App\Models\Sequence;
 use App\Services\DocumentSequenceResolver;
 use App\Settings\InvoiceSettings;
-use App\Models\Sequence;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -72,13 +72,15 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $this->ensureAllowed();
         $settingKey = $resolver->settingKey($sequence->type);
-
         abort_unless($settingKey !== null, 422, 'Questo tipo di documento non ha una sequenza predefinita configurabile.');
-
         $settings = app(InvoiceSettings::class);
         $settings->{$settingKey} = $sequence->id;
         $settings->save();
-        session()->flash('success', "Sezionale predefinito per {$this->typeLabel($sequence->type)} aggiornato.");
+        session()->flash('success', "Sezionale predefinito per
+{
+$this->typeLabel($sequence->type)
+}
+ aggiornato.");
     }
 
     public function isDefault(Sequence $sequence): bool

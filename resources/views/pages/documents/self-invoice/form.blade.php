@@ -4,8 +4,8 @@ use App\Actions\SaveSelfInvoice;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\SelfInvoice;
-use App\Services\DocumentSequenceResolver;
 use App\Services\DocumentEventRecorder;
+use App\Services\DocumentSequenceResolver;
 use App\Services\PostHogTelemetryService;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
@@ -49,7 +49,7 @@ new #[Layout('layouts::app')] class extends Component {
             ->map(fn (Contact $c) => [
                 'id' => $c->id,
                 'name' => $c->name,
-                'subtitle' => $c->vat_number ? 'P.IVA ' . $c->vat_number : null,
+                'subtitle' => $c->vat_number ? 'P.IVA '.$c->vat_number : null,
             ])->toArray();
         if ($selfInvoice) {
             foreach (['contact_id', 'document_type', 'related_invoice_number', 'notes'] as $field) {
@@ -127,6 +127,7 @@ new #[Layout('layouts::app')] class extends Component {
     private function rules(): array
     {
         $rules = ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'due_date' => 'nullable|date', 'document_type' => 'required|in:TD17,TD18,TD19,TD28,TD29', 'related_invoice_number' => 'nullable|string|max:20', 'related_invoice_date' => 'nullable|date', 'notes' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.vat_rate' => 'required|string'];
+
         return $rules;
     }
 
@@ -137,8 +138,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function refreshNumberPreview(): void
     {
-        $this->numberPreview = $this->invoice?->number
-            ?? app(DocumentSequenceResolver::class)->resolve('self_invoice')->getFormattedNumber((int) substr($this->date, 0, 4));
+        $this->numberPreview = $this->invoice?->number ?? app(DocumentSequenceResolver::class)->resolve('self_invoice')->getFormattedNumber((int) substr($this->date, 0, 4));
     }
 
     private function lineState(array $line): array

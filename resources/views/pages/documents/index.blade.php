@@ -36,9 +36,6 @@ new #[Layout('layouts::app')] class extends Component {
     #[Url(as: 'direction', except: 'desc')]
     public string $direction = 'desc';
 
-    /** @var array<int, int> */
-    public array $selected = [];
-
     #[Locked]
     public int $fiscalYear;
 
@@ -84,41 +81,20 @@ new #[Layout('layouts::app')] class extends Component {
     public function resetFilters(): void
     {
         $this->reset('search', 'status', 'payment');
-        $this->selected = [];
         $this->resetPage();
-    }
-
-    /** @param array<int, int> $documentIds */
-    public function togglePageSelection(array $documentIds): void
-    {
-        $documentIds = array_map('intval', $documentIds);
-        $selectedIds = array_map('intval', $this->selected);
-        $allSelected = $documentIds !== [] && count(array_intersect($documentIds, $selectedIds)) === count($documentIds);
-        $this->selected = $allSelected
-            ? array_values(array_diff($selectedIds, $documentIds))
-                : array_values(array_unique([...$selectedIds, ...$documentIds]));
-    }
-
-    public function updatingPage(): void
-    {
-        $this->selected = [];
     }
 
     public function deleteProforma(int $proformaId, DeleteUnconvertedProforma $deleteUnconvertedProforma): bool
     {
         abort_unless($this->type === 'proforma', 404);
-
         $deleted = $deleteUnconvertedProforma->execute(
             ProformaInvoice::query()->findOrFail($proformaId)
         );
-
         if (! $deleted) {
             $this->addError('proforma', 'La proforma è stata convertita e non può essere eliminata.');
 
             return false;
         }
-
-        $this->selected = array_values(array_diff($this->selected, [$proformaId]));
 
         return true;
     }
@@ -400,10 +376,6 @@ new #[Layout('layouts::app')] class extends Component {
         <table class="min-w-full text-left text-sm">
             <thead class="border-b border-border bg-surface-muted text-content-muted">
                 <tr>
-                    <th class="w-12 px-5 py-3 text-center">
-                        <label for="select-page" class="sr-only">Seleziona tutti i documenti nella pagina</label>
-                        <input id="select-page" wire:click="togglePageSelection({{ \Illuminate\Support\Js::from($documents->pluck('id')->all()) }})" type="checkbox" @checked($documents->isNotEmpty() && $documents->every(fn ($document) => in_array($document->id, $selected, true))) class="size-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20">
-                    </th>
                     @foreach (['number' => 'Numero', 'date' => 'Data'] as $column => $label)
                         @php
                             $isActiveSort = $sort === $column;
@@ -438,10 +410,6 @@ new #[Layout('layouts::app')] class extends Component {
             <tbody class="divide-y divide-border">
                 @forelse($documents as $document)
                     <tr class="transition-colors hover:bg-surface-muted/70 focus-within:bg-primary-subtle">
-                        <td class="px-5 py-3.5 text-center">
-                            <label for="document-{{ $document->id }}" class="sr-only">Seleziona {{ $document->number ?? 'documento #'.$document->id }}</label>
-                            <input id="document-{{ $document->id }}" wire:model.live="selected" type="checkbox" value="{{ $document->id }}" class="size-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20">
-                        </td>
                         <td class="px-5 py-3.5 font-medium text-content">
                             <x-app-link href="/{{ $definition['base'] }}/{{ $document->id }}/edit" class="rounded text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                                 {{ $document->number ?? '#'.$document->id }}
@@ -482,7 +450,7 @@ new #[Layout('layouts::app')] class extends Component {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $this->hasPayments() ? 9 : 8 }}" class="px-5 py-12 text-center text-sm text-content-muted">
+                        <td colspan="{{ $this->hasPayments() ? 8 : 7 }}" class="px-5 py-12 text-center text-sm text-content-muted">
                             {{ $search !== '' || $status !== '' || $payment !== '' ? 'Nessun documento corrisponde ai filtri.' : 'Nessuna '.$definition['singular'].' ancora registrata.' }}
                         </td>
                     </tr>

@@ -35,7 +35,7 @@ Pre-populated data, no registration required, automatic periodic reset.
 
 - **100% SDI Compliance**: generates XML files compliant with the Fattura Elettronica standard
 - **Privacy and Control**: your data stays under your control
-- **Modern Interface**: Livewire 4, Mary UI, DaisyUI v5 (light/dark mode)
+- **Modern Interface**: Livewire 4, Blade components, and Tailkit patterns
 - **Complete Management**: sales and purchase invoices, self-invoices, contacts, VAT rates, sequences
 - **Plugin System**: extensible architecture with UI-based activation/deactivation
 - **Dashboard and Reports**: revenue overview with fiscal year selector
@@ -115,8 +115,8 @@ Full guide: **[docker/README.md](docker/README.md)**
 | Layer | Technology |
 |-------|-----------|
 | **Backend** | Laravel 12 (PHP 8.2+) |
-| **UI** | Livewire 4 + Mary UI |
-| **Styling** | DaisyUI v5 + Tailwind CSS 4 |
+| **UI** | Livewire 4 + Blade components |
+| **Styling** | Tailwind CSS 4 + Tailkit |
 | **Testing** | Pest PHP |
 | **XML** | fatturaelettronicaphp/fattura-elettronica |
 

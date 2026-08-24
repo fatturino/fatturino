@@ -8,24 +8,23 @@ use Livewire\Component;
 
 new #[Layout('layouts::app')] class extends Component {
     public ?string $reconciliationOutput = null;
+
     public ?string $reconciliationError = null;
 
     public function reconcileOutboundSends(): void
     {
         $this->reconciliationOutput = null;
         $this->reconciliationError = null;
-
         try {
             $exitCode = Artisan::call('openapi:reconcile', [
                 '--recover-sends-only' => true,
                 '--details' => true,
             ]);
             $this->reconciliationOutput = trim(Artisan::output()) ?: 'Riconciliazione completata senza invii da recuperare.';
-
             if ($exitCode !== 0) {
                 $this->reconciliationError = 'La riconciliazione non è stata completata. Verifica il dettaglio tecnico qui sotto.';
             }
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             report($exception);
             $this->reconciliationError = 'Non è stato possibile avviare la riconciliazione. Verifica la configurazione OpenAPI e riprova.';
         }

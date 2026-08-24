@@ -1,17 +1,18 @@
 <?php
 
 use App\Actions\SaveProformaInvoice;
-use App\Enums\PaymentMethod;
-use App\Enums\PaymentTerms;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\ProformaInvoice;
-use App\Services\DocumentSequenceResolver;
 use App\Services\DocumentEventRecorder;
+use App\Services\DocumentSequenceResolver;
 use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentTerms;
 
 new #[Layout('layouts::app')] class extends Component {
     public ?ProformaInvoice $invoice = null;
@@ -65,7 +66,7 @@ new #[Layout('layouts::app')] class extends Component {
             ->map(fn (Contact $c) => [
                 'id' => $c->id,
                 'name' => $c->name,
-                'subtitle' => $c->vat_number ? 'P.IVA ' . $c->vat_number : null,
+                'subtitle' => $c->vat_number ? 'P.IVA '.$c->vat_number : null,
             ])->toArray();
         foreach (['notes' => 'default_notes', 'payment_method' => 'default_payment_method', 'payment_terms' => 'default_payment_terms', 'bank_name' => 'default_bank_name', 'bank_iban' => 'default_bank_iban', 'withholding_tax_percent' => 'withholding_tax_percent', 'fund_percent' => 'fund_percent'] as $field => $setting) {
             $this->{$field} = (string) ($settings->{$setting} ?? '');
@@ -77,7 +78,7 @@ new #[Layout('layouts::app')] class extends Component {
         if ($proformaInvoice) {
             foreach (['contact_id', 'notes', 'payment_method', 'payment_terms', 'bank_name', 'bank_iban', 'withholding_tax_percent', 'fund_percent', 'fund_vat_rate'] as $field) {
                 $value = $proformaInvoice->{$field} ?? '';
-                $this->{$field} = (string) ($value instanceof \BackedEnum ? $value->value : $value);
+                $this->{$field} = (string) ($value instanceof BackedEnum ? $value->value : $value);
             }
             foreach (['withholding_tax_enabled', 'fund_enabled', 'stamp_duty_applied', 'stamp_duty_charged_to_customer'] as $field) {
                 $this->{$field} = (bool) $proformaInvoice->{$field};
@@ -183,8 +184,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function refreshNumberPreview(): void
     {
-        $this->numberPreview = $this->invoice?->number
-            ?? app(DocumentSequenceResolver::class)->resolve('proforma')->getFormattedNumber((int) substr($this->date, 0, 4));
+        $this->numberPreview = $this->invoice?->number ?? app(DocumentSequenceResolver::class)->resolve('proforma')->getFormattedNumber((int) substr($this->date, 0, 4));
     }
 
     public function getReadOnlyProperty(): bool

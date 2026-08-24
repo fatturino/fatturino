@@ -31,7 +31,7 @@ new #[Layout('layouts::app')] class extends Component {
             ->map(fn (Contact $c) => [
                 'id' => $c->id,
                 'name' => $c->name,
-                'subtitle' => $c->vat_number ? 'P.IVA ' . $c->vat_number : null,
+                'subtitle' => $c->vat_number ? 'P.IVA '.$c->vat_number : null,
             ])->toArray();
         foreach (['contact_id', 'number'] as $field) {
             $this->{$field} = (string) $this->invoice->{$field};

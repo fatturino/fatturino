@@ -36,7 +36,7 @@ enum InvoiceStatus: string
     }
 
     /**
-     * Badge color class for Mary UI / DaisyUI (deprecated, use badgeVariant)
+     * Legacy badge color class (deprecated, use badgeVariant)
      */
     public function color(): string
     {
