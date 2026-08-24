@@ -176,14 +176,35 @@ new #[Layout('layouts::app')] class extends Component {
     public function statusLabel(mixed $value): string
     {
         return match ($this->statusValue($value)) {
-            'draft' => 'Bozza', 'xml_validated' => 'Validata', 'sent' => 'Inviata', 'converted' => 'Convertita', 'paid' => 'Pagata', 'partial' => 'Parziale', 'unpaid' => 'Da pagare', 'overdue' => 'Scaduta', default => $this->statusValue($value)
+            'draft' => 'Bozza',
+            'generated' => 'Generata',
+            'xml_validated' => 'Validata',
+            'sent' => 'Inviata',
+            'converted' => 'Convertita',
+            'cancelled' => 'Annullata',
+            'paid' => 'Pagata',
+            'partial' => 'Parziale',
+            'unpaid' => 'Da pagare',
+            'overdue' => 'Scaduta',
+            'delivered' => 'Consegnata',
+            'not_delivered' => 'Mancata consegna',
+            'accepted' => 'Accettata',
+            'received' => 'Ricevuta',
+            'rejected' => 'Scartata',
+            'refused' => 'Rifiutata',
+            'error' => 'Errore',
+            default => $this->statusValue($value),
         };
     }
 
-    public function statusClass(mixed $value): string
+    public function statusTone(mixed $value): string
     {
         return match ($this->statusValue($value)) {
-            'paid', 'sent', 'converted', 'delivered' => 'badge-sent', 'overdue', 'rejected', 'cancelled' => 'badge-overdue', 'draft', 'unpaid' => 'badge-draft', default => 'badge-neutral'
+            'paid', 'sent', 'converted', 'delivered', 'accepted' => 'success',
+            'overdue', 'rejected', 'refused', 'error', 'cancelled' => 'danger',
+            'unpaid', 'partial', 'not_delivered' => 'warning',
+            'draft', 'generated' => 'neutral',
+            default => 'info',
         };
     }
 
@@ -263,7 +284,12 @@ new #[Layout('layouts::app')] class extends Component {
 };
 ?>
 
-<x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Documenti</p><h1 class="text-lg font-bold text-content">{{ $this->title() }}</h1></div></x-slot:header>
+<x-slot:header>
+    <div>
+        <p class="text-xs font-medium text-content-muted">Documenti</p>
+        <h1 class="text-lg font-semibold text-content">{{ $this->title() }}</h1>
+    </div>
+</x-slot:header>
 
 @php
     $definition = $this->definition();
@@ -304,18 +330,167 @@ new #[Layout('layouts::app')] class extends Component {
         'canXml' => in_array($type, ['sales', 'self', 'credit'], true),
         'linkableInvoices' => $linkableInvoices,
     ];
+    $summaryParts = [
+        $total.' '.$definition['plural'],
+        $this->money($net).' netto',
+    ];
+    if ($this->hasPayments()) {
+        $summaryParts[] = $open.' da saldare';
+    } else {
+        $summaryParts[] = $drafts.' bozze';
+        $summaryParts[] = $sent.' inviate';
+    }
 @endphp
 <section
     class="space-y-6"
     x-data="documentActionCenter(@js($actionConfig))"
     x-on:document-action.window="handleAction($event.detail)"
 >
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Anno fiscale {{ $fiscalYear }}</p><p class="mt-1 text-sm text-content-muted">Gestisci e monitora i tuoi documenti.</p></div>@if($definition['create'])<x-app-link href="/{{ $definition['base'] }}/create" class="rounded-md bg-primary px-4 py-2 text-sm font-bold text-white">{{ $definition['create'] }}</x-app-link>@endif</div>
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><x-dashboard.kpi-card label="Totale netto" :value="$this->money($net)" :detail="$total.' '.$definition['plural'].' · IVA '.$this->money($vat)"/><x-dashboard.kpi-card label="Valore medio netto" :value="$total ? $this->money($net / $total) : '—'" :detail="$total ? 'IVA media '.$this->money($vat / $total) : 'per documento'"/><x-dashboard.kpi-card :label="$this->hasPayments() ? 'Da pagare' : 'Bozze'" :value="$this->hasPayments() ? $open : $drafts" :detail="$this->hasPayments() ? 'documenti aperti' : 'da completare'"/><x-dashboard.kpi-card :label="$this->hasPayments() ? 'Scadute' : 'Inviate'" :value="$this->hasPayments() ? $overdue : $sent" :detail="$this->hasPayments() ? 'da saldare' : 'documenti inviati'"/></div>
-    @if($type === 'purchase')<p class="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">Le fatture di acquisto vengono importate automaticamente dallo SDI.</p>@endif
-    <article class="overflow-hidden rounded-xl border border-border-light bg-white shadow-[var(--shadow-card)]"><div class="border-b border-border-light p-4"><div class="flex flex-wrap gap-2">@foreach($definition['tabs'] as $tab)<button wire:click="selectTab('{{ $tab }}')" @class(['rounded-md px-3 py-2 text-sm font-semibold transition', 'bg-primary text-white' => $this->isActive($tab), 'bg-surface-muted text-content-muted hover:text-content' => !$this->isActive($tab)])>{{ $this->tabLabel($tab) }}</button>@endforeach</div><div class="mt-4 flex flex-col gap-3 sm:flex-row"><div class="relative w-full"><label for="document-search" class="sr-only">Cerca documenti</label><svg class="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-content-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="document-search" wire:model.live.debounce.350ms="search" type="search" class="block h-11 w-full rounded-md border border-border bg-white py-2 pl-10 pr-3 text-sm text-content shadow-sm placeholder:text-content-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Cerca per numero o {{ strtolower($definition['contact']) }}"></div><button wire:click="resetFilters" class="h-11 rounded-md border border-border bg-white px-4 py-2 text-sm font-semibold text-content shadow-sm hover:bg-surface-muted">Reset</button></div></div>
-        <div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-surface-muted text-xs uppercase tracking-wide text-content-muted"><tr><th class="w-12 px-5 py-3 text-center"><label for="select-page" class="sr-only">Seleziona tutti i documenti nella pagina</label><input id="select-page" wire:click="togglePageSelection({{ \Illuminate\Support\Js::from($documents->pluck('id')->all()) }})" type="checkbox" @checked($documents->isNotEmpty() && $documents->every(fn ($document) => in_array($document->id, $selected, true))) class="size-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20"></th><th class="px-5 py-3"><button wire:click="sortBy('number')">Numero</button></th><th class="px-5 py-3"><button wire:click="sortBy('date')">Data</button></th><th class="px-5 py-3">{{ $definition['contact'] }}</th><th class="px-5 py-3 text-right"><button wire:click="sortBy('total_gross')">Imponibile</button></th><th class="px-5 py-3 text-right">IVA</th><th class="px-5 py-3">Stato</th>@if($this->hasPayments())<th class="px-5 py-3">Pagamento</th>@endif<th class="px-5 py-3 text-right">Azioni</th></tr></thead><tbody class="divide-y divide-border-light">@forelse($documents as $document)<tr class="hover:bg-surface-muted/60"><td class="px-5 py-4 text-center"><label for="document-{{ $document->id }}" class="sr-only">Seleziona {{ $document->number ?? 'documento #'.$document->id }}</label><input id="document-{{ $document->id }}" wire:model.live="selected" type="checkbox" value="{{ $document->id }}" class="size-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20"></td><td class="px-5 py-4 font-semibold">{{ $document->number ?? '#'.$document->id }}</td><td class="px-5 py-4 text-content-muted">{{ \Carbon\Carbon::parse($document->date)->format('d/m/Y') }}</td><td class="px-5 py-4">{{ $document->contact?->name ?? '—' }}</td><td class="px-5 py-4 text-right tabular-nums"><p class="font-bold">{{ $this->money($document->total_gross - $document->total_vat) }}</p>@if($this->hasPayments() && (int) $document->net_due !== (int) ($document->total_gross - $document->total_vat))<p class="mt-0.5 text-xs font-medium text-content-muted">Da pagare {{ $this->money($document->net_due) }}</p>@endif</td><td class="px-5 py-4 text-right tabular-nums font-bold">{{ $this->money($document->total_vat) }}</td><td class="px-5 py-4"><span class="badge {{ $this->statusClass($document->status) }}">{{ $this->statusLabel($document->status) }}</span></td>@if($this->hasPayments())<td class="px-5 py-4"><span class="badge {{ $this->statusClass($document->payment_status) }}">{{ $this->statusLabel($document->payment_status) }}</span></td>@endif<td class="px-5 py-4 text-right"><x-documents.document-actions :document="$document" :type="$type" :base="$definition['base']" /></td></tr>@empty<tr><td colspan="{{ $this->hasPayments() ? 9 : 8 }}" class="px-5 py-12 text-center text-sm text-content-muted">Nessuna {{ $definition['singular'] }} trovata.</td></tr>@endforelse</tbody></table></div>
-        @if($documents->hasPages())<div class="border-t border-border-light px-5 py-4">{{ $documents->links() }}</div>@endif
-    </article>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <p class="text-xs font-medium text-content-muted">Anno fiscale {{ $fiscalYear }}</p>
+            <p class="mt-1 text-sm text-content">{{ implode(' · ', $summaryParts) }}@if($this->hasPayments() && $overdue > 0) <span class="text-danger">· {{ $overdue }} {{ $overdue === 1 ? 'scaduta' : 'scadute' }}</span>@endif</p>
+        </div>
+
+        @if($definition['create'])
+            <x-app-link href="/{{ $definition['base'] }}/create" class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20">
+                {{ $definition['create'] }}
+            </x-app-link>
+        @endif
+    </div>
+
+    @if($type === 'purchase')
+        <p class="rounded-lg border border-info/20 bg-info-bg px-4 py-3 text-sm text-info">Le fatture di acquisto vengono importate automaticamente dallo SDI.</p>
+    @endif
+
+    <div class="border-b border-border">
+        <div class="flex gap-1 overflow-x-auto" role="tablist" aria-label="Filtra {{ strtolower($definition['plural']) }}">
+            @foreach($definition['tabs'] as $tab)
+                <button wire:click="selectTab('{{ $tab }}')" type="button" @class([
+                    'inline-flex h-10 shrink-0 items-center border-b-2 px-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-primary/20',
+                    'border-primary text-primary' => $this->isActive($tab),
+                    'border-transparent text-content-muted hover:border-border hover:text-content' => ! $this->isActive($tab),
+                ]) aria-pressed="{{ $this->isActive($tab) ? 'true' : 'false' }}">
+                    {{ $this->tabLabel($tab) }}
+                </button>
+            @endforeach
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-center">
+        <div class="relative w-full sm:max-w-xl">
+            <label for="document-search" class="sr-only">Cerca documenti</label>
+            <svg class="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-content-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
+            </svg>
+            <input id="document-search" wire:model.live.debounce.350ms="search" type="search" class="block h-11 w-full rounded-lg border border-border-strong bg-white py-2 pl-10 pr-3 text-sm text-content placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Cerca per numero o {{ strtolower($definition['contact']) }}">
+        </div>
+
+        @if($search !== '' || $status !== '' || $payment !== '')
+            <button wire:click="resetFilters" type="button" class="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-content-muted transition hover:bg-surface-muted hover:text-content focus:outline-none focus:ring-2 focus:ring-primary/20">
+                Cancella filtri
+            </button>
+        @endif
+    </div>
+
+    <div class="overflow-x-auto border-y border-border bg-white">
+        <table class="min-w-full text-left text-sm">
+            <thead class="border-b border-border bg-surface-muted text-content-muted">
+                <tr>
+                    <th class="w-12 px-5 py-3 text-center">
+                        <label for="select-page" class="sr-only">Seleziona tutti i documenti nella pagina</label>
+                        <input id="select-page" wire:click="togglePageSelection({{ \Illuminate\Support\Js::from($documents->pluck('id')->all()) }})" type="checkbox" @checked($documents->isNotEmpty() && $documents->every(fn ($document) => in_array($document->id, $selected, true))) class="size-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20">
+                    </th>
+                    @foreach (['number' => 'Numero', 'date' => 'Data'] as $column => $label)
+                        @php
+                            $isActiveSort = $sort === $column;
+                            $ariaSort = $isActiveSort ? ($direction === 'asc' ? 'ascending' : 'descending') : 'none';
+                        @endphp
+                        <th scope="col" aria-sort="{{ $ariaSort }}" class="px-5 py-3 text-xs font-medium">
+                            <button wire:click="sortBy('{{ $column }}')" type="button" class="inline-flex min-h-6 items-center gap-1.5 rounded text-left transition hover:text-content focus:outline-none focus:ring-2 focus:ring-primary/20" aria-label="Ordina per {{ $label }}">
+                                <span>{{ $label }}</span>
+                                <x-icon :name="$isActiveSort ? ($direction === 'asc' ? 'o-chevron-up' : 'o-chevron-down') : 'o-chevron-up-down'" @class(['size-3.5', 'text-primary' => $isActiveSort, 'opacity-40' => ! $isActiveSort]) />
+                            </button>
+                        </th>
+                    @endforeach
+                    <th scope="col" class="px-5 py-3 text-xs font-medium">{{ $definition['contact'] }}</th>
+                    @php
+                        $isActiveSort = $sort === 'total_gross';
+                        $ariaSort = $isActiveSort ? ($direction === 'asc' ? 'ascending' : 'descending') : 'none';
+                    @endphp
+                    <th scope="col" aria-sort="{{ $ariaSort }}" class="px-5 py-3 text-right text-xs font-medium">
+                        <button wire:click="sortBy('total_gross')" type="button" class="inline-flex min-h-6 items-center gap-1.5 rounded text-right transition hover:text-content focus:outline-none focus:ring-2 focus:ring-primary/20" aria-label="Ordina per imponibile">
+                            <span>Imponibile</span>
+                            <x-icon :name="$isActiveSort ? ($direction === 'asc' ? 'o-chevron-up' : 'o-chevron-down') : 'o-chevron-up-down'" @class(['size-3.5', 'text-primary' => $isActiveSort, 'opacity-40' => ! $isActiveSort]) />
+                        </button>
+                    </th>
+                    <th scope="col" class="px-5 py-3 text-right text-xs font-medium">IVA</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-medium">Stato</th>
+                    @if($this->hasPayments())
+                        <th scope="col" class="px-5 py-3 text-xs font-medium">Pagamento</th>
+                    @endif
+                    <th scope="col" class="w-14 px-3 py-3 text-right text-xs font-medium"><span class="sr-only">Azioni</span></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+                @forelse($documents as $document)
+                    <tr class="transition-colors hover:bg-surface-muted/70 focus-within:bg-primary-subtle">
+                        <td class="px-5 py-3.5 text-center">
+                            <label for="document-{{ $document->id }}" class="sr-only">Seleziona {{ $document->number ?? 'documento #'.$document->id }}</label>
+                            <input id="document-{{ $document->id }}" wire:model.live="selected" type="checkbox" value="{{ $document->id }}" class="size-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20">
+                        </td>
+                        <td class="px-5 py-3.5 font-medium text-content">
+                            <x-app-link href="/{{ $definition['base'] }}/{{ $document->id }}/edit" class="rounded text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                {{ $document->number ?? '#'.$document->id }}
+                            </x-app-link>
+                        </td>
+                        <td class="px-5 py-3.5 text-content-muted">{{ \Carbon\Carbon::parse($document->date)->format('d/m/Y') }}</td>
+                        <td class="px-5 py-3.5 text-content">{{ $document->contact?->name ?? '—' }}</td>
+                        <td class="px-5 py-3.5 text-right tabular-nums">
+                            <p class="font-medium text-content">{{ $this->money($document->total_gross - $document->total_vat) }}</p>
+                            @if($this->hasPayments() && (int) $document->net_due !== (int) ($document->total_gross - $document->total_vat))
+                                <p class="mt-0.5 text-xs text-content-muted">Da pagare {{ $this->money($document->net_due) }}</p>
+                            @endif
+                        </td>
+                        <td class="px-5 py-3.5 text-right font-medium tabular-nums text-content">{{ $this->money($document->total_vat) }}</td>
+                        <td class="px-5 py-3.5">
+                            <span @class([
+                                'inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium',
+                                'text-success' => $this->statusTone($document->status) === 'success',
+                                'text-warning' => $this->statusTone($document->status) === 'warning',
+                                'text-danger' => $this->statusTone($document->status) === 'danger',
+                                'text-info' => $this->statusTone($document->status) === 'info',
+                                'text-content-muted' => $this->statusTone($document->status) === 'neutral',
+                            ])><span class="size-1.5 rounded-full bg-current"></span>{{ $this->statusLabel($document->status) }}</span>
+                        </td>
+                        @if($this->hasPayments())
+                            <td class="px-5 py-3.5">
+                                <span @class([
+                                    'inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium',
+                                    'text-success' => $this->statusTone($document->payment_status) === 'success',
+                                    'text-warning' => $this->statusTone($document->payment_status) === 'warning',
+                                    'text-danger' => $this->statusTone($document->payment_status) === 'danger',
+                                    'text-info' => $this->statusTone($document->payment_status) === 'info',
+                                    'text-content-muted' => $this->statusTone($document->payment_status) === 'neutral',
+                                ])><span class="size-1.5 rounded-full bg-current"></span>{{ $this->statusLabel($document->payment_status) }}</span>
+                            </td>
+                        @endif
+                        <td class="px-3 py-3.5 text-right"><x-documents.document-actions :document="$document" :type="$type" :base="$definition['base']" /></td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="{{ $this->hasPayments() ? 9 : 8 }}" class="px-5 py-12 text-center text-sm text-content-muted">
+                            {{ $search !== '' || $status !== '' || $payment !== '' ? 'Nessun documento corrisponde ai filtri.' : 'Nessuna '.$definition['singular'].' ancora registrata.' }}
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    @if($documents->hasPages())
+        <div class="pt-1">{{ $documents->links() }}</div>
+    @endif
     <x-documents.document-action-center />
 </section>

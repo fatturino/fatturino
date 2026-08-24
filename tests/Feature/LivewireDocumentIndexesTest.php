@@ -49,7 +49,7 @@ it('filters sales invoices by search, status and fiscal year', function () {
         ->assertSee('FV-2026-001');
 });
 
-it('shows aggregate KPIs for the fiscal-year documents with a single result set', function () {
+it('shows a compact fiscal-year summary instead of aggregate KPI cards', function () {
     $user = User::factory()->create();
 
     SalesInvoice::factory()->create([
@@ -78,15 +78,11 @@ it('shows aggregate KPIs for the fiscal-year documents with a single result set'
     $this->actingAs($user);
 
     Livewire::test('pages::documents.index', ['type' => 'sales'])
-        ->assertSee('Totale netto')
-        ->assertSee('€ 300,00')
-        ->assertSee('IVA € 66,00')
-        ->assertSee('2 fatture')
-        ->assertSee('€ 150,00')
-        ->assertSee('IVA media € 33,00')
-        ->assertSee('2', false)
-        ->assertSee('documenti aperti')
-        ->assertSee('da saldare');
+        ->assertSee('2 fatture · € 300,00 netto · 2 da saldare')
+        ->assertSee('1 scaduta')
+        ->assertDontSee('Totale netto')
+        ->assertDontSee('Valore medio netto')
+        ->assertDontSee('IVA media');
 });
 
 it('shows the payment filter only for payable document indexes', function () {
@@ -99,6 +95,24 @@ it('shows the payment filter only for payable document indexes', function () {
 
     Livewire::test('pages::documents.index', ['type' => 'proforma'])
         ->assertDontSee('Pagamento');
+});
+
+it('renders an accessible sortable document table with a single primary document link', function () {
+    $user = User::factory()->create();
+    $invoice = SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'number' => 'FV-LINK-001',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.index', ['type' => 'sales'])
+        ->assertSee('aria-sort="descending"', escape: false)
+        ->assertSee("href=\"/sell-invoices/{$invoice->id}/edit\"", escape: false)
+        ->assertSee('class="sr-only">Azioni</span>', escape: false)
+        ->assertSee('size-1.5 rounded-full bg-current', escape: false)
+        ->call('sortBy', 'date')
+        ->assertSee('aria-sort="ascending"', escape: false);
 });
 
 it('renders the compatible document actions and gates the SDI send action by workflow state', function () {
@@ -120,7 +134,7 @@ it('renders the compatible document actions and gates the SDI send action by wor
     $this->actingAs($user)
         ->get('/sell-invoices')
         ->assertOk()
-        ->assertSee('>Azioni<', false)
+        ->assertSee('aria-label="Azioni per FV-AZIONI-BOZZA"', false)
         ->assertSee('x-teleport="body"', false)
         ->assertSee('x-ref="menu"', false)
         ->assertSee('Apri documento')
