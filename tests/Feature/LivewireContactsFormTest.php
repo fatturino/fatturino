@@ -12,6 +12,24 @@ it('renders contact create and edit pages as Livewire components', function () {
     $this->actingAs($user)->get(route('contacts.edit', $contact))->assertOk()->assertSeeLivewire('pages::contacts.edit');
 });
 
+it('renders the contact editor sections, electronic invoicing helpers, and actions', function () {
+    $this->actingAs(User::factory()->create());
+    $contact = Contact::factory()->create();
+
+    Livewire::test('pages::contacts.create')
+        ->assertSee('Dati identificativi')
+        ->assertSee('Fatturazione elettronica')
+        ->assertSee('Indirizzo')
+        ->assertSee('Nome o ragione sociale *')
+        ->assertSee('Per i contatti italiani, inserisci il codice destinatario di 7 caratteri oppure usa la PEC.')
+        ->assertSee('Crea contatto')
+        ->assertSee('Annulla');
+
+    Livewire::test('pages::contacts.edit', ['contact' => $contact])
+        ->assertSee('Salva contatto')
+        ->assertSee('Completa l’indirizzo usato nei documenti fiscali.');
+});
+
 it('creates a contact from the Livewire form', function () {
     $this->actingAs(User::factory()->create());
 
@@ -46,4 +64,18 @@ it('updates a contact from the Livewire form and validates Italian VAT numbers',
         ->set('vat_number', 'IT123')
         ->call('save')
         ->assertHasErrors(['vat_number']);
+});
+
+it('accepts a foreign VAT number without applying Italian validation', function () {
+    $this->actingAs(User::factory()->create());
+
+    Livewire::test('pages::contacts.create')
+        ->set('name', 'Deutsche Company GmbH')
+        ->set('country', 'DE')
+        ->set('vat_number', 'DE123456789')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('contacts.index'));
+
+    $this->assertDatabaseHas('contacts', ['name' => 'Deutsche Company GmbH', 'country' => 'DE', 'vat_number' => 'DE123456789']);
 });
