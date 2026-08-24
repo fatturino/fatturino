@@ -27,3 +27,18 @@ it('uses the fiscal regime enum label', function () {
 
     expect(Blade::render('<x-shell.user-menu />'))->toContain('RF01 - Ordinario');
 });
+
+it('renders an accessible disclosure menu with keyboard focus management', function () {
+    $html = Blade::render('<x-shell.user-menu />');
+
+    expect($html)
+        ->toContain('x-ref="trigger"')
+        ->toContain('aria-controls="company-menu"')
+        ->toContain(':aria-expanded="open"')
+        ->toContain('@keydown.escape.window="if (open) close(true)"')
+        ->toContain('x-ref="firstMenuItem"')
+        ->toContain('id="company-menu"')
+        ->toContain('this.$refs.trigger?.focus()')
+        ->not->toContain('role="menu"')
+        ->not->toContain('role="menuitem"');
+});

@@ -13,15 +13,43 @@
         @livewireStyles
     </head>
     <body class="bg-canvas font-sans text-content antialiased">
-        <div x-data="{ sidebarOpen: false }" class="min-h-dvh lg:pl-64">
-            <div x-cloak x-show="sidebarOpen" class="fixed inset-0 z-40 bg-ink/40 lg:hidden" @click="sidebarOpen = false"></div>
+        <x-app-link href="#main-content" :full-reload="true" class="sr-only fixed left-4 top-4 z-[60] rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:outline-none focus:ring-3 focus:ring-primary/20">Salta al contenuto principale</x-app-link>
+        <div
+            x-data="{
+                sidebarOpen: false,
+                isDesktop: false,
+                openSidebar() {
+                    this.sidebarOpen = true;
+                    this.$nextTick(() => this.$refs.sidebarClose?.focus());
+                },
+                closeSidebar(returnFocus = false) {
+                    this.sidebarOpen = false;
+
+                    if (returnFocus) {
+                        this.$nextTick(() => this.$refs.menuTrigger?.focus());
+                    }
+                },
+                syncViewport() {
+                    this.isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+
+                    if (this.isDesktop) {
+                        this.sidebarOpen = false;
+                    }
+                },
+            }"
+            x-init="syncViewport()"
+            @resize.window.debounce.100ms="syncViewport()"
+            @keydown.escape.window="if (sidebarOpen && !isDesktop) closeSidebar(true)"
+            class="min-h-dvh lg:pl-64"
+        >
+            <div x-cloak x-show="sidebarOpen && !isDesktop" x-transition.opacity class="fixed inset-0 z-40 bg-ink/40 lg:hidden" @click="closeSidebar(true)" aria-hidden="true"></div>
             <x-shell.sidebar />
             <header class="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-border bg-white/95 px-4 backdrop-blur lg:px-8">
-                <button type="button" class="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-content transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20 lg:hidden" @click="sidebarOpen = true" aria-label="Apri menu">☰</button>
+                <button x-ref="menuTrigger" type="button" class="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-content transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20 lg:hidden" @click="openSidebar()" aria-label="Apri menu" aria-controls="app-sidebar" :aria-expanded="sidebarOpen.toString()">☰</button>
                 <div class="min-w-0 flex-1">@isset($header){{ $header }}@endisset</div>
                 <x-shell.user-menu />
             </header>
-            <main id="main-content" class="mx-auto w-full max-w-[90rem] p-4 sm:p-6 lg:p-8">{{ $slot }}</main>
+            <main id="main-content" tabindex="-1" class="mx-auto w-full max-w-[90rem] p-4 sm:p-6 lg:p-8">{{ $slot }}</main>
         </div>
         @livewireScripts
         @wirechartsScripts
