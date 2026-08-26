@@ -57,6 +57,10 @@ foreach ($options as $key => $val) {
 $optionsJson = json_encode($normalizedOptions);
 $placeholderText = $placeholder ?? __('app.common.select');
 $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
+$modelName = $attributes->wire('model')->value();
+$selectId = 'select-'.str($modelName ?: uniqid('field-', true))->slug();
+$buttonId = $selectId.'-button';
+$listId = $selectId.'-list';
 @endphp
 
 <div
@@ -147,6 +151,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
     <div class="relative">
         {{-- Button trigger --}}
         <button
+            id="{{ $buttonId }}"
             x-ref="button"
             @click="open = !open"
             @disabled($disabled)
@@ -155,7 +160,8 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
                    {{ $error ? 'border-danger' : '' }}
                    {{ $icon ? 'pl-10' : '' }}"
             aria-haspopup="listbox"
-            aria-controls="tk-select-menu-list"
+            aria-controls="{{ $listId }}"
+            :aria-expanded="open"
         >
             @if($icon)
                 <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-content-muted">
@@ -180,7 +186,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
 
         {{-- Dropdown --}}
         <ul
-            id="tk-select-menu-list"
+            id="{{ $listId }}"
             x-show="open"
             x-transition:enter="transition ease-out duration-100"
             x-transition:enter-start="opacity-0 scale-95"
@@ -190,7 +196,7 @@ $searchPlaceholderText = $searchPlaceholder ?? 'Cerca...';
             x-transition:leave-end="opacity-0 scale-95"
             @click.away="open = false"
             class="absolute inset-x-0 z-10 mt-2 max-h-60 origin-top overflow-y-auto rounded-xl border border-border bg-white py-2 shadow-[var(--shadow-elevated)] focus:outline-none"
-            aria-labelledby="tk-select-menu-button"
+            aria-labelledby="{{ $buttonId }}"
             aria-orientation="vertical"
             role="listbox"
             tabindex="0"

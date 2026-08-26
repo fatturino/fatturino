@@ -46,7 +46,7 @@ it('renders the sales invoice create page as a Livewire form', function () {
         ->assertSee('Righe fattura');
 });
 
-it('renders the sales invoice as a document editor with always-visible metadata and line columns', function () {
+it('renders the sales invoice as a tabbed form with invoice lines and a fiscal summary', function () {
     $user = User::factory()->create();
     configureSalesInvoiceFormSequence();
 
@@ -57,16 +57,17 @@ it('renders the sales invoice as a document editor with always-visible metadata 
         ->assertSee('Cliente, numero e condizioni del documento.')
         ->assertSee('Bozza')
         ->assertSee('Descrizione')
-        ->assertSee('Quantità')
-        ->assertSee('Prezzo')
-        ->assertSee('Totale')
+        ->assertSee('Importo')
+        ->assertSee('IVA')
         ->assertSee('Pagamento')
         ->assertSee('Note')
         ->assertSee('Opzioni fiscali')
-        ->assertDontSee('aria-label="Sezioni fattura"', escape: false);
+        ->assertSee('aria-label="Sezioni fattura"', escape: false)
+        ->assertSee('role="tablist"', escape: false)
+        ->assertSee('sales-panel-payment', escape: false);
 });
 
-it('uses the sales-only editor layout with compact disclosures and summary actions', function () {
+it('keeps payment and notes in tabs while showing active fiscal options in the collapsed card', function () {
     $user = User::factory()->create();
     configureSalesInvoiceFormSequence();
     $settings = app(InvoiceSettings::class);
@@ -80,14 +81,13 @@ it('uses the sales-only editor layout with compact disclosures and summary actio
     $this->actingAs($user);
 
     Livewire::test('pages::documents.sales.form')
-        ->assertSee('items-start', escape: false)
-        ->assertSee('Mostra unità di misura e sconto')
-        ->assertSee('Da pagare')
-        ->assertSee('Precompilato')
-        ->assertSee('Presenti')
-        ->assertSee('Tipo cassa')
-        ->assertSee('IVA cassa')
-        ->assertSee('Soggetta a ritenuta');
+        ->assertSee('sales-tab-payment', escape: false)
+        ->assertSee('sales-tab-notes', escape: false)
+        ->assertSee('Cassa 4%')
+        ->set('tab', 'payment')
+        ->assertSet('tab', 'payment')
+        ->set('tab', 'notes')
+        ->assertSet('tab', 'notes');
 });
 
 it('keeps quantity in the primary invoice line editor and details as a disclosure', function () {
@@ -98,11 +98,66 @@ it('keeps quantity in the primary invoice line editor and details as a disclosur
 
     Livewire::test('pages::documents.sales.form')
         ->set('lines', [validSalesInvoiceLine()])
-        ->assertSee('lines.0.quantity', escape: false)
-        ->assertSee('Mostra unità di misura e sconto')
+        ->assertSee('Dettagli')
         ->call('toggleLineDetails', 0)
+        ->assertSee('lines.0.quantity', escape: false)
         ->assertSee('Unità di misura')
-        ->assertSee('Sconto %');
+        ->assertSee('Applica sconto alla riga');
+});
+
+it('keeps the discount toggle, percent field, and line total in sync', function () {
+    $user = User::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->set('lines', [[...validSalesInvoiceLine(), 'unit_price' => '100.00']])
+        ->call('toggleLineDetails', 0)
+        ->assertSee('Applica')
+        ->assertSee('Percentuale sconto')
+        ->call('toggleLineDiscount', 0)
+        ->assertSet('lines.0.discount_enabled', true)
+        ->assertDispatched('sales-line-discount-enabled')
+        ->set('lines.0.discount_percent', '10.00')
+        ->assertSee('€ 90,00')
+        ->call('toggleLineDiscount', 0)
+        ->assertSet('lines.0.discount_enabled', false)
+        ->assertSet('lines.0.discount_percent', '')
+        ->assertSee('€ 100,00');
+});
+
+it('does not save a discount percent when its line toggle is disabled', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->set('contact_id', $contact->id)
+        ->set('lines', [[...validSalesInvoiceLine(), 'unit_price' => '100.00', 'discount_enabled' => false, 'discount_percent' => '25.00']])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $line = SalesInvoice::query()->sole()->lines()->sole();
+
+    expect($line->discount_percent)->toBeNull()
+        ->and($line->total)->toBe(10000);
+});
+
+it('restores the discount toggle when editing an invoice line with a discount', function () {
+    $user = User::factory()->create();
+    $sequence = configureSalesInvoiceFormSequence();
+    $invoice = SalesInvoice::factory()->create(['sequence_id' => $sequence->id, 'date' => now()->toDateString()]);
+    $invoice->lines()->create(['description' => 'Consulenza scontata', 'quantity' => 1, 'unit_price' => 10000, 'discount_percent' => 10, 'discount_amount' => 1000, 'vat_rate' => 'R22', 'total' => 9000]);
+    $invoice = SalesInvoice::query()->findOrFail($invoice->id);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form', ['invoice' => $invoice])
+        ->assertSet('lines.0.discount_enabled', true)
+        ->assertSet('lines.0.discount_percent', '10.00');
 });
 
 it('emits a focus event after adding or removing an invoice line', function () {

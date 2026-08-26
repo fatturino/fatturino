@@ -119,7 +119,8 @@ class SaveSalesInvoice
         $quantity = (float) $line['quantity'];
         $unitPrice = (float) $line['unit_price'];
         $gross = $quantity * $unitPrice;
-        $discountPercent = filled($line['discount_percent'] ?? null) ? (float) $line['discount_percent'] : null;
+        $discountEnabled = (bool) ($line['discount_enabled'] ?? filled($line['discount_percent'] ?? null));
+        $discountPercent = $discountEnabled && filled($line['discount_percent'] ?? null) ? (float) $line['discount_percent'] : null;
         $total = $discountPercent !== null && $discountPercent > 0
             ? $gross * (1 - $discountPercent / 100)
             : $gross;

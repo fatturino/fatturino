@@ -138,11 +138,16 @@ new #[Layout('layouts::app')] class extends Component {
         $this->lines[$index]['details_enabled'] = ! ($this->lines[$index]['details_enabled'] ?? false);
     }
 
-    public function updatedLinesDiscountEnabled(bool $enabled, string $key): void
+    public function toggleLineDiscount(int $index): void
     {
+        $enabled = ! ($this->lines[$index]['discount_enabled'] ?? false);
+        $this->lines[$index]['discount_enabled'] = $enabled;
         if (! $enabled) {
-            $this->lines[(int) explode('.', $key)[0]]['discount_percent'] = '';
+            $this->lines[$index]['discount_percent'] = '';
+
+            return;
         }
+        $this->dispatch('sales-line-discount-enabled', key: $this->lines[$index]['key']);
     }
 
     public function updatedSplitPayment(): void
@@ -184,7 +189,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function getNetTotalProperty(): float
     {
-        return round(array_sum(array_map(fn ($line) => max(0, (float) ($line['quantity'] ?: 0)) * max(0, (float) ($line['unit_price'] ?: 0)) * (1 - max(0, (float) ($line['discount_percent'] ?: 0)) / 100), $this->lines)), 2);
+        return round(array_sum(array_map(fn ($line) => $this->lineTotal($line), $this->lines)), 2);
     }
 
     public function getFundAmountProperty(): float
@@ -237,7 +242,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function rules(): array
     {
-        return ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'due_date' => 'nullable|date', 'document_type' => 'required|string', 'notes' => 'nullable|string', 'withholding_tax_enabled' => 'boolean', 'withholding_tax_percent' => 'nullable|numeric|min:0|max:100', 'fund_enabled' => 'boolean', 'fund_type' => 'nullable|string', 'fund_percent' => 'nullable|numeric|min:0|max:100', 'fund_vat_rate' => 'nullable|string', 'fund_has_deduction' => 'boolean', 'stamp_duty_applied' => 'boolean', 'stamp_duty_charged_to_customer' => 'boolean', 'payment_method' => 'nullable|string', 'payment_terms' => 'nullable|string', 'bank_name' => 'nullable|string', 'bank_iban' => 'nullable|string', 'vat_payability' => 'required|string', 'split_payment' => 'boolean', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.discount_percent' => 'nullable|numeric|min:0|max:100', 'lines.*.vat_rate' => 'required|string'];
+        return ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'due_date' => 'nullable|date', 'document_type' => 'required|string', 'notes' => 'nullable|string', 'withholding_tax_enabled' => 'boolean', 'withholding_tax_percent' => 'nullable|numeric|min:0|max:100', 'fund_enabled' => 'boolean', 'fund_type' => 'nullable|string', 'fund_percent' => 'nullable|numeric|min:0|max:100', 'fund_vat_rate' => 'nullable|string', 'fund_has_deduction' => 'boolean', 'stamp_duty_applied' => 'boolean', 'stamp_duty_charged_to_customer' => 'boolean', 'payment_method' => 'nullable|string', 'payment_terms' => 'nullable|string', 'bank_name' => 'nullable|string', 'bank_iban' => 'nullable|string', 'vat_payability' => 'required|string', 'split_payment' => 'boolean', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric|min:0', 'lines.*.discount_enabled' => 'boolean', 'lines.*.discount_percent' => 'nullable|numeric|min:0|max:100', 'lines.*.vat_rate' => 'required|string'];
     }
 
     private function emptyLine(): array
@@ -252,7 +257,11 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function lineTotal(array $line): float
     {
-        return (float) ($line['quantity'] ?: 0) * (float) ($line['unit_price'] ?: 0) * (1 - (float) ($line['discount_percent'] ?: 0) / 100);
+        $discountPercent = ($line['discount_enabled'] ?? filled($line['discount_percent'] ?? null))
+            ? (float) ($line['discount_percent'] ?: 0)
+                : 0;
+
+        return (float) ($line['quantity'] ?: 0) * (float) ($line['unit_price'] ?: 0) * (1 - $discountPercent / 100);
     }
 
     private function vatPercent(string $value): float
@@ -282,70 +291,47 @@ new #[Layout('layouts::app')] class extends Component {
     @endif
     @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror
 
-    <form wire:submit="save" x-data="{ dirty: false }" @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }" @input="dirty = true" @change="dirty = true" @sales-line-added.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-removed.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] 2xl:gap-6 2xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
-            <x-documents.invoice-form.data-section variant="editor">
+    <form wire:submit="save" x-data="{ dirty: false, tab: @entangle('tab'), tabs: ['data', 'payment', 'notes' @if($invoice), 'history' @endif], selectTab(nextTab) { this.tab = nextTab; this.$nextTick(() => document.getElementById('sales-tab-' + nextTab)?.focus()); }, moveTab(step) { this.selectTab(this.tabs[(this.tabs.indexOf(this.tab) + step + this.tabs.length) % this.tabs.length]); } }" @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }" @input="dirty = true" @change="dirty = true" @sales-line-added.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-removed.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-discount-enabled.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-discount')?.focus())" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div class="space-y-6">
+            <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
                 <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-semibold text-content">Dati fattura</h2>
-                        <p class="mt-1 text-sm text-content-muted">Cliente, numero e condizioni del documento.</p>
-                    </div>
+                    <div><h2 class="text-base font-semibold text-content">Dati fattura</h2><p class="mt-1 text-sm text-content-muted">Cliente, numero e condizioni del documento.</p></div>
                     <span class="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-content-muted"><span class="size-1.5 rounded-full bg-current"></span>{{ $editorStatus }}</span>
                 </div>
 
-                <div class="mt-6">
-                    <label class="block text-sm font-medium text-content">Cliente *
-                        <x-select wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" />
-                        @error('contact_id')<span class="mt-1 block text-xs text-danger">{{ $message }}</span>@enderror
-                    </label>
+                <div class="tabs tabs-border mt-5 border-b border-border" role="tablist" aria-label="Sezioni fattura">
+                    @foreach(['data' => 'Dati fattura', 'payment' => 'Pagamento', 'notes' => 'Note'] as $key => $label)
+                        <button id="sales-tab-{{ $key }}" type="button" role="tab" @click="selectTab('{{ $key }}')" @keydown.right.prevent="moveTab(1)" @keydown.left.prevent="moveTab(-1)" @keydown.home.prevent="selectTab('data')" @keydown.end.prevent="selectTab(tabs[tabs.length - 1])" :aria-selected="tab === '{{ $key }}'" :tabindex="tab === '{{ $key }}' ? 0 : -1" aria-controls="sales-panel-{{ $key }}" :class="tab === '{{ $key }}' ? 'border-primary text-primary' : 'border-transparent text-content-muted hover:text-content'" class="-mb-px border-b-2 px-3 py-3 text-sm font-medium transition-colors">{{ $label }}</button>
+                    @endforeach
+                    @if($invoice)<button id="sales-tab-history" type="button" role="tab" @click="selectTab('history')" @keydown.right.prevent="moveTab(1)" @keydown.left.prevent="moveTab(-1)" @keydown.home.prevent="selectTab('data')" @keydown.end.prevent="selectTab(tabs[tabs.length - 1])" :aria-selected="tab === 'history'" :tabindex="tab === 'history' ? 0 : -1" aria-controls="sales-panel-history" :class="tab === 'history' ? 'border-primary text-primary' : 'border-transparent text-content-muted hover:text-content'" class="-mb-px border-b-2 px-3 py-3 text-sm font-medium transition-colors">Storico</button>@endif
                 </div>
 
-                <x-documents.invoice-form.data-fields variant="sales-editor" class="mt-5">
-                    <div class="text-sm font-medium text-content">Numero
-                        <div class="mt-1 flex h-11 items-center rounded-lg border border-border bg-surface-muted px-3 text-sm font-normal text-content">{{ $numberPreview ?? 'Configura il sezionale predefinito' }}</div>
-                    </div>
-                    <label>Data *<input wire:model.live="date" type="date" @disabled($this->readOnly)>@error('date')<span class="mt-1 block text-xs text-danger">{{ $message }}</span>@enderror</label>
-                    <label>Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly)></label>
-                    <label>Tipo documento *<x-select wire:model="document_type" :disabled="$this->readOnly" :options="SalesDocumentType::options()" /></label>
-                </x-documents.invoice-form.data-fields>
-            </x-documents.invoice-form.data-section>
+                <section id="sales-panel-data" role="tabpanel" aria-labelledby="sales-tab-data" x-show="tab === 'data'" class="pt-5">
+                    <x-documents.invoice-form.data-fields>
+                        <label class="text-sm font-semibold">Cliente *<x-select wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" />@error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label>
+                        <div class="text-sm font-semibold">Numero<div class="mt-1 h-11 rounded-md border border-border-light bg-surface-muted px-3 py-3 text-sm font-normal">{{ $numberPreview ?? 'Configura il sezionale predefinito' }}</div></div>
+                        <label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm">@error('date')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label>
+                        <label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label>
+                        <label class="text-sm font-semibold">Tipo documento *<x-select wire:model="document_type" :disabled="$this->readOnly" :options="SalesDocumentType::options()" /></label>
+                    </x-documents.invoice-form.data-fields>
+                </section>
 
-            <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly" variant="sales-editor" class="mt-6">
-                @foreach($lines as $index => $line)
-                    <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="true" :vat-disabled="$this->isRf19()" variant="sales-editor" />
-                @endforeach
+                <section id="sales-panel-payment" role="tabpanel" aria-labelledby="sales-tab-payment" x-show="tab === 'payment'" x-cloak class="pt-5"><div class="grid gap-4 sm:grid-cols-2"><label class="text-sm font-semibold">Metodo pagamento<x-select wire:model="payment_method" :disabled="$this->readOnly" :options="PaymentMethod::options()" placeholder="Seleziona..." /></label><label class="text-sm font-semibold">Termini pagamento<x-select wire:model="payment_terms" :disabled="$this->readOnly" :options="PaymentTerms::options()" placeholder="Seleziona..." /></label><label class="text-sm font-semibold">Banca<input wire:model="bank_name" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">IBAN<input wire:model="bank_iban" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label></div></section>
+
+                <section id="sales-panel-notes" role="tabpanel" aria-labelledby="sales-tab-notes" x-show="tab === 'notes'" x-cloak class="pt-5"><label class="text-sm font-semibold">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"></textarea></label></section>
+
+                @if($invoice)<section id="sales-panel-history" role="tabpanel" aria-labelledby="sales-tab-history" x-show="tab === 'history'" x-cloak class="space-y-3 pt-5">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-semibold">{{ $event->title }}</p><p class="text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</section>@endif
+            </article>
+
+            <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly">
+                @foreach($lines as $index => $line)<x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="true" :vat-disabled="$this->isRf19()" />@endforeach
             </x-documents.invoice-form.lines>
-        </article>
+        </div>
 
         <aside class="space-y-4">
-            <div class="lg:sticky lg:top-20 lg:space-y-4">
-            <x-documents.invoice-form.totals variant="sales-editor" :sticky="false" :net-total="$this->netTotal" :vat-total="$this->vatTotal" :net-due="$this->netDue" :fund-amount="$fund_enabled ? $this->fundAmount : 0" :fund-percent="$fund_enabled ? $fund_percent : null" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" :withholding-amount="$this->withholdingAmount" :withholding-percent="$withholding_tax_enabled ? $withholding_tax_percent : null" :split-payment-amount="$this->splitPaymentAmount" />
+            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" :net-due="$this->netDue" :fund-amount="$fund_enabled ? $this->fundAmount : 0" :fund-percent="$fund_enabled ? $fund_percent : null" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" :withholding-amount="$this->withholdingAmount" :withholding-percent="$withholding_tax_enabled ? $withholding_tax_percent : null" :split-payment-amount="$this->splitPaymentAmount" />
             <x-documents.invoice-form.action-bar variant="sales-editor" cancel-route="sell-invoices.index" :submit-label="$invoice ? 'Aggiorna fattura' : 'Crea fattura'" :read-only="$this->readOnly" :net-due="$this->netDue" />
-            </div>
-
-            <details class="rounded-xl border border-border bg-white">
-                <summary class="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-content marker:hidden"><span>Pagamento</span><span class="ml-auto text-xs font-medium text-content-muted">{{ filled($payment_method) ? 'Precompilato' : 'Da definire' }}</span><x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
-                <div class="grid gap-4 border-t border-border px-5 pb-5 pt-4 sm:grid-cols-2">
-                    <label class="text-sm font-medium text-content">Metodo pagamento<x-select wire:model="payment_method" :disabled="$this->readOnly" :options="PaymentMethod::options()" placeholder="Seleziona..." /></label>
-                    <label class="text-sm font-medium text-content">Termini pagamento<x-select wire:model="payment_terms" :disabled="$this->readOnly" :options="PaymentTerms::options()" placeholder="Seleziona..." /></label>
-                    <label class="text-sm font-medium text-content sm:col-span-2">Banca<input wire:model="bank_name" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-lg border border-border-strong bg-white px-3 text-sm text-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></label>
-                    <label class="text-sm font-medium text-content sm:col-span-2">IBAN<input wire:model="bank_iban" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-lg border border-border-strong bg-white px-3 text-sm text-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></label>
-                </div>
-            </details>
-
-            <details class="rounded-xl border border-border bg-white">
-                <summary class="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-content marker:hidden"><span>Note</span><span class="ml-auto text-xs font-medium text-content-muted">{{ filled($notes) ? 'Presenti' : 'Vuote' }}</span><x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
-                <div class="border-t border-border px-5 pb-5 pt-4"><label class="block text-sm font-medium text-content">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-lg border border-border-strong bg-white px-3 py-2 text-sm text-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></textarea></label></div>
-            </details>
-
-            <x-documents.invoice-form.fiscal-options variant="sales-editor" :show-fund-details="true" :read-only="$this->readOnly" :is-rf19="$this->isRf19()" :withholding="true" :fund="true" :stamp-duty="true" :split-payment="true" :stamp-duty-charged-to-customer="true" :withholding-enabled="$withholding_tax_enabled" :fund-enabled="$fund_enabled" :stamp-duty-applied="$stamp_duty_applied" :split-payment-enabled="$split_payment" />
-
-            @if($invoice)
-                <details class="rounded-xl border border-border bg-white">
-                    <summary class="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-content marker:hidden">Storico <x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
-                    <div class="space-y-3 border-t border-border px-5 pb-5 pt-4">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-medium text-content">{{ $event->title }}</p><p class="mt-0.5 text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</div>
-                </details>
-            @endif
+            <x-documents.invoice-form.fiscal-options variant="sales-editor" :read-only="$this->readOnly" :is-rf19="$this->isRf19()" :withholding="true" :fund="true" :stamp-duty="true" :split-payment="true" :stamp-duty-charged-to-customer="true" :withholding-enabled="$withholding_tax_enabled" :withholding-percent="$withholding_tax_percent" :fund-enabled="$fund_enabled" :fund-percent="$fund_percent" :stamp-duty-applied="$stamp_duty_applied" :stamp-duty-charged-to-customer="$stamp_duty_charged_to_customer" :split-payment-enabled="$split_payment" />
         </aside>
     </form>
 </section>

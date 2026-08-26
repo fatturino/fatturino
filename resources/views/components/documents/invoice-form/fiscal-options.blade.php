@@ -5,10 +5,12 @@
     'fund' => false,
     'stampDuty' => false,
     'splitPayment' => false,
-    'stampDutyChargedToCustomer' => false,
     'withholdingEnabled' => false,
+    'withholdingPercent' => null,
     'fundEnabled' => false,
+    'fundPercent' => null,
     'stampDutyApplied' => false,
+    'stampDutyChargedToCustomer' => null,
     'splitPaymentEnabled' => false,
     'variant' => 'default',
     'showFundDetails' => false,
@@ -17,14 +19,21 @@
 @php
     $editorVariant = in_array($variant, ['editor', 'sales-editor'], true);
     $toggleBackground = $editorVariant ? 'bg-surface-muted' : 'bg-zinc-300';
+    $formatPercent = fn ($percent) => rtrim(rtrim((string) $percent, '0'), '.');
+    $activeOptions = collect([
+        $withholdingEnabled ? "Ritenuta {$formatPercent($withholdingPercent)}%" : null,
+        $fundEnabled ? "Cassa {$formatPercent($fundPercent)}%" : null,
+        $stampDutyApplied ? ($stampDutyChargedToCustomer ? 'Bollo cliente' : 'Bollo cedente') : null,
+        $splitPaymentEnabled ? 'Split payment' : null,
+    ])->filter();
     $numericInputClasses = $editorVariant
         ? 'mt-1 h-10 w-full rounded-lg border border-border-strong px-3 text-sm'
         : 'mt-1 h-10 w-full rounded-md border border-border px-2 text-sm';
 @endphp
 
 @if($editorVariant)
-    <details @if($variant === 'editor' && ($withholdingEnabled || $fundEnabled || $stampDutyApplied || $splitPaymentEnabled)) open @endif class="rounded-xl border border-border bg-white">
-        <summary class="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-content marker:hidden"><span>Opzioni fiscali</span><span class="ml-auto text-xs font-medium text-content-muted">{{ collect([$withholdingEnabled, $fundEnabled, $stampDutyApplied, $splitPaymentEnabled])->filter()->count() ?: 'Nessuna' }}</span><x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
+    <details @if($variant === 'editor' && $activeOptions->isNotEmpty()) open @endif class="rounded-xl border border-border bg-white">
+        <summary class="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-content marker:hidden"><span>Opzioni fiscali</span><span class="ml-auto max-w-32 truncate text-right text-xs font-medium text-content-muted">{{ $activeOptions->isNotEmpty() ? $activeOptions->join(', ') : 'Nessuna' }}</span><x-icon name="o-chevron-down" class="size-4 flex-none text-content-muted" /></summary>
         <div class="border-t border-border px-5 pb-5">
 @else
     <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
