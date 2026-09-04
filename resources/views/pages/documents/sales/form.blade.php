@@ -296,7 +296,7 @@ new #[Layout('layouts::app')] class extends Component {
             <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
                 <div class="flex items-start justify-between gap-4">
                     <div><h2 class="text-base font-semibold text-content">Dati fattura</h2><p class="mt-1 text-sm text-content-muted">Cliente, numero e condizioni del documento.</p></div>
-                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-content-muted"><span class="size-1.5 rounded-full bg-current"></span>{{ $editorStatus }}</span>
+                    <x-badge :value="$editorStatus" variant="neutral" />
                 </div>
 
                 <div class="tabs tabs-border mt-5 border-b border-border" role="tablist" aria-label="Sezioni fattura">

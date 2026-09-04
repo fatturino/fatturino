@@ -259,21 +259,10 @@
     line-height: 1;
 }
 
-.due-date-marker-danger, .due-date-badge-danger { background: var(--color-danger-bg); color: var(--color-danger); }
-.due-date-marker-warning, .due-date-badge-warning { background: var(--color-warning-bg); color: var(--color-warning); }
-.due-date-marker-info, .due-date-badge-info { background: var(--color-info-bg); color: var(--color-info); }
-.due-date-marker-default, .due-date-badge-default { background: var(--color-surface-muted); color: var(--color-text-secondary); }
-
-.due-date-badge {
-    display: inline-flex;
-    min-height: 1.375rem;
-    align-items: center;
-    border-radius: 9999px;
-    padding: 0.125rem 0.5rem;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    line-height: 1;
-}
+.due-date-marker-danger { background: var(--color-danger-bg); color: var(--color-danger); }
+.due-date-marker-warning { background: var(--color-warning-bg); color: var(--color-warning); }
+.due-date-marker-info { background: var(--color-info-bg); color: var(--color-info); }
+.due-date-marker-default { background: var(--color-surface-muted); color: var(--color-text-secondary); }
 
 .due-date-empty {
     border: 1px dashed var(--color-border-strong);

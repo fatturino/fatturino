@@ -247,7 +247,7 @@ new #[Layout('layouts::app')] class extends Component {
             <x-documents.invoice-form.data-section variant="editor">
                 <div class="flex items-start justify-between gap-4">
                     <div><h2 class="text-base font-semibold text-content">Dati proforma</h2><p class="mt-1 text-sm text-content-muted">Cliente, numero e condizioni del documento.</p></div>
-                    <span class="inline-flex items-center gap-2 text-xs font-medium text-content-muted"><span class="size-1.5 rounded-full bg-primary"></span>{{ $editorStatus }}</span>
+                    <x-badge :value="$editorStatus" variant="neutral" />
                 </div>
                 <x-documents.invoice-form.data-fields variant="editor" class="mt-5">
                     <x-select label="Cliente *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" placeholder="Seleziona cliente..." />

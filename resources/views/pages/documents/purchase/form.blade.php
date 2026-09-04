@@ -104,7 +104,7 @@ new #[Layout('layouts::app')] class extends Component {
     <form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
             <x-documents.invoice-form.data-section variant="editor">
-                <div class="flex items-start justify-between gap-4"><div><h2 class="text-base font-semibold text-content">Dati fattura di acquisto</h2><p class="mt-1 text-sm text-content-muted">Fornitore, numero e condizioni del documento.</p></div><span class="inline-flex items-center gap-2 text-xs font-medium text-content-muted"><span class="size-1.5 rounded-full bg-primary"></span>{{ $invoice->status?->label() ?? 'Bozza' }}</span></div>
+                <div class="flex items-start justify-between gap-4"><div><h2 class="text-base font-semibold text-content">Dati fattura di acquisto</h2><p class="mt-1 text-sm text-content-muted">Fornitore, numero e condizioni del documento.</p></div><x-badge :value="$invoice->status?->label() ?? 'Bozza'" variant="neutral" /></div>
                 <x-documents.invoice-form.data-fields variant="editor" class="mt-5">
                     <x-select label="Fornitore *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" placeholder="Seleziona fornitore..." />
                     <label>Numero *<input wire:model="number" @disabled($this->readOnly)></label>

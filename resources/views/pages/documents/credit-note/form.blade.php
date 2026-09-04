@@ -159,7 +159,7 @@ new #[Layout('layouts::app')] class extends Component {
     <form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
             <x-documents.invoice-form.data-section variant="editor">
-                <div class="flex items-start justify-between gap-4"><div><h2 class="text-base font-semibold text-content">Dati nota di credito</h2><p class="mt-1 text-sm text-content-muted">Cliente, documento originario e condizioni della nota.</p></div><span class="inline-flex items-center gap-2 text-xs font-medium text-content-muted"><span class="size-1.5 rounded-full bg-primary"></span>{{ $invoice?->status?->label() ?? 'Bozza' }}</span></div>
+                <div class="flex items-start justify-between gap-4"><div><h2 class="text-base font-semibold text-content">Dati nota di credito</h2><p class="mt-1 text-sm text-content-muted">Cliente, documento originario e condizioni della nota.</p></div><x-badge :value="$invoice?->status?->label() ?? 'Bozza'" variant="neutral" /></div>
                 <x-documents.invoice-form.data-fields variant="editor" class="mt-5">
                     <x-select label="Cliente *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" placeholder="Seleziona cliente..." />
                     <label>Numero<div class="mt-1 flex h-11 items-center rounded-lg border border-border-strong bg-surface-muted px-3 text-sm text-content-muted">{{ $numberPreview ?? 'Configura il sezionale predefinito' }}</div></label>

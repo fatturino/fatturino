@@ -169,7 +169,7 @@ $this->typeLabel($sequence->type)
                 <tbody class="divide-y divide-border-light">
                     @forelse($sequences as $sequence)
                         <tr>
-                            <td class="px-5 py-4 font-semibold">{{ $sequence->name }} @if($sequence->is_system)<span class="ml-2 rounded-full bg-surface-muted px-2 py-1 text-xs text-content-muted">Sistema</span>@endif @if($this->isDefault($sequence))<span class="ml-2 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">Predefinito</span>@endif</td>
+                            <td class="px-5 py-4 font-semibold">{{ $sequence->name }} @if($sequence->is_system)<x-badge value="Sistema" variant="neutral" class="ml-2 align-middle" />@endif @if($this->isDefault($sequence))<x-badge value="Predefinito" variant="primary" class="ml-2 align-middle" />@endif</td>
                             <td class="px-5 py-4 font-mono text-content-muted">{{ $sequence->pattern }}</td>
                             <td class="px-5 py-4 text-content-muted">{{ $this->typeLabel($sequence->type) }}</td>
                             <td class="px-5 py-4 text-right">

@@ -32,7 +32,7 @@
                     <span class="min-w-0 flex-1">
                         <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span class="min-w-0 break-words text-sm font-semibold text-content">{{ $invoice['contact'] ?? 'Cliente non associato' }}</span>
-                            <span @class(['due-date-badge', "due-date-badge-{$tone}"])>{{ $label }}</span>
+                            <x-badge :value="$label" :variant="$tone === 'default' ? 'neutral' : $tone" />
                         </span>
                         <span class="mt-1 block text-xs leading-5 text-content-muted">{{ $detail }} · {{ $invoice['due_date'] ?? 'Data non disponibile' }}</span>
                     </span>

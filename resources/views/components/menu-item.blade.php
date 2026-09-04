@@ -23,7 +23,7 @@ $classes = 'flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg transition-co
         @isset($badgeSlot)
             {{ $badgeSlot }}
         @elseif($badge)
-            <span class="text-xs bg-base-content/10 px-1.5 py-0.5 rounded-full">{{ $badge }}</span>
+            <x-badge :value="$badge" inverted />
         @endif
     </x-app-link>
 @else

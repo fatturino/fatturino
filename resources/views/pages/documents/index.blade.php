@@ -424,26 +424,12 @@ new #[Layout('layouts::app')] class extends Component {
                             @endif
                         </td>
                         <td class="px-5 py-3.5 text-right font-medium tabular-nums text-content">{{ $this->money($document->total_vat) }}</td>
-                        <td class="px-5 py-3.5">
-                            <span @class([
-                                'inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium',
-                                'text-success' => $this->statusTone($document->status) === 'success',
-                                'text-warning' => $this->statusTone($document->status) === 'warning',
-                                'text-danger' => $this->statusTone($document->status) === 'danger',
-                                'text-info' => $this->statusTone($document->status) === 'info',
-                                'text-content-muted' => $this->statusTone($document->status) === 'neutral',
-                            ])><span class="size-1.5 rounded-full bg-current"></span>{{ $this->statusLabel($document->status) }}</span>
+                        <td class="px-5 py-3.5 whitespace-nowrap">
+                            <x-badge :value="$this->statusLabel($document->status)" :variant="$this->statusTone($document->status)" dot />
                         </td>
                         @if($this->hasPayments())
-                            <td class="px-5 py-3.5">
-                                <span @class([
-                                    'inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium',
-                                    'text-success' => $this->statusTone($document->payment_status) === 'success',
-                                    'text-warning' => $this->statusTone($document->payment_status) === 'warning',
-                                    'text-danger' => $this->statusTone($document->payment_status) === 'danger',
-                                    'text-info' => $this->statusTone($document->payment_status) === 'info',
-                                    'text-content-muted' => $this->statusTone($document->payment_status) === 'neutral',
-                                ])><span class="size-1.5 rounded-full bg-current"></span>{{ $this->statusLabel($document->payment_status) }}</span>
+                            <td class="px-5 py-3.5 whitespace-nowrap">
+                                <x-badge :value="$this->statusLabel($document->payment_status)" :variant="$this->statusTone($document->payment_status)" dot />
                             </td>
                         @endif
                         <td class="px-3 py-3.5 text-right"><x-documents.document-actions :document="$document" :type="$type" :base="$definition['base']" /></td>

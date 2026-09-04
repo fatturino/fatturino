@@ -4,7 +4,7 @@
     <div class="dashboard-module-inner p-5">
     <div class="flex items-start justify-between gap-4">
         <div><h2 class="font-semibold text-content">Richiede attenzione</h2><p class="mt-1 text-sm text-content-muted">Prima le scadenze e le azioni che possono bloccare l’incasso.</p></div>
-        <span class="rounded-full bg-primary-subtle px-2.5 py-1 text-xs font-semibold text-primary">{{ count($items) }} priorità</span>
+        <x-badge :value="count($items) . ' priorità'" variant="primary" />
     </div>
 
     <div class="mt-5 divide-y divide-border-light">

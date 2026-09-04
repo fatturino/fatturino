@@ -128,7 +128,7 @@ it('renders an accessible sortable document table with a single primary document
         ->assertSee('aria-sort="descending"', escape: false)
         ->assertSee("href=\"/sell-invoices/{$invoice->id}/edit\"", escape: false)
         ->assertSee('class="sr-only">Azioni</span>', escape: false)
-        ->assertSee('size-1.5 rounded-full bg-current', escape: false)
+        ->assertSee('size-1.5 shrink-0 rounded-full bg-current', escape: false)
         ->call('sortBy', 'date')
         ->assertSee('aria-sort="ascending"', escape: false);
 });

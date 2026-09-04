@@ -1,13 +1,7 @@
 @props(['topClients'])
 
 @php
-    $rankStyles = [
-        ['bg' => 'bg-primary/10 text-primary', 'border' => 'border-primary/30'],
-        ['bg' => 'bg-secondary/10 text-secondary', 'border' => 'border-secondary/30'],
-        ['bg' => 'bg-accent/10 text-accent', 'border' => 'border-accent/30'],
-        ['bg' => 'bg-base-200 text-base-content/60', 'border' => 'border-base-300'],
-        ['bg' => 'bg-base-200 text-base-content/60', 'border' => 'border-base-300'],
-    ];
+    $rankVariants = ['primary', 'info', 'warning', 'neutral', 'neutral'];
 @endphp
 
 <x-card class="h-full">
@@ -25,10 +19,10 @@
                     // Progress bar width relative to the top client
                     $maxRevenue = $topClients->first()->revenue_total;
                     $barWidth   = $maxRevenue > 0 ? ($row->revenue_total / $maxRevenue) * 100 : 0;
-                    $style      = $rankStyles[$index] ?? $rankStyles[4];
+                    $variant    = $rankVariants[$index] ?? $rankVariants[4];
                 @endphp
                 <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold border {{ $style['bg'] }} {{ $style['border'] }}">{{ $index + 1 }}</span>
+                    <x-badge :value="$index + 1" :variant="$variant" type="outline" class="size-6 justify-center !p-0" />
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-baseline mb-1">
                             <span class="text-sm font-medium truncate">{{ $row->contact?->name ?? __('app.common.unknown') }}</span>
