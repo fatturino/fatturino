@@ -128,9 +128,9 @@ it('orders operational attention by overdue, SDI-ready, and partial collection w
         ->and(strpos($html, 'Fatture scadute'))->toBeLessThan(strpos($html, 'Incassi parziali'));
 });
 
-it('shows the first upcoming due date with its remaining balance', function () {
+it('shows upcoming due dates with their remaining balance, state, date, and edit route', function () {
     $user = User::factory()->create();
-    SalesInvoice::factory()->create([
+    $invoice = SalesInvoice::factory()->create([
         'date' => now()->toDateString(),
         'due_date' => now()->addDays(3)->toDateString(),
         'payment_status' => 'partial',
@@ -142,9 +142,35 @@ it('shows the first upcoming due date with its remaining balance', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::dashboard')
-        ->assertSee('Prossima scadenza')
+        ->assertSee('Prossime scadenze')
+        ->assertSee('Urgente')
         ->assertSee('Scade tra 3 giorni')
-        ->assertSee('€ 60,00');
+        ->assertSee(now()->addDays(3)->format('d/m/Y'))
+        ->assertSee('€ 60,00')
+        ->assertSee(route('sell-invoices.edit', $invoice), false);
+});
+
+it('labels upcoming due dates by their temporal priority', function () {
+    $invoices = collect(range(1, 6))->map(fn(int $id): array => [
+        'id' => $id,
+        'contact' => "Cliente {$id}",
+        'due_date' => now()->addDays($id)->format('d/m/Y'),
+        'remaining_balance' => 10000,
+        'days_until_due' => [-1, 0, 7, 8, 31, null][$id - 1],
+    ]);
+
+    $this->view('components.dashboard.upcoming-due-dates', ['invoices' => $invoices])
+        ->assertSee('Scaduta')
+        ->assertSee('Scaduta da 1 giorno')
+        ->assertSee('Scade oggi')
+        ->assertSee('Pagamento previsto oggi')
+        ->assertSee('Urgente')
+        ->assertSee('Scade tra 7 giorni')
+        ->assertSee('Imminente')
+        ->assertSee('Scade tra 8 giorni')
+        ->assertSee('Futura')
+        ->assertSee('Scade tra 31 giorni')
+        ->assertSee('Data da verificare');
 });
 
 it('guides a first-time user without treating zero values as an error', function () {
@@ -155,6 +181,7 @@ it('guides a first-time user without treating zero values as an error', function
     Livewire::test('pages::dashboard')
         ->assertSee('Inizia dalla tua prima fattura')
         ->assertSee('Nessuna urgenza per ora')
+        ->assertSee('Nessuna scadenza aperta')
         ->assertSee('€ 0,00');
 });
 
