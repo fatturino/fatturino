@@ -113,17 +113,17 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
     $firstDueDate = collect($stats['upcomingDueDates'])->first(fn ($invoice) => ($invoice['days_until_due'] ?? -1) >= 0);
 @endphp
 
-<section class="space-y-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+<section class="dashboard-page space-y-7 lg:space-y-8">
+    <div class="dashboard-heading flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <p class="text-xs font-medium text-content-muted">Anno fiscale {{ $fiscalYear }}</p>
-            <p class="mt-1 text-sm text-content-muted">{{ $isCurrentYear ? 'Priorità, incassi e documenti aggiornati per oggi.' : "Riepilogo dell'anno fiscale {$fiscalYear}." }}</p>
+            <h2 class="text-2xl font-bold tracking-tight text-content sm:text-3xl">Panoramica finanziaria</h2>
+            <p class="mt-2 text-sm text-content-muted">Anno fiscale {{ $fiscalYear }} · {{ $isCurrentYear ? 'Priorità, incassi e documenti aggiornati per oggi.' : "Riepilogo dell'anno fiscale {$fiscalYear}." }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <span class="text-xs text-content-muted" aria-live="polite">Aggiornato ora</span>
-            <button wire:click="loadStats" wire:loading.attr="disabled" type="button" class="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-3 text-sm font-medium text-content transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20"><span wire:loading.remove wire:target="loadStats">Aggiorna</span><span wire:loading wire:target="loadStats">Aggiornamento…</span></button>
+            <button wire:click="loadStats" wire:loading.attr="disabled" type="button" class="btn-outline inline-flex h-11 items-center justify-center px-4 text-sm"><span wire:loading.remove wire:target="loadStats">Aggiorna</span><span wire:loading wire:target="loadStats">Aggiornamento…</span></button>
             @if($isCurrentYear)
-                <x-app-link :href="route('sell-invoices.create')" class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20">Nuova fattura</x-app-link>
+                <x-app-link :href="route('sell-invoices.create')" class="btn-brand inline-flex h-11 items-center justify-center px-4 text-sm">Nuova fattura</x-app-link>
             @endif
         </div>
     </div>
@@ -140,25 +140,13 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
 
     <div class="grid gap-6 xl:grid-cols-12">
         <div class="xl:col-span-7"><x-dashboard.attention-queue :items="$attentionItems" :first-due-date="$firstDueDate" /></div>
-        <div class="xl:col-span-5">
-            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
-                <div class="flex items-start justify-between gap-4"><div><h2 class="font-semibold text-content">Prossime scadenze</h2><p class="mt-1 text-sm text-content-muted">Per data di pagamento prevista</p></div><x-app-link href="/sell-invoices?payment=open" class="shrink-0 text-sm font-medium text-primary hover:underline">Vedi aperte</x-app-link></div>
-                <div class="mt-4 divide-y divide-border-light">
-                    @forelse($stats['upcomingDueDates'] as $invoice)
-                        @php($days = $invoice['days_until_due'])
-                        <x-app-link :href="route('sell-invoices.edit', $invoice['id'])" class="dashboard-list-link -mx-2 flex items-center gap-3 border-0 px-2"><span @class(['flex size-10 shrink-0 flex-col items-center justify-center rounded-full text-center', 'bg-danger-bg text-danger' => $days !== null && $days < 0, 'bg-warning-bg text-warning' => $days !== null && $days >= 0 && $days <= 7, 'bg-surface-muted text-content-muted' => $days === null || $days > 7])><span class="text-sm font-bold">{{ $days === null ? '—' : abs($days) }}</span><span class="text-[9px] font-bold uppercase">{{ $days === null ? '' : 'gg' }}</span></span><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-content">{{ $invoice['contact'] ?? 'Cliente non associato' }}</span><span class="mt-0.5 block text-xs text-content-muted">{{ $days === null ? $invoice['due_date'] : ($days < 0 ? 'Scaduta da '.abs($days).' giorni' : ($days === 0 ? 'In scadenza oggi' : 'Scade tra '.$days.' giorni')) }}</span></span><span class="shrink-0 text-right text-sm font-semibold tabular-nums text-content">{{ $this->currency($invoice['remaining_balance']) }}</span></x-app-link>
-                    @empty
-                        <p class="py-8 text-center text-sm text-content-muted">Nessuna scadenza aperta nel periodo.</p>
-                    @endforelse
-                </div>
-            </article>
-        </div>
+        <div class="xl:col-span-5"><x-dashboard.upcoming-due-dates :invoices="$stats['upcomingDueDates']" /></div>
     </div>
 
     <x-dashboard.recent-document-list :invoices="$stats['recentInvoices']" />
 
     @if($hasVatAccounting)
-        <div class="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4 text-sm"><div><span class="font-medium text-content">Saldo IVA {{ $periodLabel }}</span><span class="ml-2 tabular-nums text-content-muted">{{ $this->currency(abs($stats['vatBalanceYtd'])) }} {{ $stats['vatBalanceYtd'] >= 0 ? 'da versare' : 'a credito' }}</span></div><span class="text-xs text-content-muted">IVA incassata separata: {{ $this->currency($stats['collectedVatYtd']) }}</span></div>
+        <div class="dashboard-vat-summary flex flex-wrap items-center justify-between gap-3 p-4 text-sm"><div><span class="font-semibold text-content">Saldo IVA {{ $periodLabel }}</span><span class="ml-2 tabular-nums text-content-muted">{{ $this->currency(abs($stats['vatBalanceYtd'])) }} {{ $stats['vatBalanceYtd'] >= 0 ? 'da versare' : 'a credito' }}</span></div><span class="text-xs font-medium text-content-muted">IVA incassata separata: {{ $this->currency($stats['collectedVatYtd']) }}</span></div>
     @endif
 
     <x-dashboard.revenue-chart :revenue-trend="$stats['revenueTrend']" :revenue-projection="$stats['revenueProjection']" :revenue-ytd="$stats['revenueYtd']" :fiscal-year="$fiscalYear" />

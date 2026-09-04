@@ -67,7 +67,8 @@
     $formatCurrency = fn ($cents) => '€ '.number_format(((int) $cents) / 100, 2, ',', '.');
 @endphp
 
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
+<article class="dashboard-module p-2">
+    <div class="dashboard-module-inner p-5">
     <div class="flex items-center justify-between gap-3">
         <div>
             <h2 class="font-semibold text-content">Andamento fatturato</h2>
@@ -88,4 +89,5 @@
     @else
         <p class="py-12 text-center text-sm text-content-muted">Nessun fatturato disponibile per il confronto.</p>
     @endif
+    </div>
 </article>
