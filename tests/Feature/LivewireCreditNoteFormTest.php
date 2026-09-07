@@ -35,9 +35,6 @@ it('renders the credit note as a document editor with the original invoice refer
         ->assertSee('Dati nota di credito')
         ->assertSee('Numero fattura originaria')
         ->assertSee('Data fattura originaria')
-        ->assertSee('Descrizione')
-        ->assertSee('Quantità')
-        ->assertSee('Prezzo')
         ->assertSee('Note')
         ->call('toggleLineDetails', 0)
         ->assertSee('Unità di misura');

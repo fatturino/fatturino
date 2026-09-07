@@ -51,7 +51,7 @@ it('renders and creates a proforma through the Livewire form', function () {
     ]);
 });
 
-it('renders the proforma as a document editor with progressive disclosure', function () {
+it('renders the proforma with the shared tabbed invoice workflow', function () {
     $user = User::factory()->create();
     Sequence::factory()->create(['type' => 'proforma']);
 
@@ -60,13 +60,10 @@ it('renders the proforma as a document editor with progressive disclosure', func
     Livewire::test('pages::documents.proforma.form')
         ->assertSee('Dati proforma')
         ->assertSee('Cliente, numero e condizioni del documento.')
-        ->assertSee('Descrizione')
-        ->assertSee('Quantità')
-        ->assertSee('Prezzo')
         ->assertSee('Pagamento')
         ->assertSee('Note')
         ->assertSee('Opzioni fiscali')
-        ->assertDontSee('aria-label="Sezioni proforma"', escape: false);
+        ->assertSee('aria-label="Sezioni proforma"', escape: false);
 });
 
 it('updates an editable proforma without changing its sequence', function () {

@@ -1,6 +1,6 @@
 @props(['title' => 'Dati documento', 'variant' => 'default'])
 
-@if($variant === 'editor')
+@if(in_array($variant, ['editor', 'sales-editor'], true))
     <section {{ $attributes->merge(['class' => '']) }}>
         {{ $slot }}
     </section>

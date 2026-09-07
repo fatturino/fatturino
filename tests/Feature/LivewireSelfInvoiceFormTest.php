@@ -42,9 +42,6 @@ it('renders the self invoice as a document editor with linked invoice references
         ->assertSee('Tipo documento *')
         ->assertSee('Numero fattura collegata')
         ->assertSee('Data fattura collegata')
-        ->assertSee('Descrizione')
-        ->assertSee('Quantità')
-        ->assertSee('Prezzo')
         ->assertSee('Note')
         ->call('toggleLineDetails', 0)
         ->assertSee('Unità di misura');

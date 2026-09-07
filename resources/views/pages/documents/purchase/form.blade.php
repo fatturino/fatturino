@@ -44,12 +44,15 @@ new #[Layout('layouts::app')] class extends Component {
     public function addLine(): void
     {
         $this->lines[] = $this->lineState(['key' => (string) str()->uuid(), 'description' => '', 'quantity' => '1', 'unit_of_measure' => '', 'unit_price' => '0.00', 'vat_rate' => 'R22']);
+        $this->dispatch('sales-line-added', key: $this->lines[array_key_last($this->lines)]['key']);
     }
 
     public function removeLine(int $index): void
     {
         if (count($this->lines) > 1) {
             array_splice($this->lines, $index, 1);
+            $nextIndex = min($index, count($this->lines) - 1);
+            $this->dispatch('sales-line-removed', key: $this->lines[$nextIndex]['key']);
         }
     }
 
@@ -101,11 +104,12 @@ new #[Layout('layouts::app')] class extends Component {
 <section class="mx-auto max-w-7xl space-y-6 pb-24">
     @if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-warning">Questa fattura non è più modificabile.</div>@endif
     @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-danger">{{ $message }}</div>@enderror
-    <form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <form wire:submit="save" x-data="{ dirty: false }" @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }" @input="dirty = true" @change="dirty = true" @sales-line-added.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-removed.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div class="space-y-6">
         <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
-            <x-documents.invoice-form.data-section variant="editor">
+            <x-documents.invoice-form.data-section variant="sales-editor">
                 <div class="flex items-start justify-between gap-4"><div><h2 class="text-base font-semibold text-content">Dati fattura di acquisto</h2><p class="mt-1 text-sm text-content-muted">Fornitore, numero e condizioni del documento.</p></div><x-badge :value="$invoice->status?->label() ?? 'Bozza'" variant="neutral" /></div>
-                <x-documents.invoice-form.data-fields variant="editor" class="mt-5">
+                <x-documents.invoice-form.data-fields class="mt-5">
                     <x-select label="Fornitore *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" placeholder="Seleziona fornitore..." />
                     <label>Numero *<input wire:model="number" @disabled($this->readOnly)></label>
                     <label>Data *<input wire:model="date" type="date" @disabled($this->readOnly)></label>
@@ -113,11 +117,14 @@ new #[Layout('layouts::app')] class extends Component {
                 </x-documents.invoice-form.data-fields>
                 <p class="mt-4 text-xs text-content-muted">La sequenza d'importazione non è modificabile.</p>
             </x-documents.invoice-form.data-section>
-            <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly" variant="editor" class="mt-6">
-                @foreach($lines as $index => $line)<x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="false" :vat-disabled="false" variant="editor" />@endforeach
-            </x-documents.invoice-form.lines>
         </article>
-        <aside class="space-y-4"><x-documents.invoice-form.totals variant="editor" :net-total="$this->netTotal" :vat-total="$this->vatTotal" /></aside>
-        <x-documents.invoice-form.action-bar variant="editor" cancel-route="purchase-invoices.index" submit-label="Aggiorna fattura" :read-only="$this->readOnly" />
+            <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly">
+                @foreach($lines as $index => $line)<x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="false" :vat-disabled="false" />@endforeach
+            </x-documents.invoice-form.lines>
+        </div>
+        <aside class="space-y-4">
+            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" :net-due="$this->netTotal + $this->vatTotal" />
+            <x-documents.invoice-form.action-bar variant="sales-editor" cancel-route="purchase-invoices.index" submit-label="Aggiorna fattura" :read-only="$this->readOnly" :net-due="$this->netTotal + $this->vatTotal" />
+        </aside>
     </form>
 </section>

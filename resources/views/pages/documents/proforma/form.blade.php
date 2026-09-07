@@ -97,18 +97,33 @@ new #[Layout('layouts::app')] class extends Component {
     public function addLine(): void
     {
         $this->lines[] = $this->emptyLine();
+        $this->dispatch('sales-line-added', key: $this->lines[array_key_last($this->lines)]['key']);
     }
 
     public function removeLine(int $index): void
     {
         if (count($this->lines) > 1) {
             array_splice($this->lines, $index, 1);
+            $nextIndex = min($index, count($this->lines) - 1);
+            $this->dispatch('sales-line-removed', key: $this->lines[$nextIndex]['key']);
         }
     }
 
     public function toggleLineDetails(int $index): void
     {
         $this->lines[$index]['details_enabled'] = ! ($this->lines[$index]['details_enabled'] ?? false);
+    }
+
+    public function toggleLineDiscount(int $index): void
+    {
+        $enabled = ! ($this->lines[$index]['discount_enabled'] ?? false);
+        $this->lines[$index]['discount_enabled'] = $enabled;
+        if (! $enabled) {
+            $this->lines[$index]['discount_percent'] = '';
+
+            return;
+        }
+        $this->dispatch('sales-line-discount-enabled', key: $this->lines[$index]['key']);
     }
 
     public function updatedLinesDiscountEnabled(bool $enabled, string $key): void
@@ -204,7 +219,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function lineState(array $line): array
     {
-        return [...$line, 'quantity' => (string) $line['quantity'], 'unit_of_measure' => $line['unit_of_measure'] ?? '', 'unit_price' => number_format((float) $line['unit_price'], 2, '.', ''), 'discount_percent' => $line['discount_percent'] ?? '', 'details_enabled' => $line['quantity'] != 1 || ($line['unit_of_measure'] ?? '') !== '' || ($line['discount_percent'] ?? null) !== null, 'discount_enabled' => ($line['discount_percent'] ?? null) !== null];
+        return [...$line, 'quantity' => (string) $line['quantity'], 'unit_of_measure' => $line['unit_of_measure'] ?? '', 'unit_price' => number_format((float) $line['unit_price'], 2, '.', ''), 'discount_percent' => $line['discount_percent'] ?? '', 'details_enabled' => $line['quantity'] != 1 || ($line['unit_of_measure'] ?? '') !== '' || filled($line['discount_percent'] ?? null), 'discount_enabled' => filled($line['discount_percent'] ?? null)];
     }
 
     public function isRf19(): bool
@@ -231,64 +246,45 @@ new #[Layout('layouts::app')] class extends Component {
     </div>
 </x-slot:header>
 
-@php
-    $editorStatus = $invoice?->status?->label() ?? 'Bozza';
-    $openPayment = filled($payment_method) || filled($payment_terms) || filled($bank_name) || filled($bank_iban);
-    $openNotes = filled($notes);
-@endphp
+@php($editorStatus = $invoice?->status?->label() ?? 'Bozza')
 
 <section class="mx-auto max-w-7xl space-y-6 pb-24">
     @if(session('success'))<div class="rounded-md border border-success/20 bg-success-bg p-4 text-sm text-success">{{ session('success') }}</div>@endif
     @if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-sm text-warning">Questa proforma non è più modificabile.</div>@endif
     @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror
 
-    <form wire:submit="save" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <form wire:submit="save" x-data="{ dirty: false, tab: @entangle('tab'), tabs: ['data', 'payment', 'notes' @if($invoice), 'history' @endif], selectTab(nextTab) { this.tab = nextTab; this.$nextTick(() => document.getElementById('proforma-tab-' + nextTab)?.focus()); }, moveTab(step) { this.selectTab(this.tabs[(this.tabs.indexOf(this.tab) + step + this.tabs.length) % this.tabs.length]); } }" @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }" @input="dirty = true" @change="dirty = true" @sales-line-added.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-removed.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-discount-enabled.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-discount')?.focus())" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div class="space-y-6">
         <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
-            <x-documents.invoice-form.data-section variant="editor">
+            <x-documents.invoice-form.data-section variant="sales-editor">
                 <div class="flex items-start justify-between gap-4">
                     <div><h2 class="text-base font-semibold text-content">Dati proforma</h2><p class="mt-1 text-sm text-content-muted">Cliente, numero e condizioni del documento.</p></div>
                     <x-badge :value="$editorStatus" variant="neutral" />
                 </div>
-                <x-documents.invoice-form.data-fields variant="editor" class="mt-5">
-                    <x-select label="Cliente *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" placeholder="Seleziona cliente..." />
-                    <label>Numero<div class="mt-1 flex h-11 items-center rounded-lg border border-border-strong bg-surface-muted px-3 text-sm text-content-muted">{{ $numberPreview ?? 'Configura una sequenza proforma' }}</div></label>
-                    <label>Data *<input wire:model.live="date" type="date" @disabled($this->readOnly)></label>
-                    <label>Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly)></label>
-                </x-documents.invoice-form.data-fields>
+                <div class="tabs tabs-border mt-5 border-b border-border" role="tablist" aria-label="Sezioni proforma">
+                    @foreach(['data' => 'Dati proforma', 'payment' => 'Pagamento', 'notes' => 'Note'] as $key => $label)
+                        <button id="proforma-tab-{{ $key }}" type="button" role="tab" @click="selectTab('{{ $key }}')" @keydown.right.prevent="moveTab(1)" @keydown.left.prevent="moveTab(-1)" @keydown.home.prevent="selectTab('data')" @keydown.end.prevent="selectTab(tabs[tabs.length - 1])" :aria-selected="tab === '{{ $key }}'" :tabindex="tab === '{{ $key }}' ? 0 : -1" aria-controls="proforma-panel-{{ $key }}" :class="tab === '{{ $key }}' ? 'border-primary text-primary' : 'border-transparent text-content-muted hover:text-content'" class="-mb-px border-b-2 px-3 py-3 text-sm font-medium transition-colors">{{ $label }}</button>
+                    @endforeach
+                    @if($invoice)<button id="proforma-tab-history" type="button" role="tab" @click="selectTab('history')" @keydown.right.prevent="moveTab(1)" @keydown.left.prevent="moveTab(-1)" @keydown.home.prevent="selectTab('data')" @keydown.end.prevent="selectTab(tabs[tabs.length - 1])" :aria-selected="tab === 'history'" :tabindex="tab === 'history' ? 0 : -1" aria-controls="proforma-panel-history" :class="tab === 'history' ? 'border-primary text-primary' : 'border-transparent text-content-muted hover:text-content'" class="-mb-px border-b-2 px-3 py-3 text-sm font-medium transition-colors">Storico</button>@endif
+                </div>
+                <section id="proforma-panel-data" role="tabpanel" aria-labelledby="proforma-tab-data" class="pt-5" x-show="tab === 'data'"><x-documents.invoice-form.data-fields><label class="text-sm font-semibold">Cliente *<x-select wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" />@error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label><div class="text-sm font-semibold">Numero<div class="mt-1 h-11 rounded-md border border-border-light bg-surface-muted px-3 py-3 text-sm font-normal">{{ $numberPreview ?? 'Configura una sequenza proforma' }}</div></div><label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm">@error('date')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label><label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label></x-documents.invoice-form.data-fields></section>
+                <section id="proforma-panel-payment" role="tabpanel" aria-labelledby="proforma-tab-payment" x-show="tab === 'payment'" x-cloak class="pt-5"><div class="grid gap-4 sm:grid-cols-2"><label class="text-sm font-semibold">Metodo pagamento<x-select wire:model="payment_method" :disabled="$this->readOnly" :options="PaymentMethod::options()" placeholder="Seleziona..." /></label><label class="text-sm font-semibold">Termini pagamento<x-select wire:model="payment_terms" :disabled="$this->readOnly" :options="PaymentTerms::options()" placeholder="Seleziona..." /></label><label class="text-sm font-semibold">Banca<input wire:model="bank_name" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label><label class="text-sm font-semibold">IBAN<input wire:model="bank_iban" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label></div></section>
+                <section id="proforma-panel-notes" role="tabpanel" aria-labelledby="proforma-tab-notes" x-show="tab === 'notes'" x-cloak class="pt-5"><label class="text-sm font-semibold">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"></textarea></label></section>
+                @if($invoice)<section id="proforma-panel-history" role="tabpanel" aria-labelledby="proforma-tab-history" x-show="tab === 'history'" x-cloak class="space-y-3 pt-5">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-semibold">{{ $event->title }}</p><p class="text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</section>@endif
             </x-documents.invoice-form.data-section>
 
-            <x-documents.invoice-form.lines title="Righe proforma" :read-only="$this->readOnly" variant="editor" class="mt-6">
+        </article>
+            <x-documents.invoice-form.lines title="Righe proforma" :read-only="$this->readOnly">
                 @foreach($lines as $index => $line)
-                    <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="true" :vat-disabled="$this->isRf19()" variant="editor" />
+                    <x-documents.invoice-form.line :line="$line" :index="$index" :lines-count="count($lines)" :read-only="$this->readOnly" :line-total="$this->lineTotal($line)" :has-discount="true" :vat-disabled="$this->isRf19()" />
                 @endforeach
             </x-documents.invoice-form.lines>
-        </article>
+        </div>
 
         <aside class="space-y-4">
-            <x-documents.invoice-form.totals variant="editor" :net-total="$this->netTotal" :vat-total="$this->vatTotal" :fund-amount="$fund_enabled ? $this->fundAmount : 0" :fund-percent="$fund_enabled ? $fund_percent : null" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" :withholding-amount="$this->withholdingAmount" :withholding-percent="$withholding_tax_enabled ? $withholding_tax_percent : null" :net-due="$this->netDue" />
-
-            <details @if($openPayment) open @endif class="rounded-xl border border-border bg-white">
-                <summary class="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-content marker:hidden">Pagamento <x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
-                <div class="grid gap-4 border-t border-border px-5 pb-5 pt-4 sm:grid-cols-2">
-                    <label class="text-sm font-medium text-content">Metodo pagamento<x-select wire:model="payment_method" :disabled="$this->readOnly" :options="PaymentMethod::options()" placeholder="Seleziona..." /></label>
-                    <label class="text-sm font-medium text-content">Termini pagamento<x-select wire:model="payment_terms" :disabled="$this->readOnly" :options="PaymentTerms::options()" placeholder="Seleziona..." /></label>
-                    <label class="text-sm font-medium text-content sm:col-span-2">Banca<input wire:model="bank_name" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-lg border border-border-strong bg-white px-3 text-sm text-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></label>
-                    <label class="text-sm font-medium text-content sm:col-span-2">IBAN<input wire:model="bank_iban" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-lg border border-border-strong bg-white px-3 text-sm text-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></label>
-                </div>
-            </details>
-
-            <details @if($openNotes) open @endif class="rounded-xl border border-border bg-white">
-                <summary class="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-content marker:hidden">Note <x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary>
-                <div class="border-t border-border px-5 pb-5 pt-4"><label class="block text-sm font-medium text-content">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-lg border border-border-strong bg-white px-3 py-2 text-sm text-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></textarea></label></div>
-            </details>
-
-            <x-documents.invoice-form.fiscal-options variant="editor" :read-only="$this->readOnly" :is-rf19="$this->isRf19()" :withholding="true" :fund="true" :stamp-duty="true" :stamp-duty-charged-to-customer="true" :withholding-enabled="$withholding_tax_enabled" :fund-enabled="$fund_enabled" :stamp-duty-applied="$stamp_duty_applied" />
-
-            @if($invoice)
-                <details class="rounded-xl border border-border bg-white"><summary class="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-content marker:hidden">Storico <x-icon name="o-chevron-down" class="size-4 text-content-muted" /></summary><div class="space-y-3 border-t border-border px-5 pb-5 pt-4">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-medium text-content">{{ $event->title }}</p><p class="mt-0.5 text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</div></details>
-            @endif
+            <x-documents.invoice-form.totals :net-total="$this->netTotal" :vat-total="$this->vatTotal" :fund-amount="$fund_enabled ? $this->fundAmount : 0" :fund-percent="$fund_enabled ? $fund_percent : null" :stamp-duty-amount="$stamp_duty_applied ? $this->stampDutyAmount : 0" :stamp-duty-label="'Bollo '.($stamp_duty_charged_to_customer ? 'a carico cliente' : 'a carico cedente')" :withholding-amount="$this->withholdingAmount" :withholding-percent="$withholding_tax_enabled ? $withholding_tax_percent : null" :net-due="$this->netDue" />
+            <x-documents.invoice-form.action-bar variant="sales-editor" cancel-route="proforma.index" :submit-label="$invoice ? 'Aggiorna proforma' : 'Crea proforma'" :read-only="$this->readOnly" :net-due="$this->netDue" />
+            <x-documents.invoice-form.fiscal-options variant="sales-editor" :read-only="$this->readOnly" :is-rf19="$this->isRf19()" :withholding="true" :fund="true" :stamp-duty="true" :stamp-duty-charged-to-customer="true" :withholding-enabled="$withholding_tax_enabled" :withholding-percent="$withholding_tax_percent" :fund-enabled="$fund_enabled" :fund-percent="$fund_percent" :stamp-duty-applied="$stamp_duty_applied" :stamp-duty-charged-to-customer="$stamp_duty_charged_to_customer" />
         </aside>
-
-        <x-documents.invoice-form.action-bar variant="editor" cancel-route="proforma.index" :submit-label="$invoice ? 'Aggiorna proforma' : 'Crea proforma'" :read-only="$this->readOnly" />
     </form>
 </section>
