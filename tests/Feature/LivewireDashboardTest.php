@@ -229,6 +229,33 @@ it('renders the revenue comparison through Wirecharts', function () {
         ->assertSee('Proiezione anno');
 });
 
+it('provides accessible text alternatives for the revenue comparison', function () {
+    $user = User::factory()->create();
+    SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'total_net' => 150000,
+        'total_gross' => 150000,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('id="revenue-chart-description"', false)
+        ->assertSee("Valori mensili del fatturato al netto dell'IVA", false)
+        ->assertSee('scope="col">Mese', false);
+});
+
+it('announces dashboard refresh state and keeps KPI metadata separated', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('role="status"', false)
+        ->assertSee('Aggiornamento dati in corso')
+        ->assertSee('dashboard-kpi-meta', false);
+});
+
 it('shows the forecast only for the active fiscal year with turnover', function () {
     $user = User::factory()->create();
     SalesInvoice::factory()->create(['date' => now()->toDateString(), 'total_net' => 100000, 'total_gross' => 100000]);

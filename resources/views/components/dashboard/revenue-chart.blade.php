@@ -86,6 +86,39 @@
 
     @if($hasData)
         <chart:line :series="$series" :categories="$labels" height="280" smooth />
+        <p id="revenue-chart-description" class="sr-only">
+            Il grafico confronta il fatturato mensile al netto dell'IVA per {{ $fiscalYear }} e {{ $fiscalYear - 1 }}.
+            @if($isCurrentYear && $projectionTotal !== null)
+                Include la previsione per i mesi restanti.
+            @endif
+        </p>
+        <div class="sr-only">
+            <table aria-describedby="revenue-chart-description">
+                <caption>Valori mensili del fatturato al netto dell'IVA</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Mese</th>
+                        <th scope="col">{{ $fiscalYear }}</th>
+                        <th scope="col">{{ $fiscalYear - 1 }}</th>
+                        @if($isCurrentYear && $projectionTotal !== null)
+                            <th scope="col">Previsione</th>
+                        @endif
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($labels as $index => $label)
+                        <tr>
+                            <th scope="row">{{ $label }}</th>
+                            <td>{{ ($actual[$index] ?? null) === null ? 'Non disponibile' : '€ '.number_format($actual[$index], 2, ',', '.') }}</td>
+                            <td>{{ ($previous[$index] ?? null) === null ? 'Non disponibile' : '€ '.number_format($previous[$index], 2, ',', '.') }}</td>
+                            @if($isCurrentYear && $projectionTotal !== null)
+                                <td>{{ ($forecast[$index] ?? null) === null ? 'Non disponibile' : '€ '.number_format($forecast[$index], 2, ',', '.') }}</td>
+                            @endif
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
     @else
         <p class="py-12 text-center text-sm text-content-muted">Nessun fatturato disponibile per il confronto.</p>
     @endif

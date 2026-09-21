@@ -120,8 +120,8 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
             <p class="mt-2 text-sm text-content-muted">Anno fiscale {{ $fiscalYear }} · {{ $isCurrentYear ? 'Priorità, incassi e documenti aggiornati per oggi.' : "Riepilogo dell'anno fiscale {$fiscalYear}." }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <span class="text-xs text-content-muted" aria-live="polite">Aggiornato ora</span>
-            <button wire:click="loadStats" wire:loading.attr="disabled" type="button" class="btn-outline inline-flex h-11 items-center justify-center px-4 text-sm"><span wire:loading.remove wire:target="loadStats">Aggiorna</span><span wire:loading wire:target="loadStats">Aggiornamento…</span></button>
+            <span class="text-xs text-content-muted" role="status" aria-live="polite"><span wire:loading.remove wire:target="loadStats">Aggiornato ora</span><span wire:loading wire:target="loadStats">Aggiornamento dati in corso</span></span>
+            <button wire:click="loadStats" wire:loading.attr="disabled" wire:loading.attr="aria-busy" wire:target="loadStats" type="button" class="btn-outline inline-flex h-11 items-center justify-center px-4 text-sm"><span wire:loading.remove wire:target="loadStats">Aggiorna</span><span wire:loading wire:target="loadStats">Aggiornamento…</span></button>
             @if($isCurrentYear)
                 <x-app-link :href="route('sell-invoices.create')" class="btn-brand inline-flex h-11 items-center justify-center px-4 text-sm">Nuova fattura</x-app-link>
             @endif

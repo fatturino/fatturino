@@ -97,10 +97,10 @@
     --color-canvas: var(--color-app-background);
 }
 
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
-    outline: none;
+:is(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-primary) !important;
     outline-offset: 2px;
-    box-shadow: var(--shadow-input-focus);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
 /* Make every mouse-interactive control communicate that it is actionable. */
@@ -194,6 +194,11 @@
     background: var(--color-surface);
 }
 
+.dashboard-kpi-meta {
+    display: grid;
+    gap: 0.125rem;
+}
+
 .dashboard-kpi:hover {
     transform: translateY(-2px);
     border-color: var(--color-border-strong);
@@ -280,6 +285,11 @@
     .due-date-row > :last-child {
         padding-top: 0.125rem;
     }
+
+    .due-date-row .due-date-marker {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
 }
 
 ::selection { background: var(--color-indigo-200); color: var(--color-text-primary); }
@@ -291,7 +301,11 @@
 
 @media (prefers-reduced-motion: reduce) {
     .app-content { animation: none; }
-    .dashboard-kpi { transition: none; }
+    .dashboard-kpi,
+    .due-date-row,
+    .dashboard-action-link,
+    .dashboard-list-link { transition: none; }
+    .dashboard-kpi:hover { transform: none; }
 }
 
 .page-shell {
@@ -1004,8 +1018,9 @@ textarea.form-focus {
 
 /* Windows High Contrast Mode */
 @media (forced-colors: active) {
-    .focus\:outline-none:focus-visible {
+    :is(a, button, input, select, textarea, [tabindex]):focus-visible {
         outline: 2px solid CanvasText;
         outline-offset: 2px;
+        box-shadow: none;
     }
 }

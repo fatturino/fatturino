@@ -7,7 +7,7 @@
                 <h2 class="font-semibold text-content">Prossime scadenze</h2>
                 <p class="mt-1 text-sm text-content-muted">Per data di pagamento prevista</p>
             </div>
-            <x-app-link href="/sell-invoices?payment=open" class="shrink-0 text-sm font-semibold text-primary underline-offset-4 hover:underline">Vedi aperte</x-app-link>
+            <x-app-link href="/sell-invoices?payment=open" class="-m-2 inline-flex min-h-11 shrink-0 items-center p-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">Vedi aperte</x-app-link>
         </div>
 
         <div class="mt-5 space-y-2">
@@ -26,7 +26,7 @@
 
                 <x-app-link :href="route('sell-invoices.edit', $invoice['id'])" @class(['due-date-row group block', "due-date-row-{$tone}"])>
                     <span @class(['due-date-marker', "due-date-marker-{$tone}"] ) aria-hidden="true">
-                        <span class="text-sm font-bold tabular-nums">{{ $days === null ? '—' : abs($days) }}</span>
+                        <span class="text-sm font-bold tabular-nums">{{ $days === null ? 'N/D' : abs($days) }}</span>
                         <span class="text-[0.625rem] font-bold uppercase tracking-wide">{{ $days === null ? '' : 'gg' }}</span>
                     </span>
                     <span class="min-w-0 flex-1">
@@ -34,7 +34,7 @@
                             <span class="min-w-0 break-words text-sm font-semibold text-content">{{ $invoice['contact'] ?? 'Cliente non associato' }}</span>
                             <x-badge :value="$label" :variant="$tone === 'default' ? 'neutral' : $tone" />
                         </span>
-                        <span class="mt-1 block text-xs leading-5 text-content-muted">{{ $detail }} · {{ $invoice['due_date'] ?? 'Data non disponibile' }}</span>
+                        <span class="mt-1 block text-xs leading-5 text-content-muted">{{ $detail }} <span aria-hidden="true">·</span> {{ $invoice['due_date'] ?? 'Data non disponibile' }}</span>
                     </span>
                     <span class="shrink-0 text-right">
                         <span class="block text-sm font-semibold tabular-nums text-content">{{ '€ '.number_format($invoice['remaining_balance'] / 100, 2, ',', '.') }}</span>

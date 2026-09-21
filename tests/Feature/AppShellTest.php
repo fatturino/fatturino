@@ -20,3 +20,14 @@ it('renders an accessible mobile navigation trigger and skip link', function () 
         ->assertSee('closeSidebar(returnFocus = false)', false)
         ->assertSee('aria-current="page"', false);
 });
+
+it('exposes the company actions as a labelled menu', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('aria-haspopup="menu"', false)
+        ->assertSee('role="menu"', false)
+        ->assertSee('role="menuitem"', false);
+});
