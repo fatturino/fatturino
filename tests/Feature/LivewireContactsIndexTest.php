@@ -21,11 +21,62 @@ it('renders a compact, row-linked contacts list without a separate actions colum
     $this->actingAs($user);
 
     Livewire::test('pages::contacts.index')
-        ->assertSee('1 contatto')
+        ->assertSee('Riepilogo contatti')
+        ->assertSee('Contatti')
         ->assertSee(route('contacts.edit', $contact), escape: false)
         ->assertSee('aria-sort="ascending"', escape: false)
         ->assertDontSee('>Azioni<', escape: false)
         ->assertDontSee('>Apri<', escape: false);
+});
+
+it('shows global contact metrics and identifies incomplete contact records', function () {
+    $user = User::factory()->create();
+    Contact::factory()->create([
+        'name' => 'Cliente Completo',
+        'is_customer' => true,
+        'vat_number' => 'IT12345678901',
+        'sdi_code' => 'ABC1234',
+    ]);
+    Contact::factory()->create([
+        'name' => 'Cliente e Fornitore',
+        'is_customer' => true,
+        'is_supplier' => true,
+        'tax_code' => 'RSSMRA80A01H501Z',
+        'pec' => 'amministrazione@example.test',
+    ]);
+    Contact::factory()->create([
+        'name' => 'Senza Identificativi',
+        'is_customer' => false,
+        'is_supplier' => true,
+        'vat_number' => null,
+        'tax_code' => null,
+    ]);
+    Contact::factory()->create([
+        'name' => 'Cliente Senza Recapito SDI',
+        'is_customer' => true,
+        'vat_number' => 'IT98765432109',
+        'sdi_code' => null,
+        'pec' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::contacts.index')
+        ->assertSee('id="contact-summary-title"', escape: false)
+        ->assertSee('Riepilogo contatti')
+        ->assertSee('Clienti')
+        ->assertSee('Fornitori')
+        ->assertSee('Da completare')
+        ->assertSee('id="contact-summary-total" class="mt-1 text-xl font-semibold tabular-nums text-content">4</dd>', escape: false)
+        ->assertSee('id="contact-summary-customers" class="mt-1 text-xl font-semibold tabular-nums text-content">3</dd>', escape: false)
+        ->assertSee('id="contact-summary-suppliers" class="mt-1 text-xl font-semibold tabular-nums text-content">2</dd>', escape: false)
+        ->assertSee('id="contact-summary-incomplete" class="mt-1 text-xl font-semibold tabular-nums text-content">2</dd>', escape: false)
+        ->assertSee('Dati fiscali o recapiti mancanti')
+        ->set('search', 'Cliente Completo')
+        ->assertSee('id="contact-summary-total" class="mt-1 text-xl font-semibold tabular-nums text-content">4</dd>', escape: false)
+        ->assertSee('id="contact-summary-customers" class="mt-1 text-xl font-semibold tabular-nums text-content">3</dd>', escape: false)
+        ->assertSee('id="contact-summary-suppliers" class="mt-1 text-xl font-semibold tabular-nums text-content">2</dd>', escape: false)
+        ->assertSee('id="contact-summary-incomplete" class="mt-1 text-xl font-semibold tabular-nums text-content">2</dd>', escape: false);
 });
 
 it('filters contacts by name, VAT number and email', function () {

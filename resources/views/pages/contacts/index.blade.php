@@ -7,7 +7,8 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Layout('layouts::app')] class extends Component {
+new #[Layout('layouts::app')] class extends Component
+{
     use WithPagination;
 
     #[Url(as: 'search', except: '')]
@@ -46,8 +47,9 @@ new #[Layout('layouts::app')] class extends Component {
         $contacts = $this->query()
             ->orderBy($this->sortableColumn(), $this->direction === 'desc' ? 'desc' : 'asc')
             ->paginate(15);
+        $aggregates = $this->aggregates();
 
-        return view('pages::contacts.index', compact('contacts'));
+        return view('pages::contacts.index', compact('contacts', 'aggregates'));
     }
 
     private function query(): Builder
@@ -62,6 +64,25 @@ new #[Layout('layouts::app')] class extends Component {
     {
         return in_array($this->sort, ['name', 'vat_number', 'email', 'city'], true) ? $this->sort : 'name';
     }
+
+    private function aggregates(): object
+    {
+        return Contact::query()->selectRaw("
+            count(*) as total,
+            sum(case when is_customer then 1 else 0 end) as customers,
+            sum(case when is_supplier then 1 else 0 end) as suppliers,
+            sum(case when
+                (vat_number is null or vat_number = '')
+                and (tax_code is null or tax_code = '')
+                or (
+                    is_customer
+                    and country = 'IT'
+                    and (sdi_code is null or sdi_code = '')
+                    and (pec is null or pec = '')
+                )
+                then 1 else 0 end) as incomplete
+        ")->firstOrFail();
+    }
 };
 ?>
 
@@ -72,19 +93,44 @@ new #[Layout('layouts::app')] class extends Component {
     </div>
 </x-slot:header>
 
-<section class="space-y-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <p class="text-sm font-medium text-content">{{ $contacts->total() }} {{ $contacts->total() === 1 ? 'contatto' : 'contatti' }}</p>
-            <p class="mt-1 text-sm text-content-muted">Clienti e fornitori registrati.</p>
+<section class="space-y-5">
+    <section class="overflow-hidden rounded-xl border border-border bg-border" aria-labelledby="contact-summary-title">
+        <div class="flex flex-col gap-4 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div>
+                <p class="text-xs font-medium text-content-muted">Anagrafiche</p>
+                <h2 id="contact-summary-title" class="mt-1 text-base font-semibold text-content">Riepilogo contatti</h2>
+            </div>
+
+            <x-app-link :href="route('contacts.create')" class="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 active:translate-y-px">
+                Nuovo contatto
+            </x-app-link>
         </div>
 
-        <x-app-link :href="route('contacts.create')" class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20">
-            Nuovo contatto
-        </x-app-link>
-    </div>
+        <dl class="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
+            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
+                <dt class="text-xs font-medium text-content-muted">Contatti</dt>
+                <dd id="contact-summary-total" class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $aggregates->total }}</dd>
+                <p class="mt-1 text-xs text-content-muted">Clienti e fornitori</p>
+            </div>
+            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
+                <dt class="text-xs font-medium text-content-muted">Clienti</dt>
+                <dd id="contact-summary-customers" class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $aggregates->customers }}</dd>
+                <p class="mt-1 text-xs text-content-muted">Abilitati alle vendite</p>
+            </div>
+            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
+                <dt class="text-xs font-medium text-content-muted">Fornitori</dt>
+                <dd id="contact-summary-suppliers" class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $aggregates->suppliers }}</dd>
+                <p class="mt-1 text-xs text-content-muted">Abilitati agli acquisti</p>
+            </div>
+            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
+                <dt class="text-xs font-medium text-content-muted">Da completare</dt>
+                <dd id="contact-summary-incomplete" class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $aggregates->incomplete }}</dd>
+                <p @class(['mt-1 text-xs', $aggregates->incomplete > 0 ? 'text-warning' : 'text-content-muted'])>{{ $aggregates->incomplete > 0 ? 'Dati fiscali o recapiti mancanti' : 'Anagrafiche complete' }}</p>
+            </div>
+        </dl>
+    </section>
 
-    <div class="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-center">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="relative w-full sm:max-w-xl">
             <label for="contact-search" class="sr-only">Cerca contatti</label>
             <svg class="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-content-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
