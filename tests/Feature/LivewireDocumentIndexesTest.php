@@ -28,7 +28,7 @@ it('renders each document index as a Livewire page', function (string $url, stri
 
     Livewire::test('pages::documents.index', ['type' => $type])
         ->assertSet('type', $type)
-        ->assertDontSee('<h2 class="mt-1 text-2xl font-bold">'.$title.'</h2>', false)
+        ->assertDontSee('<h2 class="mt-1 text-2xl font-bold">' . $title . '</h2>', false)
         ->assertSee('id="document-search"', false);
 })->with('document index routes');
 
@@ -67,7 +67,7 @@ it('filters open sales invoices across unpaid, partial, and overdue payment stat
         ->assertDontSee('FV-PAGATA');
 });
 
-it('shows a compact fiscal-year summary instead of aggregate KPI cards', function () {
+it('shows a compact fiscal-year summary panel with payment operations', function () {
     $user = User::factory()->create();
 
     SalesInvoice::factory()->create([
@@ -96,11 +96,34 @@ it('shows a compact fiscal-year summary instead of aggregate KPI cards', functio
     $this->actingAs($user);
 
     Livewire::test('pages::documents.index', ['type' => 'sales'])
-        ->assertSee('2 fatture · € 300,00 netto · 2 da saldare')
+        ->assertSee('id="document-summary-title"', escape: false)
+        ->assertSee('Riepilogo fatture')
+        ->assertSee('Documenti')
+        ->assertSee('2')
+        ->assertSee('Imponibile')
+        ->assertSee('€ 300,00')
+        ->assertSee('IVA')
+        ->assertSee('€ 66,00')
+        ->assertSee('Da saldare')
         ->assertSee('1 scaduta')
-        ->assertDontSee('Totale netto')
-        ->assertDontSee('Valore medio netto')
-        ->assertDontSee('IVA media');
+        ->assertSee('Totale netto')
+        ->assertSee('Imposte');
+});
+
+it('shows draft and sent metrics in the compact summary for non-payable documents', function () {
+    $user = User::factory()->create();
+
+    ProformaInvoice::factory()->create(['date' => now()->toDateString(), 'status' => 'draft']);
+    ProformaInvoice::factory()->create(['date' => now()->toDateString(), 'status' => 'sent']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.index', ['type' => 'proforma'])
+        ->assertSee('Riepilogo proforma')
+        ->assertSee('Bozze')
+        ->assertSee('1')
+        ->assertSee('1 inviata')
+        ->assertDontSee('Da saldare');
 });
 
 it('shows the payment filter only for payable document indexes', function () {
@@ -115,7 +138,20 @@ it('shows the payment filter only for payable document indexes', function () {
         ->assertDontSee('Pagamento');
 });
 
-it('renders an accessible sortable document table with a single primary document link', function () {
+it('distinguishes an empty document index from an empty filtered result', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.index', ['type' => 'sales'])
+        ->assertSee('Nessuna fattura ancora registrata.')
+        ->assertSee('Nuova fattura')
+        ->set('search', 'nessuna-corrispondenza')
+        ->assertSee('Nessun documento corrisponde ai filtri.')
+        ->assertSee('Cancella filtri');
+});
+
+it('renders an accessible responsive document index with the operational invoice details', function () {
     $user = User::factory()->create();
     $invoice = SalesInvoice::factory()->create([
         'date' => now()->toDateString(),
@@ -128,9 +164,16 @@ it('renders an accessible sortable document table with a single primary document
         ->assertSee('aria-sort="descending"', escape: false)
         ->assertSee("href=\"/sell-invoices/{$invoice->id}/edit\"", escape: false)
         ->assertSee('class="sr-only">Azioni</span>', escape: false)
-        ->assertSee('size-1.5 shrink-0 rounded-full bg-current', escape: false)
+        ->assertSee('class="hidden overflow-x-auto border-y border-border bg-white lg:block"', escape: false)
+        ->assertSee('class="divide-y divide-border border-y border-border bg-white lg:hidden"', escape: false)
+        ->assertSee('Totale')
+        ->assertSee('Scadenza')
+        ->assertSee('Nessuna')
+        ->assertSee('Aggiornamento documenti in corso')
         ->call('sortBy', 'date')
-        ->assertSee('aria-sort="ascending"', escape: false);
+        ->assertSee('aria-sort="ascending"', escape: false)
+        ->call('sortBy', 'due_date')
+        ->assertSet('sort', 'due_date');
 });
 
 it('renders the compatible document actions and gates the SDI send action by workflow state', function () {
@@ -260,8 +303,8 @@ it('locks the document type and fiscal year to the server-side route context', f
         ->assertSet('type', 'sales')
         ->assertSet('fiscalYear', now()->year);
 
-    expect(fn () => $component->set('type', 'self'))
+    expect(fn() => $component->set('type', 'self'))
         ->toThrow(CannotUpdateLockedPropertyException::class);
-    expect(fn () => $component->set('fiscalYear', now()->subYear()->year))
+    expect(fn() => $component->set('fiscalYear', now()->subYear()->year))
         ->toThrow(CannotUpdateLockedPropertyException::class);
 });

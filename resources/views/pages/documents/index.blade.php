@@ -71,7 +71,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function sortBy(string $column): void
     {
-        if (! in_array($column, ['number', 'date', 'total_gross'], true)) {
+        if (! in_array($column, ['number', 'date', 'due_date', 'total_gross'], true)) {
             return;
         }
         $this->direction = $this->sort === $column && $this->direction === 'asc' ? 'desc' : 'asc';
@@ -103,7 +103,7 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $query = $this->query();
         $documents = (clone $query)
-            ->orderBy(in_array($this->sort, ['number', 'date', 'total_gross'], true) ? $this->sort : 'date', $this->direction === 'asc' ? 'asc' : 'desc')
+            ->orderBy(in_array($this->sort, ['number', 'date', 'due_date', 'total_gross'], true) ? $this->sort : 'date', $this->direction === 'asc' ? 'asc' : 'desc')
             ->paginate(15);
         $aggregates = $this->aggregates();
         $total = (int) $aggregates->total;
@@ -308,34 +308,64 @@ new #[Layout('layouts::app')] class extends Component {
         'canXml' => in_array($type, ['sales', 'self', 'credit'], true),
         'linkableInvoices' => $linkableInvoices,
     ];
-    $summaryParts = [
-        $total.' '.$definition['plural'],
-        $this->money($net).' netto',
-    ];
     if ($this->hasPayments()) {
-        $summaryParts[] = $open.' da saldare';
+        $operationalStat = [
+            'label' => 'Da saldare',
+            'value' => $open,
+            'detail' => $overdue > 0 ? $overdue.' '.($overdue === 1 ? 'scaduta' : 'scadute') : 'Nessuna scaduta',
+            'detailClass' => $overdue > 0 ? 'text-danger' : 'text-content-muted',
+        ];
     } else {
-        $summaryParts[] = $drafts.' bozze';
-        $summaryParts[] = $sent.' inviate';
+        $operationalStat = [
+            'label' => 'Bozze',
+            'value' => $drafts,
+            'detail' => $sent.' '.($sent === 1 ? 'inviata' : 'inviate'),
+            'detailClass' => 'text-content-muted',
+        ];
     }
 @endphp
 <section
-    class="space-y-6"
+    class="space-y-5"
     x-data="documentActionCenter(@js($actionConfig))"
     x-on:document-action.window="handleAction($event.detail)"
 >
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <p class="text-xs font-medium text-content-muted">Anno fiscale {{ $fiscalYear }}</p>
-            <p class="mt-1 text-sm text-content">{{ implode(' · ', $summaryParts) }}@if($this->hasPayments() && $overdue > 0) <span class="text-danger">· {{ $overdue }} {{ $overdue === 1 ? 'scaduta' : 'scadute' }}</span>@endif</p>
+    <section class="overflow-hidden rounded-xl border border-border bg-border" aria-labelledby="document-summary-title">
+        <div class="flex flex-col gap-4 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div>
+                <p class="text-xs font-medium text-content-muted">Anno fiscale {{ $fiscalYear }}</p>
+                <h2 id="document-summary-title" class="mt-1 text-base font-semibold text-content">Riepilogo {{ strtolower($definition['plural']) }}</h2>
+            </div>
+
+            @if($definition['create'])
+                <x-app-link href="/{{ $definition['base'] }}/create" class="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 active:translate-y-px">
+                    {{ $definition['create'] }}
+                </x-app-link>
+            @endif
         </div>
 
-        @if($definition['create'])
-            <x-app-link href="/{{ $definition['base'] }}/create" class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20">
-                {{ $definition['create'] }}
-            </x-app-link>
-        @endif
-    </div>
+        <dl class="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
+            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
+                <dt class="text-xs font-medium text-content-muted">Documenti</dt>
+                <dd class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $total }}</dd>
+                <p class="mt-1 text-xs text-content-muted">{{ $definition['plural'] }}</p>
+            </div>
+            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
+                <dt class="text-xs font-medium text-content-muted">Imponibile</dt>
+                <dd class="mt-1 truncate text-xl font-semibold tabular-nums text-content">{{ $this->money($net) }}</dd>
+                <p class="mt-1 text-xs text-content-muted">Totale netto</p>
+            </div>
+            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
+                <dt class="text-xs font-medium text-content-muted">IVA</dt>
+                <dd class="mt-1 truncate text-xl font-semibold tabular-nums text-content">{{ $this->money($vat) }}</dd>
+                <p class="mt-1 text-xs text-content-muted">Imposte</p>
+            </div>
+            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
+                <dt class="text-xs font-medium text-content-muted">{{ $operationalStat['label'] }}</dt>
+                <dd class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $operationalStat['value'] }}</dd>
+                <p @class(['mt-1 text-xs', $operationalStat['detailClass']])>{{ $operationalStat['detail'] }}</p>
+            </div>
+        </dl>
+    </section>
 
     @if($type === 'purchase')
         <p class="rounded-lg border border-info/20 bg-info-bg px-4 py-3 text-sm text-info">Le fatture di acquisto vengono importate automaticamente dallo SDI.</p>
@@ -355,13 +385,10 @@ new #[Layout('layouts::app')] class extends Component {
         </div>
     </div>
 
-    <div class="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-center">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="relative w-full sm:max-w-xl">
             <label for="document-search" class="sr-only">Cerca documenti</label>
-            <svg class="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-content-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="11" cy="11" r="7" />
-                <path d="m20 20-4-4" />
-            </svg>
+            <x-icon name="o-magnifying-glass" class="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-content-muted" aria-hidden="true" />
             <input id="document-search" wire:model.live.debounce.350ms="search" type="search" class="block h-11 w-full rounded-lg border border-border-strong bg-white py-2 pl-10 pr-3 text-sm text-content placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Cerca per numero o {{ strtolower($definition['contact']) }}">
         </div>
 
@@ -372,7 +399,12 @@ new #[Layout('layouts::app')] class extends Component {
         @endif
     </div>
 
-    <div class="overflow-x-auto border-y border-border bg-white">
+    <div wire:loading.flex wire:target="search,status,payment,sort,direction" class="hidden items-center gap-2 rounded-lg border border-info/20 bg-info-bg px-4 py-3 text-sm text-info" role="status">
+        <span class="size-4 animate-pulse rounded bg-current/30" aria-hidden="true"></span>
+        Aggiornamento documenti in corso
+    </div>
+
+    <div class="hidden overflow-x-auto border-y border-border bg-white lg:block">
         <table class="min-w-full text-left text-sm">
             <thead class="border-b border-border bg-surface-muted text-content-muted">
                 <tr>
@@ -400,6 +432,17 @@ new #[Layout('layouts::app')] class extends Component {
                         </button>
                     </th>
                     <th scope="col" class="px-5 py-3 text-right text-xs font-medium">IVA</th>
+                    <th scope="col" class="px-5 py-3 text-right text-xs font-medium">Totale</th>
+                    @php
+                        $isActiveSort = $sort === 'due_date';
+                        $ariaSort = $isActiveSort ? ($direction === 'asc' ? 'ascending' : 'descending') : 'none';
+                    @endphp
+                    <th scope="col" aria-sort="{{ $ariaSort }}" class="px-5 py-3 text-xs font-medium">
+                        <button wire:click="sortBy('due_date')" type="button" class="inline-flex min-h-6 items-center gap-1.5 rounded text-left transition hover:text-content focus:outline-none focus:ring-2 focus:ring-primary/20" aria-label="Ordina per Scadenza">
+                            <span>Scadenza</span>
+                            <x-icon :name="$isActiveSort ? ($direction === 'asc' ? 'o-chevron-up' : 'o-chevron-down') : 'o-chevron-up-down'" @class(['size-3.5', 'text-primary' => $isActiveSort, 'opacity-40' => ! $isActiveSort]) />
+                        </button>
+                    </th>
                     <th scope="col" class="px-5 py-3 text-xs font-medium">Stato</th>
                     @if($this->hasPayments())
                         <th scope="col" class="px-5 py-3 text-xs font-medium">Pagamento</th>
@@ -410,39 +453,109 @@ new #[Layout('layouts::app')] class extends Component {
             <tbody class="divide-y divide-border">
                 @forelse($documents as $document)
                     <tr class="transition-colors hover:bg-surface-muted/70 focus-within:bg-primary-subtle">
-                        <td class="px-5 py-3.5 font-medium text-content">
-                            <x-app-link href="/{{ $definition['base'] }}/{{ $document->id }}/edit" class="rounded text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                                {{ $document->number ?? '#'.$document->id }}
+                        <td class="px-5 py-4 align-top">
+                            <x-app-link href="/{{ $definition['base'] }}/{{ $document->id }}/edit" class="rounded font-medium text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                {{ $document->number ?? 'Documento #'.$document->id }}
                             </x-app-link>
+                            <p class="mt-1 text-xs text-content-muted">Documento</p>
                         </td>
-                        <td class="px-5 py-3.5 text-content-muted">{{ \Carbon\Carbon::parse($document->date)->format('d/m/Y') }}</td>
-                        <td class="px-5 py-3.5 text-content">{{ $document->contact?->name ?? '—' }}</td>
-                        <td class="px-5 py-3.5 text-right tabular-nums">
+                        <td class="px-5 py-4 align-top text-content-muted">{{ \Carbon\Carbon::parse($document->date)->format('d/m/Y') }}</td>
+                        <td class="px-5 py-4 align-top text-content">{{ $document->contact?->name ?? 'Non assegnato' }}</td>
+                        <td class="px-5 py-4 align-top text-right tabular-nums">
                             <p class="font-medium text-content">{{ $this->money($document->total_gross - $document->total_vat) }}</p>
-                            @if($this->hasPayments() && (int) $document->net_due !== (int) ($document->total_gross - $document->total_vat))
-                                <p class="mt-0.5 text-xs text-content-muted">Da pagare {{ $this->money($document->net_due) }}</p>
+                        </td>
+                        <td class="px-5 py-4 align-top text-right font-medium tabular-nums text-content">{{ $this->money($document->total_vat) }}</td>
+                        <td class="px-5 py-4 align-top text-right tabular-nums">
+                            <p class="font-semibold text-content">{{ $this->money($document->total_gross) }}</p>
+                            @if($this->hasPayments() && (int) $document->net_due !== (int) $document->total_gross)
+                                <p class="mt-1 text-xs text-content-muted">Residuo {{ $this->money($document->net_due) }}</p>
                             @endif
                         </td>
-                        <td class="px-5 py-3.5 text-right font-medium tabular-nums text-content">{{ $this->money($document->total_vat) }}</td>
-                        <td class="px-5 py-3.5 whitespace-nowrap">
-                            <x-badge :value="$this->statusLabel($document->status)" :variant="$this->statusTone($document->status)" dot />
+                        <td class="px-5 py-4 align-top whitespace-nowrap text-content-muted">
+                            {{ $document->due_date?->format('d/m/Y') ?? 'Nessuna' }}
+                        </td>
+                        <td class="px-5 py-4 align-top whitespace-nowrap">
+                            <x-badge :value="$this->statusLabel($document->status)" :variant="$this->statusTone($document->status)" />
                         </td>
                         @if($this->hasPayments())
-                            <td class="px-5 py-3.5 whitespace-nowrap">
-                                <x-badge :value="$this->statusLabel($document->payment_status)" :variant="$this->statusTone($document->payment_status)" dot />
+                            <td class="px-5 py-4 align-top whitespace-nowrap">
+                                <x-badge :value="$this->statusLabel($document->payment_status)" :variant="$this->statusTone($document->payment_status)" />
                             </td>
                         @endif
-                        <td class="px-3 py-3.5 text-right"><x-documents.document-actions :document="$document" :type="$type" :base="$definition['base']" /></td>
+                        <td class="px-3 py-4 align-top text-right"><x-documents.document-actions :document="$document" :type="$type" :base="$definition['base']" /></td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $this->hasPayments() ? 8 : 7 }}" class="px-5 py-12 text-center text-sm text-content-muted">
-                            {{ $search !== '' || $status !== '' || $payment !== '' ? 'Nessun documento corrisponde ai filtri.' : 'Nessuna '.$definition['singular'].' ancora registrata.' }}
+                        <td colspan="{{ $this->hasPayments() ? 10 : 9 }}" class="px-5 py-14 text-center">
+                            <x-icon name="o-inbox" class="mx-auto size-8 text-content-muted" aria-hidden="true" />
+                            <p class="mt-3 text-sm font-medium text-content">{{ $search !== '' || $status !== '' || $payment !== '' ? 'Nessun documento corrisponde ai filtri.' : 'Nessuna '.$definition['singular'].' ancora registrata.' }}</p>
+                            @if($search !== '' || $status !== '' || $payment !== '')
+                                <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">Cancella filtri</button>
+                            @elseif($definition['create'])
+                                <x-app-link href="/{{ $definition['base'] }}/create" class="mt-3 inline-flex text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ $definition['create'] }}</x-app-link>
+                            @endif
                         </td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    <div class="divide-y divide-border border-y border-border bg-white lg:hidden">
+        @forelse($documents as $document)
+            <article class="p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <x-app-link href="/{{ $definition['base'] }}/{{ $document->id }}/edit" class="block truncate rounded text-sm font-semibold text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            {{ $document->number ?? 'Documento #'.$document->id }}
+                        </x-app-link>
+                        <p class="mt-1 truncate text-sm text-content-muted">{{ $document->contact?->name ?? 'Non assegnato' }}</p>
+                    </div>
+                    <div class="flex shrink-0 items-start gap-1">
+                        <x-badge :value="$this->statusLabel($document->status)" :variant="$this->statusTone($document->status)" />
+                        <x-documents.document-actions :document="$document" :type="$type" :base="$definition['base']" />
+                    </div>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    <div>
+                        <p class="text-xs text-content-muted">Data</p>
+                        <p class="mt-1 text-content">{{ \Carbon\Carbon::parse($document->date)->format('d/m/Y') }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-content-muted">Totale</p>
+                        <p class="mt-1 font-semibold tabular-nums text-content">{{ $this->money($document->total_gross) }}</p>
+                        @if($this->hasPayments() && (int) $document->net_due !== (int) $document->total_gross)
+                            <p class="mt-1 text-xs tabular-nums text-content-muted">Residuo {{ $this->money($document->net_due) }}</p>
+                        @endif
+                    </div>
+                    <div>
+                        <p class="text-xs text-content-muted">Scadenza</p>
+                        <p class="mt-1 text-content">{{ $document->due_date?->format('d/m/Y') ?? 'Nessuna' }}</p>
+                    </div>
+                    @if($this->hasPayments())
+                        <div class="text-right">
+                            <p class="text-xs text-content-muted">Pagamento</p>
+                            <div class="mt-1 inline-flex"><x-badge :value="$this->statusLabel($document->payment_status)" :variant="$this->statusTone($document->payment_status)" /></div>
+                        </div>
+                    @else
+                        <div class="text-right">
+                            <p class="text-xs text-content-muted">Imponibile</p>
+                            <p class="mt-1 tabular-nums text-content">{{ $this->money($document->total_gross - $document->total_vat) }}</p>
+                        </div>
+                    @endif
+                </div>
+            </article>
+        @empty
+            <div class="px-5 py-14 text-center">
+                <x-icon name="o-inbox" class="mx-auto size-8 text-content-muted" aria-hidden="true" />
+                <p class="mt-3 text-sm font-medium text-content">{{ $search !== '' || $status !== '' || $payment !== '' ? 'Nessun documento corrisponde ai filtri.' : 'Nessuna '.$definition['singular'].' ancora registrata.' }}</p>
+                @if($search !== '' || $status !== '' || $payment !== '')
+                    <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">Cancella filtri</button>
+                @elseif($definition['create'])
+                    <x-app-link href="/{{ $definition['base'] }}/create" class="mt-3 inline-flex text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ $definition['create'] }}</x-app-link>
+                @endif
+            </div>
+        @endforelse
     </div>
 
     @if($documents->hasPages())
