@@ -968,6 +968,10 @@ return [
         'setup_link' => 'Set up Fatturino',
     ],
 
+    'demo' => [
+        'hint' => 'The demo credentials have already been filled in.',
+    ],
+
     'imports' => [
         'title' => 'Imports',
 

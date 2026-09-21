@@ -1022,6 +1022,10 @@ return [
         'setup_link' => 'Configura Fatturino',
     ],
 
+    'demo' => [
+        'hint' => 'Le credenziali demo sono già compilate.',
+    ],
+
     'imports' => [
         'title' => 'Importazioni',
 

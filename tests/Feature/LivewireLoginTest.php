@@ -49,11 +49,24 @@ it('renders an accessible sign-in form with the Fatturino identity', function ()
     $this->get(route('login'))
         ->assertOk()
         ->assertSee('Accedi al tuo account')
-        ->assertSee('Fatturazione senza attrito')
+        ->assertSee('Dalla fattura all\'incasso, con ogni informazione al posto giusto.', false)
         ->assertSee('for="email"', false)
         ->assertSee('autocomplete="email"', false)
         ->assertSee('autocomplete="current-password"', false)
+        ->assertSee('aria-busy="false"', false)
+        ->assertSee('wire:loading.attr="aria-busy"', false)
         ->assertSee('wire:loading.attr="disabled"', false);
+});
+
+it('renders the demo login hint when the customizer provides one', function () {
+    config()->set('demo.enabled', true);
+    app()->instance(LoginCustomizer::class, new DemoLoginCustomizer);
+
+    User::factory()->create();
+
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertSee(__('app.demo.hint'));
 });
 
 it('validates the required login credentials', function () {
