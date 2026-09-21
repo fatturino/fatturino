@@ -20,36 +20,37 @@
             this.onConfirm = null;
         }
     }"
+    x-effect="document.documentElement.classList.toggle('modal-open', show)"
     x-on:confirm-dialog.window="open($event.detail.message, $event.detail.callback)"
-    x-on:keydown.escape.window="cancel()"
+    x-on:keydown.escape.window="if (show) cancel()"
 >
-    {{-- Backdrop --}}
-    <div
-        x-show="show"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-50 bg-black/50"
-        x-on:click="cancel()"
-        style="display: none;"
-    ></div>
+    <template x-teleport="body">
+        <div x-show="show" x-trap.inert.noscroll="show" class="modal-viewport" role="dialog" aria-modal="true" aria-labelledby="global-confirm-title" style="display: none;">
+            {{-- Backdrop --}}
+            <div
+                x-show="show"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                class="modal-backdrop bg-black/50"
+                x-on:click="cancel()"
+            ></div>
 
-    {{-- Modal --}}
-    <div
-        x-show="show"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0 scale-95"
-        x-transition:enter-end="opacity-100 scale-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100 scale-100"
-        x-transition:leave-end="opacity-0 scale-95"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style="display: none;"
-    >
-        <div class="bg-base-100 rounded-box shadow-xl w-full max-w-sm p-6" x-on:click.stop>
+            {{-- Modal --}}
+            <div
+                x-show="show"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                class="modal-panel modal-panel--sm bg-base-100 rounded-box shadow-xl p-6"
+                x-on:click.stop
+            >
             {{-- Icon --}}
             <div class="flex justify-center mb-4">
                 <div class="bg-warning/10 rounded-full p-3">
@@ -58,7 +59,7 @@
             </div>
 
             {{-- Title --}}
-            <h3 class="text-lg font-semibold text-center mb-2">{{ __('app.common.confirm_title') }}</h3>
+            <h3 id="global-confirm-title" class="text-lg font-semibold text-center mb-2">{{ __('app.common.confirm_title') }}</h3>
 
             {{-- Message --}}
             <p class="text-center text-base-content/70 mb-6" x-text="message"></p>
@@ -76,6 +77,7 @@
                     variant="primary"
                 />
             </div>
+            </div>
         </div>
-    </div>
+    </template>
 </div>

@@ -517,16 +517,57 @@
    ═══════════════════════════════════════════ */
 
 .modal-backdrop {
+    position: fixed;
+    inset: 0;
     background: rgba(45, 42, 110, 0.2);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
 }
 
+.modal-viewport {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    min-height: 100vh;
+    min-height: 100dvh;
+    place-items: center;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}
+
+.modal-open,
+.modal-open body {
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
 .modal-panel {
+    position: relative;
+    z-index: 1;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    max-width: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     background: var(--color-surface);
     border: 1px solid var(--color-border-light);
     border-radius: 0.75rem;
     box-shadow: var(--shadow-modal);
+}
+
+.modal-panel--sm {
+    width: min(100%, 24rem);
+}
+
+.modal-panel--md {
+    width: min(100%, 32rem);
+}
+
+.modal-panel--lg {
+    width: min(100%, 42rem);
 }
 
 .payment-modal-panel {

@@ -204,7 +204,11 @@ it('renders the compatible document actions and gates the SDI send action by wor
         ->assertSee('Verifica XML')
         ->assertSee('Invia a SDI')
         ->assertSee('Conferma invio SDI')
-        ->assertSee('Questa azione è irreversibile.');
+        ->assertSee('Questa azione è irreversibile.')
+        ->assertSee('class="modal-viewport"', false)
+        ->assertSee('x-trap.inert.noscroll="paymentOpen"', false)
+        ->assertSee('x-trap.inert.noscroll="confirmOpen"', false)
+        ->assertSee('x-teleport="body"', false);
 });
 
 it('shows the XML and PDF download actions for sales invoices already sent to SDI', function () {

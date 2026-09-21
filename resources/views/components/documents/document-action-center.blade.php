@@ -1,12 +1,14 @@
-<div x-cloak>
+<div x-cloak x-effect="document.documentElement.classList.toggle('modal-open', emailOpen || paymentOpen || conversionOpen || confirmOpen)" @keydown.escape.window="if (emailOpen) closeEmail(); else if (paymentOpen) closePayment(); else if (conversionOpen) closeConversion(); else if (confirmOpen) closeConfirm();">
+<template x-teleport="body">
+<div>
     <div x-show="notice.show" x-transition class="fixed bottom-6 right-6 z-[80] max-w-md rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-lg" :class="notice.type === 'error' ? 'bg-error' : 'bg-success'" role="status" aria-live="polite"><span x-text="notice.message"></span><button type="button" class="ml-4 opacity-80 hover:opacity-100" @click="notice.show = false" aria-label="Chiudi"><x-icon name="o-x-mark" class="inline size-4" /></button></div>
-    <div x-show="emailOpen" class="fixed inset-0 z-[70] overflow-y-auto p-4" role="dialog" aria-modal="true" aria-labelledby="document-email-title">
-        <div class="fixed inset-0 bg-black/30" @click="closeEmail()"></div>
-        <div class="relative mx-auto my-6 w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
+    <div x-show="emailOpen" x-trap.inert.noscroll="emailOpen" x-init="$watch('emailOpen', (open) => open && $nextTick(() => $refs.emailRecipient?.focus()))" class="modal-viewport" role="dialog" aria-modal="true" aria-labelledby="document-email-title">
+        <div class="modal-backdrop bg-black/30" @click="closeEmail()"></div>
+        <div class="modal-panel modal-panel--lg rounded-xl bg-white p-6">
             <div class="mb-5 flex items-center justify-between gap-4"><h2 id="document-email-title" class="text-lg font-bold text-content" x-text="`Invia email ${documentLabel()}`"></h2><button type="button" class="rounded-md p-1 text-content-muted hover:bg-surface-muted" @click="closeEmail()" aria-label="Chiudi"><x-icon name="o-x-mark" class="size-5" /></button></div>
             <template x-if="emailLoading"><p class="py-10 text-center text-sm text-content-muted">Caricamento anteprima email...</p></template>
             <form x-show="!emailLoading" class="space-y-4" @submit.prevent="submitEmail()">
-                <div><label for="email-recipient" class="mb-1 block text-sm font-semibold">Destinatario</label><input id="email-recipient" x-model="email.recipientEmail" type="email" required class="input-field h-11 w-full rounded-md border border-border px-3"></div>
+                <div><label for="email-recipient" class="mb-1 block text-sm font-semibold">Destinatario</label><input x-ref="emailRecipient" id="email-recipient" x-model="email.recipientEmail" type="email" required class="input-field h-11 w-full rounded-md border border-border px-3"></div>
                 <div class="grid gap-4 sm:grid-cols-2"><div><label for="email-cc" class="mb-1 block text-sm font-semibold">CC (opzionale)</label><input id="email-cc" x-model="email.cc" type="email" class="input-field h-11 w-full rounded-md border border-border px-3"></div><div><label for="email-bcc" class="mb-1 block text-sm font-semibold">CCN (opzionale)</label><input id="email-bcc" x-model="email.bcc" type="email" class="input-field h-11 w-full rounded-md border border-border px-3"></div></div>
                 <div><label for="email-subject" class="mb-1 block text-sm font-semibold">Oggetto</label><input id="email-subject" x-model="email.subject" type="text" class="input-field h-11 w-full rounded-md border border-border px-3"></div>
                 <label class="flex items-start justify-between gap-4 rounded-lg border border-border-light bg-surface-muted p-3"><span><span class="block text-sm font-semibold">Allega documento</span><span class="block text-xs text-content-muted">Include il PDF nell'email.</span></span><input x-model="email.attachPdf" type="checkbox" class="mt-1 size-4 rounded border-border text-primary"></label>
@@ -17,9 +19,9 @@
         </div>
     </div>
 
-    <div x-show="paymentOpen" class="fixed inset-0 z-[70] overflow-y-auto p-4" role="dialog" aria-modal="true" aria-labelledby="document-payment-title">
-        <div class="fixed inset-0 bg-black/30" @click="closePayment()"></div>
-        <div class="relative mx-auto my-6 w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
+    <div x-show="paymentOpen" x-trap.inert.noscroll="paymentOpen" x-init="$watch('paymentOpen', (open) => open && $nextTick(() => $refs.paymentAmount?.focus()))" class="modal-viewport" role="dialog" aria-modal="true" aria-labelledby="document-payment-title">
+        <div class="modal-backdrop bg-black/30" @click="closePayment()"></div>
+        <div class="modal-panel modal-panel--md rounded-xl bg-white p-6">
             <div class="mb-5 flex items-center justify-between gap-4"><div><h2 id="document-payment-title" class="text-lg font-bold text-content" x-text="`${paymentCopy().title} ${documentLabel()}`"></h2><p class="mt-1 text-sm text-content-muted" x-text="`Inserisci importo e, se disponibile, la data ${paymentCopy().action}.`"></p></div><button type="button" class="rounded-md p-1 text-content-muted hover:bg-surface-muted" @click="closePayment()" aria-label="Chiudi"><x-icon name="o-x-mark" class="size-5" /></button></div>
             <form class="space-y-4" @submit.prevent="savePayment()">
                 <div class="rounded-lg border border-border-light p-4"><div class="mb-3 flex items-center justify-between"><p class="text-sm font-semibold" x-text="editingPaymentId ? paymentCopy().editTitle : paymentCopy().newTitle"></p><button x-show="editingPaymentId" type="button" class="text-sm font-semibold text-primary" @click="resetPaymentForm()">Annulla modifica</button></div><div><label for="payment-amount" class="mb-1 block text-sm font-semibold">Importo (EUR)</label><input id="payment-amount" x-model="payment.amount" type="number" min="0.01" step="0.01" required class="input-field h-11 w-full rounded-md border border-border px-3"></div><div class="mt-3 flex gap-2"><button type="button" class="btn-outline px-3 py-1 text-xs" @click="setQuickPayment(1)">Tutto</button><button type="button" class="btn-outline px-3 py-1 text-xs" @click="setQuickPayment(.5)">1/2</button><button type="button" class="btn-outline px-3 py-1 text-xs" @click="setQuickPayment(1 / 3)">1/3</button></div><div class="mt-3"><label for="payment-date" class="mb-1 block text-sm font-semibold" x-text="paymentCopy().dateLabel"></label><input id="payment-date" x-model="payment.paidAt" type="date" class="input-field h-11 w-full rounded-md border border-border px-3"></div><div class="mt-3"><label for="payment-reference" class="mb-1 block text-sm font-semibold" x-text="paymentCopy().referenceLabel"></label><input id="payment-reference" x-model="payment.reference" type="text" class="input-field h-11 w-full rounded-md border border-border px-3" placeholder="CRO, TRN, ID operazione"></div><div class="mt-3"><label for="payment-notes" class="mb-1 block text-sm font-semibold" x-text="paymentCopy().notesLabel"></label><input id="payment-notes" x-model="payment.notes" type="text" class="input-field h-11 w-full rounded-md border border-border px-3" placeholder="Es. saldo fattura aprile"></div><div class="mt-3"><label for="payment-bank" class="mb-1 block text-sm font-semibold" x-text="paymentCopy().bankLabel"></label><input id="payment-bank" x-model="payment.bankName" type="text" class="input-field h-11 w-full rounded-md border border-border px-3" placeholder="Es. Intesa Sanpaolo"></div></div>
@@ -31,9 +33,9 @@
         </div>
     </div>
 
-    <div x-show="conversionOpen" class="fixed inset-0 z-[70] overflow-y-auto p-4" role="dialog" aria-modal="true" aria-labelledby="document-conversion-title">
-        <div class="fixed inset-0 bg-black/30" @click="closeConversion()"></div>
-        <div class="relative mx-auto my-6 w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
+    <div x-show="conversionOpen" x-trap.inert.noscroll="conversionOpen" class="modal-viewport" role="dialog" aria-modal="true" aria-labelledby="document-conversion-title">
+        <div class="modal-backdrop bg-black/30" @click="closeConversion()"></div>
+        <div class="modal-panel modal-panel--md rounded-xl bg-white p-6">
             <div class="mb-5 flex items-center justify-between gap-4"><div><h2 id="document-conversion-title" class="text-lg font-bold text-content" x-text="`Converti in fattura ${documentLabel()}`"></h2><p class="mt-1 text-sm text-content-muted">Scegli se creare una nuova fattura o collegarne una esistente dello stesso cliente. La proforma non sarà più modificabile.</p></div><button type="button" class="rounded-md p-1 text-content-muted hover:bg-surface-muted" @click="closeConversion()" aria-label="Chiudi"><x-icon name="o-x-mark" class="size-5" /></button></div>
             <form method="POST" :action="selectedDocument ? `${base}/${selectedDocument.id}/convert` : ''" class="space-y-4">
                 @csrf
@@ -49,10 +51,12 @@
         </div>
     </div>
 
-    <div x-show="confirmOpen" class="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="document-confirm-title">
-        <div class="fixed inset-0 bg-black/30" @click="closeConfirm()"></div>
-        <div class="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-xl"><h2 id="document-confirm-title" class="text-lg font-bold text-content" x-text="confirm.title"></h2><p class="mt-3 whitespace-pre-line text-sm leading-6 text-content-muted" x-text="confirm.message"></p><p x-show="error" x-text="error" class="mt-3 text-sm text-error"></p><div class="mt-6 flex justify-end gap-3"><button type="button" class="btn-ghost" @click="closeConfirm()">Annulla</button><button type="button" :class="confirm.danger ? 'btn-danger' : 'btn-brand'" :disabled="busy" @click="executeWorkflow()"><span x-text="busy ? 'Operazione in corso...' : confirm.submit"></span></button></div></div>
+    <div x-show="confirmOpen" x-trap.inert.noscroll="confirmOpen" class="modal-viewport" role="dialog" aria-modal="true" aria-labelledby="document-confirm-title">
+        <div class="modal-backdrop bg-black/30" @click="closeConfirm()"></div>
+        <div class="modal-panel modal-panel--md rounded-xl bg-white p-6"><h2 id="document-confirm-title" class="text-lg font-bold text-content" x-text="confirm.title"></h2><p class="mt-3 whitespace-pre-line text-sm leading-6 text-content-muted" x-text="confirm.message"></p><p x-show="error" x-text="error" class="mt-3 text-sm text-error"></p><div class="mt-6 flex justify-end gap-3"><button type="button" class="btn-ghost" @click="closeConfirm()">Annulla</button><button type="button" :class="confirm.danger ? 'btn-danger' : 'btn-brand'" :disabled="busy" @click="executeWorkflow()"><span x-text="busy ? 'Operazione in corso...' : confirm.submit"></span></button></div></div>
     </div>
+</div>
+</template>
 </div>
 
 <script data-navigate-once>
