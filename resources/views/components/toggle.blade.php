@@ -1,42 +1,42 @@
 @props([
     'label' => null,
     'hint' => null,
-    'leftLabel' => null,
-    'rightLabel' => null,
+    'disabled' => false,
 ])
 
 @php
-$toggleWrapperClasses = 'relative inline-flex items-center h-6 w-11 rounded-full cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50';
-$toggleDotClasses = 'inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out translate-x-1';
-$toggleActiveWrapper = 'bg-primary';
-$toggleInactiveWrapper = 'bg-base-300';
-
-// We use x-data to track state
+    $model = $attributes->wire('model')->value();
+    $id = 'toggle-'.str($model ?: uniqid('field-', true))->slug();
+    $hintId = $hint ? $id.'-hint' : null;
 @endphp
 
-<div x-data="{ on: @json($attributes->get('checked', false)) }"
-     class="flex items-center gap-3">
-    @if($leftLabel)
-        <span class="text-sm text-base-content/70">{{ $leftLabel }}</span>
-    @endif
+<div
+    x-data="{ on: @entangle($attributes->wire('model')) }"
+    class="flex min-h-11 items-center justify-between gap-4 rounded-lg bg-surface-muted p-3"
+>
+    <div class="min-w-0">
+        @if($label)
+            <label x-on:click="on = !on" class="cursor-pointer text-sm font-medium text-content">{{ $label }}</label>
+        @endif
+
+        @if($hint)
+            <p id="{{ $hintId }}" class="mt-0.5 text-xs leading-5 text-content-muted">{{ $hint }}</p>
+        @endif
+    </div>
 
     <button
+        id="{{ $id }}"
         type="button"
         role="switch"
+        x-on:click="on = !on"
         :aria-checked="on"
-        :class="on ? '{{ $toggleActiveWrapper }}' : '{{ $toggleInactiveWrapper }}'"
-        class="{{ $toggleWrapperClasses }}"
-        @click="on = !on; $wire.set('{{ $attributes->wire('model')->value() }}', on)"
-        {{ $attributes->except(['class']) }}
+        aria-label="{{ $label }}"
+        @if($hintId) aria-describedby="{{ $hintId }}" @endif
+        @disabled($disabled)
+        :class="on ? 'bg-primary' : 'bg-border-strong'"
+        class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
     >
-        <span :class="on ? 'translate-x-6' : 'translate-x-1'" class="{{ $toggleDotClasses }}"></span>
+        <span :class="on ? 'translate-x-6' : 'translate-x-1'" class="size-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out"></span>
+        <span class="sr-only">{{ $label }}</span>
     </button>
-
-    @if($rightLabel)
-        <span class="text-sm text-base-content/70">{{ $rightLabel }}</span>
-    @endif
 </div>
-
-@if($hint)
-    <p class="text-base-content/40 text-xs mt-1">{{ $hint }}</p>
-@endif

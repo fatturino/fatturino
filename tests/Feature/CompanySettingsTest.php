@@ -4,6 +4,8 @@ use App\Contracts\EnvironmentCapabilities;
 use App\Models\User;
 use App\Services\UnrestrictedCapabilities;
 use App\Settings\CompanySettings;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 // Test company settings can be accessed
 test('company settings can be accessed', function () {
@@ -77,6 +79,33 @@ test('company settings update normalizes italian vat number without country pref
 
     $updatedSettings = app(CompanySettings::class);
     expect($updatedSettings->company_vat_number)->toBe('12345678903');
+});
+
+test('company settings reject unknown ateco codes', function () {
+    $user = User::factory()->create();
+    $settings = app(CompanySettings::class);
+    app()->instance(EnvironmentCapabilities::class, new UnrestrictedCapabilities);
+
+    $this->actingAs($user)->put(route('settings.company.update'), [
+        'company_name' => $settings->company_name ?: 'Test Company',
+        'company_country' => 'IT',
+        'company_fiscal_regime' => $settings->company_fiscal_regime ?: 'RF01',
+        'company_ateco_codes' => ['unknown-code'],
+    ])->assertSessionHasErrors('company_ateco_codes.0');
+});
+
+test('company settings reject logo files larger than one megabyte', function () {
+    Storage::fake('public');
+    $user = User::factory()->create();
+    $settings = app(CompanySettings::class);
+    app()->instance(EnvironmentCapabilities::class, new UnrestrictedCapabilities);
+
+    $this->actingAs($user)->put(route('settings.company.update'), [
+        'company_name' => $settings->company_name ?: 'Test Company',
+        'company_country' => 'IT',
+        'company_fiscal_regime' => $settings->company_fiscal_regime ?: 'RF01',
+        'company_logo' => UploadedFile::fake()->create('logo.png', 1025, 'image/png'),
+    ])->assertSessionHasErrors('company_logo');
 });
 
 // Test tax code format
@@ -212,7 +241,7 @@ test('company settings use correct group name', function () {
 test('company settings persist across multiple retrievals', function () {
     $settings = app(CompanySettings::class);
 
-    $testValue = 'Test Persistence Company '.uniqid();
+    $testValue = 'Test Persistence Company ' . uniqid();
     $settings->company_name = $testValue;
     $settings->save();
 

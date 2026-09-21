@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AtecoCode;
 use App\Enums\FiscalRegime;
 use App\Rules\ItalianVatNumber;
 use App\Settings\CompanySettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class CompanySettingsController extends Controller
@@ -29,32 +31,31 @@ class CompanySettingsController extends Controller
             'company_fiscal_regime' => ['required', Rule::in(array_column(FiscalRegime::options(), 'value'))],
             'rf19_self_invoices_enabled' => 'boolean',
             'company_ateco_codes' => 'nullable|array',
-            'company_ateco_codes.*' => 'string',
+            'company_ateco_codes.*' => [Rule::in(array_column(AtecoCode::options(), 'id'))],
             'company_logo' => 'nullable|image|max:1024',
             'remove_logo' => 'boolean',
         ]);
 
-        if ($request->boolean('remove_logo') && $settings->company_logo_path) {
-            \Storage::disk('public')->delete($settings->company_logo_path);
-            $settings->company_logo_path = null;
-        }
-
+        $previousLogoPath = $settings->company_logo_path;
         if ($request->hasFile('company_logo')) {
-            if ($settings->company_logo_path) {
-                \Storage::disk('public')->delete($settings->company_logo_path);
-            }
-            $ext = $request->file('company_logo')->getClientOriginalExtension();
-            $path = $request->file('company_logo')->storeAs('logos', 'company-logo.'.$ext, 'public');
-            $settings->company_logo_path = $path;
+            $settings->company_logo_path = $request->file('company_logo')->store('logos', 'public');
+        } elseif ($request->boolean('remove_logo')) {
+            $settings->company_logo_path = null;
         }
 
         $oldRegime = $settings->company_fiscal_regime;
         $oldRf19SelfInvoicesEnabled = $settings->rf19_self_invoices_enabled;
 
         $validated['company_vat_number'] = ItalianVatNumber::normalize($validated['company_vat_number'] ?? null);
+        $validated['company_ateco_codes'] = array_values(array_unique($validated['company_ateco_codes'] ?? []));
+        unset($validated['company_logo'], $validated['remove_logo']);
 
         $settings->fill($validated);
         $settings->save();
+
+        if ($previousLogoPath && $previousLogoPath !== $settings->company_logo_path) {
+            Storage::disk('public')->delete($previousLogoPath);
+        }
 
         if ($oldRegime !== $settings->company_fiscal_regime || $oldRf19SelfInvoicesEnabled !== $settings->rf19_self_invoices_enabled) {
             Log::info('Fiscal regime settings updated', [
