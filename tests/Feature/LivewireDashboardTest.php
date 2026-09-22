@@ -151,12 +151,24 @@ it('shows upcoming due dates with their remaining balance, state, date, and edit
 });
 
 it('labels upcoming due dates by their temporal priority', function () {
-    $invoices = collect(range(1, 6))->map(fn(int $id): array => [
-        'id' => $id,
-        'contact' => "Cliente {$id}",
-        'due_date' => now()->addDays($id)->format('d/m/Y'),
+    $states = [
+        [-1, 'danger', 'Scaduta', 'Scaduta da 1 giorno'],
+        [0, 'danger', 'Scade oggi', 'Pagamento previsto oggi'],
+        [7, 'warning', 'Urgente', 'Scade tra 7 giorni'],
+        [8, 'info', 'Imminente', 'Scade tra 8 giorni'],
+        [31, 'default', 'Futura', 'Scade tra 31 giorni'],
+        [null, 'default', 'Data da verificare', 'Nessuna data prevista'],
+    ];
+    $invoices = collect($states)->map(fn(array $state, int $index): array => [
+        'id' => $index + 1,
+        'contact' => 'Cliente ' . ($index + 1),
+        'due_date' => now()->addDays($index + 1)->format('d/m/Y'),
         'remaining_balance' => 10000,
-        'days_until_due' => [-1, 0, 7, 8, 31, null][$id - 1],
+        'days_until_due' => $state[0],
+        'due_tone' => $state[1],
+        'due_label' => $state[2],
+        'due_detail' => $state[3],
+        'is_urgent' => in_array($state[0], [-1, 0, 7], true),
     ]);
 
     $this->view('components.dashboard.upcoming-due-dates', ['invoices' => $invoices])
@@ -173,6 +185,54 @@ it('labels upcoming due dates by their temporal priority', function () {
         ->assertSee('Data da verificare');
 });
 
+it('distinguishes a future due date from urgent attention and reuses its complete row', function () {
+    $user = User::factory()->create();
+    $invoice = SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'due_date' => now()->addDays(8)->toDateString(),
+        'payment_status' => 'unpaid',
+        'total_net' => 12500,
+        'total_gross' => 12500,
+        'total_paid' => 0,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Nessuna priorità urgente')
+        ->assertSee('La prossima scadenza è riportata qui sotto.')
+        ->assertSee('0 urgenze')
+        ->assertSee('Prossima scadenza')
+        ->assertSee('Imminente')
+        ->assertSee('Scade tra 8 giorni')
+        ->assertSee(now()->addDays(8)->format('d/m/Y'))
+        ->assertSee('€ 125,00')
+        ->assertSee(route('sell-invoices.edit', $invoice), false)
+        ->assertDontSee('Nessuna urgenza per ora');
+});
+
+it('counts a due date within seven days as urgent attention', function () {
+    $user = User::factory()->create();
+    $invoice = SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'due_date' => now()->addDays(3)->toDateString(),
+        'payment_status' => 'unpaid',
+        'total_net' => 10000,
+        'total_gross' => 10000,
+        'total_paid' => 0,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('1 urgenze')
+        ->assertSee('Scadenza urgente')
+        ->assertSee('Urgente')
+        ->assertSee('Scade tra 3 giorni')
+        ->assertSee(route('sell-invoices.edit', $invoice), false)
+        ->assertDontSee('Nessuna priorità urgente');
+});
+
 it('guides a first-time user without treating zero values as an error', function () {
     $user = User::factory()->create();
 
@@ -180,7 +240,7 @@ it('guides a first-time user without treating zero values as an error', function
 
     Livewire::test('pages::dashboard')
         ->assertSee('Inizia dalla tua prima fattura')
-        ->assertSee('Nessuna urgenza per ora')
+        ->assertSee('Nessuna priorità urgente')
         ->assertSee('Nessuna scadenza aperta')
         ->assertSee('€ 0,00');
 });
@@ -253,7 +313,27 @@ it('announces dashboard refresh state and keeps KPI metadata separated', functio
     Livewire::test('pages::dashboard')
         ->assertSee('role="status"', false)
         ->assertSee('Aggiornamento dati in corso')
-        ->assertSee('dashboard-kpi-meta', false);
+        ->assertSee('dashboard-kpi-meta', false)
+        ->assertSee('dashboard-kpi-period', false);
+});
+
+it('keeps dashboard card metadata readable and labels the VAT summary', function () {
+    $user = User::factory()->create();
+    $settings = app(CompanySettings::class);
+    $settings->company_fiscal_regime = 'RF01';
+    $settings->save();
+    SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'payment_status' => 'unpaid',
+        'due_date' => now()->addDays(8)->toDateString(),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('dashboard-document-card', false)
+        ->assertSee('due-date-card', false)
+        ->assertSee('aria-labelledby="vat-summary-title"', false);
 });
 
 it('shows the forecast only for the active fiscal year with turnover', function () {

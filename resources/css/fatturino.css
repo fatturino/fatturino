@@ -97,6 +97,10 @@
     --color-canvas: var(--color-app-background);
 }
 
+:root {
+    color-scheme: light;
+}
+
 :is(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--color-primary) !important;
     outline-offset: 2px;
@@ -199,9 +203,17 @@
     gap: 0.125rem;
 }
 
+.dashboard-kpi-period {
+    color: var(--color-text-muted);
+}
+
 .dashboard-kpi:hover {
     transform: translateY(-2px);
     border-color: var(--color-border-strong);
+}
+
+.dashboard-kpi:active {
+    transform: translateY(1px);
 }
 
 .dashboard-kpi-danger {
@@ -246,10 +258,24 @@
     background: var(--color-primary-subtle);
 }
 
+.due-date-row:active {
+    transform: translateY(1px);
+}
+
 .due-date-row:focus-visible {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: var(--shadow-input-focus);
+}
+
+.dashboard-attention-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+}
+
+.dashboard-document-card {
+    min-height: 8.75rem;
 }
 
 .due-date-marker {
@@ -284,6 +310,24 @@
 
     .due-date-row > :last-child {
         padding-top: 0.125rem;
+    }
+
+    .dashboard-attention-row {
+        min-height: 5.5rem;
+    }
+
+    .due-date-card {
+        display: grid;
+        grid-template-columns: 2.75rem minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .due-date-card .due-date-amount {
+        grid-column: 2;
+        grid-row: 2;
+        justify-self: start;
+        padding-top: 0;
+        text-align: left;
     }
 
     .due-date-row .due-date-marker {
@@ -769,11 +813,15 @@
     border: 1px solid var(--color-border-light);
     padding: 0.625rem 0.75rem;
     font-size: 0.875rem;
-    transition: background-color 160ms ease-out, box-shadow 160ms ease-out, border-color 160ms ease-out;
+    transition: background-color 160ms ease-out, box-shadow 160ms ease-out, border-color 160ms ease-out, transform 160ms ease-out;
 }
 
 .dashboard-action-link:hover {
     background: var(--color-surface-muted);
+}
+
+.dashboard-action-link:active {
+    transform: translateY(1px);
 }
 
 .dashboard-action-link:focus-visible {
@@ -788,11 +836,15 @@
     border-radius: 0.5rem;
     border: 1px solid var(--color-border-light);
     padding: 0.625rem 0.75rem;
-    transition: background-color 160ms ease-out, box-shadow 160ms ease-out, border-color 160ms ease-out;
+    transition: background-color 160ms ease-out, box-shadow 160ms ease-out, border-color 160ms ease-out, transform 160ms ease-out;
 }
 
 .dashboard-list-link:hover {
     background: var(--color-surface-muted);
+}
+
+.dashboard-list-link:active {
+    transform: translateY(1px);
 }
 
 .dashboard-list-link:focus-visible {

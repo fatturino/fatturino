@@ -50,6 +50,15 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
         ])->all();
         $stats['upcomingDueDates'] = $stats['upcomingDueDates']->map(function ($invoice) {
             $dueDate = $invoice->due_date === null ? null : Carbon::parse($invoice->due_date)->startOfDay();
+            $daysUntilDue = $dueDate === null ? null : now()->startOfDay()->diffInDays($dueDate, false);
+            [$dueTone, $dueLabel, $dueDetail, $isUrgent] = match (true) {
+                $daysUntilDue === null => ['default', 'Data da verificare', 'Nessuna data prevista', false],
+                $daysUntilDue < 0 => ['danger', 'Scaduta', 'Scaduta da '.abs($daysUntilDue).' '.(abs($daysUntilDue) === 1 ? 'giorno' : 'giorni'), true],
+                $daysUntilDue === 0 => ['danger', 'Scade oggi', 'Pagamento previsto oggi', true],
+                $daysUntilDue <= 7 => ['warning', 'Urgente', 'Scade tra '.$daysUntilDue.' '.($daysUntilDue === 1 ? 'giorno' : 'giorni'), true],
+                $daysUntilDue <= 30 => ['info', 'Imminente', 'Scade tra '.$daysUntilDue.' giorni', false],
+                default => ['default', 'Futura', 'Scade tra '.$daysUntilDue.' giorni', false],
+            };
 
             return [
                 'id' => $invoice->id,
@@ -57,7 +66,11 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
                 'contact' => $invoice->contact?->name,
                 'due_date' => $this->formatDate($invoice->due_date),
                 'remaining_balance' => $invoice->remainingBalance(),
-                'days_until_due' => $dueDate === null ? null : now()->startOfDay()->diffInDays($dueDate, false),
+                'days_until_due' => $daysUntilDue,
+                'due_tone' => $dueTone,
+                'due_label' => $dueLabel,
+                'due_detail' => $dueDetail,
+                'is_urgent' => $isUrgent,
             ];
         }
         )->all();
@@ -111,6 +124,7 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
         $attentionItems[] = ['title' => 'Incassi parziali', 'detail' => $partialCount.' '.($partialCount === 1 ? 'fattura ha un residuo da incassare' : 'fatture hanno un residuo da incassare'), 'value' => null, 'href' => '/sell-invoices?payment=partial', 'tone' => 'warning', 'action' => $attentionAction.' parziali'];
     }
     $firstDueDate = collect($stats['upcomingDueDates'])->first(fn ($invoice) => ($invoice['days_until_due'] ?? -1) >= 0);
+    $attentionUrgencyCount = count($attentionItems) + (int) ($firstDueDate['is_urgent'] ?? false);
 @endphp
 
 <section class="dashboard-page space-y-7 lg:space-y-8">
@@ -139,14 +153,14 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
     <x-dashboard.summary :items="$summaryItems" />
 
     <div class="grid gap-6 xl:grid-cols-12">
-        <div class="xl:col-span-7"><x-dashboard.attention-queue :items="$attentionItems" :first-due-date="$firstDueDate" /></div>
+        <div class="xl:col-span-7"><x-dashboard.attention-queue :items="$attentionItems" :first-due-date="$firstDueDate" :urgency-count="$attentionUrgencyCount" /></div>
         <div class="xl:col-span-5"><x-dashboard.upcoming-due-dates :invoices="$stats['upcomingDueDates']" /></div>
     </div>
 
     <x-dashboard.recent-document-list :invoices="$stats['recentInvoices']" />
 
     @if($hasVatAccounting)
-        <div class="dashboard-vat-summary flex flex-wrap items-center justify-between gap-3 p-4 text-sm"><div><span class="font-semibold text-content">Saldo IVA {{ $periodLabel }}</span><span class="ml-2 tabular-nums text-content-muted">{{ $this->currency(abs($stats['vatBalanceYtd'])) }} {{ $stats['vatBalanceYtd'] >= 0 ? 'da versare' : 'a credito' }}</span></div><span class="text-xs font-medium text-content-muted">IVA incassata separata: {{ $this->currency($stats['collectedVatYtd']) }}</span></div>
+        <section class="dashboard-vat-summary grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end" aria-labelledby="vat-summary-title"><div><h2 id="vat-summary-title" class="text-sm font-semibold text-content">Saldo IVA {{ $periodLabel }}</h2><p class="mt-1 text-sm text-content-muted"><span class="font-semibold tabular-nums text-content">{{ $this->currency(abs($stats['vatBalanceYtd'])) }}</span> {{ $stats['vatBalanceYtd'] >= 0 ? 'da versare' : 'a credito' }}</p></div><p class="text-xs leading-5 text-content-muted sm:text-right">IVA incassata separata<br class="hidden sm:block"> <span class="font-semibold tabular-nums text-content-secondary">{{ $this->currency($stats['collectedVatYtd']) }}</span></p></section>
     @endif
 
     <x-dashboard.revenue-chart :revenue-trend="$stats['revenueTrend']" :revenue-projection="$stats['revenueProjection']" :revenue-ytd="$stats['revenueYtd']" :fiscal-year="$fiscalYear" />

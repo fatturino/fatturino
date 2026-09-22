@@ -12,35 +12,7 @@
 
         <div class="mt-5 space-y-2">
             @forelse($invoices as $invoice)
-                @php
-                    $days = $invoice['days_until_due'];
-                    [$tone, $label, $detail] = match (true) {
-                        $days === null => ['default', 'Data da verificare', $invoice['due_date'] ?? 'Nessuna data prevista'],
-                        $days < 0 => ['danger', 'Scaduta', 'Scaduta da '.abs($days).' '.(abs($days) === 1 ? 'giorno' : 'giorni')],
-                        $days === 0 => ['danger', 'Scade oggi', 'Pagamento previsto oggi'],
-                        $days <= 7 => ['warning', 'Urgente', 'Scade tra '.$days.' '.($days === 1 ? 'giorno' : 'giorni')],
-                        $days <= 30 => ['info', 'Imminente', 'Scade tra '.$days.' giorni'],
-                        default => ['default', 'Futura', 'Scade tra '.$days.' giorni'],
-                    };
-                @endphp
-
-                <x-app-link :href="route('sell-invoices.edit', $invoice['id'])" @class(['due-date-row group block', "due-date-row-{$tone}"])>
-                    <span @class(['due-date-marker', "due-date-marker-{$tone}"] ) aria-hidden="true">
-                        <span class="text-sm font-bold tabular-nums">{{ $days === null ? 'N/D' : abs($days) }}</span>
-                        <span class="text-[0.625rem] font-bold uppercase tracking-wide">{{ $days === null ? '' : 'gg' }}</span>
-                    </span>
-                    <span class="min-w-0 flex-1">
-                        <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span class="min-w-0 break-words text-sm font-semibold text-content">{{ $invoice['contact'] ?? 'Cliente non associato' }}</span>
-                            <x-badge :value="$label" :variant="$tone === 'default' ? 'neutral' : $tone" />
-                        </span>
-                        <span class="mt-1 block text-xs leading-5 text-content-muted">{{ $detail }} <span aria-hidden="true">·</span> {{ $invoice['due_date'] ?? 'Data non disponibile' }}</span>
-                    </span>
-                    <span class="shrink-0 text-right">
-                        <span class="block text-sm font-semibold tabular-nums text-content">{{ '€ '.number_format($invoice['remaining_balance'] / 100, 2, ',', '.') }}</span>
-                        <span class="mt-1 hidden text-xs font-semibold text-primary sm:block">Apri fattura</span>
-                    </span>
-                </x-app-link>
+                <x-dashboard.due-date-row :invoice="$invoice" />
             @empty
                 <div class="due-date-empty">
                     <p class="font-semibold text-content">Nessuna scadenza aperta</p>

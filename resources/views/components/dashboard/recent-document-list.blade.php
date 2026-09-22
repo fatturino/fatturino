@@ -5,9 +5,9 @@
     <div class="flex items-start justify-between gap-4"><div><h2 class="font-semibold text-content">Documenti recenti</h2><p class="mt-1 text-sm text-content-muted">Le ultime fatture emesse nell’anno fiscale selezionato.</p></div><x-app-link :href="route('sell-invoices.index')" class="-m-2 inline-flex min-h-11 shrink-0 items-center p-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">Vedi tutte</x-app-link></div>
     <div class="mt-5 space-y-2 sm:hidden">
         @forelse($invoices as $invoice)
-            <x-app-link :href="route('sell-invoices.edit', $invoice['id'])" class="block rounded-lg border border-border-light p-4 transition-colors hover:bg-primary-subtle/45 focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <x-app-link :href="route('sell-invoices.edit', $invoice['id'])" class="dashboard-document-card block rounded-lg border border-border-light p-4 transition-colors hover:bg-primary-subtle/45 focus:outline-none focus:ring-2 focus:ring-primary/30">
                 <div class="flex items-start justify-between gap-3"><span class="font-semibold text-primary">{{ $invoice['number'] ?? 'Senza numero' }}</span><x-badge :value="match($invoice['payment_status']) { 'paid' => 'Pagata', 'overdue' => 'Scaduta', 'partial' => 'Parziale', default => 'Da incassare' }" :variant="match($invoice['payment_status']) { 'paid' => 'success', 'overdue' => 'danger', default => 'warning' }" dot /></div>
-                <p class="mt-2 truncate text-sm font-medium text-content">{{ $invoice['contact'] ?? 'Cliente non associato' }}</p>
+                <p class="mt-2 text-sm font-medium leading-5 text-content">{{ $invoice['contact'] ?? 'Cliente non associato' }}</p>
                 <div class="mt-3 flex items-end justify-between gap-3 text-xs text-content-muted"><span>{{ $invoice['date'] }}</span><span class="text-right tabular-nums"><span class="block text-sm font-semibold text-content">{{ '€ '.number_format($invoice['total_net'] / 100, 2, ',', '.') }}</span>IVA {{ '€ '.number_format($invoice['total_vat'] / 100, 2, ',', '.') }}</span></div>
             </x-app-link>
         @empty
