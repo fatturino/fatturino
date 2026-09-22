@@ -52,6 +52,7 @@
             </header>
             <main id="main-content" tabindex="-1" class="app-content mx-auto w-full max-w-[96rem] p-4 sm:p-6 lg:p-8">{{ $slot }}</main>
         </div>
+        <x-date-picker-script />
         @livewireScripts
         @wirechartsScripts
         @auth

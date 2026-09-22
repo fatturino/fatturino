@@ -14,6 +14,7 @@
     </head>
     <body class="bg-canvas font-sans text-content antialiased">
         {{ $slot }}
+        <x-date-picker-script />
         @livewireScripts
     </body>
 </html>
