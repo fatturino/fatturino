@@ -112,8 +112,8 @@ new #[Layout('layouts::app')] class extends Component {
                 <x-documents.invoice-form.data-fields class="mt-5">
                     <x-select label="Fornitore *" wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" placeholder="Seleziona fornitore..." />
                     <label>Numero *<input wire:model="number" @disabled($this->readOnly)></label>
-                    <label>Data *<input wire:model="date" type="date" @disabled($this->readOnly)></label>
-                    <label>Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly)></label>
+                    <x-date-picker label="Data" wire:model="date" :required="true" :disabled="$this->readOnly" />
+                    <x-date-picker label="Scadenza" wire:model="due_date" :disabled="$this->readOnly" />
                 </x-documents.invoice-form.data-fields>
                 <p class="mt-4 text-xs text-content-muted">La sequenza d'importazione non è modificabile.</p>
             </x-documents.invoice-form.data-section>

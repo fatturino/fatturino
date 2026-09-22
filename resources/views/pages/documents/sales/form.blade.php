@@ -310,8 +310,8 @@ new #[Layout('layouts::app')] class extends Component {
                     <x-documents.invoice-form.data-fields>
                         <label class="text-sm font-semibold">Cliente *<x-select wire:model="contact_id" :disabled="$this->readOnly" :options="$contactOptions" searchable searchPlaceholder="Cerca per nome o P.IVA" />@error('contact_id')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label>
                         <div class="text-sm font-semibold">Numero<div class="mt-1 h-11 rounded-md border border-border-light bg-surface-muted px-3 py-3 text-sm font-normal">{{ $numberPreview ?? 'Configura il sezionale predefinito' }}</div></div>
-                        <label class="text-sm font-semibold">Data *<input wire:model.live="date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm">@error('date')<span class="text-xs text-danger">{{ $message }}</span>@enderror</label>
-                        <label class="text-sm font-semibold">Scadenza<input wire:model="due_date" type="date" @disabled($this->readOnly) class="mt-1 h-11 w-full rounded-md border border-border px-3 text-sm"></label>
+                        <x-date-picker label="Data" wire:model.live="date" :required="true" :disabled="$this->readOnly" />
+                        <x-date-picker label="Scadenza" wire:model="due_date" :disabled="$this->readOnly" />
                         <label class="text-sm font-semibold">Tipo documento *<x-select wire:model="document_type" :disabled="$this->readOnly" :options="SalesDocumentType::options()" /></label>
                     </x-documents.invoice-form.data-fields>
                 </section>
