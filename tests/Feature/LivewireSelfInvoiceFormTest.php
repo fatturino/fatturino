@@ -23,6 +23,8 @@ it('renders and creates a self invoice through the Livewire form', function () {
 
     Livewire::test('pages::documents.self-invoice.form')
         ->set('contact_id', $contact->id)
+        ->set('related_invoice_number', 'SUP-001')
+        ->set('related_invoice_date', '2026-06-05')
         ->set('lines', [validSelfInvoiceLine()])
         ->call('save')
         ->assertHasNoErrors()
@@ -40,6 +42,8 @@ it('renders the self invoice as a document editor with linked invoice references
     Livewire::test('pages::documents.self-invoice.form')
         ->assertSee('Dati autofattura')
         ->assertSee('Tipo documento *')
+        ->assertSee('Riferimenti della fattura collegata')
+        ->assertSee('Entrambi obbligatori')
         ->assertSee('Numero fattura collegata')
         ->assertSee('Data fattura collegata')
         ->assertSee('Note')
@@ -55,6 +59,8 @@ it('updates an editable self invoice without changing its sequence', function ()
 
     $this->actingAs($user);
     Livewire::test('pages::documents.self-invoice.form', ['selfInvoice' => $invoice])
+        ->set('related_invoice_number', 'SUP-002')
+        ->set('related_invoice_date', '2026-06-05')
         ->set('lines', [validSelfInvoiceLine('Versione aggiornata')])
         ->call('save')
         ->assertHasNoErrors()
@@ -62,6 +68,30 @@ it('updates an editable self invoice without changing its sequence', function ()
 
     expect($invoice->fresh()->sequence_id)->toBe($sequence->id)
         ->and($invoice->fresh()->lines()->sole()->description)->toBe('Versione aggiornata');
+});
+
+it('requires the number of the related invoice before saving', function () {
+    $contact = Contact::factory()->create();
+    Sequence::factory()->create(['type' => 'self_invoice']);
+
+    Livewire::test('pages::documents.self-invoice.form')
+        ->set('contact_id', $contact->id)
+        ->set('related_invoice_date', '2026-06-05')
+        ->set('lines', [validSelfInvoiceLine()])
+        ->call('save')
+        ->assertHasErrors(['related_invoice_number' => 'required']);
+});
+
+it('requires the date of the related invoice before saving', function () {
+    $contact = Contact::factory()->create();
+    Sequence::factory()->create(['type' => 'self_invoice']);
+
+    Livewire::test('pages::documents.self-invoice.form')
+        ->set('contact_id', $contact->id)
+        ->set('related_invoice_number', 'SUP-001')
+        ->set('lines', [validSelfInvoiceLine()])
+        ->call('save')
+        ->assertHasErrors(['related_invoice_date' => 'required']);
 });
 
 it('renders SDI-locked self invoices as read-only', function () {

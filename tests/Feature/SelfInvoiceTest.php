@@ -144,3 +144,52 @@ test('manual self invoice creation records full payment on invoice date', functi
         ->and($invoice->payments()->count())->toBe(1)
         ->and($invoice->payments()->first()?->paid_at?->toDateString())->toBe('2026-06-06');
 });
+
+test('manual self invoice creation requires both related invoice references', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    $sequence = Sequence::factory()->selfInvoice()->create();
+
+    $payload = [
+        'contact_id' => $contact->id,
+        'sequence_id' => $sequence->id,
+        'date' => '2026-06-06',
+        'document_type' => 'TD17',
+        'lines' => [[
+            'description' => 'Servizio estero',
+            'quantity' => 1,
+            'unit_price' => 100,
+            'vat_rate' => VatRate::R22->value,
+        ]],
+    ];
+
+    $this->actingAs($user)->post(route('self-invoices.store'), $payload)
+        ->assertSessionHasErrors(['related_invoice_number', 'related_invoice_date']);
+});
+
+test('manual self invoice update requires both related invoice references', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    $sequence = Sequence::factory()->selfInvoice()->create();
+    $invoice = SelfInvoice::factory()->create([
+        'contact_id' => $contact->id,
+        'sequence_id' => $sequence->id,
+        'date' => now()->toDateString(),
+        'sdi_status' => null,
+    ]);
+
+    $payload = [
+        'contact_id' => $contact->id,
+        'date' => now()->toDateString(),
+        'document_type' => 'TD17',
+        'lines' => [[
+            'description' => 'Servizio estero aggiornato',
+            'quantity' => 1,
+            'unit_price' => 100,
+            'vat_rate' => VatRate::R22->value,
+        ]],
+    ];
+
+    $this->actingAs($user)->put(route('self-invoices.update', $invoice), $payload)
+        ->assertSessionHasErrors(['related_invoice_number', 'related_invoice_date']);
+});
