@@ -21,13 +21,15 @@ it('renders an accessible mobile navigation trigger and skip link', function () 
         ->assertSee('aria-current="page"', false);
 });
 
-it('exposes the company actions as a labelled menu', function () {
+it('exposes the company actions as an accessible disclosure', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('dashboard'))
         ->assertOk()
-        ->assertSee('aria-haspopup="menu"', false)
-        ->assertSee('role="menu"', false)
-        ->assertSee('role="menuitem"', false);
+        ->assertSee('aria-controls="company-menu"', false)
+        ->assertSee(':aria-expanded="open"', false)
+        ->assertDontSee('aria-haspopup="menu"', false)
+        ->assertDontSee('role="menu"', false)
+        ->assertDontSee('role="menuitem"', false);
 });
