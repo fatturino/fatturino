@@ -21,6 +21,8 @@ class FiscalDocumentMutationService
      */
     public function create(array $header, array $lines, ?array $numbering = null): FiscalDocument
     {
+        $header = $this->normalizeHeader($header);
+
         return DB::transaction(function () use ($header, $lines, $numbering) {
             $date = Carbon::parse($header['date']);
             $sequence = Sequence::query()->findOrFail($header['sequence_id']);
@@ -52,6 +54,8 @@ class FiscalDocumentMutationService
      */
     public function update(FiscalDocument $document, array $header, array $lines): FiscalDocument
     {
+        $header = $this->normalizeHeader($header);
+
         return DB::transaction(function () use ($document, $header, $lines) {
             if (array_key_exists('date', $header)) {
                 $header['fiscal_year'] = Carbon::parse($header['date'])->year;
@@ -68,5 +72,23 @@ class FiscalDocumentMutationService
 
             return $document->fresh(['lines', 'payments']);
         });
+    }
+
+    /** @param array<string, mixed> $header */
+    private function normalizeHeader(array $header): array
+    {
+        foreach (['due_date', 'related_invoice_date'] as $field) {
+            if (array_key_exists($field, $header) && is_string($header[$field]) && trim($header[$field]) === '') {
+                $header[$field] = null;
+            }
+        }
+
+        foreach (['notes', 'payment_method', 'payment_terms', 'bank_name', 'bank_iban'] as $field) {
+            if (array_key_exists($field, $header) && is_string($header[$field]) && trim($header[$field]) === '') {
+                $header[$field] = null;
+            }
+        }
+
+        return $header;
     }
 }

@@ -73,6 +73,33 @@ test('create increments numbering for same sequence and year', function () {
         ->and($second->number)->toBe('INV-2');
 });
 
+test('create normalizes optional empty date and text header fields', function () {
+    $contact = Contact::factory()->create();
+    $sequence = Sequence::factory()->create(['pattern' => 'INV-{SEQ}']);
+
+    /** @var FiscalDocumentMutationService $service */
+    $service = app(FiscalDocumentMutationService::class);
+
+    $document = $service->create([
+        ...baseHeader($contact->id, $sequence->id),
+        'due_date' => '   ',
+        'related_invoice_date' => '',
+        'notes' => '',
+        'payment_method' => '',
+        'payment_terms' => '',
+        'bank_name' => ' ',
+        'bank_iban' => '',
+    ], [baseLine(1000)]);
+
+    expect($document->due_date)->toBeNull()
+        ->and($document->related_invoice_date)->toBeNull()
+        ->and($document->notes)->toBeNull()
+        ->and($document->payment_method)->toBeNull()
+        ->and($document->payment_terms)->toBeNull()
+        ->and($document->bank_name)->toBeNull()
+        ->and($document->bank_iban)->toBeNull();
+});
+
 test('update replaces all lines and payment status reflects overpayment', function () {
     $contact = Contact::factory()->create();
     $sequence = Sequence::factory()->create(['pattern' => 'INV-{SEQ}']);

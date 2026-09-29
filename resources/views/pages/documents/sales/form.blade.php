@@ -28,7 +28,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public string $date = '';
 
-    public string $due_date = '';
+    public ?string $due_date = '';
 
     public string $document_type = 'TD01';
 
@@ -176,6 +176,7 @@ new #[Layout('layouts::app')] class extends Component {
 
             return null;
         }
+        $this->due_date = trim((string) $this->due_date) === '' ? null : $this->due_date;
         $payload = $this->validate($this->rules());
         $invoice = $this->invoice ? $saveSalesInvoice->update($this->invoice, $payload) : $saveSalesInvoice->create($payload);
         if (! $this->invoice) {

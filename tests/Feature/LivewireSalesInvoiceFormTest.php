@@ -202,6 +202,74 @@ it('creates a sales invoice through the Livewire form using the configured sales
     $this->assertDatabaseHas('fiscal_documents_lines', ['description' => 'Consulenza', 'total' => 10000]);
 });
 
+it('stores an empty due date as null when creating a sales invoice', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->set('contact_id', $contact->id)
+        ->set('due_date', '')
+        ->set('lines', [validSalesInvoiceLine()])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(SalesInvoice::query()->sole()->due_date)->toBeNull();
+});
+
+it('stores a null due date when creating a sales invoice', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->set('contact_id', $contact->id)
+        ->set('due_date', null)
+        ->set('lines', [validSalesInvoiceLine()])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(SalesInvoice::query()->sole()->due_date)->toBeNull();
+});
+
+it('stores a valid due date when creating a sales invoice', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->set('contact_id', $contact->id)
+        ->set('due_date', '2026-10-15')
+        ->set('lines', [validSalesInvoiceLine()])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(SalesInvoice::query()->sole()->due_date?->toDateString())->toBe('2026-10-15');
+});
+
+it('rejects an invalid due date when creating a sales invoice', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->set('contact_id', $contact->id)
+        ->set('due_date', 'not-a-date')
+        ->set('lines', [validSalesInvoiceLine()])
+        ->call('save')
+        ->assertHasErrors(['due_date' => 'date']);
+
+    expect(SalesInvoice::query()->count())->toBe(0);
+});
+
 it('updates an editable sales invoice through the Livewire form without changing its sequence', function () {
     $user = User::factory()->create();
     $sequence = configureSalesInvoiceFormSequence();

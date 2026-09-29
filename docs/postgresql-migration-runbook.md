@@ -37,6 +37,24 @@ The PostgreSQL direct-restore path remains a release gate for the actual AIO ima
 - No orphan fiscal document lines, malformed JSON or sequence values behind their table maximum exist.
 - Application health and critical functional smoke tests pass.
 
+## Optional document dates and empty form values
+
+PostgreSQL rejects `''` for a `date` column because an empty string is not `NULL` and cannot be parsed as a date. SQLite's permissive type affinity can preserve that invalid application value, which may hide the defect before migration.
+
+Before accepting production writes, verify the effective schema:
+
+```sql
+SELECT is_nullable, data_type
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'fiscal_documents'
+  AND column_name = 'due_date';
+```
+
+The result must be `YES` and `date`. The application converts empty optional document dates to `NULL` before validation and again in the shared document mutation service. Keep input rules as `nullable|date`; an empty date must persist as `NULL`, a valid ISO date must be preserved, and an invalid non-empty value must fail validation. Eloquent's `date:Y-m-d` casts format valid values but do not sanitize invalid input.
+
+Optional text fields such as `bank_name` and `bank_iban` are distinct from typed date fields. PostgreSQL accepts empty text, but the application stores blank optional values as `NULL` for consistent semantics. Never work around this issue by editing generated Eloquent SQL.
+
 ## Rollback
 
 Before PostgreSQL receives business writes, stop the new container and restart the prior SQLite image with the preserved volume. After writes are accepted on PostgreSQL, do not restart SQLite: preserve evidence and use a separately approved recovery plan.
