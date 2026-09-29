@@ -81,12 +81,13 @@ ENV APP_VERSION=${APP_VERSION}
 
 ENV APP_ENV=production \
     APP_DEBUG=false \
+    APP_NAME=Fatturino \
     LOG_CHANNEL=stderr \
     DB_CONNECTION=pgsql \
     DB_HOST=127.0.0.1 \
-DB_PORT=5432 \
-DB_DATABASE=fatturino \
-DB_USERNAME=fatturino \
+    DB_PORT=5432 \
+    DB_DATABASE=fatturino \
+    DB_USERNAME=fatturino \
     SESSION_DRIVER=database \
     QUEUE_CONNECTION=database \
     CACHE_STORE=database \

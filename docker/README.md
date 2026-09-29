@@ -4,20 +4,23 @@ Fatturino viene eseguito in un singolo container Docker grazie a [serversideup/p
 
 ## Architettura
 
-Un singolo container esegue 3 servizi supervisionati da S6:
+Un singolo container esegue 4 servizi supervisionati da S6:
 
 ```
 ┌──────────────────────────────────────────────┐
 │  fatturino                                   │
 │                                              │
+│  PostgreSQL                   (database)     │
 │  NGINX + PHP-FPM              (web server)   │
 │  php artisan queue:work       (queue)        │
 │  php artisan schedule:work    (scheduler)    │
 │                                              │
 │  All'avvio (entrypoint.d):                   │
 │    10-setup-data.sh     (struttura + symlink)│
+│    12-init-postgresql.sh (bootstrap database)│
 │    15-migrate.sh        (migrazioni)         │
 │    20-seed-database.sh  (seed primo avvio)   │
+│    25-stop-bootstrap-postgresql.sh           │
 │                                              │
 │  Volume /data ────────────────────────────┐  │
 │    database.sqlite                        │  │
@@ -27,7 +30,9 @@ Un singolo container esegue 3 servizi supervisionati da S6:
 └───────────────────────────────────────────┘  │
 ```
 
-Tutto gira su SQLite: database, cache, queue, sessioni. Zero dipendenze esterne.
+PostgreSQL, cache, queue e sessioni sono ospitati nello stesso container. Il database ascolta solo su `127.0.0.1` all'interno del container e non espone la porta PostgreSQL sull'host.
+
+Durante il bootstrap PostgreSQL viene avviato una sola volta, resta disponibile per migrazioni e seed, poi viene arrestato prima che S6 avvii il servizio permanente. Il cluster in `/data/postgresql` resta sempre di proprietà dell'utente di sistema `postgres`.
 
 ## Quick Start
 
@@ -35,9 +40,11 @@ Tutto gira su SQLite: database, cache, queue, sessioni. Zero dipendenze esterne.
 # 1. Genera la chiave applicazione
 docker run --rm fatturino php artisan key:generate --show
 
-# 2. Crea un file .env con la chiave generata
+# 2. Crea un file .env con chiave e password del database
 echo "APP_KEY=base64:xxxxx" > .env
 echo "APP_URL=http://localhost:8080" >> .env
+echo "DB_PASSWORD=$(openssl rand -base64 32)" >> .env
+echo "POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -base64 32)" >> .env
 
 # 3. Avvia
 docker compose up -d
@@ -48,7 +55,8 @@ open http://localhost:8080
 
 All'avvio il container esegue automaticamente:
 
-- Creazione della struttura dati su `/data` (cartelle, symlink, WAL mode su SQLite)
+- Creazione della struttura dati persistente su `/data`
+- Inizializzazione del cluster PostgreSQL e dell'utente applicativo
 - Migrazioni database
 - Seed delle aliquote IVA e dei sezionali (solo al primo avvio)
 - Ottimizzazione cache Laravel (`AUTORUN_LARAVEL_OPTIMIZE`)
@@ -64,6 +72,10 @@ All'avvio il container esegue automaticamente:
 | `APP_PORT`                    |      No      | `8080`                     | Porta esposta sull'host (variabile compose, non passata al container)                                                                                                                                 |
 | `APP_NAME`                    |      No      | `Fatturino`                | Nome applicazione                                                                                                                                                                                     |
 | `APP_ENV`                     |      No      | `production`               | Ambiente Laravel (`production`, `local`)                                                                                                                                                              |
+| `DB_DATABASE`                 |      No      | `fatturino`                | Nome del database PostgreSQL interno                                                                                                                                                                  |
+| `DB_USERNAME`                 |      No      | `fatturino`                | Utente applicativo PostgreSQL interno                                                                                                                                                                 |
+| `DB_PASSWORD`                 |      Si      | -                          | Password dell'utente applicativo; non modificarla dopo il primo avvio                                                                                                                                 |
+| `POSTGRES_SUPERUSER_PASSWORD` |      Si      | -                          | Password del superutente PostgreSQL; non modificarla dopo il primo avvio                                                                                                                              |
 | `SSL_MODE`                    |      No      | `off`                      | Modalita SSL del container (`off`, `full`, `flexible`)                                                                                                                                                |
 | `PHP_DATE_TIMEZONE`           |      No      | `Europe/Rome`              | Timezone PHP                                                                                                                                                                                          |
 | `SMTP_MANAGED_BY_ENV`         |      No      | `false`                    | Se `true`, il provider email e le credenziali sono letti solo da env (UI provider nascosta)                                                                                                           |
@@ -105,6 +117,8 @@ services:
         environment:
             APP_KEY: "base64:your-generated-key-here"
             APP_URL: "https://fatturino.example.com"
+            DB_PASSWORD: "application-password"
+            POSTGRES_SUPERUSER_PASSWORD: "superuser-password"
             SMTP_MANAGED_BY_ENV: "true"
             MAIL_MAILER: "smtp"
             MAIL_HOST: "smtp.example.com"
@@ -140,7 +154,8 @@ Tutti i dati persistenti vivono in un unico volume Docker montato su `/data`:
 
 ```
 /data/
-├── database.sqlite              # Database completo (WAL mode)
+├── postgresql/                  # Cluster PostgreSQL, proprietario postgres:postgres
+├── database.sqlite              # Solo sorgente legacy per migrazione SQLite -> PostgreSQL
 ├── .seeded                      # Flag primo avvio completato
 └── storage/
     ├── app/
@@ -195,9 +210,9 @@ docker compose up -d
 ### Backup solo database
 
 ```bash
-docker exec fatturino sqlite3 /data/database.sqlite ".backup /data/backup.sqlite"
-docker cp fatturino:/data/backup.sqlite ./fatturino-db-$(date +%Y%m%d).sqlite
-docker exec fatturino rm /data/backup.sqlite
+docker exec fatturino pg_dump --username=fatturino --format=custom --file=/data/fatturino.dump fatturino
+docker cp fatturino:/data/fatturino.dump ./fatturino-db-$(date +%Y%m%d).dump
+docker exec fatturino rm /data/fatturino.dump
 ```
 
 ### Backup automatico su S3 (Spatie)
@@ -229,7 +244,7 @@ Per ambienti hosting dove i backup sono orchestrati esternamente:
 
 #### Contenuto del backup
 
-- `db-dumps/database.sql.gz` (dump SQLite compresso con Gzip)
+- `db-dumps/` (dump PostgreSQL)
 - `storage/app/private/documents/` (XML e PDF fatture, organizzati per tipo)
 - `storage/app/public/` (logo, asset utente)
 
@@ -253,28 +268,24 @@ docker exec fatturino php artisan backup:run --disable-notifications
 #### Restore da archivio S3
 
 ```bash
-# 1. Scarica l'archivio dal bucket S3
-aws s3 cp s3://il-tuo-bucket/Fatturino/2026-04-29-03-00-00.zip ./backup.zip
-
-# 2. Estrai in una cartella temporanea
-unzip backup.zip -d ./restore
-
-# 3. Ferma il container per evitare scritture concorrenti
+# 1. Ferma l'istanza per bloccare web, queue worker e scheduler.
 docker compose down
 
-# 4. Ripristina il database
-docker run --rm -v fatturino-data:/data -v $(pwd)/restore:/restore alpine \
-  sh -c "gunzip -c /restore/db-dumps/database.sql.gz | sqlite3 /data/database.sqlite"
+# 2. Avvia temporaneamente l'immagine sul volume esistente, senza i processi S6,
+#    e valida l'archivio prima di applicare modifiche.
+docker compose run --rm --no-deps --entrypoint php app \
+  artisan app:restore-backup --s3-key=Fatturino/2026-04-29-03-00-00.zip --dry-run
 
-# 5. Ripristina i file (documenti e public)
-docker run --rm -v fatturino-data:/data -v $(pwd)/restore:/restore alpine \
-  sh -c "cp -a /restore/storage/. /data/storage/"
+# 3. Ripristina database e file. Il comando entra in maintenance mode e, con
+#    --backup-current, conserva uno snapshot dello stato corrente prima del restore.
+docker compose run --rm --no-deps --entrypoint php app \
+  artisan app:restore-backup --s3-key=Fatturino/2026-04-29-03-00-00.zip --force --backup-current
 
-# 6. Riavvia
+# 4. Riavvia l'istanza normalmente.
 docker compose up -d
 ```
 
-> Verifica sempre l'integrita' del backup ripristinandolo periodicamente su un'istanza di staging prima di affidarti al recupero in emergenza.
+> Il restore PostgreSQL e' distruttivo. Eseguilo solo con l'istanza fermata e dopo una prova su staging. Per un archivio locale, sostituisci `--s3-key=...` con `--file=/percorso/backup.zip` accessibile al container temporaneo.
 
 ## Build da sorgente
 

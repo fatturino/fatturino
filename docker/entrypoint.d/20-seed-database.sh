@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eu
 
 echo "[fatturino][20-seed-database] start"
 
@@ -20,7 +21,9 @@ if [ ! -f /data/.seeded ]; then
     echo "[fatturino] Initial seeding complete"
 fi
 
-# Ensure www-data owns everything after migrations/seeders have run
-chown -R www-data:www-data /data
+# Application data belongs to www-data. PostgreSQL owns /data/postgresql and
+# must never be included here.
+chown -R www-data:www-data /data/storage
+chown www-data:www-data /data/.seeded
 
 echo "[fatturino][20-seed-database] done"

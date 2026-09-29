@@ -1,20 +1,6 @@
 #!/bin/sh
 set -eu
 
-if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ]; then
-    pg_ctl=$(find /usr/lib/postgresql -path '*/bin/pg_ctl' -type f -print -quit)
-    if [ -z "${pg_ctl}" ]; then
-        echo "[fatturino][15-migrate] PostgreSQL pg_ctl binary is missing" >&2
-        exit 1
-    fi
-
-    runuser -u postgres -- "${pg_ctl}" -D /data/postgresql -w start
-    stop_postgresql() {
-        runuser -u postgres -- "${pg_ctl}" -D /data/postgresql -m fast stop || true
-    }
-    trap stop_postgresql EXIT INT TERM
-fi
-
 echo "[fatturino][15-migrate] running migrations"
 php /var/www/html/artisan migrate --force --no-interaction
 
@@ -34,11 +20,6 @@ if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ] && [ -f /data/database.sqlite ] && [ 
     chown postgres:postgres /data/postgresql/.sqlite-migration-complete
     chmod 600 /data/postgresql/.sqlite-migration-complete
     echo "[fatturino][15-migrate] SQLite migration verified and marked complete"
-fi
-
-if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ]; then
-    stop_postgresql
-    trap - EXIT INT TERM
 fi
 
 echo "[fatturino][15-migrate] done"

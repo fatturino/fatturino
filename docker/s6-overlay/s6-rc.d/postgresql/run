@@ -1,4 +1,11 @@
-#!/command/execlineb -P
-with-contenv
-s6-setuidgid postgres
-sh -ec 'exec /usr/lib/postgresql/*/bin/postgres -D /data/postgresql'
+#!/bin/sh
+set -eu
+
+postgres=$(find /usr/lib/postgresql -path '*/bin/postgres' -type f -print -quit)
+
+if [ -z "${postgres}" ]; then
+    echo "PostgreSQL server binary is missing" >&2
+    exit 1
+fi
+
+exec runuser -u postgres -- "${postgres}" -D /data/postgresql
