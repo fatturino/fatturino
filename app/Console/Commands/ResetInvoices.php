@@ -20,13 +20,13 @@ class ResetInvoices extends Command
             return self::SUCCESS;
         }
 
-        // invoice_lines has FK on invoices with cascadeOnDelete, but we truncate
+        // Fiscal document lines reference fiscal documents, but we delete them
         // explicitly to be safe and to reset its auto-increment counter too.
-        $invoiceLinesDeleted = DB::table('invoice_lines')->delete();
-        $invoicesDeleted = DB::table('invoices')->delete();
+        $invoiceLinesDeleted = DB::table('fiscal_documents_lines')->delete();
+        $invoicesDeleted = DB::table('fiscal_documents')->delete();
 
-        $this->resetAutoIncrement('invoice_lines');
-        $this->resetAutoIncrement('invoices');
+        $this->resetAutoIncrement('fiscal_documents_lines');
+        $this->resetAutoIncrement('fiscal_documents');
 
         $this->info("Deleted {$invoicesDeleted} invoices and {$invoiceLinesDeleted} invoice lines.");
         $this->info('Auto-increment counters reset.');
@@ -62,7 +62,6 @@ class ResetInvoices extends Command
 
     private function resetPostgresSequence(string $table): void
     {
-        $sequenceName = "{$table}_id_seq";
-        DB::statement("ALTER SEQUENCE {$sequenceName} RESTART WITH 1");
+        DB::statement("select setval(pg_get_serial_sequence('{$table}', 'id'), 1, false)");
     }
 }

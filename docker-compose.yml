@@ -14,8 +14,13 @@ services:
       APP_ENV: "${APP_ENV:-production}"
       APP_KEY: "${APP_KEY}"
       APP_URL: "${APP_URL:-http://localhost:8080}"
-      DB_CONNECTION: sqlite
-      DB_DATABASE: /data/database.sqlite
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_DATABASE: "${DB_DATABASE:-fatturino}"
+      DB_USERNAME: "${DB_USERNAME:-fatturino}"
+      DB_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD must be set}"
+      POSTGRES_SUPERUSER_PASSWORD: "${POSTGRES_SUPERUSER_PASSWORD:?POSTGRES_SUPERUSER_PASSWORD must be set}"
       LOG_CHANNEL: stderr
       QUEUE_CONNECTION: database
       CACHE_STORE: database

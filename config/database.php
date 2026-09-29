@@ -99,6 +99,13 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'sqlite_migration_source' => [
+            'driver' => 'sqlite',
+            'database' => env('SQLITE_MIGRATION_SOURCE', '/data/database.sqlite'),
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
@@ -149,7 +156,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
+            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')) . '-database-'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 

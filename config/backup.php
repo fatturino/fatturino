@@ -35,8 +35,8 @@ return [
                 'relative_path' => null,
             ],
 
-            // Back up only the SQLite database
-            'databases' => ['sqlite'],
+            // The default production connection is PostgreSQL.
+            'databases' => [env('DB_CONNECTION', 'pgsql')],
         ],
 
         'database_dump_compressor' => GzipCompressor::class,

@@ -42,8 +42,15 @@ USER root
 
 ENV IPE_PROCESSOR_COUNT=3
 
-RUN install-php-extensions bcmath intl gd \
-    && apt-get update && apt-get install -y --no-install-recommends sqlite3 git nano \
+RUN install-php-extensions bcmath intl gd pgsql \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        sqlite3 \
+        postgresql \
+        postgresql-client \
+        git \
+        nano \
+    && ln -s "$(find /usr/lib/postgresql -type f -path '*/bin/psql' -print -quit)" /usr/local/bin/psql \
+    && ln -s "$(find /usr/lib/postgresql -type f -path '*/bin/pg_dump' -print -quit)" /usr/local/bin/pg_dump \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /data && chown www-data:www-data /data
@@ -75,8 +82,11 @@ ENV APP_VERSION=${APP_VERSION}
 ENV APP_ENV=production \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr \
-    DB_CONNECTION=sqlite \
-    DB_DATABASE=/data/database.sqlite \
+    DB_CONNECTION=pgsql \
+    DB_HOST=127.0.0.1 \
+DB_PORT=5432 \
+DB_DATABASE=fatturino \
+DB_USERNAME=fatturino \
     SESSION_DRIVER=database \
     QUEUE_CONNECTION=database \
     CACHE_STORE=database \

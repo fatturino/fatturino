@@ -1,0 +1,16 @@
+php_version: "8.4"
+node_version: "22"
+framework: laravel
+framework_version: "12"
+secured: true
+services:
+  - mailpit
+  - postgres-18:
+      preset: postgres
+      version: "18"
+  - redis
+  - rustfs
+workers:
+  - queue
+  - schedule
+  - vite

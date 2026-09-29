@@ -1,0 +1,4 @@
+#!/command/execlineb -P
+with-contenv
+s6-setuidgid postgres
+sh -ec 'exec /usr/lib/postgresql/*/bin/postgres -D /data/postgresql'

@@ -1,0 +1,50 @@
+# SQLite to PostgreSQL AIO migration runbook
+
+## Preconditions
+
+1. Use a staging copy of each production volume first.
+2. Record image digest, volume name, database SHA-256, free space and planned maintenance window.
+3. Verify a complete backup containing `/data/database.sqlite`, `/data/storage` and deployment environment variables. Restore that backup into an isolated volume and run `sqlite3 database.sqlite 'PRAGMA integrity_check'`.
+4. Set unique `DB_PASSWORD` and `POSTGRES_SUPERUSER_PASSWORD` through the deployment secret mechanism.
+
+## Rehearsal
+
+1. Start the target image against a copy of the volume with `MIGRATION_MODE=1`.
+2. Inspect generated reports in `storage/app/migration/`: preflight, import and verification must succeed.
+3. Check web health, login, invoice search, create/update transaction, payment transaction, SDI queue processing and scheduled work.
+4. Compare response times for document list, contact search and dashboard aggregates against the baseline.
+
+### Local evidence and remaining gate
+
+The repository SQLite fixture was rehearsed successfully against an isolated PostgreSQL database: migrations, preflight, import, canonical hashes, foreign-key checks and sequence checks passed. This is not evidence for either production volume.
+
+The PostgreSQL direct-restore path remains a release gate for the actual AIO image. The local Lerd client wrappers cannot be executed by Symfony Process, so the restore command must be rehearsed after building the AIO image, using a disposable volume and a real `backup:run` archive. Confirm that `pg_dump` snapshots the current state, `psql` restores successfully, storage files are restored, and the documented recovery checks pass.
+
+## Production cutover, one instance at a time
+
+1. Put the instance in maintenance and stop its container. Confirm no web, worker or scheduler process can write.
+2. Create and verify the final immutable SQLite-plus-files backup.
+3. Deploy the new image with PostgreSQL secrets and `MIGRATION_MODE=1`.
+4. Startup runs Laravel migrations, `database:migration-preflight`, `database:import-sqlite-to-postgres` and `database:verify-sqlite-postgres` before application services start.
+5. A failed check is a hard stop. Keep maintenance enabled, collect logs and restore the prior image/SQLite volume.
+6. On success, inspect the reports, validate `/up`, log in, exercise critical invoice/payment/SDI flows and observe logs before ending maintenance.
+7. Set `MIGRATION_MODE=0` after the completion marker exists. Retain the SQLite source and final backup according to retention policy.
+
+## Success criteria
+
+- SQLite integrity, foreign keys, UTF-8 encoding and expected tables pass before import.
+- All table counts and canonical SHA-256 hashes match.
+- No orphan fiscal document lines, malformed JSON or sequence values behind their table maximum exist.
+- Application health and critical functional smoke tests pass.
+
+## Rollback
+
+Before PostgreSQL receives business writes, stop the new container and restart the prior SQLite image with the preserved volume. After writes are accepted on PostgreSQL, do not restart SQLite: preserve evidence and use a separately approved recovery plan.
+
+## PostgreSQL backup restore
+
+`app:restore-backup --file=/path/to/backup.zip --force --backup-current` supports PostgreSQL dumps produced by the configured backup job. It first snapshots the current database and persisted files, then replaces the `public` schema and imports the dump with `psql` configured to stop on the first error.
+
+This is a direct, destructive restore: PostgreSQL does not use a staging database. Run it only while the application is in maintenance mode, with workers and scheduler stopped, and only after validating the archive with `--dry-run`. Retain the snapshot created by `--backup-current` until the functional recovery checks are complete.
+
+The AIO image must provide matching `psql` and `pg_dump` clients on `PATH`. `POSTGRES_BIN_PATH` may override that directory only when the deployment uses a non-standard client location.

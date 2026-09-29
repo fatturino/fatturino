@@ -28,6 +28,8 @@ Thumbs.db
 *.md
 !docs/ui-ux-audit-baseline.md
 !docs/ui-system-spec.md
+!docs/postgresql-migration-runbook.md
+!docs/decisions/2026-09-29-postgresql-single-container-aio.md
 !README.*
 !LICENSE.md
 !DEVELOPMENT.md
