@@ -29,8 +29,8 @@ it('registers the Alpine date picker before Livewire starts Alpine', function ()
         ->toContain("document.addEventListener('alpine:init'")
         ->toContain("Alpine.data('datePicker'")
         ->toContain("value: ''")
-        ->toContain("get hasValue()")
-        ->toContain("get monthLabel()")
+        ->toContain('get hasValue()')
+        ->toContain('get monthLabel()')
         ->toContain('get days()');
 
     expect(strpos($appLayout, '<x-date-picker-script />'))->toBeLessThan(strpos($appLayout, '@livewireScripts'));

@@ -21,8 +21,8 @@ it('fails when the SQLite migration source is missing', function () {
 it('reports a valid SQLite source database', function () {
     $workdir = storage_path('app/testing-migration');
     File::ensureDirectoryExists($workdir);
-    $source = $workdir . '/source.sqlite';
-    $report = $workdir . '/preflight.json';
+    $source = $workdir.'/source.sqlite';
+    $report = $workdir.'/preflight.json';
 
     $database = new SQLite3($source);
     foreach (

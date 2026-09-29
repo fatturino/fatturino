@@ -234,7 +234,7 @@ class InvoiceXmlService
         // Totals (DatiRiepilogo)
         $summary = [];
         foreach ($invoice->lines as $line) {
-            $key = ($line->vat_rate->percent() ?? 0) . '_' . ($line->vat_rate->nature() ?? '');
+            $key = ($line->vat_rate->percent() ?? 0).'_'.($line->vat_rate->nature() ?? '');
             if (! isset($summary[$key])) {
                 $summary[$key] = [
                     'rate' => $line->vat_rate->percent() ?? 0,
@@ -254,7 +254,7 @@ class InvoiceXmlService
         if ($invoice->fund_enabled && $invoice->fund_amount > 0) {
             $rate = $invoice->fund_vat_rate?->percent() ?? 0;
             $nature = $invoice->fund_vat_rate?->nature();
-            $key = $rate . '_' . ($nature ?? '');
+            $key = $rate.'_'.($nature ?? '');
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [
@@ -274,7 +274,7 @@ class InvoiceXmlService
             $stampDutyVatRate = FiscalRegimePolicy::stampDutyVatRate(
                 $this->companySettings->company_fiscal_regime
             );
-            $key = '0_' . $stampDutyVatRate;
+            $key = '0_'.$stampDutyVatRate;
 
             if (! isset($summary[$key])) {
                 $summary[$key] = [

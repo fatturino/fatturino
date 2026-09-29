@@ -14,9 +14,9 @@ it('renders every destination in a task-oriented sidebar hierarchy', function ()
         ->toContain('>Clienti e fornitori</span>')
         ->toContain('>Dati azienda</span>')
         ->toContain('>Diagnostica</span>')
-        ->toContain('href="' . route('dashboard') . '"')
-        ->toContain('href="' . route('contacts.index') . '"')
-        ->toContain('href="' . route('settings.advanced') . '"');
+        ->toContain('href="'.route('dashboard').'"')
+        ->toContain('href="'.route('contacts.index').'"')
+        ->toContain('href="'.route('settings.advanced').'"');
 
     expect(substr_count($html, '<svg'))->toBe(15);
     expect(strpos($html, '>Documenti</p>'))

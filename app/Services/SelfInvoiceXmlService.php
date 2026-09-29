@@ -179,7 +179,7 @@ class SelfInvoiceXmlService
         foreach ($invoice->lines as $line) {
             $rate = $line->vat_rate?->percent() ?? 0;
             $nature = $line->vat_rate?->nature() ?? '';
-            $key = $rate . '_' . $nature;
+            $key = $rate.'_'.$nature;
             if (! isset($summary[$key])) {
                 $summary[$key] = [
                     'rate' => $rate,

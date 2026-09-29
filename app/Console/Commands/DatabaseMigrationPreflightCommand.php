@@ -67,7 +67,7 @@ class DatabaseMigrationPreflightCommand extends Command
                 $this->check($report, 'target_connectivity', DB::selectOne('select 1 as connected')->connected === 1);
             }
 
-            $report['success'] = collect($report['checks'])->every(fn(array $check) => $check['passed']);
+            $report['success'] = collect($report['checks'])->every(fn (array $check) => $check['passed']);
         } catch (Throwable $exception) {
             $report['checks'][] = ['name' => 'exception', 'passed' => false, 'detail' => $exception->getMessage()];
             $this->error($exception->getMessage());
@@ -103,7 +103,7 @@ class DatabaseMigrationPreflightCommand extends Command
             ->all();
         $missing = array_values(array_diff(self::REQUIRED_TABLES, $tables));
 
-        $this->check($report, 'required_tables', $missing === [], $missing === [] ? null : 'Missing: ' . implode(', ', $missing));
+        $this->check($report, 'required_tables', $missing === [], $missing === [] ? null : 'Missing: '.implode(', ', $missing));
     }
 
     private function sqliteScalar(string $sql): mixed
@@ -116,6 +116,6 @@ class DatabaseMigrationPreflightCommand extends Command
     private function check(array &$report, string $name, bool $passed, ?string $detail = null): void
     {
         $report['checks'][] = compact('name', 'passed', 'detail');
-        $this->{$passed ? 'info' : 'error'}(($passed ? 'PASS' : 'FAIL') . ": {$name}" . ($detail ? " ({$detail})" : ''));
+        $this->{$passed ? 'info' : 'error'}(($passed ? 'PASS' : 'FAIL').": {$name}".($detail ? " ({$detail})" : ''));
     }
 }

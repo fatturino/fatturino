@@ -159,9 +159,9 @@ it('labels upcoming due dates by their temporal priority', function () {
         [31, 'default', 'Futura', 'Scade tra 31 giorni'],
         [null, 'default', 'Data da verificare', 'Nessuna data prevista'],
     ];
-    $invoices = collect($states)->map(fn(array $state, int $index): array => [
+    $invoices = collect($states)->map(fn (array $state, int $index): array => [
         'id' => $index + 1,
-        'contact' => 'Cliente ' . ($index + 1),
+        'contact' => 'Cliente '.($index + 1),
         'due_date' => now()->addDays($index + 1)->format('d/m/Y'),
         'remaining_balance' => 10000,
         'days_until_due' => $state[0],

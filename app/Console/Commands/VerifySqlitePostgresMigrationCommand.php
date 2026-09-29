@@ -69,7 +69,7 @@ class VerifySqlitePostgresMigrationCommand extends Command
             }
             $this->checkForeignKeys($report);
             $this->checkSequences($report);
-            $report['success'] = collect($report['checks'])->every(fn(array $check) => $check['passed']);
+            $report['success'] = collect($report['checks'])->every(fn (array $check) => $check['passed']);
         } catch (Throwable $exception) {
             $report['checks'][] = ['name' => 'exception', 'passed' => false, 'detail' => $exception->getMessage()];
             $this->error($exception->getMessage());
@@ -106,7 +106,7 @@ class VerifySqlitePostgresMigrationCommand extends Command
                 ksort($values);
                 foreach ($values as $key => $value) {
                     $value = $this->normalizeValue($value, $types[$key] ?? null);
-                    hash_update($hash, $key . '=' . str_replace(["\\", "\n", "\r", "\0"], ['\\\\', '\\n', '\\r', '\\0'], (string) $value) . "\n");
+                    hash_update($hash, $key.'='.str_replace(['\\', "\n", "\r", "\0"], ['\\\\', '\\n', '\\r', '\\0'], (string) $value)."\n");
                 }
                 hash_update($hash, "--row--\n");
             }
@@ -118,7 +118,7 @@ class VerifySqlitePostgresMigrationCommand extends Command
     private function targetColumnTypes(string $table): array
     {
         return collect(DB::select('select column_name, data_type from information_schema.columns where table_schema = current_schema() and table_name = ?', [$table]))
-            ->mapWithKeys(fn(object $column) => [$column->column_name => $column->data_type])
+            ->mapWithKeys(fn (object $column) => [$column->column_name => $column->data_type])
             ->all();
     }
 
@@ -169,10 +169,10 @@ class VerifySqlitePostgresMigrationCommand extends Command
 
     private function checkForeignKeys(array &$report): void
     {
-        $orphans = (int) DB::selectOne("select count(*) as total from fiscal_documents_lines l left join fiscal_documents d on d.id = l.fiscal_document_id where d.id is null")->total;
+        $orphans = (int) DB::selectOne('select count(*) as total from fiscal_documents_lines l left join fiscal_documents d on d.id = l.fiscal_document_id where d.id is null')->total;
         $this->check($report, 'fiscal_documents_lines.orphans', $orphans === 0, "orphans={$orphans}");
 
-        $invalidJson = (int) DB::selectOne("select count(*) as total from fiscal_documents where json_typeof(metadata) is null or (sdi_payload is not null and json_typeof(sdi_payload) is null)")->total;
+        $invalidJson = (int) DB::selectOne('select count(*) as total from fiscal_documents where json_typeof(metadata) is null or (sdi_payload is not null and json_typeof(sdi_payload) is null)')->total;
         $this->check($report, 'fiscal_documents.json', $invalidJson === 0, "invalid={$invalidJson}");
     }
 
@@ -195,6 +195,6 @@ class VerifySqlitePostgresMigrationCommand extends Command
     private function check(array &$report, string $name, bool $passed, string $detail): void
     {
         $report['checks'][] = compact('name', 'passed', 'detail');
-        $this->{$passed ? 'info' : 'error'}(($passed ? 'PASS' : 'FAIL') . ": {$name} ({$detail})");
+        $this->{$passed ? 'info' : 'error'}(($passed ? 'PASS' : 'FAIL').": {$name} ({$detail})");
     }
 }

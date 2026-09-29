@@ -96,7 +96,7 @@ class ImportSqliteToPostgresCommand extends Command
         $targetTypes = $this->targetColumnTypes($table);
         $unsupported = array_values(array_diff($columns, array_keys($targetTypes)));
         if ($unsupported !== []) {
-            throw new \RuntimeException("Schema drift in {$table}; target is missing: " . implode(', ', $unsupported));
+            throw new \RuntimeException("Schema drift in {$table}; target is missing: ".implode(', ', $unsupported));
         }
 
         $sourceCount = (int) $source->table($table)->count();
@@ -112,7 +112,7 @@ class ImportSqliteToPostgresCommand extends Command
             if ($lastKey !== null) {
                 $query->where($primaryKey, '>', $lastKey);
             }
-            $rows = $query->get()->map(fn(object $row) => $this->normalizeRow((array) $row, $targetTypes))->all();
+            $rows = $query->get()->map(fn (object $row) => $this->normalizeRow((array) $row, $targetTypes))->all();
             if ($rows === []) {
                 break;
             }
@@ -139,7 +139,7 @@ class ImportSqliteToPostgresCommand extends Command
     private function targetColumnTypes(string $table): array
     {
         return collect(DB::select('select column_name, data_type from information_schema.columns where table_schema = current_schema() and table_name = ?', [$table]))
-            ->mapWithKeys(fn(object $column) => [$column->column_name => $column->data_type])
+            ->mapWithKeys(fn (object $column) => [$column->column_name => $column->data_type])
             ->all();
     }
 

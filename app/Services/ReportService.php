@@ -34,7 +34,7 @@ class ReportService
         return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
-        ])->get()->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
+        ])->get()->sum(fn (SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
     }
 
     /**
@@ -50,7 +50,7 @@ class ReportService
         return (int) SalesInvoice::whereBetween('date', [
             $referenceMonth->copy()->startOfMonth(),
             $referenceMonth->copy()->endOfMonth(),
-        ])->get()->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
+        ])->get()->sum(fn (SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
     }
 
     /**
@@ -63,7 +63,7 @@ class ReportService
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return (int) SalesInvoice::whereBetween('date', [$start, $end])->get()->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
+        return (int) SalesInvoice::whereBetween('date', [$start, $end])->get()->sum(fn (SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
     }
 
     /**
@@ -219,7 +219,7 @@ class ReportService
         $previous = [];
         $labels = ['G', 'F', 'M', 'A', 'M', 'G', 'L', 'A', 'S', 'O', 'N', 'D'];
 
-        $netRevenue = fn(SalesInvoice $i): int => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0));
+        $netRevenue = fn (SalesInvoice $i): int => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0));
 
         for ($m = 1; $m <= 12; $m++) {
             $start = Carbon::create($year, $m, 1)->startOfDay();
@@ -252,10 +252,10 @@ class ReportService
 
         return $invoices
             ->groupBy('contact_id')
-            ->map(fn($group, $key) => (object) [
+            ->map(fn ($group, $key) => (object) [
                 'contact_id' => (int) $key,
                 'contact' => $group->first()->contact,
-                'revenue_total' => $group->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0))),
+                'revenue_total' => $group->sum(fn (SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0))),
             ])
             ->sortByDesc('revenue_total')
             ->take($limit)
@@ -333,7 +333,7 @@ class ReportService
             'overdue_count' => 0,
             'overdue_net' => 0,
             'overdue_vat' => 0,
-            'draft_count' => $invoices->filter(fn(SalesInvoice $invoice): bool => $invoice->statusValue() === 'draft')->count(),
+            'draft_count' => $invoices->filter(fn (SalesInvoice $invoice): bool => $invoice->statusValue() === 'draft')->count(),
         ];
 
         foreach ($invoices as $invoice) {
@@ -440,10 +440,10 @@ class ReportService
             }
 
             $salesInvoices = $salesQuery->get();
-            $inflows = (int) $salesInvoices->sum(fn($i) => max(0, $i->net_due - $i->total_paid));
+            $inflows = (int) $salesInvoices->sum(fn ($i) => max(0, $i->net_due - $i->total_paid));
 
             $purchaseInvoices = $purchaseQuery->get();
-            $outflows = (int) $purchaseInvoices->sum(fn($i) => max(0, $i->total_gross - $i->total_paid));
+            $outflows = (int) $purchaseInvoices->sum(fn ($i) => max(0, $i->total_gross - $i->total_paid));
 
             $buckets[] = [
                 'key' => $bucketDef['key'],
@@ -487,7 +487,7 @@ class ReportService
             $start = Carbon::create($year, $m, 1)->startOfDay();
             $end = Carbon::create($year, $m, 1)->endOfMonth();
             $revenue = (int) SalesInvoice::whereBetween('date', [$start, $end])
-                ->get()->sum(fn(SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
+                ->get()->sum(fn (SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
 
             if ($m <= $elapsedMonths) {
                 $actual[] = $revenue;

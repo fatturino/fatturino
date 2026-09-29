@@ -241,7 +241,7 @@ test('company settings use correct group name', function () {
 test('company settings persist across multiple retrievals', function () {
     $settings = app(CompanySettings::class);
 
-    $testValue = 'Test Persistence Company ' . uniqid();
+    $testValue = 'Test Persistence Company '.uniqid();
     $settings->company_name = $testValue;
     $settings->save();
 
