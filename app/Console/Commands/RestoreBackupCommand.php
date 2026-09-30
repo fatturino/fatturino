@@ -121,7 +121,8 @@ class RestoreBackupCommand extends Command
         }
 
         $local = $workspace.'/backup.zip';
-        $stream = Storage::disk('s3')->readStream($sourceS3Key);
+        $prepend = config('backup.name') ? config('backup.name').'/' : '';
+        $stream = Storage::disk('s3')->readStream($prepend.$sourceS3Key);
         if ($stream === false) {
             throw new \RuntimeException('Unable to download backup from s3 key: '.$sourceS3Key);
         }
