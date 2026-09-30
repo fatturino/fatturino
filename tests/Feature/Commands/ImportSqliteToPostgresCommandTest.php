@@ -30,3 +30,12 @@ it('treats legacy empty nullable temporal values as null when verifying hashes',
         ->and($method->invoke($command, null, 'date', true))->toBe('<null>')
         ->and($method->invoke($command, '', 'text', false))->toBe('');
 });
+
+it('limits migration diagnostic values while preserving short normalized values', function () {
+    $command = app(VerifySqlitePostgresMigrationCommand::class);
+    $method = new ReflectionMethod($command, 'diagnosticValue');
+
+    expect($method->invoke($command, '12.34'))->toBe('12.34')
+        ->and(mb_strlen($method->invoke($command, str_repeat('x', 600))))->toBe(500)
+        ->and($method->invoke($command, str_repeat('x', 600)))->toEndWith('…');
+});

@@ -95,7 +95,17 @@ class VerifySqlitePostgresMigrationCommand extends Command
         $nullableTemporalColumns = $this->nullableTemporalColumns($table);
         $sourceHash = $this->canonicalHash($source, $table, $primaryKey, $types, $nullableTemporalColumns);
         $targetHash = $this->canonicalHash(DB::connection(), $table, $primaryKey, $types, $nullableTemporalColumns);
-        $this->check($report, "{$table}.sha256", hash_equals($sourceHash, $targetHash), "source={$sourceHash}; target={$targetHash}");
+        $hashesMatch = hash_equals($sourceHash, $targetHash);
+        $diagnostic = $hashesMatch
+            ? null
+            : $this->firstRowDifference($source, $table, $primaryKey, $types, $nullableTemporalColumns);
+        $this->check(
+            $report,
+            "{$table}.sha256",
+            $hashesMatch,
+            "source={$sourceHash}; target={$targetHash}",
+            $diagnostic,
+        );
     }
 
     private function canonicalHash($connection, string $table, string $primaryKey, array $types, array $nullableTemporalColumns): string
@@ -114,6 +124,65 @@ class VerifySqlitePostgresMigrationCommand extends Command
         }, $primaryKey);
 
         return hash_final($hash);
+    }
+
+    private function firstRowDifference($source, string $table, string $primaryKey, array $types, array $nullableTemporalColumns): ?array
+    {
+        foreach ($source->table($table)->orderBy($primaryKey)->cursor() as $sourceRow) {
+            $sourceValues = $this->normalizeRow((array) $sourceRow, $types, $nullableTemporalColumns);
+            $targetRow = DB::table($table)->where($primaryKey, $sourceValues[$primaryKey])->first();
+
+            if ($targetRow === null) {
+                return [
+                    'primary_key' => $sourceValues[$primaryKey],
+                    'missing' => 'target',
+                ];
+            }
+
+            $targetValues = $this->normalizeRow((array) $targetRow, $types, $nullableTemporalColumns);
+            $columns = [];
+
+            foreach ($sourceValues as $column => $sourceValue) {
+                $targetValue = $targetValues[$column] ?? null;
+                if ($sourceValue === $targetValue) {
+                    continue;
+                }
+
+                $columns[$column] = [
+                    'source' => $this->diagnosticValue($sourceValue),
+                    'target' => $this->diagnosticValue($targetValue),
+                ];
+            }
+
+            if ($columns !== []) {
+                return [
+                    'primary_key' => $sourceValues[$primaryKey],
+                    'columns' => $columns,
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeRow(array $row, array $types, array $nullableTemporalColumns): array
+    {
+        ksort($row);
+
+        foreach ($row as $column => $value) {
+            $row[$column] = $this->normalizeValue(
+                $value,
+                $types[$column] ?? null,
+                in_array($column, $nullableTemporalColumns, true),
+            );
+        }
+
+        return $row;
+    }
+
+    private function diagnosticValue(mixed $value): string
+    {
+        return mb_strimwidth((string) $value, 0, 500, '…');
     }
 
     private function targetColumnTypes(string $table): array
@@ -200,9 +269,18 @@ class VerifySqlitePostgresMigrationCommand extends Command
         return in_array($this->targetColumnTypes($table)['id'] ?? null, ['smallint', 'integer', 'bigint'], true);
     }
 
-    private function check(array &$report, string $name, bool $passed, string $detail): void
+    private function check(array &$report, string $name, bool $passed, string $detail, ?array $diagnostic = null): void
     {
-        $report['checks'][] = compact('name', 'passed', 'detail');
-        $this->{$passed ? 'info' : 'error'}(($passed ? 'PASS' : 'FAIL').": {$name} ({$detail})");
+        $check = compact('name', 'passed', 'detail');
+        if ($diagnostic !== null) {
+            $check['diagnostic'] = $diagnostic;
+        }
+        $report['checks'][] = $check;
+
+        $message = ($passed ? 'PASS' : 'FAIL').": {$name} ({$detail})";
+        if ($diagnostic !== null) {
+            $message .= ' diagnostic='.json_encode($diagnostic, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        }
+        $this->{$passed ? 'info' : 'error'}($message);
     }
 }
