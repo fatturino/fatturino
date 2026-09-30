@@ -9,7 +9,9 @@ php /var/www/html/artisan migrate --force --no-interaction
 if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ] && [ -f /data/database.sqlite ] && [ ! -f /data/postgresql/.sqlite-migration-complete ]; then
     echo "[fatturino][15-migrate] importing legacy SQLite data"
     php /var/www/html/artisan database:migration-preflight --source=/data/database.sqlite --require-postgres
-    php /var/www/html/artisan database:import-sqlite-to-postgres --source=/data/database.sqlite
+    # The importer uses primary-key upserts. Force makes a restart resume a
+    # previously interrupted first import without duplicating source records.
+    php /var/www/html/artisan database:import-sqlite-to-postgres --source=/data/database.sqlite --force
     php /var/www/html/artisan database:verify-sqlite-postgres --source=/data/database.sqlite
     touch /data/postgresql/.sqlite-migration-complete
     chown postgres:postgres /data/postgresql/.sqlite-migration-complete

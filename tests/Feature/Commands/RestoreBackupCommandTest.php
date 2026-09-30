@@ -13,7 +13,7 @@ it('validates a local backup zip in dry-run mode', function () {
     $workdir = storage_path('app/testing-restore');
     File::ensureDirectoryExists($workdir);
 
-    $zipPath = $workdir.'/backup.zip';
+    $zipPath = $workdir . '/backup.zip';
     $zip = new ZipArchive;
     $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
     $zip->addFromString('db-dumps/database.sql', "CREATE TABLE test_table (id INTEGER PRIMARY KEY);\n");
@@ -36,12 +36,12 @@ it('recognizes a SQLite database file independently from the runtime connection'
     $workdir = storage_path('app/testing-restore');
     File::ensureDirectoryExists($workdir);
 
-    $sqlitePath = $workdir.'/database.sqlite';
+    $sqlitePath = $workdir . '/database.sqlite';
     $database = new SQLite3($sqlitePath);
     $database->exec('create table restored_table (id integer primary key)');
     $database->close();
 
-    $zipPath = $workdir.'/backup.zip';
+    $zipPath = $workdir . '/backup.zip';
     $zip = new ZipArchive;
     $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
     $zip->addFile($sqlitePath, 'backup/database.sqlite');
@@ -63,7 +63,7 @@ it('rejects archives containing both SQLite and SQL database representations', f
     $workdir = storage_path('app/testing-restore');
     File::ensureDirectoryExists($workdir);
 
-    $zipPath = $workdir.'/ambiguous.zip';
+    $zipPath = $workdir . '/ambiguous.zip';
     $zip = new ZipArchive;
     $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
     $zip->addFromString('database.sqlite', 'SQLite format 3');
@@ -86,7 +86,7 @@ it('recognizes a gzip SQLite SQL dump for migration instead of PostgreSQL restor
     $workdir = storage_path('app/testing-restore');
     File::ensureDirectoryExists($workdir);
 
-    $zipPath = $workdir.'/sqlite-dump.zip';
+    $zipPath = $workdir . '/sqlite-dump.zip';
     $zip = new ZipArchive;
     $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
     $zip->addFromString('db-dumps/sqlite-sqlite-database.sql.gz', gzencode("PRAGMA foreign_keys=OFF;\nBEGIN TRANSACTION;\n"));
@@ -114,5 +114,7 @@ it('runs cold restore before automatically migrating a SQLite source on PostgreS
         ->toContain('--cold')
         ->toContain('.cold-restore-complete')
         ->and($migration)
-        ->toContain('database:import-sqlite-to-postgres');
+        ->toContain('database:import-sqlite-to-postgres --source=/data/database.sqlite --force')
+        ->toContain('database:verify-sqlite-postgres')
+        ->toContain('.sqlite-migration-complete');
 });
