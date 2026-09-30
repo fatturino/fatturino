@@ -64,8 +64,8 @@ if ! grep -Fqx "include_if_exists = 'fatturino.conf'" "${POSTGRESQL_CONF}"; then
     printf "\ninclude_if_exists = 'fatturino.conf'\n" >> "${POSTGRESQL_CONF}"
 fi
 
-if ! grep -Fqx 'host    all             all             samenet                 scram-sha-256' "${POSTGRESQL_HBA_CONF}"; then
-    printf '\nhost    all             all             samenet                 scram-sha-256\n' >> "${POSTGRESQL_HBA_CONF}"
+if ! grep -Fqx 'host    all             all             0.0.0.0/0               scram-sha-256' "${POSTGRESQL_HBA_CONF}"; then
+    printf '\nhost    all             all             0.0.0.0/0               scram-sha-256\n' >> "${POSTGRESQL_HBA_CONF}"
 fi
 
 if ! runuser -u postgres -- "${PG_ISREADY}" --host=127.0.0.1 --port=5432 --quiet; then
