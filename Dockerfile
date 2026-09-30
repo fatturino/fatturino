@@ -1,13 +1,20 @@
+# syntax=docker/dockerfile:1.7
+
 # ==============================================================================
-# Stage 1: Install PHP dependencies (needed for Tailwind CSS source scanning)
+# Stage 1: Install production PHP dependencies
 # ==============================================================================
 FROM composer:2 AS composer
 
+ARG TARGETPLATFORM
+
 WORKDIR /app
+
+ENV COMPOSER_CACHE_DIR=/tmp/composer-cache
 
 COPY composer.json composer.lock ./
 
-RUN composer install \
+RUN --mount=type=cache,id=composer-${TARGETPLATFORM},target=/tmp/composer-cache,sharing=locked \
+    composer install \
     --no-dev \
     --no-interaction \
     --prefer-dist \
@@ -18,11 +25,14 @@ RUN composer install \
 # ==============================================================================
 FROM oven/bun:1 AS frontend
 
+ARG TARGETPLATFORM
+
 WORKDIR /app
 
 COPY package.json bun.lock ./
 
-RUN bun install --frozen-lockfile
+RUN --mount=type=cache,id=bun-${TARGETPLATFORM},target=/root/.bun/install/cache,sharing=locked \
+    bun install --frozen-lockfile
 
 COPY vite.config.js ./
 COPY resources/ resources/
@@ -34,6 +44,8 @@ RUN bun run build
 # ==============================================================================
 FROM serversideup/php:8.4-fpm-nginx AS production
 
+ARG TARGETPLATFORM
+
 LABEL maintainer="Fatturino <info@fatturino.com>"
 LABEL org.opencontainers.image.source="https://codeberg.org/fatturino/fatturino"
 LABEL org.opencontainers.image.description="Fatturino - Open Source Italian Electronic Invoicing"
@@ -42,7 +54,9 @@ USER root
 
 ENV IPE_PROCESSOR_COUNT=3
 
-RUN install-php-extensions bcmath intl gd pgsql \
+RUN --mount=type=cache,id=apt-${TARGETPLATFORM},target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lists-${TARGETPLATFORM},target=/var/lib/apt/lists,sharing=locked \
+    install-php-extensions bcmath intl gd pgsql \
     && apt-get update && apt-get install -y --no-install-recommends \
         sqlite3 \
         postgresql \
@@ -50,8 +64,7 @@ RUN install-php-extensions bcmath intl gd pgsql \
         git \
         nano \
     && ln -s "$(find /usr/lib/postgresql -type f -path '*/bin/psql' -print -quit)" /usr/local/bin/psql \
-    && ln -s "$(find /usr/lib/postgresql -type f -path '*/bin/pg_dump' -print -quit)" /usr/local/bin/pg_dump \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && ln -s "$(find /usr/lib/postgresql -type f -path '*/bin/pg_dump' -print -quit)" /usr/local/bin/pg_dump
 
 RUN mkdir -p /data && chown www-data:www-data /data
 
@@ -59,12 +72,7 @@ WORKDIR /var/www/html
 
 COPY --chown=www-data:www-data composer.json composer.lock ./
 
-RUN composer install \
-    --no-dev \
-    --no-interaction \
-    --prefer-dist \
-    --optimize-autoloader \
-    --no-scripts
+COPY --chown=www-data:www-data --from=composer /app/vendor/ vendor/
 
 COPY --chown=www-data:www-data . .
 

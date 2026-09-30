@@ -301,9 +301,11 @@ APP_KEY=base64:$(openssl rand -base64 32) docker compose up -d
 
 Il Dockerfile usa un build multi-stage:
 
-1. **Stage composer**: `composer:2` installa le dipendenze PHP (necessarie per la scansione delle classi Tailwind)
+1. **Stage composer**: `composer:2` installa una sola volta le dipendenze PHP di produzione, poi lo stage runtime riusa `vendor/`
 2. **Stage frontend**: `oven/bun:1` compila gli asset CSS/JS con Vite
 3. **Stage production**: `serversideup/php:8.4-fpm-nginx` con l'applicazione Laravel e le estensioni `bcmath`, `intl`, `gd`
+
+BuildKit conserva cache separate per Composer, Bun e APT. In GitHub Actions la cache GHA `fatturino-production` viene importata sia dalla verifica amd64 delle pull request sia dalla pubblicazione multi-arch di `main` e dei tag; soltanto le build pubblicate la aggiornano. Lockfile e build riproducibili (`composer install` e `bun install --frozen-lockfile`) restano la fonte di verità, quindi una cache accelera i download ma non modifica le dipendenze risolte.
 
 ## Logging
 

@@ -15,6 +15,7 @@ REPO="fatturino/fatturino"
 IMAGE="${REGISTRY}/${REPO}"
 PLATFORMS="linux/amd64,linux/arm64"
 BUILDER_NAME="fatturino-multiarch"
+CACHE_DIR="${XDG_CACHE_HOME:-.cache}/fatturino-buildx"
 
 # Determine the tag: argument > env var > auto-generated date-based tag
 TAG="${1:-${TAG:-$(date -u +'%Y.%m.%d')-1}}"
@@ -37,10 +38,17 @@ docker login "${REGISTRY}"
 
 # Build and push multi-arch image with two tags: version + SHA
 echo "==> Building and pushing..."
+CACHE_ARGS=(--cache-to "type=local,dest=${CACHE_DIR},mode=max")
+
+if [ -f "${CACHE_DIR}/index.json" ]; then
+  CACHE_ARGS+=(--cache-from "type=local,src=${CACHE_DIR}")
+fi
+
 docker buildx build \
   --platform "${PLATFORMS}" \
   --tag "${IMAGE}:${TAG}" \
   --tag "${IMAGE}:${SHA_SHORT}" \
+  "${CACHE_ARGS[@]}" \
   --push \
   .
 

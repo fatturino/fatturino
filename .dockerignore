@@ -1,6 +1,7 @@
 .git
 .gitea
 .github
+.gitlab
 .vscode
 .idea
 .fleet
@@ -12,6 +13,7 @@
 
 node_modules
 vendor
+.cache
 
 tests
 test_xml
@@ -36,3 +38,13 @@ Homestead.json
 Homestead.yaml
 
 packages
+
+# Repository documentation and local tooling are not needed by the runtime image.
+docs
+README.md
+README.en.md
+DEVELOPMENT.md
+PRODUCT.md
+CHANGELOG.md
+LICENSE.md
+scripts
