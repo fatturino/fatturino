@@ -25,7 +25,7 @@ The PostgreSQL direct-restore path remains a release gate for the actual AIO ima
 1. Put the instance in maintenance and stop its container. Confirm no web, worker or scheduler process can write.
 2. Create and verify the final immutable SQLite-plus-files backup.
 3. Deploy the new image with PostgreSQL secrets.
-4. Startup runs Laravel migrations, `database:migration-preflight`, `database:import-sqlite-to-postgres --force` and `database:verify-sqlite-postgres` before application services start. The import uses primary-key upserts, so a restart resumes a partial initial import without duplicating source rows; it writes the completion marker only after verification succeeds.
+4. Startup runs Laravel migrations, `database:migration-preflight`, `database:import-sqlite-to-postgres --force` and `database:verify-sqlite-postgres` before application services start. The import uses primary-key upserts, so a restart resumes a partial initial import without duplicating source rows; it writes `/data/.sqlite-migration-complete` only after verification succeeds.
 5. A failed check is a hard stop. Keep maintenance enabled, collect logs and restore the prior image/SQLite volume.
 6. On success, inspect the reports, validate `/up`, log in, exercise critical invoice/payment/SDI flows and observe logs before ending maintenance.
 7. Retain the SQLite source and final backup according to retention policy after the completion marker exists.

@@ -6,16 +6,16 @@ php /var/www/html/artisan migrate --force --no-interaction
 
 # A legacy SQLite source is migrated only while the application, worker and
 # scheduler are still stopped. A marker makes restarts idempotent.
-if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ] && [ -f /data/database.sqlite ] && [ ! -f /data/postgresql/.sqlite-migration-complete ]; then
+if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ] && [ -f /data/database.sqlite ] && [ ! -f /data/.sqlite-migration-complete ]; then
     echo "[fatturino][15-migrate] importing legacy SQLite data"
     php /var/www/html/artisan database:migration-preflight --source=/data/database.sqlite --require-postgres
     # The importer uses primary-key upserts. Force makes a restart resume a
     # previously interrupted first import without duplicating source records.
     php /var/www/html/artisan database:import-sqlite-to-postgres --source=/data/database.sqlite --force
     php /var/www/html/artisan database:verify-sqlite-postgres --source=/data/database.sqlite
-    touch /data/postgresql/.sqlite-migration-complete
-    chown postgres:postgres /data/postgresql/.sqlite-migration-complete
-    chmod 600 /data/postgresql/.sqlite-migration-complete
+    touch /data/.sqlite-migration-complete
+    chown www-data:www-data /data/.sqlite-migration-complete
+    chmod 600 /data/.sqlite-migration-complete
     # The imported database already contains application state. Do not run first-boot
     # seeders after the cutover, as they would write into the restored target.
     touch /data/.seeded

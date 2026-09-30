@@ -116,5 +116,5 @@ it('runs cold restore before automatically migrating a SQLite source on PostgreS
         ->and($migration)
         ->toContain('database:import-sqlite-to-postgres --source=/data/database.sqlite --force')
         ->toContain('database:verify-sqlite-postgres')
-        ->toContain('.sqlite-migration-complete');
+        ->toContain('/data/.sqlite-migration-complete');
 });
