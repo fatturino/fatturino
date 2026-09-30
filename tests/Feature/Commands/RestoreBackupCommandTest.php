@@ -82,6 +82,28 @@ it('rejects archives containing both SQLite and SQL database representations', f
     File::deleteDirectory($workdir);
 });
 
+it('recognizes a gzip SQLite SQL dump for migration instead of PostgreSQL restore', function () {
+    $workdir = storage_path('app/testing-restore');
+    File::ensureDirectoryExists($workdir);
+
+    $zipPath = $workdir.'/sqlite-dump.zip';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+    $zip->addFromString('db-dumps/sqlite-sqlite-database.sql.gz', gzencode("PRAGMA foreign_keys=OFF;\nBEGIN TRANSACTION;\n"));
+    $zip->addFromString('storage/app/public/example.txt', 'ok');
+    $zip->close();
+
+    $exit = Artisan::call('app:restore-backup', [
+        '--file' => $zipPath,
+        '--dry-run' => true,
+    ]);
+
+    expect($exit)->toBe(0)
+        ->and(Artisan::output())->toContain('sqlite-sqlite-database.sql.gz (sqlite-sql)');
+
+    File::deleteDirectory($workdir);
+});
+
 it('runs cold restore before automatically migrating a SQLite source on PostgreSQL', function () {
     $coldRestore = File::get(base_path('docker/entrypoint.d/13-cold-restore.sh'));
     $migration = File::get(base_path('docker/entrypoint.d/15-migrate.sh'));

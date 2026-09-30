@@ -165,10 +165,32 @@ class RestoreBackupCommand extends Command
             return ['type' => 'sqlite', 'entry' => $sqliteEntries[0]];
         }
         if (count($sqlEntries) === 1 && $sqliteEntries === []) {
-            return ['type' => 'sql', 'entry' => $sqlEntries[0]];
+            return [
+                'type' => $this->isSqliteDump($zip, $sqlEntries[0]) ? 'sqlite-sql' : 'sql',
+                'entry' => $sqlEntries[0],
+            ];
         }
 
         return null;
+    }
+
+    private function isSqliteDump(ZipArchive $zip, string $entry): bool
+    {
+        $contents = $zip->getFromName($entry);
+        if ($contents === false) {
+            throw new \RuntimeException('Unable to inspect database dump from ZIP.');
+        }
+
+        if (str_ends_with($entry, '.gz')) {
+            $contents = gzdecode($contents);
+            if ($contents === false) {
+                throw new \RuntimeException('Unable to decompress database dump from ZIP.');
+            }
+        }
+
+        $contents = ltrim($contents, "\xEF\xBB\xBF \t\r\n");
+
+        return preg_match('/^PRAGMA\s+foreign_keys\s*=\s*OFF\s*;/i', $contents) === 1;
     }
 
     private function findStorageEntries(ZipArchive $zip): array
@@ -193,6 +215,12 @@ class RestoreBackupCommand extends Command
     {
         if ($database['type'] === 'sqlite') {
             $this->restoreSqliteFile($zip, $database['entry'], $workspace);
+
+            return;
+        }
+
+        if ($database['type'] === 'sqlite-sql') {
+            $this->restoreSqliteDump($zip, $database['entry'], $workspace);
 
             return;
         }
@@ -228,6 +256,38 @@ class RestoreBackupCommand extends Command
         $backupDbPath = $dbPath.'.pre-restore';
         if (File::exists($dbPath)) {
             File::copy($dbPath, $backupDbPath);
+        }
+
+        File::move($tmpDbPath, $dbPath);
+    }
+
+    private function restoreSqliteDump(ZipArchive $zip, string $dbEntry, string $workspace): void
+    {
+        $dbPath = '/data/database.sqlite';
+        File::ensureDirectoryExists(dirname($dbPath));
+
+        $dumpPath = $this->extractDatabaseDump($zip, $dbEntry, $workspace);
+        $tmpDbPath = $dbPath.'.restore-in-progress';
+        File::delete($tmpDbPath);
+
+        $process = new Process(['sqlite3', $tmpDbPath], null, null, File::get($dumpPath));
+        $process->setTimeout(300);
+        $process->run();
+
+        if (! $process->isSuccessful()) {
+            File::delete($tmpDbPath);
+            throw new \RuntimeException('SQLite restore failed: '.trim($process->getErrorOutput()));
+        }
+
+        $integrityCheck = 'sqlite3 '.escapeshellarg($tmpDbPath).' "PRAGMA integrity_check;"';
+        $integrityOutput = trim((string) shell_exec($integrityCheck));
+        if (strtolower($integrityOutput) !== 'ok') {
+            File::delete($tmpDbPath);
+            throw new \RuntimeException('Restored database integrity check failed: '.$integrityOutput);
+        }
+
+        if (File::exists($dbPath)) {
+            File::copy($dbPath, $dbPath.'.pre-restore');
         }
 
         File::move($tmpDbPath, $dbPath);
