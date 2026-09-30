@@ -15,6 +15,8 @@ class RestoreBackupCommand extends Command
     protected $signature = 'app:restore-backup
         {--file= : Path to a local Spatie ZIP backup}
         {--s3-key= : Object key on the configured s3 disk}
+        {--s3-key-is-full-path : Do not prepend the configured backup name to --s3-key}
+        {--database-type-file= : Write the restored database type to this file after success}
         {--dry-run : Validate backup contents without restoring}
         {--force : Execute restore}
         {--no-storage : Restore database only}
@@ -41,7 +43,7 @@ class RestoreBackupCommand extends Command
             return self::FAILURE;
         }
 
-        $workspace = storage_path('app/restore-temp/'.now()->format('YmdHis'));
+        $workspace = storage_path('app/restore-temp/' . now()->format('YmdHis'));
         File::ensureDirectoryExists($workspace);
 
         try {
@@ -53,10 +55,10 @@ class RestoreBackupCommand extends Command
                 return self::FAILURE;
             }
 
-            $dbEntry = $this->findDatabaseDumpEntry($zip);
-            if ($dbEntry === null) {
+            $database = $this->findDatabaseEntry($zip);
+            if ($database === null) {
                 $zip->close();
-                $this->error('Database dump not found in archive (expected db-dumps/*.sql or *.sql.gz).');
+                $this->error('Database entry not found or ambiguous (expected one database.sqlite or one db-dumps/*.sql[.gz]).');
 
                 return self::FAILURE;
             }
@@ -70,9 +72,9 @@ class RestoreBackupCommand extends Command
             }
 
             $this->info('Backup archive validated.');
-            $this->line('DB dump: '.$dbEntry);
+            $this->line('Database: ' . $database['entry'] . ' (' . $database['type'] . ')');
             if ($restoreStorage) {
-                $this->line('Storage entries: '.count($storageEntries));
+                $this->line('Storage entries: ' . count($storageEntries));
             }
 
             if ($isDryRun) {
@@ -84,16 +86,17 @@ class RestoreBackupCommand extends Command
             $this->enterMaintenanceMode();
 
             if ((bool) $this->option('backup-current')) {
-                $this->snapshotCurrentState($workspace.'/snapshot-current');
+                $this->snapshotCurrentState($workspace . '/snapshot-current');
             }
 
-            $this->restoreDatabase($zip, $dbEntry, $workspace);
+            $this->restoreDatabase($zip, $database, $workspace);
             if ($restoreStorage) {
                 $this->restoreStorage($zip, $storageEntries, $workspace);
             }
 
             $zip->close();
 
+            $this->writeDatabaseTypeFile($database['type']);
             Artisan::call('optimize:clear');
             $this->leaveMaintenanceMode();
 
@@ -102,7 +105,7 @@ class RestoreBackupCommand extends Command
             return self::SUCCESS;
         } catch (\Throwable $e) {
             $this->leaveMaintenanceMode();
-            $this->error('Restore failed: '.$e->getMessage());
+            $this->error('Restore failed: ' . $e->getMessage());
 
             return self::FAILURE;
         } finally {
@@ -114,17 +117,17 @@ class RestoreBackupCommand extends Command
     {
         if ($sourceFile) {
             if (! File::exists($sourceFile)) {
-                throw new \RuntimeException('Local file not found: '.$sourceFile);
+                throw new \RuntimeException('Local file not found: ' . $sourceFile);
             }
 
             return $sourceFile;
         }
 
-        $local = $workspace.'/backup.zip';
-        $prepend = config('backup.name') ? config('backup.name').'/' : '';
-        $stream = Storage::disk('s3')->readStream($prepend.$sourceS3Key);
+        $local = $workspace . '/backup.zip';
+        $prepend = $this->option('s3-key-is-full-path') ? '' : (config('backup.name') ? config('backup.name') . '/' : '');
+        $stream = Storage::disk('s3')->readStream($prepend . $sourceS3Key);
         if ($stream === false) {
-            throw new \RuntimeException('Unable to download backup from s3 key: '.$sourceS3Key);
+            throw new \RuntimeException('Unable to download backup from s3 key: ' . $sourceS3Key);
         }
 
         $target = fopen($local, 'wb');
@@ -139,17 +142,30 @@ class RestoreBackupCommand extends Command
         return $local;
     }
 
-    private function findDatabaseDumpEntry(ZipArchive $zip): ?string
+    private function findDatabaseEntry(ZipArchive $zip): ?array
     {
+        $sqliteEntries = [];
+        $sqlEntries = [];
+
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
             if ($name === false) {
                 continue;
             }
 
-            if (preg_match('#(^|/)db-dumps/.*\.sql(\.gz)?$#', $name) === 1) {
-                return $name;
+            if (preg_match('#(^|/)database\.sqlite$#', $name) === 1) {
+                $sqliteEntries[] = $name;
             }
+            if (preg_match('#(^|/)db-dumps/.*\.sql(\.gz)?$#', $name) === 1) {
+                $sqlEntries[] = $name;
+            }
+        }
+
+        if (count($sqliteEntries) === 1 && $sqlEntries === []) {
+            return ['type' => 'sqlite', 'entry' => $sqliteEntries[0]];
+        }
+        if (count($sqlEntries) === 1 && $sqliteEntries === []) {
+            return ['type' => 'sql', 'entry' => $sqlEntries[0]];
         }
 
         return null;
@@ -173,57 +189,43 @@ class RestoreBackupCommand extends Command
         return $matched;
     }
 
-    private function restoreDatabase(ZipArchive $zip, string $dbEntry, string $workspace): void
+    private function restoreDatabase(ZipArchive $zip, array $database, string $workspace): void
     {
-        match (DB::getDriverName()) {
-            'sqlite' => $this->restoreSqliteDatabase($zip, $dbEntry, $workspace),
-            'pgsql' => $this->restorePostgresDatabase($zip, $dbEntry, $workspace),
-            default => throw new \RuntimeException('Database restore is supported only for SQLite and PostgreSQL.'),
-        };
-    }
+        if ($database['type'] === 'sqlite') {
+            $this->restoreSqliteFile($zip, $database['entry'], $workspace);
 
-    private function restoreSqliteDatabase(ZipArchive $zip, string $dbEntry, string $workspace): void
-    {
-        $dbPath = (string) config('database.connections.sqlite.database');
-        if ($dbPath === '') {
-            throw new \RuntimeException('SQLite database path is not configured.');
+            return;
         }
 
+        if (DB::getDriverName() !== 'pgsql') {
+            throw new \RuntimeException('A SQL backup requires the PostgreSQL runtime connection.');
+        }
+
+        $this->restorePostgresDatabase($zip, $database['entry'], $workspace);
+    }
+
+    private function restoreSqliteFile(ZipArchive $zip, string $dbEntry, string $workspace): void
+    {
+        $dbPath = '/data/database.sqlite';
         $dbDir = dirname($dbPath);
         File::ensureDirectoryExists($dbDir);
 
-        $dumpPath = $workspace.'/database.sql';
-        $rawDumpPath = $workspace.'/database.dump';
-
         $contents = $zip->getFromName($dbEntry);
         if ($contents === false) {
-            throw new \RuntimeException('Unable to extract database dump from ZIP.');
+            throw new \RuntimeException('Unable to extract SQLite database from ZIP.');
         }
 
-        File::put($rawDumpPath, $contents);
+        $tmpDbPath = $dbPath . '.restore-in-progress';
+        File::delete($tmpDbPath);
+        File::put($tmpDbPath, $contents);
 
-        if (str_ends_with($dbEntry, '.gz')) {
-            $this->decompressGzip($rawDumpPath, $dumpPath);
-        } else {
-            File::move($rawDumpPath, $dumpPath);
-        }
-
-        $tmpDbPath = $workspace.'/database-restored.sqlite';
-        File::put($tmpDbPath, '');
-
-        $command = 'sqlite3 '.escapeshellarg($tmpDbPath).' < '.escapeshellarg($dumpPath);
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0) {
-            throw new \RuntimeException('SQLite import failed.');
-        }
-
-        $integrityCheck = 'sqlite3 '.escapeshellarg($tmpDbPath).' "PRAGMA integrity_check;"';
+        $integrityCheck = 'sqlite3 ' . escapeshellarg($tmpDbPath) . ' "PRAGMA integrity_check;"';
         $integrityOutput = trim((string) shell_exec($integrityCheck));
         if (strtolower($integrityOutput) !== 'ok') {
-            throw new \RuntimeException('Restored database integrity check failed: '.$integrityOutput);
+            throw new \RuntimeException('Restored database integrity check failed: ' . $integrityOutput);
         }
 
-        $backupDbPath = $dbPath.'.pre-restore';
+        $backupDbPath = $dbPath . '.pre-restore';
         if (File::exists($dbPath)) {
             File::copy($dbPath, $backupDbPath);
         }
@@ -245,8 +247,8 @@ class RestoreBackupCommand extends Command
 
     private function extractDatabaseDump(ZipArchive $zip, string $dbEntry, string $workspace): string
     {
-        $dumpPath = $workspace.'/database.sql';
-        $rawDumpPath = $workspace.'/database.dump';
+        $dumpPath = $workspace . '/database.sql';
+        $rawDumpPath = $workspace . '/database.dump';
 
         $contents = $zip->getFromName($dbEntry);
         if ($contents === false) {
@@ -284,7 +286,7 @@ class RestoreBackupCommand extends Command
         $process->run();
 
         if (! $process->isSuccessful()) {
-            throw new \RuntimeException('PostgreSQL restore failed: '.trim($process->getErrorOutput()));
+            throw new \RuntimeException('PostgreSQL restore failed: ' . trim($process->getErrorOutput()));
         }
     }
 
@@ -298,7 +300,7 @@ class RestoreBackupCommand extends Command
 
             $content = $zip->getFromName($entry);
             if ($content === false) {
-                throw new \RuntimeException('Unable to extract storage entry: '.$entry);
+                throw new \RuntimeException('Unable to extract storage entry: ' . $entry);
             }
 
             File::ensureDirectoryExists(dirname($destination));
@@ -324,7 +326,7 @@ class RestoreBackupCommand extends Command
                 return null;
             }
 
-            return $targetBase.$relative;
+            return $targetBase . $relative;
         }
 
         return null;
@@ -337,7 +339,7 @@ class RestoreBackupCommand extends Command
         if (DB::getDriverName() === 'sqlite') {
             $dbPath = (string) config('database.connections.sqlite.database');
             if (File::exists($dbPath)) {
-                File::copy($dbPath, $snapshotDir.'/database.sqlite');
+                File::copy($dbPath, $snapshotDir . '/database.sqlite');
             }
         } elseif (DB::getDriverName() === 'pgsql') {
             $this->snapshotPostgresDatabase($snapshotDir);
@@ -345,15 +347,15 @@ class RestoreBackupCommand extends Command
 
         $documents = storage_path('app/private/documents');
         if (File::isDirectory($documents)) {
-            File::copyDirectory($documents, $snapshotDir.'/documents');
+            File::copyDirectory($documents, $snapshotDir . '/documents');
         }
 
         $public = storage_path('app/public');
         if (File::isDirectory($public)) {
-            File::copyDirectory($public, $snapshotDir.'/public');
+            File::copyDirectory($public, $snapshotDir . '/public');
         }
 
-        $this->line('Snapshot created at: '.$snapshotDir);
+        $this->line('Snapshot created at: ' . $snapshotDir);
     }
 
     private function snapshotPostgresDatabase(string $snapshotDir): void
@@ -374,19 +376,19 @@ class RestoreBackupCommand extends Command
             '-d',
             (string) ($connection['database'] ?? ''),
             '-f',
-            $snapshotDir.'/database.sql',
+            $snapshotDir . '/database.sql',
         ], null, ['PGPASSWORD' => (string) ($connection['password'] ?? '')]);
         $process->setTimeout(300);
         $process->run();
 
         if (! $process->isSuccessful()) {
-            throw new \RuntimeException('Unable to snapshot PostgreSQL database: '.trim($process->getErrorOutput()));
+            throw new \RuntimeException('Unable to snapshot PostgreSQL database: ' . trim($process->getErrorOutput()));
         }
     }
 
     private function postgresConnection(): ?array
     {
-        $connection = config('database.connections.'.config('database.default'));
+        $connection = config('database.connections.' . config('database.default'));
         if (! is_array($connection)) {
             return null;
         }
@@ -405,7 +407,7 @@ class RestoreBackupCommand extends Command
     {
         $configured = env('POSTGRES_BIN_PATH') ?: getenv('POSTGRES_BIN_PATH');
         if (is_string($configured) && $configured !== '') {
-            return rtrim($configured, '/').'/'.$name;
+            return rtrim($configured, '/') . '/' . $name;
         }
 
         return $name;
@@ -436,6 +438,17 @@ class RestoreBackupCommand extends Command
 
         fclose($out);
         gzclose($in);
+    }
+
+    private function writeDatabaseTypeFile(string $databaseType): void
+    {
+        $path = $this->option('database-type-file');
+        if (! is_string($path) || $path === '') {
+            return;
+        }
+
+        File::ensureDirectoryExists(dirname($path));
+        File::put($path, $databaseType . "\n");
     }
 
     private function enterMaintenanceMode(): void
