@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Contact;
+use App\Models\FiscalDocumentLine;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -35,6 +36,17 @@ it('stores SDI provider file identifiers beyond the PostgreSQL integer range', f
     ]);
 
     expect(DB::table('fiscal_documents')->value('sdi_file_id'))->toBe(17891265537);
+});
+
+it('preserves fiscal document quantities with eight decimal places', function () {
+    $line = new FiscalDocumentLine;
+    $line->quantity = '15.71503405';
+
+    expect($line->quantity)->toBe('15.71503405');
+
+    $migration = file_get_contents(database_path('migrations/2026_01_01_000007_create_fiscal_document_lines_table.php'));
+
+    expect($migration)->toContain("decimal('quantity', 18, 8)");
 });
 
 it('enforces unique number by fiscal year and document type', function () {

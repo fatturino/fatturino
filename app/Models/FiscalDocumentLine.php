@@ -15,7 +15,7 @@ class FiscalDocumentLine extends Model
     protected $table = 'fiscal_documents_lines';
 
     protected $casts = [
-        'quantity' => 'decimal:2',
+        'quantity' => 'decimal:8',
         'unit_price' => 'integer',
         'discount_percent' => 'decimal:2',
         'discount_amount' => 'integer',

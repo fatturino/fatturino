@@ -43,6 +43,9 @@ Use this flow to restore a new AIO volume without web, workers or the scheduler 
 
 ## Success criteria
 
+- Legacy fiscal-document quantities are imported into PostgreSQL as `decimal(18,8)` without rounding values such as `15.71503405`.
+- Verification compares PostgreSQL `date` columns by calendar date, so a legacy SQLite midnight value such as `2026-05-23 00:00:00` is equivalent to `2026-05-23`; timestamp columns remain exact comparisons.
+
 - SQLite integrity, foreign keys, UTF-8 encoding and expected tables pass before import.
 - All table counts and canonical SHA-256 hashes match.
 - No orphan fiscal document lines, malformed JSON or sequence values behind their table maximum exist.

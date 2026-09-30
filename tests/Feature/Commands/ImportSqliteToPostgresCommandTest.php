@@ -31,6 +31,25 @@ it('treats legacy empty nullable temporal values as null when verifying hashes',
         ->and($method->invoke($command, '', 'text', false))->toBe('');
 });
 
+it('canonicalizes legacy date-times only when the PostgreSQL target type is date', function () {
+    $command = app(VerifySqlitePostgresMigrationCommand::class);
+    $method = new ReflectionMethod($command, 'normalizeValue');
+
+    expect($method->invoke($command, '2026-05-23 00:00:00', 'date', false))->toBe('2026-05-23')
+        ->and($method->invoke($command, '2026-05-23', 'date', false))->toBe('2026-05-23')
+        ->and($method->invoke($command, '2026-05-23 00:00:00', 'timestamp without time zone', false))
+        ->toBe('2026-05-23 00:00:00');
+});
+
+it('does not hide real numeric differences when verifying hashes', function () {
+    $command = app(VerifySqlitePostgresMigrationCommand::class);
+    $method = new ReflectionMethod($command, 'normalizeValue');
+
+    expect($method->invoke($command, '15.71503405', 'numeric', false))->toBe('15.71503405')
+        ->and($method->invoke($command, '15.72000000', 'numeric', false))->toBe('15.72')
+        ->not->toBe($method->invoke($command, '15.71503405', 'numeric', false));
+});
+
 it('limits migration diagnostic values while preserving short normalized values', function () {
     $command = app(VerifySqlitePostgresMigrationCommand::class);
     $method = new ReflectionMethod($command, 'diagnosticValue');

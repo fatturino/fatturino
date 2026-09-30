@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('fiscal_document_id')->index()->constrained()->cascadeOnDelete();
             $table->string('description');
-            $table->decimal('quantity', 10, 2);
+            $table->decimal('quantity', 18, 8);
             $table->string('unit_of_measure', 10)->nullable();
             $table->unsignedBigInteger('unit_price')->comment('Unit price in cents');
             $table->decimal('discount_percent', 5, 2)->nullable()->comment('Discount percentage (e.g. 10.00 = 10%)');

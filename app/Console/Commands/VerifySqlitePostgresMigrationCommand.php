@@ -212,6 +212,13 @@ class VerifySqlitePostgresMigrationCommand extends Command
 
             return json_encode($this->sortJson($decoded), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         }
+        if ($type === 'date') {
+            $normalized = (string) $value;
+
+            if (preg_match('/^\d{4}-\d{2}-\d{2}/', $normalized) === 1) {
+                return substr($normalized, 0, 10);
+            }
+        }
         if (str_starts_with((string) $type, 'numeric')) {
             return $this->normalizeDecimal($value);
         }
