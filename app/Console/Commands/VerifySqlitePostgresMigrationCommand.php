@@ -219,6 +219,9 @@ class VerifySqlitePostgresMigrationCommand extends Command
                 return substr($normalized, 0, 10);
             }
         }
+        if (in_array($type, ['timestamp with time zone', 'timestamp without time zone'], true)) {
+            return $this->normalizeTimestamp($value);
+        }
         if (str_starts_with((string) $type, 'numeric')) {
             return $this->normalizeDecimal($value);
         }
@@ -234,6 +237,21 @@ class VerifySqlitePostgresMigrationCommand extends Command
         }
 
         return $normalized === '' || $normalized === '-0' ? '0' : $normalized;
+    }
+
+    private function normalizeTimestamp(mixed $value): string
+    {
+        $normalized = str_replace('T', ' ', (string) $value);
+        $normalized = preg_replace('/(?:Z|[+-]00:00)$/', '', $normalized) ?? $normalized;
+
+        if (str_contains($normalized, '.')) {
+            [$dateTime, $fraction] = explode('.', $normalized, 2);
+            $fraction = rtrim($fraction, '0');
+
+            return $fraction === '' ? $dateTime : $dateTime.'.'.$fraction;
+        }
+
+        return $normalized;
     }
 
     private function sortJson(mixed $value): mixed

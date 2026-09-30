@@ -45,6 +45,7 @@ Use this flow to restore a new AIO volume without web, workers or the scheduler 
 
 - Legacy fiscal-document quantities are imported into PostgreSQL as `decimal(18,8)` without rounding values such as `15.71503405`.
 - Verification compares PostgreSQL `date` columns by calendar date, so a legacy SQLite midnight value such as `2026-05-23 00:00:00` is equivalent to `2026-05-23`; timestamp columns remain exact comparisons.
+- Verification canonicalizes equivalent UTC timestamp representations, including SQLite ISO-8601 values and PostgreSQL SQL-style values, while retaining date, time and meaningful fractional-second differences.
 
 - SQLite integrity, foreign keys, UTF-8 encoding and expected tables pass before import.
 - All table counts and canonical SHA-256 hashes match.

@@ -41,6 +41,20 @@ it('canonicalizes legacy date-times only when the PostgreSQL target type is date
         ->toBe('2026-05-23 00:00:00');
 });
 
+it('canonicalizes equivalent SQLite and PostgreSQL timestamp representations', function () {
+    $command = app(VerifySqlitePostgresMigrationCommand::class);
+    $method = new ReflectionMethod($command, 'normalizeValue');
+
+    expect($method->invoke($command, '2026-05-14T01:49:33+00:00', 'timestamp without time zone', false))
+        ->toBe('2026-05-14 01:49:33')
+        ->and($method->invoke($command, '2026-05-14T01:49:33Z', 'timestamp with time zone', false))
+        ->toBe('2026-05-14 01:49:33')
+        ->and($method->invoke($command, '2026-05-14 01:49:33.120000', 'timestamp without time zone', false))
+        ->toBe('2026-05-14 01:49:33.12')
+        ->and($method->invoke($command, '2026-05-14 01:49:34', 'timestamp without time zone', false))
+        ->not->toBe('2026-05-14 01:49:33');
+});
+
 it('does not hide real numeric differences when verifying hashes', function () {
     $command = app(VerifySqlitePostgresMigrationCommand::class);
     $method = new ReflectionMethod($command, 'normalizeValue');
