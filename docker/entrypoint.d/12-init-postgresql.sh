@@ -27,11 +27,6 @@ if [ -z "${INITDB}" ] || [ -z "${PG_CTL}" ] || [ -z "${PG_ISREADY}" ] || [ -z "$
     exit 1
 fi
 
-if [ -f /data/database.sqlite ] && [ ! -f "${PGDATA}/.sqlite-migration-complete" ] && [ "${MIGRATION_MODE:-0}" != "1" ]; then
-    echo "[fatturino][12-init-postgresql] legacy SQLite data detected; set MIGRATION_MODE=1 only after completing the migration runbook" >&2
-    exit 1
-fi
-
 : "${DB_DATABASE:?DB_DATABASE must be set}"
 : "${DB_USERNAME:?DB_USERNAME must be set}"
 : "${DB_PASSWORD:?DB_PASSWORD must be set}"

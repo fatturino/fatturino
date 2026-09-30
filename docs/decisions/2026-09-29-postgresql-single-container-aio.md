@@ -10,7 +10,7 @@ The AIO image also runs PostgreSQL under S6. PostgreSQL stores its cluster in `/
 
 Migration is offline per instance: entrypoint migrations run first, then a preflight, idempotent primary-key import, verification and a completion marker execute before S6 starts web, workers or scheduler.
 
-For disaster recovery to a fresh AIO volume, `RESTORE_BACKUP_S3_KEY` triggers a cold S3 restore before migrations and application services. A SQLite file in the archive is restored to `/data/database.sqlite`; with PostgreSQL as the runtime database, the normal SQLite-to-PostgreSQL cutover then executes automatically. A SQL dump is restored to internal PostgreSQL. `MIGRATION_MODE` remains the explicit migration trigger for an already-present legacy SQLite source.
+For disaster recovery to a fresh AIO volume, `RESTORE_BACKUP_S3_KEY` triggers a cold S3 restore before migrations and application services. A SQLite file in the archive is restored to `/data/database.sqlite`; with PostgreSQL as the runtime database, the normal SQLite-to-PostgreSQL cutover then executes automatically. A SQL dump is restored to internal PostgreSQL. Any legacy SQLite source is migrated automatically when PostgreSQL is the runtime database.
 
 ## Consequences
 

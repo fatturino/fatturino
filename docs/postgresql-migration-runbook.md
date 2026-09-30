@@ -9,7 +9,7 @@
 
 ## Rehearsal
 
-1. Start the target image against a copy of the volume with `MIGRATION_MODE=1`.
+1. Start the target image against a copy of the volume.
 2. Inspect generated reports in `storage/app/migration/`: preflight, import and verification must succeed.
 3. Check web health, login, invoice search, create/update transaction, payment transaction, SDI queue processing and scheduled work.
 4. Compare response times for document list, contact search and dashboard aggregates against the baseline.
@@ -24,11 +24,11 @@ The PostgreSQL direct-restore path remains a release gate for the actual AIO ima
 
 1. Put the instance in maintenance and stop its container. Confirm no web, worker or scheduler process can write.
 2. Create and verify the final immutable SQLite-plus-files backup.
-3. For an existing SQLite volume, deploy the new image with PostgreSQL secrets and `MIGRATION_MODE=1`.
+3. Deploy the new image with PostgreSQL secrets.
 4. Startup runs Laravel migrations, `database:migration-preflight`, `database:import-sqlite-to-postgres` and `database:verify-sqlite-postgres` before application services start.
 5. A failed check is a hard stop. Keep maintenance enabled, collect logs and restore the prior image/SQLite volume.
 6. On success, inspect the reports, validate `/up`, log in, exercise critical invoice/payment/SDI flows and observe logs before ending maintenance.
-7. Set `MIGRATION_MODE=0` after the completion marker exists. Retain the SQLite source and final backup according to retention policy.
+7. Retain the SQLite source and final backup according to retention policy after the completion marker exists.
 
 ## Cold S3 restore
 
@@ -39,7 +39,7 @@ Use this flow to restore a new AIO volume without web, workers or the scheduler 
 3. The archive must contain exactly one database representation: a `database.sqlite` file or `db-dumps/*.sql` / `*.sql.gz`. A SQLite file is validated and atomically written to `/data/database.sqlite`; a SQL dump is restored to internal PostgreSQL.
 4. The entrypoint restores storage and writes `/data/.cold-restore-complete` with the backup-key fingerprint and database type only after the complete restore succeeds. Reusing the same key is idempotent; a different key requires an explicit recovery decision and marker removal.
 5. A SQLite backup restored while `DB_CONNECTION=pgsql` automatically runs the normal SQLite-to-PostgreSQL cutover. A SQLite backup restored while `DB_CONNECTION=sqlite` remains a SQLite-only restore. There is no PostgreSQL-to-SQLite migration.
-6. `MIGRATION_MODE=1` remains the explicit trigger for migrating an already-present legacy SQLite source. Any failed restore or migration exits the container before application services start. Remove `RESTORE_BACKUP_S3_KEY` and `MIGRATION_MODE` after success.
+6. An existing legacy SQLite source is migrated automatically when PostgreSQL is the configured runtime database. Any failed restore or migration exits the container before application services start. Remove `RESTORE_BACKUP_S3_KEY` after success.
 
 ## Success criteria
 
