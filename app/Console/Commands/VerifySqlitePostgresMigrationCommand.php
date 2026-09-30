@@ -92,20 +92,21 @@ class VerifySqlitePostgresMigrationCommand extends Command
         $this->check($report, "{$table}.count", $sourceCount === $targetCount, "source={$sourceCount}; target={$targetCount}");
 
         $types = $this->targetColumnTypes($table);
-        $sourceHash = $this->canonicalHash($source, $table, $primaryKey, $types);
-        $targetHash = $this->canonicalHash(DB::connection(), $table, $primaryKey, $types);
+        $nullableTemporalColumns = $this->nullableTemporalColumns($table);
+        $sourceHash = $this->canonicalHash($source, $table, $primaryKey, $types, $nullableTemporalColumns);
+        $targetHash = $this->canonicalHash(DB::connection(), $table, $primaryKey, $types, $nullableTemporalColumns);
         $this->check($report, "{$table}.sha256", hash_equals($sourceHash, $targetHash), "source={$sourceHash}; target={$targetHash}");
     }
 
-    private function canonicalHash($connection, string $table, string $primaryKey, array $types): string
+    private function canonicalHash($connection, string $table, string $primaryKey, array $types, array $nullableTemporalColumns): string
     {
         $hash = hash_init('sha256');
-        $connection->table($table)->orderBy($primaryKey)->chunk(500, function ($rows) use ($hash, $types): void {
+        $connection->table($table)->orderBy($primaryKey)->chunk(500, function ($rows) use ($hash, $types, $nullableTemporalColumns): void {
             foreach ($rows as $row) {
                 $values = (array) $row;
                 ksort($values);
                 foreach ($values as $key => $value) {
-                    $value = $this->normalizeValue($value, $types[$key] ?? null);
+                    $value = $this->normalizeValue($value, $types[$key] ?? null, in_array($key, $nullableTemporalColumns, true));
                     hash_update($hash, $key.'='.str_replace(['\\', "\n", "\r", "\0"], ['\\\\', '\\n', '\\r', '\\0'], (string) $value)."\n");
                 }
                 hash_update($hash, "--row--\n");
@@ -122,9 +123,16 @@ class VerifySqlitePostgresMigrationCommand extends Command
             ->all();
     }
 
-    private function normalizeValue(mixed $value, ?string $type): string
+    private function nullableTemporalColumns(string $table): array
     {
-        if ($value === null) {
+        return collect(DB::select("select column_name from information_schema.columns where table_schema = current_schema() and table_name = ? and is_nullable = 'YES' and data_type in ('date', 'timestamp with time zone', 'timestamp without time zone')", [$table]))
+            ->pluck('column_name')
+            ->all();
+    }
+
+    private function normalizeValue(mixed $value, ?string $type, bool $isNullableTemporalColumn): string
+    {
+        if ($value === null || ($value === '' && $isNullableTemporalColumn)) {
             return '<null>';
         }
         if ($type === 'boolean') {
