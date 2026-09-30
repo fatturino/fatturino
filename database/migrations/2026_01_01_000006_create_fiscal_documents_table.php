@@ -57,7 +57,7 @@ return new class extends Migration
 
             // SDI passive invoice data (inbound — invoices received from SDI via sync)
             $table->string('sdi_filename')->nullable();
-            $table->integer('sdi_file_id')->nullable();
+            $table->unsignedBigInteger('sdi_file_id')->nullable();
             $table->timestamp('sdi_received_at')->nullable();
             $table->timestamp('sdi_synced_at')->nullable();
             $table->json('sdi_payload')->nullable();

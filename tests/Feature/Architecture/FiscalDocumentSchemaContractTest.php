@@ -11,6 +11,32 @@ it('uses plural table names for fiscal documents lines and payments', function (
     expect(Schema::hasTable('payments'))->toBeTrue();
 });
 
+it('stores SDI provider file identifiers beyond the PostgreSQL integer range', function () {
+    $contactId = DB::table('contacts')->insertGetId([
+        'name' => 'SDI Supplier SRL',
+        'country' => 'IT',
+        'country_code' => 'IT',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('fiscal_documents')->insert([
+        'public_id' => (string) str()->ulid(),
+        'type' => 'purchase',
+        'number' => 'SDI-1',
+        'date' => '2026-01-10',
+        'fiscal_year' => 2026,
+        'contact_id' => $contactId,
+        'sdi_file_id' => 17891265537,
+        'status' => 'draft',
+        'payment_status' => 'unpaid',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    expect(DB::table('fiscal_documents')->value('sdi_file_id'))->toBe(17891265537);
+});
+
 it('enforces unique number by fiscal year and document type', function () {
     $contactId = DB::table('contacts')->insertGetId([
         'name' => 'ACME SRL',
