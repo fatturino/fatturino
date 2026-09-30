@@ -35,7 +35,7 @@ The PostgreSQL direct-restore path remains a release gate for the actual AIO ima
 Use this flow to restore a new AIO volume without web, workers or the scheduler running.
 
 1. Confirm the S3 backup key and its integrity. The configured AWS credentials must have read access only to that object and its bucket.
-2. Deploy with `RESTORE_BACKUP_S3_KEY` set to the full, exact S3 object key. The entrypoint does not prepend `BACKUP_NAME`.
+2. Deploy with `RESTORE_BACKUP_S3_KEY` set to the full, exact S3 object key. The entrypoint does not prepend `BACKUP_NAME` and restores without invoking cache-dependent Artisan maintenance or optimization commands before the PostgreSQL schema exists.
 3. The archive must contain exactly one database representation: a `database.sqlite` file or `db-dumps/*.sql` / `*.sql.gz`. SQLite files and SQLite SQL dumps are validated and restored to `/data/database.sqlite`; PostgreSQL SQL dumps are restored to internal PostgreSQL.
 4. The entrypoint restores storage and writes `/data/.cold-restore-complete` with the backup-key fingerprint and database type only after the complete restore succeeds. Reusing the same key is idempotent; a different key requires an explicit recovery decision and marker removal.
 5. A SQLite backup restored while `DB_CONNECTION=pgsql` automatically runs the normal SQLite-to-PostgreSQL cutover. A SQLite backup restored while `DB_CONNECTION=sqlite` remains a SQLite-only restore. There is no PostgreSQL-to-SQLite migration.

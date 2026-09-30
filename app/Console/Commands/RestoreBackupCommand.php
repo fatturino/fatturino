@@ -17,6 +17,7 @@ class RestoreBackupCommand extends Command
         {--s3-key= : Object key on the configured s3 disk}
         {--s3-key-is-full-path : Do not prepend the configured backup name to --s3-key}
         {--database-type-file= : Write the restored database type to this file after success}
+        {--cold : Run before application schema and services exist}
         {--dry-run : Validate backup contents without restoring}
         {--force : Execute restore}
         {--no-storage : Restore database only}
@@ -83,7 +84,9 @@ class RestoreBackupCommand extends Command
                 return self::SUCCESS;
             }
 
-            $this->enterMaintenanceMode();
+            if (! $this->option('cold')) {
+                $this->enterMaintenanceMode();
+            }
 
             if ((bool) $this->option('backup-current')) {
                 $this->snapshotCurrentState($workspace.'/snapshot-current');
@@ -97,14 +100,18 @@ class RestoreBackupCommand extends Command
             $zip->close();
 
             $this->writeDatabaseTypeFile($database['type']);
-            Artisan::call('optimize:clear');
-            $this->leaveMaintenanceMode();
+            if (! $this->option('cold')) {
+                Artisan::call('optimize:clear');
+                $this->leaveMaintenanceMode();
+            }
 
             $this->info('Restore completed successfully.');
 
             return self::SUCCESS;
         } catch (\Throwable $e) {
-            $this->leaveMaintenanceMode();
+            if (! $this->option('cold')) {
+                $this->leaveMaintenanceMode();
+            }
             $this->error('Restore failed: '.$e->getMessage());
 
             return self::FAILURE;

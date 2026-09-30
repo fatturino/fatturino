@@ -111,6 +111,7 @@ it('runs cold restore before automatically migrating a SQLite source on PostgreS
     expect($coldRestore)
         ->toContain('RESTORE_BACKUP_S3_KEY')
         ->toContain('--s3-key-is-full-path')
+        ->toContain('--cold')
         ->toContain('.cold-restore-complete')
         ->and($migration)
         ->toContain('database:import-sqlite-to-postgres');
