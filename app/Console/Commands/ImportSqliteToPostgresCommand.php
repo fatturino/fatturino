@@ -94,6 +94,7 @@ class ImportSqliteToPostgresCommand extends Command
         $primaryKey = self::PRIMARY_KEYS[$table] ?? 'id';
         $columns = $this->sourceColumns($table);
         $targetTypes = $this->targetColumnTypes($table);
+        $nullableTemporalColumns = $this->nullableTemporalColumns($table);
         $unsupported = array_values(array_diff($columns, array_keys($targetTypes)));
         if ($unsupported !== []) {
             throw new \RuntimeException("Schema drift in {$table}; target is missing: ".implode(', ', $unsupported));
@@ -112,7 +113,7 @@ class ImportSqliteToPostgresCommand extends Command
             if ($lastKey !== null) {
                 $query->where($primaryKey, '>', $lastKey);
             }
-            $rows = $query->get()->map(fn (object $row) => $this->normalizeRow((array) $row, $targetTypes))->all();
+            $rows = $query->get()->map(fn (object $row) => $this->normalizeRow((array) $row, $targetTypes, $nullableTemporalColumns))->all();
             if ($rows === []) {
                 break;
             }
@@ -143,7 +144,14 @@ class ImportSqliteToPostgresCommand extends Command
             ->all();
     }
 
-    private function normalizeRow(array $row, array $targetTypes): array
+    private function nullableTemporalColumns(string $table): array
+    {
+        return collect(DB::select("select column_name from information_schema.columns where table_schema = current_schema() and table_name = ? and is_nullable = 'YES' and data_type in ('date', 'timestamp with time zone', 'timestamp without time zone')", [$table]))
+            ->pluck('column_name')
+            ->all();
+    }
+
+    private function normalizeRow(array $row, array $targetTypes, array $nullableTemporalColumns): array
     {
         foreach ($row as $column => $value) {
             if ($value === null) {
@@ -151,6 +159,11 @@ class ImportSqliteToPostgresCommand extends Command
             }
 
             $type = $targetTypes[$column] ?? null;
+            if ($value === '' && in_array($column, $nullableTemporalColumns, true)) {
+                $row[$column] = null;
+
+                continue;
+            }
             if ($type === 'boolean') {
                 $row[$column] = in_array($value, [true, 1, '1', 't', 'true'], true);
             }
