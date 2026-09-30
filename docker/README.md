@@ -30,7 +30,9 @@ Un singolo container esegue 4 servizi supervisionati da S6:
 └───────────────────────────────────────────┘  │
 ```
 
-PostgreSQL, cache, queue e sessioni sono ospitati nello stesso container. Il database ascolta solo su `127.0.0.1` all'interno del container e non espone la porta PostgreSQL sull'host.
+PostgreSQL, cache, queue e sessioni sono ospitati nello stesso container. Il database ascolta sulla rete privata del container per consentire l'accesso dall'host o da altri container direttamente collegati alla stessa rete. PostgreSQL non espone la porta sull'host: non aggiungere la porta `5432` a `ports` o a `x-ports`.
+
+Le connessioni TCP sono autorizzate da `pg_hba.conf` solo per le reti direttamente connesse al container (`samenet`) e richiedono autenticazione SCRAM. Per un accesso amministrativo remoto, crea un tunnel SSH dall'ambiente locale verso l'IP privato del container, ad esempio `ssh -N -L 127.0.0.1:1234:10.10.0.1:5432 user@host`, quindi collega il client PostgreSQL a `127.0.0.1:1234`.
 
 Durante il bootstrap PostgreSQL viene avviato una sola volta, resta disponibile per migrazioni e seed, poi viene arrestato prima che S6 avvii il servizio permanente. Il cluster in `/data/postgresql` resta sempre di proprietà dell'utente di sistema `postgres`.
 

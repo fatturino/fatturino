@@ -2,6 +2,9 @@
 set -eu
 
 readonly PGDATA=/data/postgresql
+readonly POSTGRESQL_CONF="${PGDATA}/postgresql.conf"
+readonly POSTGRESQL_HBA_CONF="${PGDATA}/pg_hba.conf"
+readonly FATTURINO_POSTGRESQL_CONF="${PGDATA}/fatturino.conf"
 
 echo "[fatturino][12-init-postgresql] start"
 
@@ -47,15 +50,27 @@ if [ ! -f "${PGDATA}/PG_VERSION" ]; then
 
     runuser -u postgres -- "${INITDB}" --pgdata="${PGDATA}" --username=postgres --pwfile="${password_file}" --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8 --locale=C.UTF-8
 
-    cat >> "${PGDATA}/postgresql.conf" <<'EOF'
-listen_addresses = '127.0.0.1'
+    rm -f "${password_file}"
+    trap - EXIT
+fi
+
+cat > "${FATTURINO_POSTGRESQL_CONF}" <<'EOF'
+# Fatturino AIO: accept PostgreSQL connections from the private container network.
+listen_addresses = '*'
 port = 5432
 password_encryption = 'scram-sha-256'
 timezone = 'Europe/Rome'
 EOF
 
-    rm -f "${password_file}"
-    trap - EXIT
+chown postgres:postgres "${FATTURINO_POSTGRESQL_CONF}"
+chmod 600 "${FATTURINO_POSTGRESQL_CONF}"
+
+if ! grep -Fqx "include_if_exists = 'fatturino.conf'" "${POSTGRESQL_CONF}"; then
+    printf "\ninclude_if_exists = 'fatturino.conf'\n" >> "${POSTGRESQL_CONF}"
+fi
+
+if ! grep -Fqx 'host    all             all             samenet                 scram-sha-256' "${POSTGRESQL_HBA_CONF}"; then
+    printf '\nhost    all             all             samenet                 scram-sha-256\n' >> "${POSTGRESQL_HBA_CONF}"
 fi
 
 if ! runuser -u postgres -- "${PG_ISREADY}" --host=127.0.0.1 --port=5432 --quiet; then
