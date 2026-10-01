@@ -174,13 +174,11 @@ class InvoiceXmlImportService
                     default => 'sales',
                 };
 
-                $xmlFilename = $invoice->number
-                    ? preg_replace('/[^A-Za-z0-9_\-.]/', '_', $invoice->number).'.xml'
-                    : 'invoice-'.$invoice->id.'.xml';
+                $xmlFilename = 'invoice-'.$invoice->id.'.xml';
 
                 $xmlPath = $this->documentStorage->storeXml(
                     $xmlContent,
-                    $storageCategory,
+                    $storageCategory.'/document-'.$invoice->public_id,
                     $invoice->date->year,
                     $xmlFilename,
                 );

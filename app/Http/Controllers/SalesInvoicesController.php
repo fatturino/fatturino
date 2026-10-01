@@ -12,6 +12,7 @@ use App\Models\SalesInvoice;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentEventRecorder;
 use App\Services\DocumentMailer;
+use App\Services\DocumentStorageService;
 use App\Services\InvoiceXmlService;
 use App\Services\PostHogTelemetryService;
 use App\Services\XmlWorkflowService;
@@ -148,12 +149,22 @@ class SalesInvoicesController extends Controller
 
     public function downloadPdf(
         SalesInvoice $invoice,
-        CourtesyPdfService $pdfService
+        CourtesyPdfService $pdfService,
+        DocumentStorageService $documentStorage,
     ) {
-        $pdf = $pdfService->generate($invoice);
         $filename = $pdfService->generateFileName($invoice);
+        $pdf = $documentStorage->getPdf($invoice->pdf_path ?? '');
 
-        return $pdf->download($filename);
+        if ($pdf === null) {
+            $pdf = $pdfService->generate($invoice)->output();
+            $path = $documentStorage->storePdf($pdf, 'sales/document-'.$invoice->public_id, $invoice->date->year, $filename);
+            $invoice->update(['pdf_path' => $path]);
+        }
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     public function sendEmail(

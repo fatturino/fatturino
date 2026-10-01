@@ -11,6 +11,7 @@ use App\Models\SalesInvoice;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentEventRecorder;
 use App\Services\DocumentMailer;
+use App\Services\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -101,12 +102,22 @@ class ProformaInvoicesController extends Controller
 
     public function downloadPdf(
         ProformaInvoice $proformaInvoice,
-        CourtesyPdfService $pdfService
+        CourtesyPdfService $pdfService,
+        DocumentStorageService $documentStorage,
     ) {
-        $pdf = $pdfService->generateForProforma($proformaInvoice);
         $filename = $pdfService->generateProformaFileName($proformaInvoice);
+        $pdf = $documentStorage->getPdf($proformaInvoice->pdf_path ?? '');
 
-        return $pdf->download($filename);
+        if ($pdf === null) {
+            $pdf = $pdfService->generateForProforma($proformaInvoice)->output();
+            $path = $documentStorage->storePdf($pdf, 'proforma/document-'.$proformaInvoice->public_id, $proformaInvoice->date->year, $filename);
+            $proformaInvoice->update(['pdf_path' => $path]);
+        }
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     public function sendEmail(

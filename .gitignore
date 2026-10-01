@@ -31,6 +31,7 @@ Thumbs.db
 !docs/ui-system-spec.md
 !docs/postgresql-migration-runbook.md
 !docs/decisions/2026-09-29-postgresql-single-container-aio.md
+!docs/decisions/2026-10-01-document-snapshot-storage.md
 !README.*
 !LICENSE.md
 !DEVELOPMENT.md

@@ -152,6 +152,12 @@ environment:
 
 ## Volume /data
 
+> **Migration notice:** document artifacts can now live on the dedicated
+> `documents` filesystem disk. Cloud deployments must use
+> `DOCUMENTS_DISK=s3` and `DOCUMENTS_NAME=<tenant-prefix>`. The legacy
+> `/data/storage` layout below remains only for self-hosted local storage and
+> for the non-destructive migration window; it is not removed automatically.
+
 Tutti i dati persistenti vivono in un unico volume Docker montato su `/data`:
 
 ```
@@ -249,6 +255,10 @@ Per ambienti hosting dove i backup sono orchestrati esternamente:
 - `db-dumps/` (dump PostgreSQL)
 - `storage/app/private/documents/` (XML e PDF fatture, organizzati per tipo)
 - `storage/app/public/` (logo, asset utente)
+
+When `DOCUMENTS_DISK=s3`, XML/PDF snapshots are authoritative under
+`{DOCUMENTS_NAME}/...` in the configured bucket and are deliberately excluded
+from the archive. The same bucket may store backups under `{BACKUP_NAME}/...`.
 
 #### Pulizia automatica
 

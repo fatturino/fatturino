@@ -97,6 +97,12 @@ class AppServiceProvider extends ServiceProvider
                 'filesystems.disks.s3.bucket' => $backup->aws_bucket,
                 'filesystems.disks.s3.endpoint' => $backup->aws_endpoint,
                 'filesystems.disks.s3.use_path_style_endpoint' => $backup->aws_use_path_style_endpoint,
+                'filesystems.disks.documents.key' => $backup->aws_access_key_id,
+                'filesystems.disks.documents.secret' => $backup->aws_secret_access_key,
+                'filesystems.disks.documents.region' => $backup->aws_default_region,
+                'filesystems.disks.documents.bucket' => $backup->aws_bucket,
+                'filesystems.disks.documents.endpoint' => $backup->aws_endpoint,
+                'filesystems.disks.documents.use_path_style_endpoint' => $backup->aws_use_path_style_endpoint,
             ]);
         } catch (\Throwable) {
             // Settings table not yet created (first migration run) - skip silently.

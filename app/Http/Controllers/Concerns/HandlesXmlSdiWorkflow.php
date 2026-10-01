@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
 use App\Models\EiOutboundLog;
 use App\Services\DocumentEventRecorder;
+use App\Services\DocumentStorageService;
 use App\Services\PostHogTelemetryService;
 use App\Services\SdiSubmissionService;
 use App\Services\XmlWorkflowService;
@@ -21,7 +22,11 @@ trait HandlesXmlSdiWorkflow
     {
         $document->loadMissing(['contact', 'lines']);
 
-        $xml = $xmlService->generate($document);
+        $xml = $document->xml_path
+            ? app(DocumentStorageService::class)->getXml($document->xml_path)
+            : null;
+
+        $xml ??= $xmlService->generate($document);
         $fileName = $xmlService->generateFileName($document);
 
         return $xmlWorkflow->downloadResponse($xml, $fileName);
@@ -65,7 +70,23 @@ trait HandlesXmlSdiWorkflow
             return $this->workflowErrorResponse($document, 'Validazione XML fallita.', $errors);
         }
 
-        $document->update(['status' => InvoiceStatus::XmlValidated]);
+        try {
+            $xmlPath = $this->storeXmlSnapshot($document, $xml, $xmlService->generateFileName($document));
+        } catch (Throwable $exception) {
+            $message = 'XML valido ma non archiviabile: invio SDI bloccato finché lo storage documentale non è disponibile.';
+            Log::error('Unable to persist validated XML snapshot', [
+                'fiscal_document_id' => $document->id,
+                'exception' => $exception,
+            ]);
+
+            if (! request()->expectsJson()) {
+                return back()->withErrors(['action' => $message]);
+            }
+
+            return $this->workflowErrorResponse($document, $message);
+        }
+
+        $document->update(['status' => InvoiceStatus::XmlValidated, 'xml_path' => $xmlPath]);
         $document->refresh();
         app(DocumentEventRecorder::class)->xmlValidated($document, true, 'XML validato con successo.');
 
@@ -106,7 +127,31 @@ trait HandlesXmlSdiWorkflow
         }
 
         $document->loadMissing(['contact', 'lines']);
-        $xml = $xmlService->generate($document);
+        try {
+            $xml = $document->xml_path
+                ? app(DocumentStorageService::class)->getXml($document->xml_path)
+                : null;
+
+            if ($xml === null) {
+                // Compatibility path for documents validated before snapshots existed.
+                $xml = $xmlService->generate($document);
+                $xmlPath = $this->storeXmlSnapshot($document, $xml, $xmlService->generateFileName($document));
+                $document->update(['xml_path' => $xmlPath]);
+            }
+        } catch (Throwable $exception) {
+            $message = 'XML non archiviabile: invio SDI bloccato finché lo storage documentale non è disponibile.';
+            Log::error('Unable to retrieve or persist XML snapshot before SDI submission', [
+                'fiscal_document_id' => $document->id,
+                'exception' => $exception,
+            ]);
+
+            if (request()->expectsJson()) {
+                return $this->workflowErrorResponse($document, $message);
+            }
+
+            return back()->withErrors(['action' => $message]);
+        }
+
         $fileName = $xmlService->generateFileName($document);
         $submissionResult = app(SdiSubmissionService::class)->send(
             $document,
@@ -197,6 +242,28 @@ trait HandlesXmlSdiWorkflow
         }
 
         return $this->workflowSuccessResponse($document, $sentMessage);
+    }
+
+    private function storeXmlSnapshot(object $document, string $xml, string $filename): string
+    {
+        return app(DocumentStorageService::class)->storeXml(
+            $xml,
+            $this->documentStorageCategory($document),
+            (int) $document->date->year,
+            $filename,
+        );
+    }
+
+    private function documentStorageCategory(object $document): string
+    {
+        $category = match ($document->type) {
+            'purchase' => 'purchase',
+            'credit_note' => 'credit-notes',
+            'self_invoice' => 'self-invoices',
+            default => 'sales',
+        };
+
+        return $category.'/document-'.$document->public_id;
     }
 
     protected function workflowSuccessResponse(object $document, string $message): JsonResponse

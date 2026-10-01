@@ -6,6 +6,7 @@ use App\Models\CreditNote;
 use App\Models\ProformaInvoice;
 use App\Models\SalesInvoice;
 use App\Services\CourtesyPdfService;
+use App\Services\DocumentStorageService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -52,27 +53,37 @@ class DocumentMail extends Mailable
             return [];
         }
 
-        try {
-            $pdfService = app(CourtesyPdfService::class);
+        $pdfService = app(CourtesyPdfService::class);
+        $documentStorage = app(DocumentStorageService::class);
 
-            [$data, $filename] = match (true) {
-                $this->document instanceof SalesInvoice => [$pdfService->generate($this->document)->output(), $pdfService->generateFileName($this->document)],
-                $this->document instanceof ProformaInvoice => [$pdfService->generateForProforma($this->document)->output(), $pdfService->generateProformaFileName($this->document)],
-                $this->document instanceof CreditNote => [$pdfService->generateForCreditNote($this->document)->output(), 'nota-credito-'.$this->document->number.'.pdf'],
-                default => [null, null],
-            };
+        [$data, $filename, $category] = match (true) {
+            $this->document instanceof SalesInvoice => [null, $pdfService->generateFileName($this->document), 'sales'],
+            $this->document instanceof ProformaInvoice => [null, $pdfService->generateProformaFileName($this->document), 'proforma'],
+            $this->document instanceof CreditNote => [null, 'nota-credito-'.$this->document->number.'.pdf', 'credit-notes'],
+            default => [null, null, null],
+        };
 
-            if ($data === null) {
-                return [];
-            }
-
-            return [
-                Attachment::fromData(fn () => $data, $filename)->withMime('application/pdf'),
-            ];
-        } catch (\Throwable) {
-            // PDF generation failure must not block email delivery
+        if ($filename === null || $category === null) {
             return [];
         }
+
+        $data = $this->document->pdf_path
+            ? $documentStorage->getPdf($this->document->pdf_path)
+            : null;
+
+        if ($data === null) {
+            $data = match (true) {
+                $this->document instanceof SalesInvoice => $pdfService->generate($this->document)->output(),
+                $this->document instanceof ProformaInvoice => $pdfService->generateForProforma($this->document)->output(),
+                $this->document instanceof CreditNote => $pdfService->generateForCreditNote($this->document)->output(),
+            };
+            $path = $documentStorage->storePdf($data, $category.'/document-'.$this->document->public_id, $this->document->date->year, $filename);
+            $this->document->update(['pdf_path' => $path]);
+        }
+
+        return [
+            Attachment::fromData(fn () => $data, $filename)->withMime('application/pdf'),
+        ];
     }
 
     private function configuredSender(): ?Address

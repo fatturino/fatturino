@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\SelfInvoice;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentEventRecorder;
+use App\Services\DocumentStorageService;
 use App\Services\PostHogTelemetryService;
 use App\Services\SelfInvoiceXmlService;
 use App\Services\XmlWorkflowService;
@@ -118,14 +119,24 @@ class SelfInvoicesController extends Controller
 
     public function downloadPdf(
         SelfInvoice $selfInvoice,
-        CourtesyPdfService $pdfService
+        CourtesyPdfService $pdfService,
+        DocumentStorageService $documentStorage,
     ) {
         $this->ensureSelfInvoicesAllowed();
 
-        $pdf = $pdfService->generate($selfInvoice);
         $filename = $pdfService->generateFileName($selfInvoice);
+        $pdf = $documentStorage->getPdf($selfInvoice->pdf_path ?? '');
 
-        return $pdf->download($filename);
+        if ($pdf === null) {
+            $pdf = $pdfService->generate($selfInvoice)->output();
+            $path = $documentStorage->storePdf($pdf, 'self-invoices/document-'.$selfInvoice->public_id, $selfInvoice->date->year, $filename);
+            $selfInvoice->update(['pdf_path' => $path]);
+        }
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     public function recordPayment(Request $request, SelfInvoice $selfInvoice): JsonResponse

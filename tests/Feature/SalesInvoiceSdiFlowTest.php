@@ -65,6 +65,8 @@ test('validate xml endpoint sets invoice status to xml_validated', function () {
         ],
     ]);
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::XmlValidated);
+    expect($invoice->fresh()->xml_path)
+        ->toContain('documents/xml/sales/document-'.$invoice->public_id.'/');
     $this->assertDatabaseHas('document_events', [
         'fiscal_document_id' => $invoice->id,
         'event_type' => 'xml_validated',

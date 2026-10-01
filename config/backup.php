@@ -25,10 +25,10 @@ return [
         'source' => [
             'files' => [
                 // Include persisted documents (XML and PDF) and the company logo
-                'include' => [
-                    storage_path('app/private/documents'),
+                'include' => array_values(array_filter([
+                    env('DOCUMENTS_DISK', 'local') === 'local' ? storage_path('app/private/documents') : null,
                     storage_path('app/public'),
-                ],
+                ])),
                 'exclude' => [],
                 'follow_links' => false,
                 'ignore_unreadable_directories' => false,

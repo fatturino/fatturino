@@ -38,6 +38,27 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Fiscal document snapshots use an independent disk. Self-hosted
+         * installations may keep the local default; cloud deployments set
+         * DOCUMENTS_DISK=s3 and therefore never depend on container storage.
+         */
+        'documents' => [
+            'driver' => env('DOCUMENTS_DISK', 'local') === 's3' ? 's3' : 'local',
+            'root' => env('DOCUMENTS_DISK', 'local') === 's3'
+                ? trim((string) env('DOCUMENTS_NAME', env('APP_INSTANCE_ID', env('APP_NAME', 'fatturino'))), '/')
+                : storage_path('app/private'),
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
