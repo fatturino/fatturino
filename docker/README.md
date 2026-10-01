@@ -157,6 +157,14 @@ environment:
 > `DOCUMENTS_DISK=s3` and `DOCUMENTS_NAME=<tenant-prefix>`. The legacy
 > `/data/storage` layout below remains only for self-hosted local storage and
 > for the non-destructive migration window; it is not removed automatically.
+>
+> When migrating existing local snapshots to S3, first run
+> `php artisan documents:check-storage --write`, then inspect
+> `php artisan documents:backfill-storage --dry-run`, and finally run
+> `php artisan documents:backfill-storage`. With the S3 document disk enabled,
+> the command copies local XML/PDF snapshots and regenerates missing outbound
+> XML snapshots for sales invoices, credit notes, and self-invoices. It never
+> regenerates received purchase XML because the received original is canonical.
 
 Tutti i dati persistenti vivono in un unico volume Docker montato su `/data`:
 
