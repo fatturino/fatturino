@@ -22,7 +22,7 @@ fi
 
 echo "[fatturino][13-cold-restore] restoring backup from S3 before application services start"
 rm -f "${RESTORE_TYPE_FILE}"
-php /var/www/html/artisan app:restore-backup --s3-key="${RESTORE_BACKUP_S3_KEY}" --s3-key-is-full-path --database-type-file="${RESTORE_TYPE_FILE}" --cold --force
+php /var/www/html/artisan app:restore-backup --s3-key="${RESTORE_BACKUP_S3_KEY}" --s3-key-is-full-path --database-type-file="${RESTORE_TYPE_FILE}" --cold --no-storage --force
 
 restore_type=$(cat "${RESTORE_TYPE_FILE}")
 case "${restore_type}" in
