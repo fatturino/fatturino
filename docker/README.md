@@ -154,7 +154,10 @@ environment:
 
 > **Migration notice:** document artifacts can now live on the dedicated
 > `documents` filesystem disk. Cloud deployments must use
-> `DOCUMENTS_DISK=s3` and `DOCUMENTS_NAME=<tenant-prefix>`. The legacy
+> `DOCUMENTS_DISK=s3`. The single optional `APP_INSTANCE_ID` prefixes both
+> document and backup keys: `<APP_INSTANCE_ID>/documents/...` and
+> `<APP_INSTANCE_ID>/backups/...`; if it is empty they are respectively
+> `documents/...` and `backups/...`. The legacy
 > `/data/storage` layout below remains only for self-hosted local storage and
 > for the non-destructive migration window; it is not removed automatically.
 >
@@ -265,8 +268,10 @@ Per ambienti hosting dove i backup sono orchestrati esternamente:
 - `storage/app/public/` (logo, asset utente)
 
 When `DOCUMENTS_DISK=s3`, XML/PDF snapshots are authoritative under
-`{DOCUMENTS_NAME}/...` in the configured bucket and are deliberately excluded
-from the archive. The same bucket may store backups under `{BACKUP_NAME}/...`.
+`{APP_INSTANCE_ID}/documents/...` in the configured bucket and are deliberately
+excluded from the archive. The same bucket stores backups under
+`{APP_INSTANCE_ID}/backups/...`. When `APP_INSTANCE_ID` is empty, the prefixes
+are simply `documents/...` and `backups/...`.
 
 #### Pulizia automatica
 

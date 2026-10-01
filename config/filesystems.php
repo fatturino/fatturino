@@ -41,12 +41,16 @@ return [
         /*
          * Fiscal document snapshots use an independent disk. Self-hosted
          * installations may keep the local default; cloud deployments set
-         * DOCUMENTS_DISK=s3 and therefore never depend on container storage.
+         * DOCUMENTS_DISK=s3. APP_INSTANCE_ID namespaces both backups and
+         * documents when several instances share a bucket.
          */
         'documents' => [
             'driver' => env('DOCUMENTS_DISK', 'local') === 's3' ? 's3' : 'local',
             'root' => env('DOCUMENTS_DISK', 'local') === 's3'
-                ? trim((string) env('DOCUMENTS_NAME', env('APP_INSTANCE_ID', env('APP_NAME', 'fatturino'))), '/')
+                ? implode('/', array_filter([
+                    trim((string) env('APP_INSTANCE_ID', ''), '/'),
+                    'documents',
+                ]))
                 : storage_path('app/private'),
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),

@@ -40,12 +40,11 @@ class BackfillDocumentStorageCommand extends Command
             $stats['documents']++;
             try {
                 if ($document->xml_path && Storage::disk('local')->exists($document->xml_path)) {
-                    $this->migrateSnapshot($storage, $document->xml_path, $stats);
+                    $this->migrateSnapshot($document, 'xml_path', $storage, $stats);
                 }
 
-                if ($document->pdf_path) {
-                    $path = $document->pdf_path;
-                    $this->migrateSnapshot($storage, $path, $stats);
+                if ($document->pdf_path && Storage::disk('local')->exists($document->pdf_path)) {
+                    $this->migrateSnapshot($document, 'pdf_path', $storage, $stats);
                 }
 
                 $this->backfillMissingOutboundXml(
@@ -70,8 +69,9 @@ class BackfillDocumentStorageCommand extends Command
         return $stats['errors'] === 0 ? self::SUCCESS : self::FAILURE;
     }
 
-    private function migrateSnapshot(DocumentStorageService $storage, string $path, array &$stats): void
+    private function migrateSnapshot(FiscalDocument $document, string $attribute, DocumentStorageService $storage, array &$stats): void
     {
+        $path = $document->{$attribute};
         if ($storage->exists($path)) {
             $stats['skipped']++;
             $this->line("Already stored: {$path}");
@@ -86,9 +86,10 @@ class BackfillDocumentStorageCommand extends Command
             return;
         }
 
-        $storage->migrateFromLocal($path);
+        $targetPath = $storage->migrateFromLocal($path);
+        $document->update([$attribute => $targetPath]);
         $stats['copied']++;
-        $this->line("Copied: {$path}");
+        $this->line("Copied: {$path} -> {$targetPath}");
     }
 
     private function backfillMissingOutboundXml(
@@ -116,7 +117,7 @@ class BackfillDocumentStorageCommand extends Command
 
         $filename = $xmlService->generateFileName($document);
         $path = sprintf(
-            'documents/xml/%s/document-%s/%d/%s',
+            'xml/%s/document-%s/%d/%s',
             $category,
             $document->public_id,
             $document->date?->year ?? $document->fiscal_year,

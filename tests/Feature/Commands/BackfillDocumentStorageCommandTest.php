@@ -21,12 +21,14 @@ it('copies existing local snapshots to the S3 document disk', function () {
     Storage::disk('local')->put($invoice->pdf_path, '%PDF-1.4');
 
     $this->artisan('documents:backfill-storage')
-        ->expectsOutput("Copied: {$invoice->xml_path}")
-        ->expectsOutput("Copied: {$invoice->pdf_path}")
+        ->expectsOutput('Copied: documents/xml/sales/2026/legacy.xml -> xml/sales/2026/legacy.xml')
+        ->expectsOutput('Copied: documents/pdf/sales/2026/legacy.pdf -> pdf/sales/2026/legacy.pdf')
         ->assertExitCode(0);
 
-    Storage::disk('documents')->assertExists($invoice->xml_path);
-    Storage::disk('documents')->assertExists($invoice->pdf_path);
+    Storage::disk('documents')->assertExists('xml/sales/2026/legacy.xml');
+    Storage::disk('documents')->assertExists('pdf/sales/2026/legacy.pdf');
+    expect($invoice->refresh()->xml_path)->toBe('xml/sales/2026/legacy.xml')
+        ->and($invoice->pdf_path)->toBe('pdf/sales/2026/legacy.pdf');
 });
 
 it('regenerates missing outbound XML on S3 and records its snapshot path', function () {

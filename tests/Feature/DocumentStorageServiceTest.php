@@ -34,12 +34,28 @@ it('stores and reads PDFs from the dedicated document disk', function () {
     expect($storage->getPdf($path))->toBe('%PDF-1.4');
 });
 
-it('copies a legacy local snapshot without changing its relative path', function () {
+it('uses the document disk root as the S3 namespace root', function () {
+    config(['filesystems.disks.documents.driver' => 's3']);
+    Storage::fake('documents');
+
+    $path = app(DocumentStorageService::class)->storeXml(
+        '<Invoice/>',
+        'sales',
+        2026,
+        'IT01234567890_00001.xml',
+    );
+
+    expect($path)->toBe('xml/sales/2026/IT01234567890_00001.xml')
+        ->and(Storage::disk('documents')->exists($path))->toBeTrue();
+});
+
+it('keeps legacy local snapshot paths unchanged on the local document disk', function () {
     Storage::fake('local');
     Storage::disk('local')->put('documents/xml/sales/2026/legacy.xml', '<Legacy/>');
 
     $storage = app(DocumentStorageService::class);
-    $storage->migrateFromLocal('documents/xml/sales/2026/legacy.xml');
+    $path = $storage->migrateFromLocal('documents/xml/sales/2026/legacy.xml');
 
-    expect($storage->getXml('documents/xml/sales/2026/legacy.xml'))->toBe('<Legacy/>');
+    expect($path)->toBe('documents/xml/sales/2026/legacy.xml')
+        ->and($storage->getXml($path))->toBe('<Legacy/>');
 });

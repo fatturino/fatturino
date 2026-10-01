@@ -7,9 +7,6 @@ use RuntimeException;
 
 class DocumentStorageService
 {
-    // All documents live below this path on the dedicated document disk.
-    private const BASE_PATH = 'documents';
-
     private const DISK = 'documents';
 
     /**
@@ -19,7 +16,7 @@ class DocumentStorageService
      */
     public function storeXml(string $xmlContent, string $category, int $year, string $filename): string
     {
-        $path = self::BASE_PATH."/xml/{$category}/{$year}/{$filename}";
+        $path = $this->path("xml/{$category}/{$year}/{$filename}");
 
         $this->storeImmutable($path, $xmlContent);
 
@@ -33,7 +30,7 @@ class DocumentStorageService
      */
     public function storePdf(string $pdfContent, string $category, int $year, string $filename): string
     {
-        $path = self::BASE_PATH."/pdf/{$category}/{$year}/{$filename}";
+        $path = $this->path("pdf/{$category}/{$year}/{$filename}");
 
         $this->storeImmutable($path, $pdfContent);
 
@@ -68,14 +65,17 @@ class DocumentStorageService
      * Copy a legacy local snapshot to the configured document disk without
      * changing its database path. Existing identical snapshots are a no-op.
      */
-    public function migrateFromLocal(string $path): void
+    public function migrateFromLocal(string $path): string
     {
         $local = Storage::disk('local');
         if (! $local->exists($path)) {
             throw new RuntimeException("Legacy document snapshot is missing: {$path}");
         }
 
-        $this->storeImmutable($path, $local->get($path));
+        $targetPath = $this->path(ltrim($path, '/'));
+        $this->storeImmutable($targetPath, $local->get($path));
+
+        return $targetPath;
     }
 
     private function get(string $path): ?string
@@ -106,5 +106,16 @@ class DocumentStorageService
         if (! hash_equals(hash('sha256', $contents), hash('sha256', $persisted))) {
             throw new RuntimeException("Document snapshot integrity check failed: {$path}");
         }
+    }
+
+    private function path(string $path): string
+    {
+        $path = ltrim($path, '/');
+
+        if (config('filesystems.disks.'.self::DISK.'.driver') === 's3') {
+            return preg_replace('#^documents/#', '', $path);
+        }
+
+        return str_starts_with($path, 'documents/') ? $path : 'documents/'.$path;
     }
 }

@@ -19,8 +19,11 @@ return [
     'managed_by_env' => env('BACKUP_MANAGED_BY_ENV', false),
 
     'backup' => [
-        // Use tenant slug as backup name for clean S3 paths
-        'name' => env('BACKUP_NAME', env('APP_NAME', 'fatturino')),
+        // APP_INSTANCE_ID namespaces backups when several instances share a bucket.
+        'name' => implode('/', array_filter([
+            trim((string) env('APP_INSTANCE_ID', ''), '/'),
+            'backups',
+        ])),
 
         'source' => [
             'files' => [
@@ -114,7 +117,10 @@ return [
 
     'monitor_backups' => [
         [
-            'name' => env('BACKUP_NAME', env('APP_NAME', 'fatturino')),
+            'name' => implode('/', array_filter([
+                trim((string) env('APP_INSTANCE_ID', ''), '/'),
+                'backups',
+            ])),
             'disks' => ['s3'],
             'health_checks' => [
                 MaximumAgeInDays::class => 1,
