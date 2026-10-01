@@ -117,10 +117,10 @@ class BackfillDocumentStorageCommand extends Command
 
         $filename = $xmlService->generateFileName($document);
         $path = sprintf(
-            'xml/%s/document-%s/%d/%s',
+            'xml/%s/%d/%s/%s',
             $category,
-            $document->public_id,
             $document->date?->year ?? $document->fiscal_year,
+            $document->public_id,
             $filename,
         );
 
@@ -135,8 +135,9 @@ class BackfillDocumentStorageCommand extends Command
         $xml = $xmlService->generate($document);
         $path = $storage->storeXml(
             $xml,
-            $category.'/document-'.$document->public_id,
+            $category,
             (int) ($document->date?->year ?? $document->fiscal_year),
+            $document->public_id,
             $filename,
         );
         $document->update(['xml_path' => $path]);

@@ -178,8 +178,9 @@ class InvoiceXmlImportService
 
                 $xmlPath = $this->documentStorage->storeXml(
                     $xmlContent,
-                    $storageCategory.'/document-'.$invoice->public_id,
+                    $storageCategory,
                     $invoice->date->year,
+                    $invoice->public_id,
                     $xmlFilename,
                 );
 

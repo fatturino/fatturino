@@ -77,7 +77,7 @@ class DocumentMail extends Mailable
                 $this->document instanceof ProformaInvoice => $pdfService->generateForProforma($this->document)->output(),
                 $this->document instanceof CreditNote => $pdfService->generateForCreditNote($this->document)->output(),
             };
-            $path = $documentStorage->storePdf($data, $category.'/document-'.$this->document->public_id, $this->document->date->year, $filename);
+            $path = $documentStorage->storePdf($data, $category, $this->document->date->year, $this->document->public_id, $filename);
             $this->document->update(['pdf_path' => $path]);
         }
 

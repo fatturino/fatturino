@@ -250,6 +250,7 @@ trait HandlesXmlSdiWorkflow
             $xml,
             $this->documentStorageCategory($document),
             (int) $document->date->year,
+            $document->public_id,
             $filename,
         );
     }
@@ -263,7 +264,7 @@ trait HandlesXmlSdiWorkflow
             default => 'sales',
         };
 
-        return $category.'/document-'.$document->public_id;
+        return $category;
     }
 
     protected function workflowSuccessResponse(object $document, string $message): JsonResponse

@@ -14,9 +14,9 @@ class DocumentStorageService
      *
      * @param  string  $category  e.g. 'sales', 'purchase', 'credit-notes', 'self-invoices'
      */
-    public function storeXml(string $xmlContent, string $category, int $year, string $filename): string
+    public function storeXml(string $xmlContent, string $category, int $year, string $publicId, string $filename): string
     {
-        $path = $this->path("xml/{$category}/{$year}/{$filename}");
+        $path = $this->snapshotPath('xml', $category, $year, $publicId, $filename);
 
         $this->storeImmutable($path, $xmlContent);
 
@@ -28,9 +28,9 @@ class DocumentStorageService
      *
      * @param  string  $category  e.g. 'sales', 'credit-notes'
      */
-    public function storePdf(string $pdfContent, string $category, int $year, string $filename): string
+    public function storePdf(string $pdfContent, string $category, int $year, string $publicId, string $filename): string
     {
-        $path = $this->path("pdf/{$category}/{$year}/{$filename}");
+        $path = $this->snapshotPath('pdf', $category, $year, $publicId, $filename);
 
         $this->storeImmutable($path, $pdfContent);
 
@@ -59,6 +59,32 @@ class DocumentStorageService
     public function exists(string $path): bool
     {
         return Storage::disk(self::DISK)->exists($path);
+    }
+
+    public function copy(string $from, string $to): void
+    {
+        $disk = Storage::disk(self::DISK);
+
+        if (! $disk->copy($from, $to) || ! $disk->exists($to)) {
+            throw new RuntimeException("Unable to copy document snapshot: {$from} -> {$to}");
+        }
+    }
+
+    public function delete(string $path): void
+    {
+        if (! Storage::disk(self::DISK)->delete($path)) {
+            throw new RuntimeException("Unable to delete document snapshot: {$path}");
+        }
+    }
+
+    public function hasSameContents(string $firstPath, string $secondPath): bool
+    {
+        $first = $this->get($firstPath);
+        $second = $this->get($secondPath);
+
+        return $first !== null
+            && $second !== null
+            && hash_equals(hash('sha256', $first), hash('sha256', $second));
     }
 
     /**
@@ -117,5 +143,16 @@ class DocumentStorageService
         }
 
         return str_starts_with($path, 'documents/') ? $path : 'documents/'.$path;
+    }
+
+    public function snapshotPath(string $format, string $category, int $year, string $publicId, string $filename): string
+    {
+        return $this->path(implode('/', array_filter([
+            $format,
+            trim($category, '/'),
+            (string) $year,
+            trim($publicId, '/'),
+            ltrim($filename, '/'),
+        ], static fn (string $segment): bool => $segment !== '')));
     }
 }

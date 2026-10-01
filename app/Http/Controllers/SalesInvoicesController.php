@@ -157,7 +157,7 @@ class SalesInvoicesController extends Controller
 
         if ($pdf === null) {
             $pdf = $pdfService->generate($invoice)->output();
-            $path = $documentStorage->storePdf($pdf, 'sales/document-'.$invoice->public_id, $invoice->date->year, $filename);
+            $path = $documentStorage->storePdf($pdf, 'sales', $invoice->date->year, $invoice->public_id, $filename);
             $invoice->update(['pdf_path' => $path]);
         }
 

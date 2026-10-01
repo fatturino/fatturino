@@ -129,7 +129,7 @@ class SelfInvoicesController extends Controller
 
         if ($pdf === null) {
             $pdf = $pdfService->generate($selfInvoice)->output();
-            $path = $documentStorage->storePdf($pdf, 'self-invoices/document-'.$selfInvoice->public_id, $selfInvoice->date->year, $filename);
+            $path = $documentStorage->storePdf($pdf, 'self-invoices', $selfInvoice->date->year, $selfInvoice->public_id, $filename);
             $selfInvoice->update(['pdf_path' => $path]);
         }
 

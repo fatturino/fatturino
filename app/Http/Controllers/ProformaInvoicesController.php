@@ -110,7 +110,7 @@ class ProformaInvoicesController extends Controller
 
         if ($pdf === null) {
             $pdf = $pdfService->generateForProforma($proformaInvoice)->output();
-            $path = $documentStorage->storePdf($pdf, 'proforma/document-'.$proformaInvoice->public_id, $proformaInvoice->date->year, $filename);
+            $path = $documentStorage->storePdf($pdf, 'proforma', $proformaInvoice->date->year, $proformaInvoice->public_id, $filename);
             $proformaInvoice->update(['pdf_path' => $path]);
         }
 
