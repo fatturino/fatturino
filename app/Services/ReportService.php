@@ -222,12 +222,12 @@ class ReportService
         $netRevenue = fn (SalesInvoice $i): int => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0));
 
         for ($m = 1; $m <= 12; $m++) {
-            $start = Carbon::create($year, $m, 1)->startOfDay();
-            $end = Carbon::create($year, $m, 1)->endOfMonth();
+            $start = Carbon::create($year, $m, 1)->toDateString();
+            $end = Carbon::create($year, $m, 1)->endOfMonth()->toDateString();
             $current[] = (int) SalesInvoice::whereBetween('date', [$start, $end])->get()->sum($netRevenue);
 
-            $prevStart = Carbon::create($year - 1, $m, 1)->startOfDay();
-            $prevEnd = Carbon::create($year - 1, $m, 1)->endOfMonth();
+            $prevStart = Carbon::create($year - 1, $m, 1)->toDateString();
+            $prevEnd = Carbon::create($year - 1, $m, 1)->endOfMonth()->toDateString();
             $previous[] = (int) SalesInvoice::whereBetween('date', [$prevStart, $prevEnd])->get()->sum($netRevenue);
         }
 
@@ -484,8 +484,8 @@ class ReportService
         $elapsedCount = 0;
 
         for ($m = 1; $m <= 12; $m++) {
-            $start = Carbon::create($year, $m, 1)->startOfDay();
-            $end = Carbon::create($year, $m, 1)->endOfMonth();
+            $start = Carbon::create($year, $m, 1)->toDateString();
+            $end = Carbon::create($year, $m, 1)->endOfMonth()->toDateString();
             $revenue = (int) SalesInvoice::whereBetween('date', [$start, $end])
                 ->get()->sum(fn (SalesInvoice $i) => max(0, (int) ($i->total_gross ?? 0) - (int) ($i->total_vat ?? 0)));
 

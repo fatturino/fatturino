@@ -3,6 +3,7 @@
 use App\Models\Contact;
 use App\Models\FiscalDocument;
 use App\Models\PurchaseInvoice;
+use App\Models\SalesInvoice;
 use App\Services\ReportService;
 use Carbon\Carbon;
 
@@ -315,6 +316,18 @@ test('monthly revenue trend excludes vat from operational turnover', function ()
     expect($trend['previous'][0])->toBe(5000);
 });
 
+test('monthly revenue trend includes SalesInvoice dates stored as strings', function () {
+    SalesInvoice::factory()->create([
+        'date' => '2026-06-15',
+        'total_gross' => 12200,
+        'total_vat' => 2200,
+    ]);
+
+    $trend = $this->service->monthlyRevenueTrend(2026);
+
+    expect($trend['current'][5])->toBe(10000);
+});
+
 test('payment summary separates collected net and collected vat for standard and partial invoices', function () {
     makeInvoice('2026-01-10', 12200, [
         'total_net' => 10000,
@@ -448,6 +461,19 @@ test('revenue projection uses elapsed calendar months and excludes VAT', functio
         ->and($projection['consolidated'])->toBe(30000)
         ->and($projection['future'])->toBe(90000)
         ->and($projection['total'])->toBe(120000);
+});
+
+test('revenue projection includes SalesInvoice dates stored as strings', function () {
+    SalesInvoice::factory()->create([
+        'date' => '2026-06-15',
+        'total_gross' => 12200,
+        'total_vat' => 2200,
+    ]);
+
+    $projection = $this->service->revenueProjection(2026);
+
+    expect($projection['actual'][5])->toBe(10000)
+        ->and($projection['total'])->toBe(20002);
 });
 
 test('revenue projection has no forecast without current-year turnover', function () {
