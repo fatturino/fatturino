@@ -14,43 +14,43 @@ if (config('demo.enabled')) {
     Schedule::command('demo:refresh')
         ->cron("*/{$interval} * * * *")
         ->withoutOverlapping();
-}
+} else {
+    Schedule::command('openapi:reconcile')
+        ->twiceDailyAt(3, 15)
+        ->withoutOverlapping()
+        ->runInBackground();
 
-Schedule::command('openapi:reconcile')
-    ->twiceDailyAt(3, 15)
-    ->withoutOverlapping()
-    ->runInBackground();
+    Schedule::command('openapi:prune-webhook-payloads')
+        ->dailyAt('03:45')
+        ->withoutOverlapping()
+        ->runInBackground();
 
-Schedule::command('openapi:prune-webhook-payloads')
-    ->dailyAt('03:45')
-    ->withoutOverlapping()
-    ->runInBackground();
+    // Register backup schedule only when: not managed by env (self-hosted) and enabled in settings.
+    // In managed mode backup cadence is controlled via env.
+    // Guard with try/catch so the console still works during first-run migrations.
+    try {
+        if (! config('backup.managed_by_env')) {
+            $backup = app(BackupSettings::class);
 
-// Register backup schedule only when: not managed by env (self-hosted) and enabled in settings.
-// In managed mode backup cadence is controlled via env.
-// Guard with try/catch so the console still works during first-run migrations.
-try {
-    if (! config('backup.managed_by_env')) {
-        $backup = app(BackupSettings::class);
+            if ($backup->enabled) {
+                $backupSchedule = Schedule::command('backup:run --disable-notifications');
 
-        if ($backup->enabled) {
-            $backupSchedule = Schedule::command('backup:run --disable-notifications');
+                match ($backup->frequency) {
+                    'weekly' => $backupSchedule->weeklyOn($backup->day_of_week, $backup->time),
+                    'monthly' => $backupSchedule->monthlyOn($backup->day_of_month, $backup->time),
+                    default => $backupSchedule->dailyAt($backup->time),
+                };
 
-            match ($backup->frequency) {
-                'weekly' => $backupSchedule->weeklyOn($backup->day_of_week, $backup->time),
-                'monthly' => $backupSchedule->monthlyOn($backup->day_of_month, $backup->time),
-                default => $backupSchedule->dailyAt($backup->time),
-            };
+                Schedule::command('backup:clean --disable-notifications')->dailyAt('03:30');
+            }
+        } else {
+            $runAt = (string) env('BACKUP_RUN_AT', '02:00');
+            $cleanAt = (string) env('BACKUP_CLEAN_AT', '03:30');
 
-            Schedule::command('backup:clean --disable-notifications')->dailyAt('03:30');
+            Schedule::command('backup:run --disable-notifications')->dailyAt($runAt);
+            Schedule::command('backup:clean --disable-notifications')->dailyAt($cleanAt);
         }
-    } else {
-        $runAt = (string) env('BACKUP_RUN_AT', '02:00');
-        $cleanAt = (string) env('BACKUP_CLEAN_AT', '03:30');
-
-        Schedule::command('backup:run --disable-notifications')->dailyAt($runAt);
-        Schedule::command('backup:clean --disable-notifications')->dailyAt($cleanAt);
+    } catch (Throwable) {
+        // Settings table not yet created (first migration run) — skip silently.
     }
-} catch (Throwable) {
-    // Settings table not yet created (first migration run) — skip silently.
 }
