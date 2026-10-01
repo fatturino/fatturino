@@ -2,6 +2,20 @@
 
 use App\Console\Commands\ImportSqliteToPostgresCommand;
 use App\Console\Commands\VerifySqlitePostgresMigrationCommand;
+use Illuminate\Support\Facades\DB;
+
+it('removes PostgreSQL migration defaults before importing authoritative SQLite settings', function () {
+    $defaultCount = DB::table('settings')->count();
+
+    expect($defaultCount)->toBeGreaterThan(0)
+        ->and(DB::table('settings')->where('group', 'email')->where('name', 'mail_provider')->exists())->toBeTrue();
+
+    $command = app(ImportSqliteToPostgresCommand::class);
+    $method = new ReflectionMethod($command, 'replaceMigrationDefaults');
+    $method->invoke($command, 'settings', $defaultCount);
+
+    expect(DB::table('settings')->count())->toBe(0);
+});
 
 it('converts legacy empty nullable temporal values to null without changing text values', function () {
     $command = app(ImportSqliteToPostgresCommand::class);

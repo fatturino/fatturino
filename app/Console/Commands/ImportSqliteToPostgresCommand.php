@@ -50,6 +50,7 @@ class ImportSqliteToPostgresCommand extends Command
     ];
 
     // Application migrations seed configuration defaults in this table.
+    // During a SQLite cutover, the source is authoritative and must replace them.
     private const TABLES_WITH_MIGRATION_DEFAULTS = ['settings'];
 
     public function handle(): int
@@ -102,6 +103,12 @@ class ImportSqliteToPostgresCommand extends Command
 
         $sourceCount = (int) $source->table($table)->count();
         $targetCount = (int) DB::table($table)->count();
+        if (in_array($table, self::TABLES_WITH_MIGRATION_DEFAULTS, true)) {
+            $cleared = $this->replaceMigrationDefaults($table, $targetCount);
+            if ($cleared > 0) {
+                $this->info("Cleared {$cleared} migration default rows from {$table}; SQLite is authoritative.");
+            }
+        }
         if ($targetCount > 0 && ! $this->option('force') && ! in_array($table, self::TABLES_WITH_MIGRATION_DEFAULTS, true)) {
             throw new \RuntimeException("Target table {$table} is not empty; review and rerun with --force if resuming is intended.");
         }
@@ -130,6 +137,19 @@ class ImportSqliteToPostgresCommand extends Command
         $this->info("Imported {$copied}/{$sourceCount} rows from {$table}");
 
         return compact('sourceCount', 'targetCount', 'copied');
+    }
+
+    private function replaceMigrationDefaults(string $table, int $targetCount): int
+    {
+        if ($targetCount === 0) {
+            return 0;
+        }
+
+        DB::transaction(function () use ($table): void {
+            DB::table($table)->delete();
+        });
+
+        return $targetCount;
     }
 
     private function sourceColumns(string $table): array
