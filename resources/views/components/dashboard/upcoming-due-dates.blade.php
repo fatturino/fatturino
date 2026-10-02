@@ -68,7 +68,8 @@
                     this.busy = true; this.error = '';
                     try {
                         await this.request(`/sell-invoices/${this.invoice.id}/send-payment-reminder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scenario: this.scenario, recipient_email: this.email.recipientEmail, cc: this.email.cc || null, bcc: this.email.bcc || null, subject: this.email.subject, body: this.email.body, attach_pdf: this.email.attachPdf }) });
-                        this.open = false; window.location.reload();
+                        this.open = false;
+                        await this.$wire.$refresh();
                     } catch (error) { this.error = error.message; } finally { this.busy = false; }
                 },
             };
