@@ -23,7 +23,7 @@ Un singolo container esegue 4 servizi supervisionati da S6:
 │    25-stop-bootstrap-postgresql.sh           │
 │                                              │
 │  Volume /data ────────────────────────────┐  │
-│    database.sqlite                        │  │
+│    postgresql/                            │  │
 │    storage/app/private/                   │  │
 │    storage/app/public/                    │  │
 │    storage/logs/                          │  │
@@ -152,29 +152,17 @@ environment:
 
 ## Volume /data
 
-> **Migration notice:** document artifacts can now live on the dedicated
-> `documents` filesystem disk. Cloud deployments must use
-> `DOCUMENTS_DISK=s3`. The single optional `APP_INSTANCE_ID` prefixes both
-> document and backup keys: `<APP_INSTANCE_ID>/documents/...` and
-> `<APP_INSTANCE_ID>/backups/...`; if it is empty they are respectively
-> `documents/...` and `backups/...`. The legacy
-> `/data/storage` layout below remains only for self-hosted local storage and
-> for the non-destructive migration window; it is not removed automatically.
->
-> When migrating existing local snapshots to S3, first run
-> `php artisan documents:check-storage --write`, then inspect
-> `php artisan documents:backfill-storage --dry-run`, and finally run
-> `php artisan documents:backfill-storage`. With the S3 document disk enabled,
-> the command copies local XML/PDF snapshots and regenerates missing outbound
-> XML snapshots for sales invoices, credit notes, and self-invoices. It never
-> regenerates received purchase XML because the received original is canonical.
+> Document artifacts use the dedicated `documents` filesystem disk. Cloud
+> deployments must use `DOCUMENTS_DISK=s3`. The optional `APP_INSTANCE_ID`
+> prefixes both document and backup keys: `<APP_INSTANCE_ID>/documents/...`
+> and `<APP_INSTANCE_ID>/backups/...`; if it is empty they are respectively
+> `documents/...` and `backups/...`.
 
 Tutti i dati persistenti vivono in un unico volume Docker montato su `/data`:
 
 ```
 /data/
 ├── postgresql/                  # Cluster PostgreSQL, proprietario postgres:postgres
-├── database.sqlite              # Solo sorgente legacy per migrazione SQLite -> PostgreSQL
 ├── .seeded                      # Flag primo avvio completato
 └── storage/
     ├── app/

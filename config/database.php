@@ -99,13 +99,6 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
-        'sqlite_migration_source' => [
-            'driver' => 'sqlite',
-            'database' => env('SQLITE_MIGRATION_SOURCE', '/data/database.sqlite'),
-            'prefix' => '',
-            'foreign_key_constraints' => true,
-        ],
-
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

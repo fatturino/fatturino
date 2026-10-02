@@ -61,49 +61,6 @@ class DocumentStorageService
         return Storage::disk(self::DISK)->exists($path);
     }
 
-    public function copy(string $from, string $to): void
-    {
-        $disk = Storage::disk(self::DISK);
-
-        if (! $disk->copy($from, $to) || ! $disk->exists($to)) {
-            throw new RuntimeException("Unable to copy document snapshot: {$from} -> {$to}");
-        }
-    }
-
-    public function delete(string $path): void
-    {
-        if (! Storage::disk(self::DISK)->delete($path)) {
-            throw new RuntimeException("Unable to delete document snapshot: {$path}");
-        }
-    }
-
-    public function hasSameContents(string $firstPath, string $secondPath): bool
-    {
-        $first = $this->get($firstPath);
-        $second = $this->get($secondPath);
-
-        return $first !== null
-            && $second !== null
-            && hash_equals(hash('sha256', $first), hash('sha256', $second));
-    }
-
-    /**
-     * Copy a legacy local snapshot to the configured document disk without
-     * changing its database path. Existing identical snapshots are a no-op.
-     */
-    public function migrateFromLocal(string $path): string
-    {
-        $local = Storage::disk('local');
-        if (! $local->exists($path)) {
-            throw new RuntimeException("Legacy document snapshot is missing: {$path}");
-        }
-
-        $targetPath = $this->path(ltrim($path, '/'));
-        $this->storeImmutable($targetPath, $local->get($path));
-
-        return $targetPath;
-    }
-
     private function get(string $path): ?string
     {
         $disk = Storage::disk(self::DISK);

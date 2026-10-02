@@ -132,7 +132,6 @@ Consulta la [guida Docker completa](docker/README.md) prima di esporre l'istanza
 - Strategia release: Semantic Versioning
 - Workflow di sviluppo e release: [DEVELOPMENT.md](DEVELOPMENT.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
-- Migrazione da SQLite a PostgreSQL: [runbook](docs/postgresql-migration-runbook.md)
 - Documentazione utente e operativa: [fatturino.it/docs](https://fatturino.it/docs)
 
 ---

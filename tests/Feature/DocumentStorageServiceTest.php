@@ -50,14 +50,3 @@ it('uses the document disk root as the S3 namespace root', function () {
     expect($path)->toBe('xml/sales/2026/01M3VVDHF70NR8S6HFCZYTPY6C/IT01234567890_00001.xml')
         ->and(Storage::disk('documents')->exists($path))->toBeTrue();
 });
-
-it('keeps legacy local snapshot paths unchanged on the local document disk', function () {
-    Storage::fake('local');
-    Storage::disk('local')->put('documents/xml/sales/2026/legacy.xml', '<Legacy/>');
-
-    $storage = app(DocumentStorageService::class);
-    $path = $storage->migrateFromLocal('documents/xml/sales/2026/legacy.xml');
-
-    expect($path)->toBe('documents/xml/sales/2026/legacy.xml')
-        ->and($storage->getXml($path))->toBe('<Legacy/>');
-});

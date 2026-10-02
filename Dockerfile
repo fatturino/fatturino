@@ -58,7 +58,6 @@ RUN --mount=type=cache,id=apt-${TARGETPLATFORM},target=/var/cache/apt,sharing=lo
     --mount=type=cache,id=apt-lists-${TARGETPLATFORM},target=/var/lib/apt/lists,sharing=locked \
     install-php-extensions bcmath intl gd pgsql \
     && apt-get update && apt-get install -y --no-install-recommends \
-        sqlite3 \
         postgresql \
         postgresql-client \
         git \

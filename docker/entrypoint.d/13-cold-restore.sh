@@ -26,9 +26,9 @@ php /var/www/html/artisan app:restore-backup --s3-key="${RESTORE_BACKUP_S3_KEY}"
 
 restore_type=$(cat "${RESTORE_TYPE_FILE}")
 case "${restore_type}" in
-    sqlite|sqlite-sql|sql) ;;
+    postgresql) ;;
     *)
-        echo "[fatturino][13-cold-restore] restore completed without a recognized database type" >&2
+        echo "[fatturino][13-cold-restore] restore completed without a PostgreSQL database type" >&2
         exit 1
         ;;
 esac
