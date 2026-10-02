@@ -120,8 +120,8 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
                 $totalPaid += (int) $payment->amount;
 
                 return $totalPaid >= $proforma->net_due;
-            });
-
+            }
+            );
         $settlementDate = $settlementPayment?->paid_at?->startOfDay();
         $dueDate = $settlementDate?->copy()->addDays(12);
         $daysUntilDue = $dueDate === null ? null : now()->startOfDay()->diffInDays($dueDate, false);
@@ -131,7 +131,6 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
             InvoiceStatus::Generated,
             InvoiceStatus::XmlValidated,
         ], true);
-
         [$tone, $deadlineLabel, $deadlineDetail, $sortOrder] = match (true) {
             $daysUntilDue === null => ['warning', 'Data saldo da verificare', 'Registra la data del pagamento che ha saldato la proforma.', 2],
             $daysUntilDue < 0 => ['danger', 'Scaduta', 'In ritardo di '.abs($daysUntilDue).' '.(abs($daysUntilDue) === 1 ? 'giorno' : 'giorni'), 0],
