@@ -1,8 +1,14 @@
 <?php
 
+use App\Enums\InvoiceStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\ProformaStatus;
+use App\Models\Payment;
+use App\Models\ProformaInvoice;
 use App\Models\SalesInvoice;
 use App\Models\User;
 use App\Settings\CompanySettings;
+use Carbon\Carbon;
 use Livewire\Livewire;
 
 it('renders the authenticated dashboard as a Livewire page', function () {
@@ -231,6 +237,113 @@ it('counts a due date within seven days as urgent attention', function () {
         ->assertSee('Scade tra 3 giorni')
         ->assertSee(route('sell-invoices.edit', $invoice), false)
         ->assertDontSee('Nessuna priorità urgente');
+});
+
+it('shows paid proformas awaiting an electronic invoice with their issuance deadline', function () {
+    Carbon::setTestNow('2026-10-02');
+    $user = User::factory()->create();
+    $proforma = ProformaInvoice::factory()->create([
+        'number' => 'PRO-SALDATA',
+        'status' => ProformaStatus::Sent,
+        'payment_status' => PaymentStatus::Paid,
+        'total_gross' => 10000,
+    ]);
+    Payment::create([
+        'fiscal_document_id' => $proforma->id,
+        'amount' => 10000,
+        'paid_at' => '2026-09-25',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee($proforma->contact->name)
+        ->assertSee('Proforma PRO-SALDATA')
+        ->assertSee('Saldo: 25/09/2026')
+        ->assertSee('Emissione entro 07/10/2026')
+        ->assertSee('Scade tra 5 giorni')
+        ->assertSee('Crea fattura')
+        ->assertSee(route('proforma.convert', $proforma), false);
+});
+
+it('calculates the proforma deadline from the payment that completes the balance', function () {
+    Carbon::setTestNow('2026-10-02');
+    $user = User::factory()->create();
+    $proforma = ProformaInvoice::factory()->create([
+        'number' => 'PRO-PARZIALE',
+        'payment_status' => PaymentStatus::Paid,
+        'total_gross' => 10000,
+    ]);
+    Payment::create(['fiscal_document_id' => $proforma->id, 'amount' => 4000, 'paid_at' => '2026-09-10']);
+    Payment::create(['fiscal_document_id' => $proforma->id, 'amount' => 6000, 'paid_at' => '2026-09-25']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Proforma PRO-PARZIALE')
+        ->assertSee('Saldo: 25/09/2026')
+        ->assertSee('Emissione entro 07/10/2026');
+});
+
+it('keeps overdue and undated-settlement proformas visible', function () {
+    Carbon::setTestNow('2026-10-02');
+    $user = User::factory()->create();
+    $overdue = ProformaInvoice::factory()->create(['number' => 'PRO-SCADUTA', 'payment_status' => PaymentStatus::Paid, 'total_gross' => 10000]);
+    $undated = ProformaInvoice::factory()->create(['number' => 'PRO-SENZA-DATA', 'payment_status' => PaymentStatus::Paid, 'total_gross' => 10000]);
+    Payment::create(['fiscal_document_id' => $overdue->id, 'amount' => 10000, 'paid_at' => '2026-09-01']);
+    Payment::create(['fiscal_document_id' => $undated->id, 'amount' => 10000, 'paid_at' => null]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Proforma PRO-SCADUTA')
+        ->assertSee('In ritardo di 19 giorni')
+        ->assertSee('Proforma PRO-SENZA-DATA')
+        ->assertSee('Data saldo da verificare');
+});
+
+it('excludes invalid proformas and hides a proforma once its linked invoice is sent', function () {
+    Carbon::setTestNow('2026-10-02');
+    $user = User::factory()->create();
+    $visible = ProformaInvoice::factory()->create(['number' => 'PRO-DA-APRIRE', 'payment_status' => PaymentStatus::Paid, 'total_gross' => 10000]);
+    $cancelled = ProformaInvoice::factory()->cancelled()->create(['number' => 'PRO-ANNULLATA', 'payment_status' => PaymentStatus::Paid, 'total_gross' => 10000]);
+    $unpaid = ProformaInvoice::factory()->create(['number' => 'PRO-NON-SALDATA', 'payment_status' => PaymentStatus::Unpaid, 'total_gross' => 10000]);
+    $sent = ProformaInvoice::factory()->create(['number' => 'PRO-EMESSA', 'payment_status' => PaymentStatus::Paid, 'total_gross' => 10000]);
+    $draftInvoice = SalesInvoice::factory()->create(['proforma_id' => $visible->id, 'status' => InvoiceStatus::Draft]);
+    SalesInvoice::factory()->create(['proforma_id' => $sent->id, 'status' => InvoiceStatus::Sent]);
+    foreach ([$visible, $cancelled, $sent] as $proforma) {
+        Payment::create(['fiscal_document_id' => $proforma->id, 'amount' => 10000, 'paid_at' => '2026-09-25']);
+    }
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('Proforma PRO-DA-APRIRE')
+        ->assertSee('Apri fattura')
+        ->assertSee(route('sell-invoices.edit', $draftInvoice), false)
+        ->assertDontSee('PRO-ANNULLATA')
+        ->assertDontSee('PRO-NON-SALDATA')
+        ->assertDontSee('PRO-EMESSA');
+});
+
+it('shows proforma issuance attention regardless of the selected fiscal year', function () {
+    Carbon::setTestNow('2026-10-02');
+    $user = User::factory()->create();
+    $proforma = ProformaInvoice::factory()->create([
+        'number' => 'PRO-STORICA-SALDATA',
+        'date' => '2025-12-20',
+        'fiscal_year' => 2025,
+        'payment_status' => PaymentStatus::Paid,
+        'total_gross' => 10000,
+    ]);
+    Payment::create(['fiscal_document_id' => $proforma->id, 'amount' => 10000, 'paid_at' => '2026-09-25']);
+
+    $this->actingAs($user)->withSession(['fiscal_year' => 2025]);
+
+    Livewire::test('pages::dashboard')
+        ->assertSee('PRO-STORICA-SALDATA')
+        ->assertSee('Apri proforma')
+        ->assertDontSee(route('proforma.convert', $proforma), false);
 });
 
 it('guides a first-time user without treating zero values as an error', function () {

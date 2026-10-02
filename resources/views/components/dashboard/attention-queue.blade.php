@@ -9,7 +9,14 @@
 
     <div class="mt-5 divide-y divide-border-light">
         @foreach($items as $item)
-            <x-app-link :href="$item['href']" class="dashboard-list-link dashboard-attention-row -mx-2 grid gap-x-3 gap-y-1 border-0 px-2"><span class="min-w-0"><span class="block text-sm font-medium text-content">{{ $item['title'] }}</span><span class="mt-0.5 block text-xs leading-5 text-content-muted">{{ $item['detail'] }}</span></span><span class="self-start text-right"><span @class(['block text-sm font-semibold tabular-nums', 'text-danger' => $item['tone'] === 'danger', 'text-content' => $item['tone'] !== 'danger'])>{{ $item['value'] }}</span><span class="mt-0.5 block text-xs font-medium text-primary">{{ $item['action'] }}</span></span></x-app-link>
+            @if(($item['type'] ?? null) === 'proforma_issuance')
+                <div @class(['dashboard-attention-row -mx-2 grid gap-x-3 gap-y-1 px-2 py-3 sm:grid-cols-[minmax(0,1fr)_auto]', 'bg-danger-bg/60' => $item['tone'] === 'danger'])>
+                    <div class="min-w-0"><p class="text-sm font-medium text-content">{{ $item['title'] }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ $item['detail'] }}</p><p @class(['mt-1 text-xs font-medium leading-5', 'text-danger' => $item['tone'] === 'danger', 'text-warning' => $item['tone'] === 'warning'])>{{ $item['meta'] }}</p></div>
+                    <div class="flex items-start justify-between gap-3 sm:block sm:text-right"><span @class(['block text-sm font-semibold tabular-nums', 'text-danger' => $item['tone'] === 'danger', 'text-warning' => $item['tone'] === 'warning'])>{{ $item['value'] }}</span>@if($item['convert_action'])<form method="POST" action="{{ $item['convert_action'] }}" class="mt-2">@csrf<button type="submit" class="inline-flex min-h-9 items-center rounded-md bg-primary px-3 text-xs font-semibold text-white transition-colors hover:bg-primary-hover">{{ $item['action'] }}</button></form>@else<x-app-link :href="$item['href']" class="mt-2 inline-flex min-h-9 items-center text-xs font-semibold text-primary underline-offset-4 hover:underline">{{ $item['action'] }}</x-app-link>@endif</div>
+                </div>
+            @else
+                <x-app-link :href="$item['href']" class="dashboard-list-link dashboard-attention-row -mx-2 grid gap-x-3 gap-y-1 border-0 px-2"><span class="min-w-0"><span class="block text-sm font-medium text-content">{{ $item['title'] }}</span><span class="mt-0.5 block text-xs leading-5 text-content-muted">{{ $item['detail'] }}</span></span><span class="self-start text-right"><span @class(['block text-sm font-semibold tabular-nums', 'text-danger' => $item['tone'] === 'danger', 'text-content' => $item['tone'] !== 'danger'])>{{ $item['value'] }}</span><span class="mt-0.5 block text-xs font-medium text-primary">{{ $item['action'] }}</span></span></x-app-link>
+            @endif
         @endforeach
 
         @if($items === [] && ! ($firstDueDate['is_urgent'] ?? false))

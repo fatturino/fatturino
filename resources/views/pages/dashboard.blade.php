@@ -1,8 +1,10 @@
 <?php
 
 use App\Contracts\SdiProvider;
+use App\Enums\InvoiceStatus;
 use App\Models\Contact;
 use App\Models\FiscalDocument;
+use App\Models\ProformaInvoice;
 use App\Services\PostHogTelemetryService;
 use App\Services\ReportService;
 use App\Settings\CompanySettings;
@@ -74,6 +76,16 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
             ];
         }
         )->all();
+        $stats['proformaIssuanceDeadlines'] = app(ReportService::class)
+            ->paidProformasAwaitingIssuedInvoice()
+            ->map(fn (ProformaInvoice $proforma) => $this->proformaIssuanceDeadline($proforma, $this->isCurrentYear))
+            ->sortBy([
+                ['sort_order', 'asc'],
+                ['due_date_sort', 'asc'],
+                ['id', 'asc'],
+            ])
+            ->values()
+            ->all();
         $this->stats = $stats;
     }
 
@@ -89,6 +101,53 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
         }
 
         return ($value instanceof CarbonInterface ? $value : Carbon::parse($value))->format('d/m/Y');
+    }
+
+    private function proformaIssuanceDeadline(ProformaInvoice $proforma, bool $canCreateInvoice): array
+    {
+        $totalPaid = 0;
+        $settlementPayment = $proforma->payments
+            ->sortBy(fn ($payment) => [
+                $payment->paid_at?->format('Y-m-d') ?? '9999-12-31',
+                $payment->id,
+            ])
+            ->first(function ($payment) use (&$totalPaid, $proforma) {
+                $totalPaid += (int) $payment->amount;
+
+                return $totalPaid >= $proforma->net_due;
+            });
+
+        $settlementDate = $settlementPayment?->paid_at?->startOfDay();
+        $dueDate = $settlementDate?->copy()->addDays(12);
+        $daysUntilDue = $dueDate === null ? null : now()->startOfDay()->diffInDays($dueDate, false);
+        $linkedInvoice = $proforma->convertedInvoice;
+        $hasLinkedDraft = $linkedInvoice !== null && in_array($linkedInvoice->status, [
+            InvoiceStatus::Draft,
+            InvoiceStatus::Generated,
+            InvoiceStatus::XmlValidated,
+        ], true);
+
+        [$tone, $deadlineLabel, $deadlineDetail, $sortOrder] = match (true) {
+            $daysUntilDue === null => ['warning', 'Data saldo da verificare', 'Registra la data del pagamento che ha saldato la proforma.', 2],
+            $daysUntilDue < 0 => ['danger', 'Scaduta', 'In ritardo di '.abs($daysUntilDue).' '.(abs($daysUntilDue) === 1 ? 'giorno' : 'giorni'), 0],
+            $daysUntilDue === 0 => ['danger', 'Scade oggi', 'Ultimo giorno per emettere la fattura elettronica.', 0],
+            default => ['warning', 'Scade tra '.$daysUntilDue.' '.($daysUntilDue === 1 ? 'giorno' : 'giorni'), 'Termine per emettere la fattura elettronica.', 1],
+        };
+
+        return [
+            'id' => $proforma->id,
+            'type' => 'proforma_issuance',
+            'title' => $proforma->contact?->name ?: 'Cliente da verificare',
+            'detail' => 'Proforma '.($proforma->number ?: 'senza riferimento').' · Saldo: '.($this->formatDate($settlementDate) ?? 'da verificare'),
+            'value' => $deadlineLabel,
+            'meta' => $dueDate === null ? $deadlineDetail : 'Emissione entro '.$this->formatDate($dueDate).' · '.$deadlineDetail,
+            'href' => $hasLinkedDraft ? route('sell-invoices.edit', $linkedInvoice) : route('proforma.edit', $proforma),
+            'tone' => $tone,
+            'action' => $hasLinkedDraft ? 'Apri fattura' : ($canCreateInvoice ? 'Crea fattura' : 'Apri proforma'),
+            'convert_action' => ! $hasLinkedDraft && $canCreateInvoice ? route('proforma.convert', $proforma) : null,
+            'sort_order' => $sortOrder,
+            'due_date_sort' => $dueDate?->toDateString() ?? '9999-12-31',
+        ];
     }
 };
 ?>
@@ -123,6 +182,10 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
     if ($partialCount > 0) {
         $attentionItems[] = ['title' => 'Incassi parziali', 'detail' => $partialCount.' '.($partialCount === 1 ? 'fattura ha un residuo da incassare' : 'fatture hanno un residuo da incassare'), 'value' => null, 'href' => '/sell-invoices?payment=partial', 'tone' => 'warning', 'action' => $attentionAction.' parziali'];
     }
+    $attentionItems = [
+        ...$stats['proformaIssuanceDeadlines'],
+        ...$attentionItems,
+    ];
     $firstDueDate = collect($stats['upcomingDueDates'])->first(fn ($invoice) => ($invoice['days_until_due'] ?? -1) >= 0);
     $attentionUrgencyCount = count($attentionItems) + (int) ($firstDueDate['is_urgent'] ?? false);
 @endphp

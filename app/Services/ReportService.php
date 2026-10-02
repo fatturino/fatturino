@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\FiscalDocument;
+use App\Models\ProformaInvoice;
 use App\Models\PurchaseInvoice;
 use App\Models\SalesInvoice;
 use Carbon\Carbon;
@@ -21,6 +22,29 @@ use Illuminate\Support\Collection;
  */
 class ReportService
 {
+    /**
+     * Paid proformas that still need an issued electronic invoice.
+     *
+     * A linked invoice only resolves the obligation once it has been sent.
+     * The result deliberately ignores the selected fiscal year because the
+     * issuance deadline is based on the payment date, not document year.
+     *
+     * @return Collection<int, ProformaInvoice>
+     */
+    public function paidProformasAwaitingIssuedInvoice(): Collection
+    {
+        return ProformaInvoice::query()
+            ->with([
+                'contact:id,name',
+                'payments:id,fiscal_document_id,amount,paid_at',
+                'convertedInvoice:id,proforma_id,status,number',
+            ])
+            ->where('payment_status', PaymentStatus::Paid)
+            ->where('status', '!=', 'cancelled')
+            ->whereDoesntHave('convertedInvoice', fn ($query) => $query->where('status', 'sent'))
+            ->get();
+    }
+
     /**
      * Total gross revenue from invoices issued in the reference month (in cents).
      * For the current year, uses the current calendar month.
