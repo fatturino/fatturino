@@ -14,8 +14,19 @@
             <x-badge :value="$invoice['due_label']" :variant="$invoice['due_tone'] === 'default' ? 'neutral' : $invoice['due_tone']" />
         </span>
         <span class="mt-1 block text-xs leading-5 text-content-muted">
-            {{ $invoice['due_detail'] }} <span aria-hidden="true">·</span> {{ $invoice['due_date'] ?? 'Data non disponibile' }}
+            {{ $invoice['number'] ?? 'Fattura senza numero' }} <span aria-hidden="true">·</span> {{ $invoice['due_detail'] }} <span aria-hidden="true">·</span> {{ $invoice['due_date'] ?? 'Data non disponibile' }}
         </span>
+        @if(isset($invoice['reminder_label']))
+            <span class="mt-1 block text-xs leading-5 text-content-muted">
+                {{ $invoice['reminder_label'] }}
+                @if(($invoice['payment_reminder_count'] ?? 0) > 0)
+                    · {{ $invoice['payment_reminder_count'] }} invii
+                    @if($invoice['last_payment_reminder_at'] ?? null)
+                        · ultimo {{ $invoice['last_payment_reminder_at'] }}
+                    @endif
+                @endif
+            </span>
+        @endif
     </span>
     <span class="due-date-amount shrink-0 text-right">
         <span class="block text-sm font-semibold tabular-nums text-content">{{ '€ '.number_format($invoice['remaining_balance'] / 100, 2, ',', '.') }}</span>

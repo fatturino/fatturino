@@ -65,6 +65,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/sell-invoices/{invoice}/send-sdi', [SalesInvoicesController::class, 'sendToSdi'])->name('sell-invoices.send-sdi');
     Route::get('/sell-invoices/{invoice}/email-preview', [SalesInvoicesController::class, 'emailPreview'])->name('sell-invoices.email-preview');
     Route::post('/sell-invoices/{invoice}/send-email', [SalesInvoicesController::class, 'sendEmail'])->name('sell-invoices.send-email');
+    Route::get('/sell-invoices/{invoice}/payment-reminder-preview', [SalesInvoicesController::class, 'paymentReminderPreview'])->name('sell-invoices.payment-reminder-preview');
+    Route::post('/sell-invoices/{invoice}/send-payment-reminder', [SalesInvoicesController::class, 'sendPaymentReminder'])->name('sell-invoices.send-payment-reminder');
     Route::post('/sell-invoices/{invoice}/payments', [SalesInvoicesController::class, 'recordPayment'])->name('sell-invoices.record-payment');
     Route::put('/sell-invoices/{invoice}/payments/{payment}', [SalesInvoicesController::class, 'updatePayment'])
         ->whereNumber('payment')

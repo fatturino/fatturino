@@ -19,6 +19,7 @@ use App\Services\XmlWorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class SalesInvoicesController extends Controller
@@ -185,6 +186,79 @@ class SalesInvoicesController extends Controller
         DocumentMailer $mailer
     ): JsonResponse {
         return $this->documentEmailPreview($invoice, $mailer);
+    }
+
+    public function paymentReminderPreview(Request $request, SalesInvoice $invoice, DocumentMailer $mailer): JsonResponse
+    {
+        $scenario = $this->paymentReminderScenario($request, $invoice);
+
+        return response()->json([
+            'success' => true,
+            'preview' => [
+                'recipient_email' => $invoice->contact?->email ?? '',
+                'cc' => '',
+                'bcc' => '',
+                'subject' => $mailer->renderPaymentReminderSubject($scenario, $invoice),
+                'body' => $mailer->renderPaymentReminderBody($scenario, $invoice),
+                'attach_pdf' => true,
+                'scenario' => $scenario,
+            ],
+        ]);
+    }
+
+    public function sendPaymentReminder(Request $request, SalesInvoice $invoice, DocumentMailer $mailer): JsonResponse
+    {
+        $scenario = $this->paymentReminderScenario($request, $invoice);
+        $validated = $request->validate([
+            'recipient_email' => 'nullable|email',
+            'cc' => 'nullable|email',
+            'bcc' => 'nullable|email',
+            'subject' => 'nullable|string',
+            'body' => 'nullable|string',
+            'attach_pdf' => 'nullable|boolean',
+        ]);
+        $recipient = $validated['recipient_email'] ?? $invoice->contact?->email;
+
+        if (! $recipient) {
+            return response()->json(['success' => false, 'error' => 'Il cliente non ha un indirizzo email configurato.'], 422);
+        }
+
+        try {
+            $mailer->sendPaymentReminderNow(
+                $invoice,
+                $scenario,
+                $recipient,
+                $validated['subject'] ?? $mailer->renderPaymentReminderSubject($scenario, $invoice),
+                $validated['body'] ?? $mailer->renderPaymentReminderBody($scenario, $invoice),
+                $request->has('attach_pdf') ? $request->boolean('attach_pdf') : true,
+                $validated['cc'] ?? '',
+                $validated['bcc'] ?? '',
+            );
+        } catch (\Throwable $exception) {
+            return response()->json(['success' => false, 'error' => 'Invio sollecito non riuscito: '.$exception->getMessage()], 500);
+        }
+
+        app(PostHogTelemetryService::class)->capture(
+            'payment_reminder_sent',
+            [...app(PostHogTelemetryService::class)->documentProperties($invoice), 'scenario' => $scenario],
+            $request->user(),
+        );
+
+        return response()->json(['success' => true, 'message' => 'Sollecito inviato correttamente.']);
+    }
+
+    private function paymentReminderScenario(Request $request, SalesInvoice $invoice): string
+    {
+        $scenario = $request->validate(['scenario' => ['required', Rule::in(['upcoming', 'overdue'])]])['scenario'];
+        $dueDate = $invoice->due_date ? Carbon::parse($invoice->due_date)->startOfDay() : null;
+        $open = $invoice->remainingBalance() > 0;
+
+        abort_unless($open && $dueDate !== null, 422, 'La fattura non è idonea al sollecito.');
+
+        $expectedScenario = $dueDate->lt(today()) ? 'overdue' : 'upcoming';
+        abort_unless($scenario === $expectedScenario && $dueDate->lte(today()->addDays(7)), 422, 'Lo scenario del sollecito non è valido per questa fattura.');
+
+        return $scenario;
     }
 
     public function recordPayment(Request $request, SalesInvoice $invoice): JsonResponse

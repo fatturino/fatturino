@@ -33,6 +33,10 @@ beforeEach(function () {
     $settings->from_name = null;
     $settings->template_sales_subject = 'Fattura n. {NUMERO_DOCUMENTO} del {DATA_DOCUMENTO}';
     $settings->template_sales_body = "Gentile {CLIENTE},\n\nFattura n. {NUMERO_DOCUMENTO} - Totale: {IMPORTO_TOTALE}.\n\nCordiali saluti,\n{AZIENDA}";
+    $settings->template_payment_reminder_upcoming_subject = 'Promemoria {NUMERO_DOCUMENTO} {DATA_SCADENZA}';
+    $settings->template_payment_reminder_upcoming_body = '{CLIENTE} {IMPORTO_RESIDUO} {DATA_SCADENZA}';
+    $settings->template_payment_reminder_overdue_subject = 'Sollecito {NUMERO_DOCUMENTO} {DATA_SCADENZA}';
+    $settings->template_payment_reminder_overdue_body = '{CLIENTE} {IMPORTO_RESIDUO} {DATA_SCADENZA}';
     $settings->template_proforma_subject = 'Preventivo n. {NUMERO_DOCUMENTO}';
     $settings->template_proforma_body = 'Gentile {CLIENTE}, preventivo n. {NUMERO_DOCUMENTO}.';
     $settings->auto_send_sales = false;
@@ -74,6 +78,35 @@ test('renderBody replaces all placeholders correctly', function () {
     expect($body)->toContain('FT-001');
     expect($body)->toContain('1.220,00');
     expect($body)->toContain('Azienda Test');
+});
+
+test('payment reminder templates render due date and remaining balance', function () {
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'number' => 'FT-REM-001',
+        'due_date' => '2026-10-09',
+        'total_gross' => 122000,
+        'total_paid' => 22000,
+    ]);
+
+    $mailer = app(DocumentMailer::class);
+
+    expect($mailer->renderPaymentReminderSubject('upcoming', $invoice))->toBe('Promemoria FT-REM-001 09/10/2026')
+        ->and($mailer->renderPaymentReminderBody('overdue', $invoice))->toContain('Mario Rossi')
+        ->toContain('€ 1.000,00')
+        ->toContain('09/10/2026');
+});
+
+test('manual payment reminder records a dedicated sent event', function () {
+    Mail::fake();
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = FiscalDocument::factory()->create(['contact_id' => $contact->id, 'number' => 'FT-REM-002', 'due_date' => now()->toDateString(), 'total_gross' => 10000]);
+
+    app(DocumentMailer::class)->sendPaymentReminderNow($invoice, 'upcoming', $contact->email, 'Promemoria', 'Corpo');
+
+    Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->emailSubject === 'Promemoria');
+    expect(DocumentEvent::query()->where('fiscal_document_id', $invoice->id)->where('event_type', 'payment_reminder_sent')->count())->toBe(1);
 });
 
 test('send dispatches DocumentMail with default template', function () {

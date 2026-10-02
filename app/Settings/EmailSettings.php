@@ -34,6 +34,15 @@ class EmailSettings extends Settings
 
     public string $template_sales_body;
 
+    // Manual payment reminder templates for sales invoices.
+    public string $template_payment_reminder_upcoming_subject;
+
+    public string $template_payment_reminder_upcoming_body;
+
+    public string $template_payment_reminder_overdue_subject;
+
+    public string $template_payment_reminder_overdue_body;
+
     // Email templates for proforma invoices
     public string $template_proforma_subject;
 

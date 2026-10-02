@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Contact;
+use App\Models\DocumentEvent;
 use App\Models\FiscalDocument;
 use App\Models\InAppNotification;
 use App\Models\Payment;
@@ -28,6 +29,26 @@ it('seeds a complete operational dataset with current and historical scenarios',
         ->where('fiscal_year', 2026)
         ->sole();
     expect($dueSoon->due_date?->toDateString())->toBe('2026-10-05');
+
+    $overdue = FiscalDocument::query()
+        ->where('number', '2')
+        ->where('type', 'sales')
+        ->where('fiscal_year', 2026)
+        ->sole();
+
+    expect(
+        DocumentEvent::query()
+            ->where('fiscal_document_id', $overdue->id)
+            ->where('event_type', 'payment_reminder_sent')
+            ->count()
+    )->toBe(2)
+        ->and(
+            DocumentEvent::query()
+                ->where('fiscal_document_id', $dueSoon->id)
+                ->where('event_type', 'payment_reminder_sent')
+                ->where('message', 'Scenario: upcoming. Promemoria per fattura in scadenza.')
+                ->exists()
+        )->toBeTrue();
 
     Carbon::setTestNow();
 });

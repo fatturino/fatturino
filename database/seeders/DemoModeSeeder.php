@@ -331,7 +331,9 @@ class DemoModeSeeder extends Seeder
         $this->inboundLogId = $inbound->id;
         $this->documents['purchase-sdi-received']->forceFill(['sdi_status' => 'received', 'sdi_received_at' => $today->copy()->subDays(17), 'sdi_processed' => true])->save();
 
-        $this->eventIds['sales-overdue'] = $this->createEvent($this->documents['sales-overdue'], 'payment_reminder_sent', 'email', 'sent', 'Sollecito di pagamento inviato', 'Promemoria di pagamento inviato al cliente.', $today->copy()->subDays(4))->id;
+        $this->createEvent($this->documents['sales-overdue'], 'payment_reminder_sent', 'email', 'sent', 'Sollecito di pagamento inviato', 'Scenario: overdue. Sollecito per fattura scaduta.', $today->copy()->subDays(11));
+        $this->eventIds['sales-overdue'] = $this->createEvent($this->documents['sales-overdue'], 'payment_reminder_sent', 'email', 'sent', 'Sollecito di pagamento inviato', 'Scenario: overdue. Sollecito per fattura scaduta.', $today->copy()->subDays(4))->id;
+        $this->eventIds['sales-due-soon'] = $this->createEvent($this->documents['sales-due-soon'], 'payment_reminder_sent', 'email', 'sent', 'Promemoria di pagamento inviato', 'Scenario: upcoming. Promemoria per fattura in scadenza.', $today->copy()->subDays(1))->id;
         $this->eventIds['sales-paid-recent'] = $this->createEvent($this->documents['sales-paid-recent'], 'email_sent', 'email', 'sent', 'Email inviata', 'Documento inviato via email al cliente.', $today->copy()->subDays(22))->id;
         $this->eventIds['proforma-sent'] = $this->createEvent($this->documents['proforma-sent'], 'email_sent', 'email', 'sent', 'Proforma inviata', 'Proforma inviata al cliente per approvazione.', $today->copy()->subDays(2))->id;
 

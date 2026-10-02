@@ -388,7 +388,7 @@ class ReportService
     }
 
     /**
-     * Invoices with upcoming due dates (unpaid/partial only), ordered by due_date asc.
+     * Open sales invoices eligible for a manual payment reminder.
      */
     public function upcomingDueDates(int $limit = 5, int $year = 0): Collection
     {
@@ -398,7 +398,10 @@ class ReportService
         return SalesInvoice::whereBetween('date', [$start, $end])
             ->whereNotNull('due_date')
             ->whereIn('payment_status', [PaymentStatus::Unpaid, PaymentStatus::Partial, PaymentStatus::Overdue])
-            ->with('contact')
+            ->where('due_date', '<=', Carbon::today()->addDays(7))
+            ->with(['contact:id,name,email'])
+            ->withCount(['events as payment_reminder_count' => fn ($query) => $query->where('event_type', 'payment_reminder_sent')])
+            ->withMax(['events as last_payment_reminder_at' => fn ($query) => $query->where('event_type', 'payment_reminder_sent')], 'occurred_at')
             ->orderBy('due_date')
             ->limit($limit)
             ->get();

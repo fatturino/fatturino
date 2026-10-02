@@ -66,6 +66,7 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
                 'id' => $invoice->id,
                 'number' => $invoice->number,
                 'contact' => $invoice->contact?->name,
+                'email' => $invoice->contact?->email,
                 'due_date' => $this->formatDate($invoice->due_date),
                 'remaining_balance' => $invoice->remainingBalance(),
                 'days_until_due' => $daysUntilDue,
@@ -73,6 +74,10 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
                 'due_label' => $dueLabel,
                 'due_detail' => $dueDetail,
                 'is_urgent' => $isUrgent,
+                'reminder_scenario' => $daysUntilDue < 0 ? 'overdue' : 'upcoming',
+                'reminder_label' => $daysUntilDue < 0 ? 'Sollecito scaduta' : 'Promemoria scadenza',
+                'payment_reminder_count' => (int) ($invoice->payment_reminder_count ?? 0),
+                'last_payment_reminder_at' => $this->formatDate($invoice->last_payment_reminder_at),
             ];
         }
         )->all();
@@ -171,8 +176,9 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
     ];
     $attentionItems = [];
     $attentionAction = $isCurrentYear ? 'Apri' : 'Consulta';
-    if ($overdueCount > 0) {
-        $attentionItems[] = ['title' => 'Fatture scadute', 'detail' => $overdueCount.' '.($overdueCount === 1 ? 'fattura richiede un sollecito' : 'fatture richiedono un sollecito'), 'value' => $this->currency($overdueNet), 'href' => '/sell-invoices?payment=overdue', 'tone' => 'danger', 'action' => $attentionAction.' scadute'];
+    $reminderCount = count($stats['upcomingDueDates']);
+    if ($reminderCount > 0) {
+        $attentionItems[] = ['title' => 'Solleciti da preparare', 'detail' => $reminderCount.' '.($reminderCount === 1 ? 'fattura richiede attenzione' : 'fatture richiedono attenzione'), 'value' => null, 'href' => '#payment-reminders', 'tone' => $overdueCount > 0 ? 'danger' : 'warning', 'action' => 'Apri scadenze'];
     }
     if ($stats['readyForSdiCount'] > 0) {
         $attentionItems[] = $stats['hasSdi']
@@ -186,8 +192,8 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
         ...$stats['proformaIssuanceDeadlines'],
         ...$attentionItems,
     ];
-    $firstDueDate = collect($stats['upcomingDueDates'])->first(fn ($invoice) => ($invoice['days_until_due'] ?? -1) >= 0);
-    $attentionUrgencyCount = count($attentionItems) + (int) ($firstDueDate['is_urgent'] ?? false);
+    $firstDueDate = null;
+    $attentionUrgencyCount = count($attentionItems);
 @endphp
 
 <section class="dashboard-page space-y-7 lg:space-y-8">

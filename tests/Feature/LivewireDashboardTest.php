@@ -116,9 +116,9 @@ it('shows net amounts and separate VAT in recent invoices and due dates', functi
         ->assertSee('IVA € 220,00');
 });
 
-it('orders operational attention by overdue, SDI-ready, and partial collection work', function () {
+it('summarizes payment reminders once in attention while keeping operational rows in the due-date list', function () {
     $user = User::factory()->create();
-    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'payment_status' => 'overdue', 'total_net' => 10000, 'total_gross' => 10000, 'total_paid' => 0]);
+    SalesInvoice::factory()->create(['date' => now()->toDateString(), 'due_date' => now()->subDay()->toDateString(), 'payment_status' => 'overdue', 'total_net' => 10000, 'total_gross' => 10000, 'total_paid' => 0]);
     SalesInvoice::factory()->create(['date' => now()->toDateString(), 'status' => 'xml_validated']);
     SalesInvoice::factory()->create(['date' => now()->toDateString(), 'payment_status' => 'partial', 'total_net' => 10000, 'total_gross' => 10000, 'total_paid' => 5000]);
 
@@ -128,10 +128,10 @@ it('orders operational attention by overdue, SDI-ready, and partial collection w
 
     expect($html)
         ->toContain('Richiede attenzione')
-        ->toContain('Fatture scadute')
+        ->toContain('Solleciti da preparare')
         ->toContain('Incassi parziali')
         ->toContain('/sell-invoices?payment=partial')
-        ->and(strpos($html, 'Fatture scadute'))->toBeLessThan(strpos($html, 'Incassi parziali'));
+        ->and(substr_count($html, 'Solleciti da preparare'))->toBe(1);
 });
 
 it('shows upcoming due dates with their remaining balance, state, date, and edit route', function () {
@@ -191,11 +191,11 @@ it('labels upcoming due dates by their temporal priority', function () {
         ->assertSee('Data da verificare');
 });
 
-it('distinguishes a future due date from urgent attention and reuses its complete row', function () {
+it('keeps an eligible future due date in the single operational list', function () {
     $user = User::factory()->create();
     $invoice = SalesInvoice::factory()->create([
         'date' => now()->toDateString(),
-        'due_date' => now()->addDays(8)->toDateString(),
+        'due_date' => now()->addDays(7)->toDateString(),
         'payment_status' => 'unpaid',
         'total_net' => 12500,
         'total_gross' => 12500,
@@ -205,19 +205,16 @@ it('distinguishes a future due date from urgent attention and reuses its complet
     $this->actingAs($user);
 
     Livewire::test('pages::dashboard')
-        ->assertSee('Nessuna priorità urgente')
-        ->assertSee('La prossima scadenza è riportata qui sotto.')
-        ->assertSee('0 urgenze')
-        ->assertSee('Prossima scadenza')
-        ->assertSee('Imminente')
-        ->assertSee('Scade tra 8 giorni')
-        ->assertSee(now()->addDays(8)->format('d/m/Y'))
+        ->assertSee('Solleciti da preparare')
+        ->assertSee('Urgente')
+        ->assertSee('Scade tra 7 giorni')
+        ->assertSee(now()->addDays(7)->format('d/m/Y'))
         ->assertSee('€ 125,00')
         ->assertSee(route('sell-invoices.edit', $invoice), false)
         ->assertDontSee('Nessuna urgenza per ora');
 });
 
-it('counts a due date within seven days as urgent attention', function () {
+it('keeps a due date within seven days in the operational reminder list', function () {
     $user = User::factory()->create();
     $invoice = SalesInvoice::factory()->create([
         'date' => now()->toDateString(),
@@ -231,8 +228,7 @@ it('counts a due date within seven days as urgent attention', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::dashboard')
-        ->assertSee('1 urgenze')
-        ->assertSee('Scadenza urgente')
+        ->assertSee('Solleciti da preparare')
         ->assertSee('Urgente')
         ->assertSee('Scade tra 3 giorni')
         ->assertSee(route('sell-invoices.edit', $invoice), false)
@@ -361,14 +357,14 @@ it('guides a first-time user without treating zero values as an error', function
 it('keeps dashboard actions consultative for a closed fiscal year', function () {
     $user = User::factory()->create();
     $year = now()->year - 1;
-    SalesInvoice::factory()->create(['date' => now()->subYear()->toDateString(), 'payment_status' => 'overdue']);
+    SalesInvoice::factory()->create(['date' => now()->subYear()->toDateString(), 'due_date' => now()->subDay()->toDateString(), 'payment_status' => 'overdue']);
 
     $this->actingAs($user)->withSession(['fiscal_year' => $year]);
 
     Livewire::test('pages::dashboard')
         ->assertSee("Visualizzazione in sola lettura per l'anno fiscale {$year}.", false)
         ->assertDontSee('Nuova fattura')
-        ->assertSee('Consulta scadute');
+        ->assertSee('Solleciti da preparare');
 });
 
 it('shows fiscal and collection information for VAT accounting regimes', function () {
@@ -438,14 +434,14 @@ it('keeps dashboard card metadata readable and labels the VAT summary', function
     SalesInvoice::factory()->create([
         'date' => now()->toDateString(),
         'payment_status' => 'unpaid',
-        'due_date' => now()->addDays(8)->toDateString(),
+        'due_date' => now()->addDays(7)->toDateString(),
     ]);
 
     $this->actingAs($user);
 
     Livewire::test('pages::dashboard')
         ->assertSee('dashboard-document-card', false)
-        ->assertSee('due-date-card', false)
+        ->assertSee('Prossime scadenze e solleciti')
         ->assertSee('aria-labelledby="vat-summary-title"', false);
 });
 

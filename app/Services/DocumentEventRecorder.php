@@ -136,6 +136,38 @@ class DocumentEventRecorder
         ]);
     }
 
+    public function paymentReminderQueued(Model $document, string $scenario, string $recipientEmail, string $subject, string $cc = '', string $bcc = ''): ?DocumentEvent
+    {
+        return $this->paymentReminderEvent('payment_reminder_queued', 'queued', 'Sollecito di pagamento accodato', $document, $scenario, $recipientEmail, $subject, null, $cc, $bcc);
+    }
+
+    public function paymentReminderSent(Model $document, string $scenario, string $recipientEmail, string $subject, string $cc = '', string $bcc = ''): ?DocumentEvent
+    {
+        return $this->paymentReminderEvent('payment_reminder_sent', 'success', 'Sollecito di pagamento inviato', $document, $scenario, $recipientEmail, $subject, null, $cc, $bcc);
+    }
+
+    public function paymentReminderFailed(Model $document, string $scenario, string $recipientEmail, string $subject, string $errorMessage, string $cc = '', string $bcc = ''): ?DocumentEvent
+    {
+        return $this->paymentReminderEvent('payment_reminder_failed', 'failed', 'Invio sollecito di pagamento fallito', $document, $scenario, $recipientEmail, $subject, $errorMessage, $cc, $bcc);
+    }
+
+    private function paymentReminderEvent(string $eventType, string $status, string $title, Model $document, string $scenario, string $recipientEmail, string $subject, ?string $errorMessage, string $cc, string $bcc): ?DocumentEvent
+    {
+        return $this->record($document, [
+            'event_type' => $eventType,
+            'channel' => 'email',
+            'status' => $status,
+            'title' => $title,
+            'message' => $scenario === 'overdue' ? 'Scenario: overdue. Sollecito per fattura scaduta.' : 'Scenario: upcoming. Promemoria per fattura in scadenza.',
+            'recipient_email' => $recipientEmail,
+            'cc' => $cc,
+            'bcc' => $bcc,
+            'subject' => $subject,
+            'error_message' => $errorMessage,
+            'technical_reference_type' => 'payment_reminder',
+        ]);
+    }
+
     private function documentLabel(Model $document): string
     {
         $number = $document->getAttribute('number');

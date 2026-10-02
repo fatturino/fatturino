@@ -93,6 +93,29 @@ class DocumentMailer
         return $this->replacePlaceholders($template, $document);
     }
 
+    public function renderPaymentReminderSubject(string $scenario, Model $document): string
+    {
+        return $this->replacePlaceholders($this->paymentReminderTemplate($scenario, 'subject'), $document);
+    }
+
+    public function renderPaymentReminderBody(string $scenario, Model $document): string
+    {
+        return $this->replacePlaceholders($this->paymentReminderTemplate($scenario, 'body'), $document);
+    }
+
+    public function sendPaymentReminderNow(Model $document, string $scenario, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = '', string $bcc = ''): void
+    {
+        $this->documentEvents->paymentReminderQueued($document, $scenario, $recipientEmail, $subject, $cc, $bcc);
+
+        try {
+            $this->deliverPaymentReminder($recipientEmail, $subject, $body, $document, $scenario, $attachPdf, $cc, $bcc);
+        } catch (Throwable $exception) {
+            $this->documentEvents->paymentReminderFailed($document, $scenario, $recipientEmail, $subject, $exception->getMessage(), $cc, $bcc);
+
+            throw $exception;
+        }
+    }
+
     /**
      * Send a test email to the configured from_address to verify mail connectivity.
      * Returns null on success, or the error message string on failure.
@@ -145,6 +168,8 @@ class DocumentMailer
             '{IMPORTO_NETTO}' => '€ '.number_format(($document->total_net ?? 0) / 100, 2, ',', '.'),
             '{IMPORTO_IVA}' => '€ '.number_format(($document->total_vat ?? 0) / 100, 2, ',', '.'),
             '{IMPORTO_TOTALE}' => '€ '.number_format(($document->total_gross ?? 0) / 100, 2, ',', '.'),
+            '{IMPORTO_RESIDUO}' => $this->formatCurrency(max(0, (int) ($document->net_due ?? 0) - (int) ($document->total_paid ?? 0))),
+            '{DATA_SCADENZA}' => $this->formatDocumentDate($document->due_date ?? null),
             '{AZIENDA}' => $this->companySettings->company_name,
             '{PARTITA_IVA_AZIENDA}' => $this->companySettings->company_vat_number,
             '{EMAIL_CLIENTE}' => $contact?->email ?? '',
@@ -152,6 +177,17 @@ class DocumentMailer
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $template);
+    }
+
+    private function paymentReminderTemplate(string $scenario, string $part): string
+    {
+        return match ([$scenario, $part]) {
+            ['upcoming', 'subject'] => $this->emailSettings->template_payment_reminder_upcoming_subject,
+            ['upcoming', 'body'] => $this->emailSettings->template_payment_reminder_upcoming_body,
+            ['overdue', 'subject'] => $this->emailSettings->template_payment_reminder_overdue_subject,
+            ['overdue', 'body'] => $this->emailSettings->template_payment_reminder_overdue_body,
+            default => throw new \InvalidArgumentException('Scenario sollecito non valido.'),
+        };
     }
 
     private function renderOutstandingInvoicesList(Model $document): string
@@ -263,6 +299,29 @@ class DocumentMailer
 
         $this->documentEvents->emailFailed($document, $recipientEmail, $subject, $errorMessage, $cc, $bcc);
         $this->markEmailAsFailed($document, $recipientEmail, $cc, $bcc, $errorMessage);
+    }
+
+    private function deliverPaymentReminder(string $recipientEmail, string $subject, string $body, Model $document, string $scenario, bool $attachPdf, string $cc, string $bcc): void
+    {
+        $this->applyMailOverrides();
+
+        Mail::to($recipientEmail)->send(new DocumentMail(
+            $subject,
+            $body,
+            $attachPdf ? $document : null,
+            $cc,
+            $bcc,
+            config('mail.from.address'),
+            $this->emailSettings->from_name,
+            $this->emailSettings->from_address,
+            $this->emailSettings->from_name,
+        ));
+
+        $event = $this->documentEvents->paymentReminderSent($document, $scenario, $recipientEmail, $subject, $cc, $bcc);
+
+        if ($event !== null) {
+            $this->inAppNotifications->documentEmailSent($document, $event);
+        }
     }
 
     /**
