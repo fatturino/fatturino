@@ -48,6 +48,7 @@
             <header class="fatturino-header sticky top-0 z-30 flex min-h-[4.5rem] items-center gap-3 px-4 lg:px-8">
                 <button x-ref="menuTrigger" type="button" class="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-content transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20 lg:hidden" @click="openSidebar()" aria-label="Apri menu" aria-controls="app-sidebar" :aria-expanded="sidebarOpen.toString()">☰</button>
                 <div class="min-w-0 flex-1">@isset($header){{ $header }}@endisset</div>
+                <livewire:shell.notifications />
                 <x-shell.user-menu />
             </header>
             <main id="main-content" tabindex="-1" class="app-content mx-auto w-full max-w-[96rem] p-4 sm:p-6 lg:p-8">{{ $slot }}</main>
