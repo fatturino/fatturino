@@ -270,8 +270,40 @@
 
 .dashboard-attention-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
+}
+
+.dashboard-list-link.dashboard-attention-row {
+    display: grid;
+}
+
+.dashboard-attention-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.dashboard-attention-secondary {
+    min-width: 0;
+    transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.dashboard-attention-secondary:hover {
+    border-color: var(--color-border-strong);
+}
+
+.dashboard-attention-action {
+    min-width: 0;
+}
+
+@media (min-width: 640px) {
+    .dashboard-attention-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .dashboard-attention-priority .dashboard-attention-action {
+        min-width: 8rem;
+    }
 }
 
 .dashboard-document-card {
@@ -310,10 +342,6 @@
 
     .due-date-row > :last-child {
         padding-top: 0.125rem;
-    }
-
-    .dashboard-attention-row {
-        min-height: 5.5rem;
     }
 
     .due-date-card {
