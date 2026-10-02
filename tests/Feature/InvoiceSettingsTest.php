@@ -1,13 +1,40 @@
 <?php
 
+use App\Contracts\EnvironmentCapabilities;
 use App\Enums\VatRate;
 use App\Models\Sequence;
+use App\Services\DemoCapabilities;
+use App\Services\UnrestrictedCapabilities;
+use App\Settings\CompanySettings;
 use App\Settings\InvoiceSettings;
+use Livewire\Livewire;
 
 test('invoice settings can be accessed', function () {
     $settings = app(InvoiceSettings::class);
 
     expect($settings)->toBeInstanceOf(InvoiceSettings::class);
+});
+
+test('invoice settings render editable controls and non-rf19 options when permitted', function () {
+    app()->instance(EnvironmentCapabilities::class, new UnrestrictedCapabilities);
+    app(CompanySettings::class)->fill(['company_fiscal_regime' => 'RF01'])->save();
+
+    Livewire::test('pages::settings.invoice')
+        ->assertSee("Ritenuta d'acconto", false)
+        ->assertSee('Split payment predefinito')
+        ->assertSee('Salva impostazioni')
+        ->assertDontSee('Configurazione in sola lettura.');
+});
+
+test('invoice settings hide restricted options for rf19 and render read only state in demo mode', function () {
+    app()->instance(EnvironmentCapabilities::class, new DemoCapabilities);
+    app(CompanySettings::class)->fill(['company_fiscal_regime' => 'RF19'])->save();
+
+    Livewire::test('pages::settings.invoice')
+        ->assertDontSee('Ritenuta d\'acconto')
+        ->assertDontSee('Split payment predefinito')
+        ->assertSee('Configurazione in sola lettura.')
+        ->assertDontSee('Salva impostazioni');
 });
 
 test('invoice settings have all default fields', function () {

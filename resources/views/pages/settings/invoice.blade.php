@@ -126,12 +126,97 @@ new #[Layout('layouts::app')] class extends Component {
 ?>
 
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Configurazione</p><h1 class="text-lg font-bold text-content">Impostazioni fatture</h1></div></x-slot:header>
-<form wire:submit="save" class="space-y-6">@if(session('success'))<div class="rounded-md border border-success/20 bg-success-bg p-4 text-sm text-success">{{ session('success') }}</div>@endif
-<div class="grid gap-6 lg:grid-cols-2">
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Predefiniti</h2><div class="mt-4 space-y-4"><x-select label="Aliquota IVA" wire:model="default_vat_rate" :options="$this->vatRates()" /></div></article>
-@if(! $this->isRf19())<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Ritenuta d'acconto</h2><label class="mt-4 flex gap-2 text-sm"><input wire:model="withholding_tax_enabled" type="checkbox"> Abilita ritenuta</label>@if($withholding_tax_enabled)<x-settings.input wire:model="withholding_tax_percent" class="mt-4" type="number" label="Percentuale"/>@endif</article>@endif
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Cassa previdenziale</h2><label class="mt-4 flex gap-2 text-sm"><input wire:model="fund_enabled" type="checkbox"> Abilita cassa</label>@if($fund_enabled)<div class="mt-4 space-y-4"><x-select label="Tipo" wire:model="fund_type" :options="$this->fundTypes()" /><x-settings.input wire:model="fund_percent" type="number" label="Percentuale"/><x-select label="IVA rivalsa" wire:model="fund_vat_rate" :options="$this->vatRates()" /><label class="flex gap-2 text-sm"><input wire:model="fund_has_deduction" type="checkbox"> Rivalsa con deduzione</label></div>@endif</article>
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Bollo virtuale</h2><label class="mt-4 flex gap-2 text-sm"><input wire:model="auto_stamp_duty" type="checkbox"> Applica automaticamente (€2,00)</label>@if($auto_stamp_duty)<x-settings.input wire:model="stamp_duty_threshold" class="mt-4" type="number" label="Soglia imponibile (€)"/>@endif</article>
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Pagamenti</h2><div class="mt-4 space-y-4"><x-select label="Metodo" wire:model="default_payment_method" :options="$this->paymentMethods()" /><x-select label="Termini" wire:model="default_payment_terms" :options="$this->paymentTerms()" /><x-settings.input wire:model="default_bank_name" label="Banca"/><x-settings.input wire:model="default_bank_iban" label="IBAN"/></div></article>
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">IVA e note</h2><div class="mt-4 space-y-4"><x-select label="Esigibilità" wire:model="default_vat_payability" :disabled="$this->isRf19()" :options="$this->vatPayabilityOptions()" />@if(! $this->isRf19())<label class="flex gap-2 text-sm"><input wire:model="default_split_payment" type="checkbox"> Split payment predefinito</label>@endif<label class="block text-sm font-semibold">Note<textarea wire:model="default_notes" class="mt-2 block w-full rounded-md border border-border px-3 py-2" rows="3"></textarea></label></div></article></div>
-@if(app(EnvironmentCapabilities::class)->can('edit-invoice-settings'))<button class="rounded-md bg-primary px-5 py-2.5 text-sm font-bold text-white" type="submit">Salva impostazioni</button>@else<p class="text-sm text-content-muted">Configurazione in sola lettura.</p>@endif</form>
+
+@php($canEdit = app(EnvironmentCapabilities::class)->can('edit-invoice-settings'))
+
+<section class="space-y-6">
+    <form wire:submit="save" class="max-w-6xl space-y-6">
+        @if(session('success'))
+            <div class="rounded-lg border border-success/20 bg-success-bg p-4 text-sm font-medium text-success" role="status">{{ session('success') }}</div>
+        @endif
+
+        <fieldset @disabled(! $canEdit) class="grid gap-6 lg:grid-cols-2" @class(['select-none opacity-70' => ! $canEdit])>
+            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
+                <h2 class="text-base font-bold text-content">Predefiniti</h2>
+                <div class="mt-5 space-y-4">
+                    <x-select label="Aliquota IVA" wire:model="default_vat_rate" :disabled="! $canEdit" :options="$this->vatRates()" />
+                </div>
+            </article>
+
+            @if(! $this->isRf19())
+                <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
+                    <h2 class="text-base font-bold text-content">Ritenuta d'acconto</h2>
+                    <div class="mt-5 space-y-4">
+                        <x-toggle wire:model.live="withholding_tax_enabled" :disabled="! $canEdit" label="Abilita ritenuta" />
+                        @if($withholding_tax_enabled)
+                            <x-settings.input wire:model="withholding_tax_percent" :disabled="! $canEdit" type="number" label="Percentuale" />
+                        @endif
+                    </div>
+                </article>
+            @endif
+
+            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
+                <h2 class="text-base font-bold text-content">Cassa previdenziale</h2>
+                <div class="mt-5 space-y-4">
+                    <x-toggle wire:model.live="fund_enabled" :disabled="! $canEdit" label="Abilita cassa" />
+                    @if($fund_enabled)
+                        <div class="space-y-4 border-t border-border-light pt-4">
+                            <x-select label="Tipo" wire:model="fund_type" :disabled="! $canEdit" :options="$this->fundTypes()" />
+                            <x-settings.input wire:model="fund_percent" :disabled="! $canEdit" type="number" label="Percentuale" />
+                            <x-select label="IVA rivalsa" wire:model="fund_vat_rate" :disabled="! $canEdit" :options="$this->vatRates()" />
+                            <x-toggle wire:model="fund_has_deduction" :disabled="! $canEdit" label="Rivalsa con deduzione" />
+                        </div>
+                    @endif
+                </div>
+            </article>
+
+            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
+                <h2 class="text-base font-bold text-content">Bollo virtuale</h2>
+                <div class="mt-5 space-y-4">
+                    <x-toggle wire:model.live="auto_stamp_duty" :disabled="! $canEdit" label="Applica automaticamente (€2,00)" />
+                    @if($auto_stamp_duty)
+                        <div class="border-t border-border-light pt-4">
+                            <x-settings.input wire:model="stamp_duty_threshold" :disabled="! $canEdit" type="number" label="Soglia imponibile (€)" />
+                        </div>
+                    @endif
+                </div>
+            </article>
+
+            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
+                <h2 class="text-base font-bold text-content">Pagamenti</h2>
+                <div class="mt-5 space-y-4">
+                    <x-select label="Metodo" wire:model="default_payment_method" :disabled="! $canEdit" :options="$this->paymentMethods()" />
+                    <x-select label="Termini" wire:model="default_payment_terms" :disabled="! $canEdit" :options="$this->paymentTerms()" />
+                    <x-settings.input wire:model="default_bank_name" :disabled="! $canEdit" label="Banca" />
+                    <x-settings.input wire:model="default_bank_iban" :disabled="! $canEdit" label="IBAN" />
+                </div>
+            </article>
+
+            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
+                <h2 class="text-base font-bold text-content">IVA e note</h2>
+                <div class="mt-5 space-y-4">
+                    <x-select label="Esigibilità" wire:model="default_vat_payability" :disabled="$this->isRf19() || ! $canEdit" :options="$this->vatPayabilityOptions()" />
+                    @if(! $this->isRf19())
+                        <x-toggle wire:model="default_split_payment" :disabled="! $canEdit" label="Split payment predefinito" />
+                    @endif
+                    <label class="block text-sm font-medium text-content">
+                        Note
+                        <textarea wire:model="default_notes" @disabled(! $canEdit) class="mt-1.5 block min-h-28 w-full rounded-lg border border-border-strong bg-white px-3 py-2.5 text-sm leading-6 text-content placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-content-muted" rows="3"></textarea>
+                        @error('default_notes')<span class="mt-1 block text-xs text-danger">{{ $message }}</span>@enderror
+                    </label>
+                </div>
+            </article>
+        </fieldset>
+
+        <div class="flex flex-col-reverse gap-3 border-t border-border-light pt-5 sm:flex-row sm:items-center">
+            @if($canEdit)
+                <button wire:loading.attr="disabled" wire:target="save" class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60" type="submit">
+                    <span wire:loading.remove wire:target="save">Salva impostazioni</span>
+                    <span wire:loading wire:target="save" role="status">Salvataggio in corso...</span>
+                </button>
+            @else
+                <p class="text-sm text-content-muted">Configurazione in sola lettura.</p>
+            @endif
+        </div>
+    </form>
+</section>
