@@ -5,11 +5,13 @@ use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Enums\SdiSubmissionStatus;
 use App\Models\EiInboundLog;
+use App\Models\InAppNotification;
 use App\Models\PurchaseInvoice;
 use App\Models\SalesInvoice;
 use App\Models\SdiOutboundSubmission;
 use App\Models\SdiUuidLink;
 use App\Models\SelfInvoice;
+use App\Models\User;
 use App\Services\BusinessFingerprintService;
 use App\Services\OpenApiSdiService;
 use App\Settings\CompanySettings;
@@ -491,6 +493,35 @@ test('customer notification NS reopens outbound invoice for correction and resen
     expect($invoice->status)->toBe(InvoiceStatus::Draft->value)
         ->and($invoice->sdi_status)->toBe(SdiStatus::Rejected->value)
         ->and($invoice->isSdiEditable())->toBeTrue();
+});
+
+test('reconcile publishes an in-app notification for a recovered SDI outcome', function () {
+    User::factory()->create(['is_admin' => true]);
+    $invoice = SalesInvoice::factory()->create([
+        'sdi_status' => SdiStatus::Sent,
+        'sdi_uuid' => 'outbound-status-uuid',
+    ]);
+
+    $service = Mockery::mock(OpenApiSdiService::class);
+    $service->shouldReceive('isConfigured')->once()->andReturnTrue();
+    $service->shouldReceive('getInvoiceNotifications')
+        ->once()
+        ->with('outbound-status-uuid')
+        ->andReturn([
+            'success' => true,
+            'notifications' => [[
+                'type' => 'RC',
+                'created_at' => now()->toIso8601String(),
+            ]],
+        ]);
+    app()->instance(OpenApiSdiService::class, $service);
+
+    $this->artisan('openapi:reconcile', ['--updates-only' => true])
+        ->assertExitCode(0);
+
+    expect($invoice->fresh()->sdi_status)->toBe(SdiStatus::Delivered)
+        ->and(InAppNotification::query()->where('type', 'sdi.outcome.received')->count())->toBe(1)
+        ->and(InAppNotification::query()->where('type', 'sdi.outcome.received')->value('resource_id'))->toBe($invoice->id);
 });
 
 function supplierInvoiceWebhookPayload(string $uuid): array

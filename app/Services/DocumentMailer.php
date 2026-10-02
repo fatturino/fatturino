@@ -19,6 +19,7 @@ class DocumentMailer
         private readonly EmailSettings $emailSettings,
         private readonly CompanySettings $companySettings,
         private readonly DocumentEventRecorder $documentEvents,
+        private readonly InAppNotificationDispatcher $inAppNotifications,
     ) {}
 
     /**
@@ -245,8 +246,12 @@ class DocumentMailer
         ));
 
         if ($document !== null) {
-            $this->documentEvents->emailSent($document, $recipientEmail, $subject, $cc, $bcc);
+            $event = $this->documentEvents->emailSent($document, $recipientEmail, $subject, $cc, $bcc);
             $this->markEmailAsSent($document, $recipientEmail, $cc, $bcc);
+
+            if ($event !== null) {
+                $this->inAppNotifications->documentEmailSent($document, $event);
+            }
         }
     }
 

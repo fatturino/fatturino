@@ -12,6 +12,7 @@ use App\Models\SdiOutboundSubmission;
 use App\Models\SelfInvoice;
 use App\Services\BusinessFingerprintService;
 use App\Services\DocumentEventRecorder;
+use App\Services\InAppNotificationDispatcher;
 use App\Services\InvoiceTenantGuardService;
 use App\Services\InvoiceXmlImportService;
 use App\Services\OpenApiSdiService;
@@ -46,8 +47,11 @@ class ReconcileCommand extends Command
         'expired' => 4,
     ];
 
-    public function handle(OpenApiSdiService $service, CompanySettings $companySettings): int
-    {
+    public function handle(
+        OpenApiSdiService $service,
+        CompanySettings $companySettings,
+        InAppNotificationDispatcher $inAppNotifications,
+    ): int {
         if (! $service->isConfigured()) {
             $this->error('OpenAPI SDI is not configured.');
 
@@ -80,7 +84,7 @@ class ReconcileCommand extends Command
         }
 
         if (! $this->option('receive-only') && ! $this->option('recover-sends-only')) {
-            $updateStats = $this->reconcileUpdates($service, $isDryRun);
+            $updateStats = $this->reconcileUpdates($service, $isDryRun, $inAppNotifications);
         }
 
         $this->newLine();
@@ -456,8 +460,11 @@ class ReconcileCommand extends Command
         return $stats;
     }
 
-    private function reconcileUpdates(OpenApiSdiService $service, bool $isDryRun): array
-    {
+    private function reconcileUpdates(
+        OpenApiSdiService $service,
+        bool $isDryRun,
+        InAppNotificationDispatcher $inAppNotifications,
+    ): array {
         $this->info('Reconciling status updates...');
 
         $stats = ['checked' => 0, 'updated' => 0, 'unchanged' => 0, 'errors' => 0];
@@ -556,6 +563,7 @@ class ReconcileCommand extends Command
             }
 
             app(DocumentEventRecorder::class)->sdiResultReceived($invoice, $outboundLog?->id, $message);
+            $inAppNotifications->sdiOutcomeReceived($invoice, $outboundLog, $newStatus, $message);
 
             $this->line("  Updated invoice #{$invoice->id}: {$invoice->sdi_status->value} → {$newStatus->value}");
             $stats['updated']++;

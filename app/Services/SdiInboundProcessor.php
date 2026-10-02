@@ -22,6 +22,7 @@ class SdiInboundProcessor
         private readonly SdiCostGuardService $sdiCostGuardService,
         private readonly OpenApiSdiService $openApiSdiService,
         private readonly InvoiceTenantGuardService $invoiceTenantGuardService,
+        private readonly InAppNotificationDispatcher $inAppNotifications,
     ) {}
 
     public function process(string $eventName, array $data, EiInboundLog $inboundLog, OpenApiSettings $settings): array
@@ -206,6 +207,7 @@ class SdiInboundProcessor
         ]);
 
         $this->sdiUuidLinkService->linkInbound($created->id, $uuid, $fingerprint, 'manual');
+        $this->inAppNotifications->purchaseInvoiceReceived($created, $inboundLog);
 
         return ['status' => 'ok', 'fiscal_document_id' => $created->id];
     }
@@ -283,6 +285,7 @@ class SdiInboundProcessor
             ]
         );
         app(DocumentEventRecorder::class)->sdiResultReceived($invoice, $outboundLog->id, $message);
+        $this->inAppNotifications->sdiOutcomeReceived($invoice, $outboundLog, $newStatus, $message);
 
         $this->sdiUuidLinkService->linkInbound($invoice->id, $invoiceUuid, $invoice->business_fingerprint ?? '-', 'reconcile');
 
