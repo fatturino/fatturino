@@ -6,6 +6,7 @@ use App\Services\PostHogTelemetryService;
 use App\Settings\BackupSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ServicesController extends Controller
@@ -57,13 +58,15 @@ class ServicesController extends Controller
             ], $request->user());
 
             return back()->with('success', 'Connessione S3 riuscita.');
-        } catch (\Exception $e) {
+        } catch (\Throwable $exception) {
+            report($exception);
+            Log::warning('S3 connection test failed', ['exception' => $exception::class]);
             app(PostHogTelemetryService::class)->capture('service_connection_tested', [
                 'service' => 's3',
                 'success' => false,
             ], $request->user());
 
-            return back()->withErrors(['s3' => $e->getMessage()]);
+            return back()->withErrors(['s3' => 'Connessione S3 non riuscita. Verifica la configurazione e riprova.']);
         }
     }
 }

@@ -1,5 +1,7 @@
 # Docker
 
+[English version](README.en.md)
+
 Fatturino viene eseguito in un singolo container Docker grazie a [serversideup/php](https://serversideup.net/open-source/docker-php/) con S6 Overlay per la gestione dei processi.
 
 ## Architettura
@@ -255,11 +257,11 @@ Per ambienti hosting dove i backup sono orchestrati esternamente:
 - `storage/app/private/documents/` (XML e PDF fatture, organizzati per tipo)
 - `storage/app/public/` (logo, asset utente)
 
-When `DOCUMENTS_DISK=s3`, XML/PDF snapshots are authoritative under
-`{APP_INSTANCE_ID}/documents/...` in the configured bucket and are deliberately
-excluded from the archive. The same bucket stores backups under
-`{APP_INSTANCE_ID}/backups/...`. When `APP_INSTANCE_ID` is empty, the prefixes
-are simply `documents/...` and `backups/...`.
+Quando `DOCUMENTS_DISK=s3`, gli snapshot XML/PDF autorevoli risiedono in
+`{APP_INSTANCE_ID}/documents/...` nel bucket configurato e sono deliberatamente
+esclusi dall'archivio. Lo stesso bucket conserva i backup in
+`{APP_INSTANCE_ID}/backups/...`. Quando `APP_INSTANCE_ID` è vuoto, i prefissi
+sono semplicemente `documents/...` e `backups/...`.
 
 #### Pulizia automatica
 

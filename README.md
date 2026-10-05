@@ -61,7 +61,7 @@ La demo contiene dati fittizi, non richiede registrazione e viene ripristinata p
 
 - **PHP** 8.2+
 - **Composer** 2.x
-- **Bun** per compilare gli asset frontend
+- **Bun** 1.3+ per compilare gli asset frontend. `bun.lock` è il lockfile autorevole.
 - **Database**: SQLite, MySQL o PostgreSQL
 - **Account OpenAPI** (opzionale): necessario per l'invio e la ricezione SDI tramite il provider integrato
 
@@ -103,10 +103,15 @@ php artisan serve
 composer dev                     # Laravel, queue, log e Vite
 composer test                    # Svuota la cache di configurazione ed esegue i test
 vendor/bin/pint                  # Formatta il codice PHP
+vendor/bin/pint --test           # Verifica lo stile PHP senza modificare file
 composer lint-livewire-format    # Verifica la formattazione dei componenti Livewire
 composer format-livewire         # Formatta i componenti Livewire
+composer audit --locked          # Cerca advisory PHP nel lockfile
+bun audit                        # Cerca advisory frontend nel lockfile Bun
 php artisan migrate:fresh --seed # Ricrea il database locale con i dati iniziali
 ```
+
+Non usare `migrate:fresh` su dati da conservare. Non creare o aggiornare `package-lock.json`: Bun è il package manager frontend supportato.
 
 ---
 
@@ -132,19 +137,28 @@ Consulta la [guida Docker completa](docker/README.md) prima di esporre l'istanza
 - Strategia release: Semantic Versioning
 - Workflow di sviluppo e release: [DEVELOPMENT.md](DEVELOPMENT.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Decisioni architetturali: [docs/decisions](docs/decisions)
+- Sicurezza: [SECURITY.md](SECURITY.md)
 - Documentazione utente e operativa: [fatturino.it/docs](https://fatturino.it/docs)
+
+### Architettura e limiti
+
+L'applicazione usa Laravel 12 e Livewire 4. I controller validano l'input HTTP e delegano i flussi fiscali a servizi e action; XML e PDF finali sono snapshot immutabili sul disco `documents`. L'immagine AIO include NGINX, PHP-FPM, queue worker, scheduler e PostgreSQL: è adatta al self-hosting semplice, ma costituisce un singolo failure domain. Per il cloud imposta `DOCUMENTS_DISK=s3` e credenziali S3 a privilegio minimo.
+
+Le integrazioni SDI richiedono un account OpenAPI e configurazione esplicita. Fatturino non sostituisce consulenza fiscale, conservazione digitale a norma, monitoraggio infrastrutturale, backup verificati o una valutazione legale della configurazione dell'istanza.
 
 ---
 
 ## Contribuire
 
-1. Fai fork su [Codeberg](https://codeberg.org/fatturino/fatturino).
-2. Crea un branch per la modifica.
+1. Leggi [CONTRIBUTING.md](CONTRIBUTING.md) e [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+2. Fai fork su [Codeberg](https://codeberg.org/fatturino/fatturino) e crea un branch mirato.
 3. Aggiungi o aggiorna i test necessari.
-4. Esegui `composer test` e `vendor/bin/pint`.
-5. Apri una Pull Request.
+4. Esegui test, formattazione, build e audit indicati in [DEVELOPMENT.md](DEVELOPMENT.md).
+5. Apri una Pull Request usando il template.
 
 Per bug e richieste usa le [Issues](https://codeberg.org/fatturino/fatturino/issues).
+Non pubblicare dati fiscali, documenti, backup, log di produzione, chiavi o token. Le vulnerabilità vanno segnalate privatamente secondo [SECURITY.md](SECURITY.md).
 
 ---
 

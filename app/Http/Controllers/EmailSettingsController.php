@@ -7,6 +7,7 @@ use App\Settings\CompanySettings;
 use App\Settings\EmailSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class EmailSettingsController extends Controller
 {
@@ -70,8 +71,11 @@ class EmailSettingsController extends Controller
             }
 
             return back()->with('success', 'Connessione email riuscita.');
-        } catch (\Exception $e) {
-            return back()->withErrors(['smtp' => $e->getMessage()]);
+        } catch (\Throwable $exception) {
+            report($exception);
+            Log::warning('Email connection test failed', ['exception' => $exception::class]);
+
+            return back()->withErrors(['smtp' => 'Connessione email non riuscita. Verifica la configurazione e riprova.']);
         }
     }
 }

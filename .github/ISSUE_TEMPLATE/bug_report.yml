@@ -1,0 +1,48 @@
+name: Segnalazione bug / Bug report
+description: Segnala un difetto riproducibile senza dati sensibili / Report a reproducible defect without sensitive data
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Non includere fatture, dati cliente, identificativi fiscali, credenziali, token, dump del database o log di produzione. Segnala privatamente le vulnerabilità secondo SECURITY.md.
+
+        Do not include invoices, customer data, tax identifiers, credentials, tokens, database dumps, or production logs. Report security vulnerabilities privately under SECURITY.en.md.
+  - type: input
+    id: version
+    attributes:
+      label: Versione Fatturino / Fatturino version
+      description: Includi il tag release o il commit SHA. / Include the release tag or commit SHA.
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Modalità di deployment / Deployment mode
+      options:
+        - Docker AIO
+        - Sviluppo locale / Local development
+        - Altra installazione self-hosted / Other self-hosted setup
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Riproduzione minima / Minimal reproduction
+      description: Elenca la sequenza sicura più breve che riproduce il problema. / List the smallest safe sequence of steps that reproduces the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento atteso ed effettivo / Expected and actual behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Conferma di sicurezza / Safety confirmation
+      options:
+        - label: Ho rimosso dati personali o finanziari, credenziali, token e hostname interni. / I removed personal data, financial data, credentials, tokens, and internal hostnames.
+          required: true

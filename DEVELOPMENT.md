@@ -1,156 +1,59 @@
-# Development & Release Guide
+# Guida allo sviluppo e al rilascio
 
-## Development Workflow
+[English version](DEVELOPMENT.en.md)
 
-### Daily Development
+## Toolchain
 
-1. **Create feature branch from `main`:**
-   ```bash
-   git checkout main && git pull
-   git checkout -b feature/your-feature-name
-   ```
+Usa PHP 8.2 o superiore, Composer 2, Bun 1.3 o superiore e SQLite, PostgreSQL o MySQL. Bun è il package manager frontend supportato; [`bun.lock`](bun.lock) è autorevole. Non creare un lockfile npm.
 
-2. **Make changes, test locally:**
-   ```bash
-   composer dev
-   vendor/bin/pint --dirty
-   composer test
-   ```
+## Installazione ed esecuzione
 
-3. **Push branch and open PR:**
-   ```bash
-   git push -u origin feature/your-feature-name
-   ```
-   Open PR on Codeberg. Title should follow convention: `feat:`, `fix:`, `chore:`, etc.
-
-4. **Review & Merge:**
-   - At least 1 reviewer approval required (enforced via branch protection)
-   - Merge to `main` via PR (no direct pushes allowed)
-   - CI automatically builds `latest` and `sha-<shortsha>` image tags
-
-### CI Pipeline on `main`
-
-Every push to `main` triggers Woodpecker:
-- **Step:** `build-main`
-- **Tags pushed to registry:** 
-  - `codeberg.org/fatturino/fatturino:latest` (development/staging)
-  - `codeberg.org/fatturino/fatturino:sha-<8-char-hash>` (for rollback/debugging)
-
----
-
-## Release Workflow
-
-### When Ready to Release
-
-Choose next version following [Semantic Versioning](https://semver.org/lang/it/):
-- **Patch** (`0.0.X`): bugfixes only
-- **Minor** (`0.X.0`): new backwards-compatible features
-- **Major** (`X.0.0`): breaking changes
-
-### Release PR (Manual Process)
-
-1. **Create release branch:**
-   ```bash
-   git checkout main && git pull
-   git checkout -b release/v0.0.2
-   ```
-
-2. **Update version files:**
-   - Edit `VERSION` file: change to new version (e.g., `0.0.2`)
-   - Edit `.env`: update `APP_VERSION=0.0.2`
-   - Edit `composer.json`: update `"version": "0.0.2"`
-   - Edit `CHANGELOG.md`:
-     - Promote `## [Unreleased]` section to `## [0.0.2] - YYYY-MM-DD`
-     - Add new empty `## [Unreleased]` at top
-
-3. **Example CHANGELOG update:**
-   ```markdown
-   # Changelog
-   
-   ## [Unreleased]
-   
-   ## [0.0.2] - 2026-04-25
-   
-   ### Added
-   - New feature description
-   
-   ### Fixed
-   - Bug fix description
-   
-   ## [0.0.1] - 2026-04-22
-   ...
-   ```
-
-4. **Commit and push:**
-   ```bash
-   git add VERSION .env CHANGELOG.md composer.json
-   git commit -m "chore(release): v0.0.2"
-   git push -u origin release/v0.0.2
-   ```
-
-5. **Open PR on Codeberg:**
-   - Title: `chore(release): v0.0.2`
-   - Review and merge to `main`
-
-### Tag Release on Main
-
-After release PR is merged:
-
-```bash
-git checkout main && git pull
-git tag -a v0.0.2 -m "Release v0.0.2"
-git push origin v0.0.2
+```sh
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+bun install --frozen-lockfile
+bun run build
 ```
 
-### CI Pipeline on Tag
+Per lo sviluppo locale, esegui `composer dev`: avvia contemporaneamente Laravel, un queue listener, Pail e Vite. Non usarlo in produzione. Completa la procedura guidata all'URL locale dell'applicazione.
 
-When tag `v*.*.*` is pushed, Woodpecker triggers:
-- **Step:** `build-release`
-- **Tags pushed to registry:**
-  - `codeberg.org/fatturino/fatturino:v0.0.2` (immutable release tag)
-  - `codeberg.org/fatturino/fatturino:0.0.2` (SemVer without prefix)
-  - `codeberg.org/fatturino/fatturino:latest-stable` (rolling latest release)
+## Controlli obbligatori
 
-Use `0.0.2` or `latest-stable` in production. Use `latest` only for staging/development.
-
----
-
-## Image Tags Summary
-
-| Tag | Built on | Use case | Mutable? |
-|-----|----------|----------|----------|
-| `latest` | main push | staging/dev | ✓ rolling |
-| `sha-<hash>` | main push | rollback/debug | ✗ immutable |
-| `0.0.2` | tag v0.0.2 | production release | ✗ immutable |
-| `latest-stable` | tag v*.*.* | production (rolling) | ✓ latest release |
-
----
-
-## Branch Protection
-
-`main` branch is protected:
-- ✓ Require PR for all changes
-- ✓ Require ≥1 reviewer approval
-- ✓ Require CI checks pass
-- ✓ Block direct pushes
-- ✓ Block force pushes
-
----
-
-## Quick Reference: Release Checklist
-
+```sh
+vendor/bin/pint --test
+composer lint-livewire-format
+composer test
+bun run build
+composer audit --locked
+bun audit
 ```
-[ ] Create branch: release/v0.0.2
-[ ] Update VERSION file (0.0.2)
-[ ] Update .env (APP_VERSION=0.0.2)
-[ ] Update composer.json ("version": "0.0.2")
-[ ] Update CHANGELOG.md (Unreleased → versioned)
-[ ] Commit: "chore(release): v0.0.2"
-[ ] Push branch and open PR
-[ ] Merge PR to main
-[ ] Pull main: git checkout main && git pull
-[ ] Create annotated tag: git tag -a v0.0.2 -m "Release v0.0.2"
-[ ] Push tag: git push origin v0.0.2
-[ ] Verify Woodpecker build-release step completes
-[ ] Verify image tags on registry (0.0.2, latest-stable)
-```
+
+`composer format-livewire` e `vendor/bin/pint` applicano la formattazione. La CI esegue Pint, formattazione Livewire, test, installazione Bun congelata, build frontend e verifica dell'immagine Docker nelle pull request.
+
+## Configurazione
+
+[`.env.example`](.env.example) è il riferimento completo delle variabili. Non committare mai un file ambiente popolato. In produzione sono importanti `APP_KEY`, `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, credenziali database, `SESSION_SECURE_COOKIE=true` dietro HTTPS, credenziali mail, credenziali OpenAPI SDI, credenziali S3 e password backup.
+
+`*_MANAGED_BY_ENV=true` rende la configurazione corrispondente di mail, SDI o backup di proprietà dell'ambiente e ne impedisce la modifica da UI. I deployment cloud devono usare `DOCUMENTS_DISK=s3`; consulta gli [snapshot dei documenti](docs/decisions/2026-10-01-document-snapshot-storage.md).
+
+## Architettura
+
+Laravel 12 e Livewire 4 implementano l'applicazione. I controller validano l'input HTTP e delegano i flussi documentali a classi action e service. PostgreSQL, sessioni, cache e queue predefiniti supportano la topologia Docker AIO. XML fiscali e PDF di cortesia finali sono snapshot immutabili sul disco documenti configurato. I callback SDI sono autenticati bearer, rate limited, limitati nella dimensione del body, validati JSON e processati tramite record di inbound log.
+
+Directory principali: `app/` codice applicativo, `resources/` asset Blade/Livewire, `routes/` entry point HTTP e console, `database/` schema/impostazioni/seeder, `tests/` test Pest, `docker/` bootstrap container e `docs/decisions/` ADR.
+
+## Release
+
+Usa Semantic Versioning. Aggiorna [`VERSION`](VERSION), [`CHANGELOG.md`](CHANGELOG.md) e documentazione della release nella stessa pull request; non aggiornare un file `.env` tracciato. Tagga la release integrata come `vX.Y.Z`. Il workflow GitHub release crea le note e la CI pubblica l'immagine container su GHCR.
+
+Prima del tag, esegui i controlli obbligatori, verifica `composer audit --locked` e `bun audit`, prova il deployment dell'immagine con una configurazione non produttiva e conferma le procedure di backup/restore. Per la prima release pubblica che sostituisce la storia Git ereditata, segui il [runbook di sostituzione della history](docs/release-history-replacement.md): è manuale, distruttivo e non viene eseguito dalla CI.
+
+## Risoluzione problemi
+
+- Esegui `php artisan config:clear` dopo aver modificato `.env` in locale.
+- Esegui `php artisan view:clear` se view Livewire compilate stale fanno riferimento a un precedente percorso locale.
+- Usa `php artisan migrate:status` prima di diagnosticare errori dipendenti dallo schema.
+- Usa `docker compose config` per validare l'interpolazione Compose senza avviare servizi.
+- Non eseguire `migrate:fresh`, comandi di restore o di reset database in produzione senza backup testato e piano di manutenzione esplicito.

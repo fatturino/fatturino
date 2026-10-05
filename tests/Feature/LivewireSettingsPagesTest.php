@@ -33,3 +33,15 @@ it('runs outbound SDI reconciliation from the diagnostics page without sending n
         ->assertSet('reconciliationError', null)
         ->assertSee('Outbound sends recovered: 1');
 });
+
+it('blocks restricted users from testing email and backup-service connections', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('settings.email.test'))
+        ->assertForbidden();
+
+    $this->actingAs($user)
+        ->post(route('settings.services.test'))
+        ->assertForbidden();
+});

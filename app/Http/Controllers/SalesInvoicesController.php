@@ -235,7 +235,9 @@ class SalesInvoicesController extends Controller
                 $validated['bcc'] ?? '',
             );
         } catch (\Throwable $exception) {
-            return response()->json(['success' => false, 'error' => 'Invio sollecito non riuscito: '.$exception->getMessage()], 500);
+            report($exception);
+
+            return response()->json(['success' => false, 'error' => 'Invio sollecito non riuscito. Riprova più tardi.'], 500);
         }
 
         app(PostHogTelemetryService::class)->capture(

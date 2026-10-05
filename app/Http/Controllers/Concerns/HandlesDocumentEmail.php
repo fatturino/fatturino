@@ -49,13 +49,15 @@ trait HandlesDocumentEmail
         try {
             $mailer->sendWithOverrides($document, $recipientEmail, $subject, $body, $attachPdf, $cc, $bcc);
         } catch (Throwable $e) {
+            report($e);
+
             if (! $request->expectsJson()) {
-                return back()->withErrors(['action' => 'Invio email non riuscito: '.$e->getMessage()]);
+                return back()->withErrors(['action' => 'Invio email non riuscito. Riprova più tardi.']);
             }
 
             return response()->json([
                 'success' => false,
-                'error' => 'Invio email non riuscito: '.$e->getMessage(),
+                'error' => 'Invio email non riuscito. Riprova più tardi.',
             ], 500);
         }
 

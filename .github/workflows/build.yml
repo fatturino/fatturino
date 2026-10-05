@@ -44,6 +44,9 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-progress --no-interaction --prefer-dist --optimize-autoloader
 
+      - name: Audit PHP dependencies
+        run: composer audit --locked --no-interaction
+
       - name: Prepare application configuration
         run: |
           cp .env.example .env
@@ -82,6 +85,9 @@ jobs:
 
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
+
+      - name: Audit frontend dependencies
+        run: bun audit
 
       - name: Build frontend assets
         run: bun run build

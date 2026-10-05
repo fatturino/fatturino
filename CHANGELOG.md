@@ -1,15 +1,28 @@
-# Changelog
+# Registro delle modifiche
 
-Tutte le modifiche rilevanti al progetto Fatturino vengono documentate in questo file.
+[English version](CHANGELOG.en.md)
 
-Il formato si ispira a [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/),
-e il progetto aderisce al [Versionamento Semantico](https://semver.org/lang/it/).
+Tutte le modifiche rilevanti al progetto Fatturino sono documentate in questo file.
+
+Il formato si ispira a [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/) e il progetto aderisce al [Versionamento Semantico](https://semver.org/lang/it/).
 
 ---
 
 ## [Unreleased]
 
+### Sicurezza
+
+- Sono stati limitati i test di connessione SMTP e S3 mediante le capability di ambiente esistenti.
+- È stata evitata la restituzione al browser di dettagli delle eccezioni dei provider durante errori email, solleciti, SMTP e S3.
+- Sono stati aggiunti audit delle dipendenze lockate all'integrazione continua.
+
+### Modificato
+
+- L'installazione frontend è stata standardizzata su Bun e il lockfile npm è stato rimosso.
+- Sono state aggiunte linee guida open source per contribuzioni, condotta, sicurezza, issue e pull request.
+
 ## [0.0.0]
 
 ### Aggiunto
+
 - Setup tags

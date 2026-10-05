@@ -152,11 +152,15 @@ Route::middleware('auth')->group(function () {
     Route::put('/invoice-settings', [InvoiceSettingsController::class, 'update'])->middleware('capability:edit-invoice-settings')->name('settings.invoice.update');
     Route::livewire('/email-settings', 'pages::settings.email')->name('settings.email')->defaults('title', 'Template Email');
     Route::put('/email-settings', [EmailSettingsController::class, 'update'])->middleware('capability:edit-email-settings')->name('settings.email.update');
-    Route::post('/email-settings/test', [EmailSettingsController::class, 'testConnection'])->name('settings.email.test');
+    Route::post('/email-settings/test', [EmailSettingsController::class, 'testConnection'])
+        ->middleware('capability:edit-email-settings')
+        ->name('settings.email.test');
     Route::livewire('/services', 'pages::settings.services')->name('settings.services')->defaults('title', 'Servizi');
     Route::livewire('/advanced', 'pages::settings.advanced')->name('settings.advanced')->defaults('title', 'Avanzate');
     Route::put('/services/backup', [ServicesController::class, 'updateBackup'])->middleware('capability:manage-backup-settings')->name('settings.services.backup');
-    Route::post('/services/test-connection', [ServicesController::class, 'testConnection'])->name('settings.services.test');
+    Route::post('/services/test-connection', [ServicesController::class, 'testConnection'])
+        ->middleware('capability:manage-backup-settings')
+        ->name('settings.services.test');
     Route::livewire('/imports', 'pages::imports.index')->name('imports.index')->defaults('title', 'Import');
 
     // Electronic Invoice

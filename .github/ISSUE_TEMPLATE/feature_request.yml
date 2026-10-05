@@ -1,0 +1,29 @@
+name: Richiesta funzionalità / Feature request
+description: Proponi un miglioramento visibile all'utente / Propose a user-visible improvement
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema da risolvere / Problem to solve
+      description: Descrivi il problema utente, non solo l'implementazione proposta. / Describe the user problem, not only the proposed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Comportamento proposto / Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative considerate / Alternatives considered
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Conferma del perimetro / Scope confirmation
+      options:
+        - label: Questa richiesta non divulga dati cliente, fatture, credenziali o dati dell'ambiente di produzione. / This request does not disclose customer, invoice, credential, or production-environment data.
+          required: true
