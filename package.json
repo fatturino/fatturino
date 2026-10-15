@@ -7,14 +7,14 @@
         "dev": "vite"
     },
     "devDependencies": {
-        "concurrently": "^9.2.4",
+        "concurrently": "^9.2.5",
         "laravel-vite-plugin": "^2.1.0",
         "tailwindcss": "^4.3.3",
-        "vite": "^7.3.6"
+        "vite": "^7.3.7"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.3.3",
-        "posthog-js": "^1.435.8"
+        "posthog-js": "^1.438.10"
     },
     "overrides": {
         "fflate": "0.4.9",
