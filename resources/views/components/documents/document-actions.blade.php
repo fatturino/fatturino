@@ -13,7 +13,8 @@
         && $document->status->canValidateXml();
     $canSendToSdi = in_array($type, ['sales', 'self', 'credit'], true)
         && $document->isSdiEditable()
-        && $document->status->canSendToSdi();
+        && $document->status->canSendToSdi()
+        && $document->activeSdiSubmission === null;
     $canDownloadXml = in_array($type, ['sales', 'self', 'credit'], true);
     $canDownloadPdf = in_array($type, ['sales', 'self', 'proforma'], true);
     $canConvert = $type === 'proforma' && $document->isConvertible();

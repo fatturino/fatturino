@@ -64,10 +64,7 @@ class OpenApiSdiService
 
             Log::channel('fe-openapi')->info('OpenAPI SDI invoice submission', [
                 'status' => $response->status(),
-                'success' => $body['success'] ?? false,
-                'uuid' => $body['data']['uuid'] ?? null,
-                'error' => $body['error'] ?? null,
-                'message' => $body['message'] ?? null,
+                'accepted' => $response->successful() && ($body['success'] ?? false),
             ]);
 
             if ($response->successful() && ($body['success'] ?? false)) {
@@ -79,24 +76,24 @@ class OpenApiSdiService
                 ];
             }
 
-            $errorMessage = $body['message'] ?? 'Unknown error occurred';
-            $errorCode = $body['error'] ?? null;
+            $isDefinitivelyRejected = $this->isDefinitiveInvoiceRejection($response, $body);
 
             return [
                 'success' => false,
-                'error_code' => $errorCode,
-                'error_message' => $errorMessage,
+                'outcome_unknown' => ! $isDefinitivelyRejected,
+                'error_code' => $isDefinitivelyRejected ? ($body['error'] ?? null) : null,
+                'error_message' => $isDefinitivelyRejected
+                    ? ($body['message'] ?? 'Il provider ha rifiutato il documento.')
+                    : 'Non è stato possibile determinare l’esito dell’invio.',
                 'http_status' => $response->status(),
             ];
-        } catch (\Exception $e) {
-            Log::channel('fe-openapi')->error('OpenAPI SDI invoice submission failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+        } catch (\Throwable) {
+            Log::channel('fe-openapi')->error('OpenAPI SDI invoice submission failed');
 
             return [
                 'success' => false,
-                'error_message' => 'Failed to connect to OpenAPI SDI: '.$e->getMessage(),
+                'outcome_unknown' => true,
+                'error_message' => 'Non è stato possibile determinare l’esito dell’invio.',
             ];
         }
     }
@@ -223,17 +220,13 @@ class OpenApiSdiService
         try {
             $url = "{$this->baseUrl}/business_registry_configurations/{$fiscalId}";
 
-            Log::channel('fe-openapi')->info('checkActivationStatus request', [
-                'url' => $url,
-                'token_prefix' => $this->apiToken ? substr($this->apiToken, 0, 8).'...' : 'null',
-            ]);
+            Log::channel('fe-openapi')->info('checkActivationStatus request');
 
             /** @var Response $response */
             $response = $this->newRequest()->get($url);
 
             Log::channel('fe-openapi')->info('checkActivationStatus response', [
                 'status' => $response->status(),
-                'body' => $response->body(),
             ]);
 
             if ($response->successful()) {
@@ -260,9 +253,7 @@ class OpenApiSdiService
                 'message' => $response->json()['message'] ?? 'Unknown error',
             ];
         } catch (\Exception $e) {
-            Log::channel('fe-openapi')->error('OpenAPI SDI activation check failed', [
-                'error' => $e->getMessage(),
-            ]);
+            Log::channel('fe-openapi')->error('OpenAPI SDI activation check failed', ['exception' => $e::class]);
 
             return [
                 'activated' => false,
@@ -313,17 +304,12 @@ class OpenApiSdiService
                 'apply_legal_storage' => false,
                 'apply_signature' => false,
             ];
-            Log::channel('fe-openapi')->info('registerBusinessConfiguration request', [
-                'url' => $url,
-                'payload' => $payload,
-                'token_prefix' => $this->apiToken ? substr($this->apiToken, 0, 8).'...' : 'null',
-            ]);
+            Log::channel('fe-openapi')->info('registerBusinessConfiguration request');
 
             /** @var Response $response */
             $response = $this->newRequest()->post($url, $payload);
             Log::channel('fe-openapi')->info('registerBusinessConfiguration response', [
                 'status' => $response->status(),
-                'body' => $response->body(),
             ]);
 
             if ($response->successful()) {
@@ -344,9 +330,7 @@ class OpenApiSdiService
                 'message' => $body['message'] ?? 'Failed to register business configuration',
             ];
         } catch (\Exception $e) {
-            Log::channel('fe-openapi')->error('OpenAPI SDI registration failed', [
-                'error' => $e->getMessage(),
-            ]);
+            Log::channel('fe-openapi')->error('OpenAPI SDI registration failed', ['exception' => $e::class]);
 
             return [
                 'success' => false,
@@ -833,7 +817,8 @@ class OpenApiSdiService
             Log::channel('fe-openapi')->info('OpenAPI SDI simulation request', [
                 'type' => $type,
                 'status' => $response->status(),
-                'response' => $body,
+                'provider_success' => $body['success'] ?? null,
+                'provider_error' => $body['error'] ?? null,
             ]);
 
             if ($response->successful()) {
@@ -847,6 +832,7 @@ class OpenApiSdiService
                 'success' => false,
                 'error' => $body['error'] ?? $response->status(),
                 'message' => $body['message'] ?? 'Simulation failed',
+                'http_status' => $response->status(),
             ];
         } catch (\Exception $e) {
             Log::channel('fe-openapi')->error('OpenAPI SDI simulation failed', [
@@ -1139,6 +1125,15 @@ class OpenApiSdiService
         return Http::withToken($this->apiToken)
             ->connectTimeout(self::CONNECT_TIMEOUT_SECONDS)
             ->timeout(self::REQUEST_TIMEOUT_SECONDS);
+    }
+
+    /** @param array<string, mixed>|null $body */
+    private function isDefinitiveInvoiceRejection(Response $response, ?array $body): bool
+    {
+        return in_array($response->status(), [400, 402, 422], true)
+            && is_array($body)
+            && ($body['success'] ?? null) === false
+            && is_string($body['message'] ?? null);
     }
 
     private function resolveRecipientFiscalId(): ?string

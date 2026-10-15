@@ -116,7 +116,6 @@ test('self invoices and credit notes use the durable SDI submission workflow', f
     $document->calculateTotals();
 
     $provider = Mockery::mock(SdiProvider::class);
-    $provider->shouldReceive('id')->once()->andReturn('mock-provider');
     $provider->shouldReceive('sendInvoice')->once()->andReturn([
         'success' => true,
         'uuid' => 'uuid-'.$routePrefix,

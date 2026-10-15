@@ -4,6 +4,7 @@ use App\Enums\SdiStatus;
 use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\SalesInvoice;
+use App\Models\SdiOutboundSubmission;
 use App\Models\User;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
@@ -209,6 +210,33 @@ it('renders the compatible document actions and gates the SDI send action by wor
         ->assertSee('x-trap.inert.noscroll="paymentOpen"', false)
         ->assertSee('x-trap.inert.noscroll="confirmOpen"', false)
         ->assertSee('x-teleport="body"', false);
+});
+
+it('marks an active SDI submission as needing verification and hides the SDI send action', function () {
+    $user = User::factory()->create();
+    $invoice = SalesInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'number' => 'FV-SDI-DA-VERIFICARE',
+        'status' => 'xml_validated',
+    ]);
+    SdiOutboundSubmission::create([
+        'fiscal_document_id' => $invoice->id,
+        'idempotency_key' => 'index-sdi-submission-'.$invoice->id,
+        'provider' => 'openapi_v1',
+        'status' => 'outcome_unknown',
+        'active_document_lock' => (string) $invoice->id,
+        'xml_sha256' => hash('sha256', 'index-sdi-submission-'.$invoice->id),
+        'business_fingerprint' => hash('sha256', 'index-business-'.$invoice->id),
+        'support_message' => 'Timeout durante la consegna.',
+    ]);
+
+    $this->actingAs($user)
+        ->get('/sell-invoices')
+        ->assertOk()
+        ->assertSee('FV-SDI-DA-VERIFICARE')
+        ->assertSee('Invio da verificare')
+        ->assertSee('Non reinviare')
+        ->assertDontSee("action: 'send-sdi', id: {$invoice->id}", false);
 });
 
 it('shows the XML and PDF download actions for sales invoices already sent to SDI', function () {

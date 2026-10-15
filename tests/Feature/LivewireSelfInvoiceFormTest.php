@@ -2,6 +2,7 @@
 
 use App\Enums\SdiStatus;
 use App\Models\Contact;
+use App\Models\SdiOutboundSubmission;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Models\User;
@@ -102,4 +103,25 @@ it('renders SDI-locked self invoices as read-only', function () {
     Livewire::test('pages::documents.self-invoice.form', ['selfInvoice' => $invoice])
         ->assertSee('Questa autofattura non è più modificabile.')
         ->assertDontSee('Aggiorna autofattura');
+});
+
+it('shows an SDI verification warning for an uncertain self invoice submission', function () {
+    $user = User::factory()->create();
+    $invoice = SelfInvoice::factory()->create(['date' => now()->toDateString()]);
+    SdiOutboundSubmission::create([
+        'fiscal_document_id' => $invoice->id,
+        'idempotency_key' => 'self-form-sdi-submission-'.$invoice->id,
+        'provider' => 'openapi_v1',
+        'status' => 'outcome_unknown',
+        'active_document_lock' => (string) $invoice->id,
+        'xml_sha256' => hash('sha256', 'self-form-sdi-submission-'.$invoice->id),
+        'business_fingerprint' => hash('sha256', 'self-form-business-'.$invoice->id),
+    ]);
+    $invoice = SelfInvoice::query()->findOrFail($invoice->id);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.self-invoice.form', ['selfInvoice' => $invoice])
+        ->assertSee('Invio SDI da verificare')
+        ->assertSee('Non reinviare il documento.');
 });

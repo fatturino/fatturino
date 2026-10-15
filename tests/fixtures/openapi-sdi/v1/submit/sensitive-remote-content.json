@@ -1,0 +1,6 @@
+{
+    "success": false,
+    "message": "SENSITIVE_REMOTE_MESSAGE_DO_NOT_LEAK",
+    "error": "SENSITIVE_REMOTE_CODE_DO_NOT_LEAK",
+    "data": null
+}

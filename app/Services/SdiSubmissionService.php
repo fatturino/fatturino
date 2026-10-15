@@ -8,49 +8,50 @@ use App\Enums\SdiSubmissionStatus;
 use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
 use App\Models\SdiOutboundSubmission;
-use Illuminate\Database\QueryException;
+use App\Sdi\SdiSubmissionCommand;
+use App\Sdi\SdiSubmissionResult;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Throwable;
 
 class SdiSubmissionService
 {
     public function __construct(
         private readonly BusinessFingerprintService $fingerprints,
         private readonly SdiUuidLinkService $uuidLinks,
+        private readonly SdiSubmissionDriverSelector $driverSelector,
+        private readonly SdiSubmissionDriverRegistry $drivers,
     ) {}
 
     /**
      * @return array{success: bool, submission: SdiOutboundSubmission, error_message?: string, sent_message?: string, outcome_unknown?: bool, local_persist_failed?: bool}
      */
-    public function send(FiscalDocument $document, string $xml, string $fileName, XmlWorkflowService $workflow, string $sentMessage): array
+    public function send(FiscalDocument $document, string $xml, string $fileName, string $sentMessage): array
     {
         $fingerprint = $this->fingerprints->buildFromXml($xml);
-        $submission = $this->acquire($document, $xml, $fingerprint);
+        $driverKey = $this->driverSelector->selectForNewSubmission();
+        $submission = $this->acquire($document, $xml, $fingerprint, $driverKey);
 
         if ($submission instanceof SdiOutboundSubmission === false) {
             return $submission;
         }
 
-        try {
-            $providerResult = $workflow->send($xml, $fileName);
-        } catch (Throwable $exception) {
-            $providerResult = [
-                'success' => false,
-                'outcome_unknown' => true,
-                'error_message' => 'La connessione al provider è stata interrotta prima di ricevere un esito.',
-            ];
-        }
+        $providerResult = $this->drivers->get($submission->provider)->submit(new SdiSubmissionCommand(
+            $xml,
+            $submission->id,
+            $submission->idempotency_key,
+            $fileName,
+        ));
 
-        if (! ($providerResult['success'] ?? false)) {
+        if (! $providerResult->accepted) {
             return $this->recordProviderFailure($submission, $providerResult);
         }
 
         $submission->update([
             'status' => SdiSubmissionStatus::ProviderAccepted,
-            'provider_uuid' => $providerResult['uuid'] ?? null,
-            'provider_file_id' => $providerResult['file_id'] ?? null,
-            'support_message' => $this->supportMessage($providerResult['message'] ?? $sentMessage),
+            'provider_uuid' => $providerResult->remoteReference,
+            'provider_file_id' => $providerResult->remoteFileId,
+            'support_message' => $this->supportMessage($providerResult->message ?? $sentMessage),
             'provider_accepted_at' => now(),
         ]);
 
@@ -92,7 +93,7 @@ class SdiSubmissionService
 
                 return $lockedSubmission->fresh(['fiscalDocument'])->setRelation('outboundLog', $outboundLog);
             });
-        } catch (Throwable $exception) {
+        } catch (\Throwable) {
             $submission->forceFill([
                 'status' => SdiSubmissionStatus::LocalPersistFailed,
                 'support_message' => 'Provider accepted the document, but local finalization failed. Reconciliation is required.',
@@ -113,10 +114,10 @@ class SdiSubmissionService
         ];
     }
 
-    private function acquire(FiscalDocument $document, string $xml, string $fingerprint): SdiOutboundSubmission|array
+    private function acquire(FiscalDocument $document, string $xml, string $fingerprint, string $driverKey): SdiOutboundSubmission|array
     {
         try {
-            return DB::transaction(function () use ($document, $xml, $fingerprint) {
+            return DB::transaction(function () use ($document, $xml, $fingerprint, $driverKey) {
                 $lockedDocument = FiscalDocument::withoutGlobalScopes()->lockForUpdate()->findOrFail($document->id);
 
                 if (! $lockedDocument->isSdiEditable() || $lockedDocument->status !== InvoiceStatus::XmlValidated) {
@@ -142,14 +143,15 @@ class SdiSubmissionService
                 return SdiOutboundSubmission::create([
                     'fiscal_document_id' => $lockedDocument->id,
                     'idempotency_key' => (string) Str::ulid(),
-                    'provider' => 'pending',
-                    'status' => SdiSubmissionStatus::Pending,
+                    'provider' => $driverKey,
+                    'status' => SdiSubmissionStatus::Dispatching,
                     'active_document_lock' => (string) $lockedDocument->id,
                     'xml_sha256' => hash('sha256', $xml),
                     'business_fingerprint' => $fingerprint,
+                    'dispatch_started_at' => now(),
                 ]);
             });
-        } catch (QueryException) {
+        } catch (UniqueConstraintViolationException) {
             $active = SdiOutboundSubmission::query()
                 ->where('active_document_lock', (string) $document->id)
                 ->latest('id')
@@ -163,17 +165,16 @@ class SdiSubmissionService
         }
     }
 
-    /** @param array<string, mixed> $providerResult */
-    private function recordProviderFailure(SdiOutboundSubmission $submission, array $providerResult): array
+    private function recordProviderFailure(SdiOutboundSubmission $submission, SdiSubmissionResult $providerResult): array
     {
-        $isUnknown = (bool) ($providerResult['outcome_unknown'] ?? false);
-        $message = $providerResult['error_message'] ?? 'Invio allo SDI fallito.';
+        $isUnknown = $providerResult->outcomeIsUnknown();
+        $message = $providerResult->message ?? 'Invio allo SDI fallito.';
 
         $submission->update([
             'status' => $isUnknown ? SdiSubmissionStatus::OutcomeUnknown : SdiSubmissionStatus::ProviderRejected,
             'active_document_lock' => $isUnknown ? $submission->fiscal_document_id : null,
-            'provider_http_status' => $providerResult['http_status'] ?? null,
-            'provider_error_code' => $providerResult['error_code'] ?? null,
+            'provider_http_status' => $providerResult->httpStatus,
+            'provider_error_code' => $providerResult->errorCode,
             'support_message' => $this->supportMessage($message),
         ]);
 
@@ -187,14 +188,13 @@ class SdiSubmissionService
         ];
     }
 
-    /** @param array<string, mixed> $providerResult */
-    private function minimalProviderPayload(array $providerResult): array
+    private function minimalProviderPayload(SdiSubmissionResult $providerResult): array
     {
         return array_filter([
-            'uuid' => $providerResult['uuid'] ?? null,
-            'file_id' => $providerResult['file_id'] ?? null,
-            'http_status' => $providerResult['http_status'] ?? null,
-            'error_code' => $providerResult['error_code'] ?? null,
+            'uuid' => $providerResult->remoteReference,
+            'file_id' => $providerResult->remoteFileId,
+            'http_status' => $providerResult->httpStatus,
+            'error_code' => $providerResult->errorCode,
         ], static fn (mixed $value): bool => $value !== null);
     }
 

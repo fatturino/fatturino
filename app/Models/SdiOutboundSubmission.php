@@ -15,6 +15,7 @@ class SdiOutboundSubmission extends Model
 
     protected $casts = [
         'status' => SdiSubmissionStatus::class,
+        'dispatch_started_at' => 'datetime',
         'provider_accepted_at' => 'datetime',
         'completed_at' => 'datetime',
         'reconciled_at' => 'datetime',

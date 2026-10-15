@@ -9,5 +9,6 @@ This directory is the canonical, versioned location for Fatturino Architecture D
 | [2026-10-01](2026-10-01-document-snapshot-storage.md)       | Accepted | Immutable XML and PDF snapshots on the documents disk            |
 | [2026-10-02](2026-10-02-manual-payment-reminders.md)        | Accepted | Manual, scenario-bound payment reminders                         |
 | [2026-10-04](2026-10-04-open-source-release-baseline.md)    | Accepted | Bun lockfile, CI release baseline, and public-repository hygiene |
+| [2026-10-14](2026-10-14-sdi-outbound-driver-neutrality.md)  | Accepted | Provider-neutral, fail-closed outbound SDI submission            |
 
 Do not edit or add decision records outside this directory. When a decision changes, create a new ADR that references the prior record and marks it superseded; do not rewrite historical rationale.

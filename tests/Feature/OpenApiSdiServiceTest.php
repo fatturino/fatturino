@@ -17,7 +17,7 @@ beforeEach(function () {
     $settings->save();
 });
 
-test('send invoice returns readable error on connection failure', function () {
+test('send invoice treats connection failures as an unknown outcome', function () {
     Http::fake(function () {
         throw new ConnectionException('timeout');
     });
@@ -27,8 +27,48 @@ test('send invoice returns readable error on connection failure', function () {
     $result = $service->sendInvoice('<xml />');
 
     expect($result['success'])->toBeFalse()
-        ->and($result['error_message'])->toContain('Failed to connect to OpenAPI SDI:')
-        ->and($result['error_message'])->toContain('timeout');
+        ->and($result['outcome_unknown'])->toBeTrue()
+        ->and($result['error_message'])->toBe('Non è stato possibile determinare l’esito dell’invio.');
+});
+
+test('send invoice treats server failures as an unknown outcome', function () {
+    Http::fake([
+        'https://test.sdi.openapi.it/invoices' => Http::response(['message' => 'temporary outage'], 500),
+    ]);
+
+    $result = app(OpenApiSdiService::class)->sendInvoice('<xml />');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['outcome_unknown'])->toBeTrue()
+        ->and($result['error_message'])->toBe('Non è stato possibile determinare l’esito dell’invio.');
+});
+
+test('send invoice classifies documented validation rejection as definitive', function () {
+    Http::fake([
+        'https://test.sdi.openapi.it/invoices' => Http::response([
+            'success' => false,
+            'error' => 'invalid_invoice',
+            'message' => 'Invoice validation failed',
+        ], 422),
+    ]);
+
+    $result = app(OpenApiSdiService::class)->sendInvoice('<xml />');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['outcome_unknown'])->toBeFalse()
+        ->and($result['error_code'])->toBe('invalid_invoice')
+        ->and($result['error_message'])->toBe('Invoice validation failed');
+});
+
+test('send invoice treats malformed error responses as an unknown outcome', function () {
+    Http::fake([
+        'https://test.sdi.openapi.it/invoices' => Http::response('not-json', 422, ['Content-Type' => 'text/plain']),
+    ]);
+
+    $result = app(OpenApiSdiService::class)->sendInvoice('<xml />');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['outcome_unknown'])->toBeTrue();
 });
 
 test('get supplier invoices uses recipient and sender query params from the spec', function () {
@@ -93,4 +133,23 @@ test('get customer invoices scopes active invoices to company vat as sender', fu
             && ($query['page'] ?? null) === '2'
             && ($query['per_page'] ?? null) === '50';
     });
+});
+
+test('webhook simulation returns safe provider diagnostics on validation failure', function () {
+    Http::fake([
+        'https://test.sdi.openapi.it/simulate/supplier-invoice' => Http::response([
+            'success' => false,
+            'error' => '620',
+            'message' => 'recipient fiscal id is required',
+        ], 400),
+    ]);
+
+    $result = app(OpenApiSdiService::class)->simulateWebhookEvent('supplier-invoice', ['invalid' => true]);
+
+    expect($result)->toMatchArray([
+        'success' => false,
+        'error' => '620',
+        'message' => 'recipient fiscal id is required',
+        'http_status' => 400,
+    ]);
 });

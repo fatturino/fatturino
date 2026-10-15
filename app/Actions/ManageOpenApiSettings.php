@@ -140,7 +140,7 @@ class ManageOpenApiSettings
         $payload = match ($type) {
             'customer-notification' => ['uuid' => $invoiceUuid, 'notification' => 'NS'],
             'customer-invoice' => ['invoice' => ['uuid' => $invoiceUuid]],
-            'supplier-invoice' => ['invoice' => ['uuid' => $invoiceUuid]],
+            'supplier-invoice' => $this->supplierInvoiceSimulationPayload(app(CompanySettings::class)),
             default => null,
         };
 
@@ -152,6 +152,7 @@ class ManageOpenApiSettings
         if (! ($result['success'] ?? false)) {
             Log::channel('fe-openapi')->warning('OpenAPI webhook simulation failed', [
                 'type' => $type,
+                'http_status' => $result['http_status'] ?? null,
                 'error' => $result['error'] ?? null,
                 'message' => $result['message'] ?? null,
             ]);
@@ -160,6 +161,87 @@ class ManageOpenApiSettings
         }
 
         return $this->success('Webhook simulato inviato.');
+    }
+
+    /** @return array<string, mixed> */
+    private function supplierInvoiceSimulationPayload(CompanySettings $company): array
+    {
+        $recipientVat = preg_replace('/\D/', '', $company->company_vat_number);
+
+        return [
+            'fattura_elettronica_header' => [
+                'dati_trasmissione' => [
+                    'codice_destinatario' => self::simulationValue($company->company_sdi_code, '0000000'),
+                ],
+                'cedente_prestatore' => [
+                    'dati_anagrafici' => [
+                        'id_fiscale_iva' => ['id_paese' => 'IT', 'id_codice' => '98765432109'],
+                        'anagrafica' => ['denominazione' => 'Fornitore simulazione Fatturino'],
+                        'regime_fiscale' => 'RF01',
+                    ],
+                    'sede' => $this->simulationAddress('Via dei Test 1', 'Roma', 'RM'),
+                ],
+                'cessionario_committente' => [
+                    'dati_anagrafici' => [
+                        'id_fiscale_iva' => [
+                            'id_paese' => self::simulationValue($company->company_country, 'IT'),
+                            'id_codice' => $recipientVat,
+                        ],
+                        'anagrafica' => [
+                            'denominazione' => self::simulationValue($company->company_name, 'Azienda destinataria'),
+                        ],
+                    ],
+                    'sede' => $this->simulationAddress(
+                        self::simulationValue($company->company_address, 'Via dei Test 2'),
+                        self::simulationValue($company->company_city, 'Milano'),
+                        self::simulationValue($company->company_province, 'MI'),
+                        self::simulationValue($company->company_postal_code, '20100'),
+                        self::simulationValue($company->company_country, 'IT'),
+                    ),
+                ],
+            ],
+            'fattura_elettronica_body' => [[
+                'dati_generali' => [
+                    'dati_generali_documento' => [
+                        'tipo_documento' => 'TD01',
+                        'divisa' => 'EUR',
+                        'data' => now()->toDateString(),
+                        'numero' => 'SIM-'.now()->format('YmdHis'),
+                    ],
+                ],
+                'dati_beni_servizi' => [
+                    'dettaglio_linee' => [[
+                        'numero_linea' => 1,
+                        'descrizione' => 'Servizio simulato OpenAPI',
+                        'prezzo_unitario' => '10.00',
+                        'prezzo_totale' => '10.00',
+                        'aliquota_iva' => '22.00',
+                    ]],
+                    'dati_riepilogo' => [[
+                        'aliquota_iva' => '22.00',
+                        'imponibile_importo' => '10.00',
+                        'imposta' => '2.20',
+                    ]],
+                ],
+            ]],
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function simulationAddress(string $address, string $city, string $province, string $postalCode = '00100', string $country = 'IT'): array
+    {
+        return [
+            'indirizzo' => $address,
+            'cap' => $postalCode,
+            'comune' => $city,
+            'provincia' => $province,
+            'nazione' => $country,
+        ];
+    }
+
+    private static function simulationValue(?string $value, string $fallback): string
+    {
+        return filled($value) ? trim($value) : $fallback;
     }
 
     private function finalizeActivation(OpenApiSdiService $service, OpenApiSettings $settings, string $vat, string $webhookUrl): array

@@ -70,8 +70,10 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function mount(?SalesInvoice $invoice = null): void
     {
-        $invoice = $invoice?->exists ? $invoice : null;
-        $this->invoice = $invoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
+        $invoice = $invoice?->exists
+            ? SalesInvoice::query()->find($invoice->id)
+            : null;
+        $this->invoice = $invoice?->load(['lines', 'activeSdiSubmission', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $settings = app(InvoiceSettings::class);
         $this->date = now()->toDateString();
         $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name', 'vat_number'])
@@ -290,6 +292,7 @@ new #[Layout('layouts::app')] class extends Component {
     @if($this->readOnly)
         <div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-sm text-warning">Questa fattura non è più modificabile.</div>
     @endif
+    <x-documents.sdi-submission-warning :submission="$invoice?->activeSdiSubmission" />
     @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror
 
     <form wire:submit="save" x-data="{ dirty: false, tab: @entangle('tab'), tabs: ['data', 'payment', 'notes' @if($invoice), 'history' @endif], selectTab(nextTab) { this.tab = nextTab; this.$nextTick(() => document.getElementById('sales-tab-' + nextTab)?.focus()); }, moveTab(step) { this.selectTab(this.tabs[(this.tabs.indexOf(this.tab) + step + this.tabs.length) % this.tabs.length]); } }" @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }" @input="dirty = true" @change="dirty = true" @sales-line-added.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-removed.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-discount-enabled.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-discount')?.focus())" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">

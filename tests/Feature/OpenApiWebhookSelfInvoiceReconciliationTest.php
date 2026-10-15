@@ -5,6 +5,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Enums\SdiSubmissionStatus;
 use App\Models\EiInboundLog;
+use App\Models\EiOutboundLog;
 use App\Models\InAppNotification;
 use App\Models\PurchaseInvoice;
 use App\Models\SalesInvoice;
@@ -375,7 +376,7 @@ test('reconcile command restores missing sent log when local uuid was persisted'
     ]);
 });
 
-test('reconcile completes a local persistence failure after provider acceptance', function () {
+test('reconcile completes an OpenAPI submission after provider acceptance', function (string $provider) {
     $invoice = SalesInvoice::factory()->create([
         'number' => '2026/44',
         'document_type' => 'TD01',
@@ -388,7 +389,7 @@ test('reconcile completes a local persistence failure after provider acceptance'
     $submission = SdiOutboundSubmission::create([
         'fiscal_document_id' => $invoice->id,
         'idempotency_key' => (string) str()->ulid(),
-        'provider' => 'openapi',
+        'provider' => $provider,
         'status' => SdiSubmissionStatus::LocalPersistFailed,
         'active_document_lock' => (string) $invoice->id,
         'xml_sha256' => hash('sha256', $xml),
@@ -424,9 +425,13 @@ test('reconcile completes a local persistence failure after provider acceptance'
         ->and($submission->status)->toBe(SdiSubmissionStatus::Completed)
         ->and($submission->active_document_lock)->toBeNull()
         ->and($submission->reconciled_at)->not->toBeNull();
-});
+})->with([
+    'historic OpenAPI provider key' => 'openapi',
+    'legacy OpenAPI driver key' => 'openapi_legacy',
+    'native OpenAPI driver key' => 'openapi_v1',
+]);
 
-test('reconcile completes a pending submission left by a crash after provider acceptance', function () {
+test('reconcile does not associate an OpenAPI record with a pending submission', function () {
     $invoice = SalesInvoice::factory()->create([
         'number' => '2026/45',
         'document_type' => 'TD01',
@@ -459,9 +464,54 @@ test('reconcile completes a pending submission left by a crash after provider ac
 
     $submission->refresh();
 
-    expect($submission->status)->toBe(SdiSubmissionStatus::Completed)
-        ->and($submission->active_document_lock)->toBeNull()
-        ->and($submission->provider_uuid)->toBe('accepted-before-status-persist');
+    $invoice->refresh();
+
+    expect($submission->status)->toBe(SdiSubmissionStatus::Pending)
+        ->and($submission->active_document_lock)->toBe((string) $invoice->id)
+        ->and($submission->provider_uuid)->toBeNull()
+        ->and($invoice->sdi_uuid)->toBeNull();
+});
+
+test('reconcile does not associate an OpenAPI record with another provider submission sharing its fingerprint', function () {
+    $invoice = SalesInvoice::factory()->create([
+        'number' => '2026/46',
+        'document_type' => 'TD01',
+        'date' => now()->toDateString(),
+        'total_gross' => 12200,
+        'status' => InvoiceStatus::XmlValidated,
+        'sdi_status' => null,
+    ]);
+    $xml = makeInboundInvoiceXml('TD01', '2026/46');
+    $submission = SdiOutboundSubmission::create([
+        'fiscal_document_id' => $invoice->id,
+        'idempotency_key' => (string) str()->ulid(),
+        'provider' => 'acube_v1',
+        'status' => SdiSubmissionStatus::OutcomeUnknown,
+        'active_document_lock' => (string) $invoice->id,
+        'xml_sha256' => hash('sha256', $xml),
+        'business_fingerprint' => app(BusinessFingerprintService::class)->buildFromXml($xml),
+    ]);
+
+    $service = Mockery::mock(OpenApiSdiService::class);
+    $service->shouldReceive('isConfigured')->once()->andReturnTrue();
+    $service->shouldReceive('getCustomerInvoices')->once()->andReturn(['success' => true, 'data' => [[
+        'uuid' => 'openapi-collision-uuid',
+        'file_id' => 'openapi-collision-file-id',
+        'created_at' => now()->toIso8601String(),
+    ]]]);
+    $service->shouldReceive('downloadInvoiceXml')->once()->with('openapi-collision-uuid')->andReturn(['success' => true, 'xml' => $xml]);
+    app()->instance(OpenApiSdiService::class, $service);
+
+    $this->artisan('openapi:reconcile', ['--recover-sends-only' => true])->assertExitCode(0);
+
+    $invoice->refresh();
+    $submission->refresh();
+
+    expect($submission->status)->toBe(SdiSubmissionStatus::OutcomeUnknown)
+        ->and($submission->active_document_lock)->toBe((string) $invoice->id)
+        ->and($submission->provider_uuid)->toBeNull()
+        ->and($invoice->sdi_uuid)->toBeNull()
+        ->and(EiOutboundLog::query()->where('fiscal_document_id', $invoice->id)->count())->toBe(0);
 });
 
 test('customer notification NS reopens outbound invoice for correction and resend', function () {

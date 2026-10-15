@@ -5,6 +5,7 @@ namespace App\Enums;
 enum SdiSubmissionStatus: string
 {
     case Pending = 'pending';
+    case Dispatching = 'dispatching';
     case ProviderAccepted = 'provider_accepted';
     case Completed = 'completed';
     case ProviderRejected = 'provider_rejected';
@@ -16,6 +17,7 @@ enum SdiSubmissionStatus: string
     {
         return match ($this) {
             self::Pending,
+            self::Dispatching,
             self::ProviderAccepted,
             self::OutcomeUnknown,
             self::LocalPersistFailed => true,

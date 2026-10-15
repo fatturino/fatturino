@@ -1,0 +1,17 @@
+{
+    "fixture_version": 1,
+    "provider": "openapi-sdi",
+    "operation": "POST /invoices",
+    "source": "plans/openapi-sdi-contract-extract.json",
+    "redaction": "Synthetic protocol-only values. No XML, tax identifiers, personal data, addresses, account numbers, or tokens.",
+    "cases": {
+        "success": "submit/success.json",
+        "rejection_400": "submit/rejection-400.json",
+        "rejection_402": "submit/rejection-402.json",
+        "rejection_422": "submit/rejection-422.json",
+        "missing_reference": "submit/missing-reference.json",
+        "incomplete_rejection": "submit/incomplete-rejection.json",
+        "ambiguous_success": "submit/ambiguous-success.json",
+        "sensitive_remote_content": "submit/sensitive-remote-content.json"
+    }
+}

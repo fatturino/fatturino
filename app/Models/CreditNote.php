@@ -11,6 +11,7 @@ use App\Models\Traits\HasPayments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Parental\HasParent;
 
 class CreditNote extends FiscalDocument
@@ -20,6 +21,13 @@ class CreditNote extends FiscalDocument
     use HasPayments;
 
     protected $guarded = [];
+
+    public function activeSdiSubmission(): HasOne
+    {
+        return $this->hasOne(SdiOutboundSubmission::class, 'fiscal_document_id')
+            ->whereNotNull('active_document_lock')
+            ->latestOfMany();
+    }
 
     protected $attributes = [
         'status' => 'draft',

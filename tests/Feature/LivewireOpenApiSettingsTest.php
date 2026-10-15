@@ -12,6 +12,7 @@ use Livewire\Livewire;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 beforeEach(function () {
+    config()->set('fe-openapi.managed_by_env', false);
     $this->actingAs(User::factory()->create());
     app()->instance(EnvironmentCapabilities::class, new UnrestrictedCapabilities);
 
@@ -93,6 +94,47 @@ it('checks the current unsaved configuration without persisting it', function ()
         ->and(app(OpenApiSettings::class)->sandbox)->toBeFalse();
 
     Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://test.sdi.openapi.it/'));
+});
+
+it('sends a complete supplier invoice payload for sandbox webhook simulation', function () {
+    $company = app(CompanySettings::class);
+    $company->company_name = 'Azienda Test';
+    $company->company_vat_number = 'IT12345678901';
+    $company->company_address = 'Via Roma 1';
+    $company->company_city = 'Milano';
+    $company->company_postal_code = '20100';
+    $company->company_province = 'MI';
+    $company->company_country = 'IT';
+    $company->save();
+
+    $settings = app(OpenApiSettings::class);
+    $settings->api_token = 'sandbox-token';
+    $settings->sandbox = true;
+    $settings->save();
+
+    config()->set('fe-openapi.managed_by_env', false);
+    Http::fake([
+        'https://test.sdi.openapi.it/simulate/supplier-invoice' => Http::response([
+            'success' => true,
+            'message' => 'simulation sent',
+        ]),
+    ]);
+
+    Livewire::test('pages::settings.openapi')
+        ->set('simulationType', 'supplier-invoice')
+        ->call('simulateWebhook')
+        ->assertHasNoErrors()
+        ->assertSee('Webhook simulato inviato.');
+
+    Http::assertSent(function ($request) {
+        $payload = $request->data();
+
+        return $request->url() === 'https://test.sdi.openapi.it/simulate/supplier-invoice'
+            && data_get($payload, 'fattura_elettronica_header.cessionario_committente.dati_anagrafici.id_fiscale_iva.id_codice') === '12345678901'
+            && data_get($payload, 'fattura_elettronica_header.cedente_prestatore.dati_anagrafici.id_fiscale_iva.id_codice') === '98765432109'
+            && data_get($payload, 'fattura_elettronica_body.0.dati_beni_servizi.dettaglio_linee.0.prezzo_totale') === '10.00'
+            && ! isset($payload['invoice']);
+    });
 });
 
 it('keeps environment-managed settings immutable from the Livewire payload', function () {

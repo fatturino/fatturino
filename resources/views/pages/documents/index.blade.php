@@ -205,7 +205,10 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function query(): Builder
     {
-        $query = $this->baseQuery()->with(['contact:id,name,email']);
+        $query = $this->baseQuery()->with('contact:id,name,email');
+        if ($this->supportsSdiSubmissionState()) {
+            $query->with('activeSdiSubmission');
+        }
         if ($this->hasPayments()) {
             $query->with('payments:id,fiscal_document_id,amount,paid_at,reference,notes,bank_name');
         }
@@ -225,6 +228,11 @@ new #[Layout('layouts::app')] class extends Component {
         }
 
         return $query;
+    }
+
+    private function supportsSdiSubmissionState(): bool
+    {
+        return in_array($this->type, ['sales', 'self', 'credit'], true);
     }
 
     private function aggregates(): object
@@ -475,7 +483,11 @@ new #[Layout('layouts::app')] class extends Component {
                             {{ $document->due_date?->format('d/m/Y') ?? 'Nessuna' }}
                         </td>
                         <td class="px-5 py-4 align-top whitespace-nowrap">
-                            <x-badge :value="$this->statusLabel($document->status)" :variant="$this->statusTone($document->status)" />
+                            @if($this->supportsSdiSubmissionState())
+                                <x-documents.sdi-submission-status :submission="$document->activeSdiSubmission" :fallback-label="$this->statusLabel($document->status)" :fallback-variant="$this->statusTone($document->status)" />
+                            @else
+                                <x-badge :value="$this->statusLabel($document->status)" :variant="$this->statusTone($document->status)" />
+                            @endif
                         </td>
                         @if($this->hasPayments())
                             <td class="px-5 py-4 align-top whitespace-nowrap">
@@ -512,7 +524,11 @@ new #[Layout('layouts::app')] class extends Component {
                         <p class="mt-1 truncate text-sm text-content-muted">{{ $document->contact?->name ?? 'Non assegnato' }}</p>
                     </div>
                     <div class="flex shrink-0 items-start gap-1">
-                        <x-badge :value="$this->statusLabel($document->status)" :variant="$this->statusTone($document->status)" />
+                        @if($this->supportsSdiSubmissionState())
+                            <x-documents.sdi-submission-status :submission="$document->activeSdiSubmission" :fallback-label="$this->statusLabel($document->status)" :fallback-variant="$this->statusTone($document->status)" />
+                        @else
+                            <x-badge :value="$this->statusLabel($document->status)" :variant="$this->statusTone($document->status)" />
+                        @endif
                         <x-documents.document-actions :document="$document" :type="$type" :base="$definition['base']" />
                     </div>
                 </div>

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Parental\HasParent;
 
 class SalesInvoice extends FiscalDocument
@@ -42,5 +43,12 @@ class SalesInvoice extends FiscalDocument
     public function getIsSdiEditableAttribute(): bool
     {
         return $this->isSdiEditable();
+    }
+
+    public function activeSdiSubmission(): HasOne
+    {
+        return $this->hasOne(SdiOutboundSubmission::class, 'fiscal_document_id')
+            ->whereNotNull('active_document_lock')
+            ->latestOfMany();
     }
 }

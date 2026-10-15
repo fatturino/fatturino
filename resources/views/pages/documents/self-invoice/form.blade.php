@@ -42,8 +42,10 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $settings = app(CompanySettings::class);
         abort_unless(FiscalRegimePolicy::supportsSelfInvoices($settings->company_fiscal_regime, $settings->rf19_self_invoices_enabled), 403);
-        $selfInvoice = $selfInvoice?->exists ? $selfInvoice : null;
-        $this->invoice = $selfInvoice?->load(['lines', 'events' => fn ($query) => $query->latest('occurred_at')]);
+        $selfInvoice = $selfInvoice?->exists
+            ? SelfInvoice::query()->find($selfInvoice->id)
+            : null;
+        $this->invoice = $selfInvoice?->load(['lines', 'activeSdiSubmission', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $this->date = now()->toDateString();
         $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name', 'vat_number'])
             ->map(fn (Contact $c) => [
@@ -165,6 +167,7 @@ new #[Layout('layouts::app')] class extends Component {
 <section class="mx-auto max-w-7xl space-y-6 pb-24">
     @if(session('success'))<div class="rounded-md border border-success/20 bg-success-bg p-4 text-sm text-success">{{ session('success') }}</div>@endif
     @if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-sm text-warning">Questa autofattura non è più modificabile.</div>@endif
+    <x-documents.sdi-submission-warning :submission="$invoice?->activeSdiSubmission" />
     @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror
     <form wire:submit="save" x-data="{ dirty: false, tab: @entangle('tab'), tabs: ['data', 'notes' @if($invoice), 'history' @endif], selectTab(nextTab) { this.tab = nextTab; this.$nextTick(() => document.getElementById('self-invoice-tab-' + nextTab)?.focus()); }, moveTab(step) { this.selectTab(this.tabs[(this.tabs.indexOf(this.tab) + step + this.tabs.length) % this.tabs.length]); } }" @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }" @input="dirty = true" @change="dirty = true" @sales-line-added.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" @sales-line-removed.window="$nextTick(() => document.getElementById('sales-line-' + $event.detail.key + '-description')?.focus())" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div class="space-y-6">

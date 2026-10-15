@@ -1,0 +1,8 @@
+{
+    "success": true,
+    "data": {
+        "uuid": "remote-reference-001",
+        "file_id": "remote-file-001"
+    },
+    "message": "accepted"
+}

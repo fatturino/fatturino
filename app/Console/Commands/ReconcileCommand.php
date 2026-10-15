@@ -25,6 +25,16 @@ use Illuminate\Support\Facades\Log;
 
 class ReconcileCommand extends Command
 {
+    /**
+     * OpenAPI reconciliation must only inspect submissions created by an
+     * OpenAPI driver. Unknown and future driver keys fail closed.
+     */
+    private const OPENAPI_SUBMISSION_DRIVERS = [
+        'openapi',
+        'openapi_legacy',
+        'openapi_v1',
+    ];
+
     protected $signature = 'openapi:reconcile
         {--receive-only : Only reconcile missed supplier invoices}
         {--updates-only : Only reconcile missed status updates}
@@ -394,10 +404,12 @@ class ReconcileCommand extends Command
                 $submission = SdiOutboundSubmission::query()
                     ->whereIn('status', [
                         SdiSubmissionStatus::Pending,
+                        SdiSubmissionStatus::Dispatching,
                         SdiSubmissionStatus::ProviderAccepted,
                         SdiSubmissionStatus::OutcomeUnknown,
                         SdiSubmissionStatus::LocalPersistFailed,
                     ])
+                    ->whereIn('provider', self::OPENAPI_SUBMISSION_DRIVERS)
                     ->where('business_fingerprint', app(BusinessFingerprintService::class)->buildFromXml($downloadResult['xml']))
                     ->latest('id')
                     ->first();
@@ -406,6 +418,16 @@ class ReconcileCommand extends Command
                     ?? $submission?->fiscalDocument
                     ?? $this->findRecoverableSelfInvoice($downloadResult['xml'], $cutoffDate)
                     ?? $this->findRecoverableOutboundDocument($downloadResult['xml'], $cutoffDate);
+
+                if ($document && $this->hasActiveNonOpenApiSubmission($document)) {
+                    $stats['skipped']++;
+                    if ($showDetails) {
+                        $filename = $record['sdi_file_name'] ?? $record['filename'] ?? $uuid;
+                        $this->line("  <fg=gray>Skipped outbound (active non-OpenAPI submission): {$filename} (UUID: {$uuid})</>");
+                    }
+
+                    continue;
+                }
 
                 if (! $document) {
                     $stats['skipped']++;
@@ -830,10 +852,12 @@ class ReconcileCommand extends Command
             ->where('fiscal_document_id', $document->id)
             ->whereIn('status', [
                 SdiSubmissionStatus::Pending,
+                SdiSubmissionStatus::Dispatching,
                 SdiSubmissionStatus::ProviderAccepted,
                 SdiSubmissionStatus::OutcomeUnknown,
                 SdiSubmissionStatus::LocalPersistFailed,
             ])
+            ->whereIn('provider', self::OPENAPI_SUBMISSION_DRIVERS)
             ->latest('id')
             ->first();
 
@@ -859,6 +883,21 @@ class ReconcileCommand extends Command
             'sdi_uuid' => $uuid,
             'file_id' => $fileId,
         ]);
+    }
+
+    private function hasActiveNonOpenApiSubmission(FiscalDocument $document): bool
+    {
+        return SdiOutboundSubmission::query()
+            ->where('fiscal_document_id', $document->id)
+            ->whereIn('status', [
+                SdiSubmissionStatus::Pending,
+                SdiSubmissionStatus::Dispatching,
+                SdiSubmissionStatus::ProviderAccepted,
+                SdiSubmissionStatus::OutcomeUnknown,
+                SdiSubmissionStatus::LocalPersistFailed,
+            ])
+            ->whereNotIn('provider', self::OPENAPI_SUBMISSION_DRIVERS)
+            ->exists();
     }
 
     /**

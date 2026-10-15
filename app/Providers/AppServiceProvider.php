@@ -9,9 +9,13 @@ use App\Mail\ScalewayTemTransport;
 use App\Services\DemoCapabilities;
 use App\Services\DemoLoginCustomizer;
 use App\Services\NullLoginCustomizer;
+use App\Services\OpenApiLegacySubmissionDriver;
 use App\Services\OpenApiSdiProvider;
 use App\Services\OpenApiSdiService;
+use App\Services\OpenApiV1SubmissionDriver;
 use App\Services\PostHogTelemetryService;
+use App\Services\SdiSubmissionDriverRegistry;
+use App\Services\SdiSubmissionDriverSelector;
 use App\Services\UnrestrictedCapabilities;
 use App\Settings\BackupSettings;
 use App\Settings\OpenApiSettings;
@@ -30,6 +34,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(OpenApiSdiService::class);
         $this->app->singleton(PostHogTelemetryService::class);
         $this->app->singleton(SdiProvider::class, OpenApiSdiProvider::class);
+        $this->app->singleton(OpenApiLegacySubmissionDriver::class);
+        $this->app->singleton(OpenApiV1SubmissionDriver::class);
+        $this->app->singleton(SdiSubmissionDriverRegistry::class, function ($app) {
+            return new SdiSubmissionDriverRegistry([
+                $app->make(OpenApiLegacySubmissionDriver::class),
+                $app->make(OpenApiV1SubmissionDriver::class),
+            ]);
+        });
+        $this->app->singleton(SdiSubmissionDriverSelector::class);
 
         $this->mergeConfigFrom(config_path('fe-openapi.php'), 'fe-openapi');
         $this->registerEnvironmentBindings();

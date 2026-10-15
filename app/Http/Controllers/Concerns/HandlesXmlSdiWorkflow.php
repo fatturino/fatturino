@@ -157,7 +157,6 @@ trait HandlesXmlSdiWorkflow
             $document,
             $xml,
             $fileName,
-            $xmlWorkflow,
             $sentMessage,
         );
 
@@ -197,7 +196,7 @@ trait HandlesXmlSdiWorkflow
             return back()->withErrors(['action' => $errorMessage]);
         }
 
-        $providerId = $xmlWorkflow->providerId();
+        $providerId = $submissionResult['submission']->provider;
         $outboundLog = EiOutboundLog::query()
             ->where('fiscal_document_id', $document->id)
             ->where('event_type', 'sent')

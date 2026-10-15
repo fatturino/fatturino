@@ -3,6 +3,7 @@
 use App\Enums\SdiStatus;
 use App\Models\Contact;
 use App\Models\CreditNote;
+use App\Models\SdiOutboundSubmission;
 use App\Models\Sequence;
 use App\Models\User;
 use Livewire\Livewire;
@@ -63,4 +64,25 @@ it('renders SDI-locked credit notes as read-only', function () {
     Livewire::test('pages::documents.credit-note.form', ['creditNote' => $note])
         ->assertSee('Questa nota di credito non è più modificabile.')
         ->assertDontSee('Aggiorna nota di credito');
+});
+
+it('shows an SDI verification warning for an uncertain credit note submission', function () {
+    $user = User::factory()->create();
+    $note = CreditNote::factory()->create(['date' => now()->toDateString()]);
+    SdiOutboundSubmission::create([
+        'fiscal_document_id' => $note->id,
+        'idempotency_key' => 'credit-form-sdi-submission-'.$note->id,
+        'provider' => 'openapi_v1',
+        'status' => 'local_persist_failed',
+        'active_document_lock' => (string) $note->id,
+        'xml_sha256' => hash('sha256', 'credit-form-sdi-submission-'.$note->id),
+        'business_fingerprint' => hash('sha256', 'credit-form-business-'.$note->id),
+    ]);
+    $note = CreditNote::query()->findOrFail($note->id);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.credit-note.form', ['creditNote' => $note])
+        ->assertSee('Invio SDI da verificare')
+        ->assertSee('Non reinviare il documento.');
 });

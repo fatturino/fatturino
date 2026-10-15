@@ -4,6 +4,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\SalesInvoice;
+use App\Models\SdiOutboundSubmission;
 use App\Models\Sequence;
 use App\Models\User;
 use App\Settings\CompanySettings;
@@ -65,6 +66,30 @@ it('renders the sales invoice as a tabbed form with invoice lines and a fiscal s
         ->assertSee('aria-label="Sezioni fattura"', escape: false)
         ->assertSee('role="tablist"', escape: false)
         ->assertSee('sales-panel-payment', escape: false);
+});
+
+it('shows a persistent warning when an SDI submission needs verification', function () {
+    $user = User::factory()->create();
+    $invoice = SalesInvoice::factory()->create(['status' => InvoiceStatus::XmlValidated]);
+    SdiOutboundSubmission::create([
+        'fiscal_document_id' => $invoice->id,
+        'idempotency_key' => 'form-sdi-submission-'.$invoice->id,
+        'provider' => 'openapi_v1',
+        'status' => 'outcome_unknown',
+        'active_document_lock' => (string) $invoice->id,
+        'xml_sha256' => hash('sha256', 'form-sdi-submission-'.$invoice->id),
+        'business_fingerprint' => hash('sha256', 'form-business-'.$invoice->id),
+        'support_message' => 'Timeout durante la consegna.',
+    ]);
+    $invoice = SalesInvoice::query()->findOrFail($invoice->id);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form', ['invoice' => $invoice])
+        ->assertSee('Invio SDI da verificare')
+        ->assertSee('Non reinviare il documento.')
+        ->assertSee('Timeout durante la consegna.')
+        ->assertSee('href="/advanced"', false);
 });
 
 it('keeps payment and notes in tabs while showing active fiscal options in the collapsed card', function () {

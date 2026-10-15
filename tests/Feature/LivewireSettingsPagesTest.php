@@ -1,6 +1,8 @@
 <?php
 
+use App\Contracts\EnvironmentCapabilities;
 use App\Models\User;
+use App\Services\DemoCapabilities;
 use Illuminate\Support\Facades\Artisan;
 use Livewire\Livewire;
 
@@ -36,6 +38,7 @@ it('runs outbound SDI reconciliation from the diagnostics page without sending n
 
 it('blocks restricted users from testing email and backup-service connections', function () {
     $user = User::factory()->create();
+    app()->instance(EnvironmentCapabilities::class, new DemoCapabilities);
 
     $this->actingAs($user)
         ->post(route('settings.email.test'))

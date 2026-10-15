@@ -8,6 +8,7 @@ use App\Enums\VatRate;
 use App\Models\Contact;
 use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
+use App\Models\SdiOutboundSubmission;
 use App\Models\Sequence;
 use App\Models\User;
 use App\Services\DocumentEventRecorder;
@@ -17,6 +18,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    config()->set('sdi.driver', 'openapi_legacy');
+
     $settings = app(CompanySettings::class);
     $settings->company_name = 'Test Company SRL';
     $settings->company_vat_number = '12345678903';
@@ -121,7 +124,6 @@ test('send to sdi endpoint returns updated document payload on success', functio
     $invoice->calculateTotals();
 
     $provider = Mockery::mock(SdiProvider::class);
-    $provider->shouldReceive('id')->once()->andReturn('mock-provider');
     $provider->shouldReceive('sendInvoice')
         ->once()
         ->andReturn([
@@ -154,6 +156,12 @@ test('send to sdi endpoint returns updated document payload on success', functio
         'event_type' => 'sent',
         'status' => SdiStatus::Sent->value,
     ]);
+    $this->assertDatabaseHas('sdi_outbound_submissions', [
+        'fiscal_document_id' => $invoice->id,
+        'provider' => 'openapi_legacy',
+        'status' => SdiSubmissionStatus::Completed->value,
+    ]);
+    expect(SdiOutboundSubmission::query()->where('fiscal_document_id', $invoice->id)->sole()->dispatch_started_at)->not->toBeNull();
     $this->assertDatabaseHas('document_events', [
         'fiscal_document_id' => $invoice->id,
         'event_type' => 'sdi_sent',
@@ -181,7 +189,6 @@ test('send to sdi endpoint stays successful when document event logging fails af
     $invoice->calculateTotals();
 
     $provider = Mockery::mock(SdiProvider::class);
-    $provider->shouldReceive('id')->once()->andReturn('mock-provider');
     $provider->shouldReceive('sendInvoice')
         ->once()
         ->andReturn([
