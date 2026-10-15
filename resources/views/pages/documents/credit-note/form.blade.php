@@ -37,7 +37,7 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $creditNote = $creditNote?->exists
             ? CreditNote::query()->find($creditNote->id)
-            : null;
+                : null;
         $this->invoice = $creditNote?->load(['lines', 'activeSdiSubmission', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $this->date = now()->toDateString();
         $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name', 'vat_number'])

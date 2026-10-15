@@ -72,7 +72,7 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $invoice = $invoice?->exists
             ? SalesInvoice::query()->find($invoice->id)
-            : null;
+                : null;
         $this->invoice = $invoice?->load(['lines', 'activeSdiSubmission', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $settings = app(InvoiceSettings::class);
         $this->date = now()->toDateString();

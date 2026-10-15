@@ -44,7 +44,7 @@ new #[Layout('layouts::app')] class extends Component {
         abort_unless(FiscalRegimePolicy::supportsSelfInvoices($settings->company_fiscal_regime, $settings->rf19_self_invoices_enabled), 403);
         $selfInvoice = $selfInvoice?->exists
             ? SelfInvoice::query()->find($selfInvoice->id)
-            : null;
+                : null;
         $this->invoice = $selfInvoice?->load(['lines', 'activeSdiSubmission', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $this->date = now()->toDateString();
         $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name', 'vat_number'])
