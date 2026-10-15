@@ -19,6 +19,8 @@ grep -Fq "include_if_exists = 'fatturino.conf'" "$root/docker/entrypoint.d/12-in
 grep -Fq 'listen_addresses = '\''*'\''' "$root/docker/entrypoint.d/12-init-postgresql.sh"
 grep -Fq 'host    all             all             0.0.0.0/0               scram-sha-256' "$root/docker/entrypoint.d/12-init-postgresql.sh"
 test -f "$root/docker/entrypoint.d/25-stop-bootstrap-postgresql.sh"
+test -f "$root/docker/s6-overlay/s6-rc.d/user/contents.d/nginx"
+test -f "$root/docker/s6-overlay/s6-rc.d/user/contents.d/php-fpm"
 grep -Fq "postgres=\$(find /usr/lib/postgresql -path '*/bin/postgres'" "$root/docker/s6-overlay/s6-rc.d/postgresql/run"
 grep -Fq 'exec runuser -u postgres -- "${postgres}" -D /data/postgresql' "$root/docker/s6-overlay/s6-rc.d/postgresql/run"
 ! grep -Fq 'chown -R www-data:www-data /data' "$root/docker/entrypoint.d/20-seed-database.sh"
