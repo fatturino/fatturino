@@ -3,6 +3,21 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+$cloudCentralConnection = [
+    'driver' => env('CLOUD_CENTRAL_DB_CONNECTION'),
+    'url' => env('CLOUD_CENTRAL_DB_URL'),
+    'host' => env('CLOUD_CENTRAL_DB_HOST'),
+    'port' => env('CLOUD_CENTRAL_DB_PORT'),
+    'database' => env('CLOUD_CENTRAL_DB_DATABASE'),
+    'username' => env('CLOUD_CENTRAL_DB_USERNAME'),
+    'password' => env('CLOUD_CENTRAL_DB_PASSWORD'),
+    'charset' => env('CLOUD_CENTRAL_DB_CHARSET', 'utf8'),
+    'prefix' => '',
+    'prefix_indexes' => true,
+    'search_path' => env('CLOUD_CENTRAL_DB_SEARCH_PATH', 'public'),
+    'sslmode' => env('CLOUD_CENTRAL_DB_SSLMODE', 'prefer'),
+];
+
 return [
 
     /*
@@ -31,6 +46,8 @@ return [
     */
 
     'connections' => [
+
+        'central' => $cloudCentralConnection,
 
         'sqlite' => [
             'driver' => 'sqlite',

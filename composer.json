@@ -32,6 +32,7 @@
         "sentry/sentry-laravel": "^4.14",
         "spatie/laravel-backup": "^10.2",
         "spatie/laravel-settings": "^3.7",
+        "stancl/tenancy": "^3.10.1",
         "tightenco/parental": "^1.6",
         "wirecharts/wirecharts": "^1.2",
         "wireui/phosphoricons": "^2.5"
@@ -99,7 +100,9 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "stancl/tenancy"
+            ]
         }
     },
     "config": {
