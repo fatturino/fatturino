@@ -8,8 +8,11 @@ use Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper;
 use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager;
+use App\Models\Tenant;
 
 return [
+    'tenant_model' => Tenant::class,
+
     'central_domains' => array_values(array_filter(explode(',', (string) env('CLOUD_CENTRAL_DOMAINS', '')))),
 
     'bootstrappers' => [

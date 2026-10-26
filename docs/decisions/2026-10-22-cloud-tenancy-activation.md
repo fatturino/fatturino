@@ -13,10 +13,13 @@ Fatturino is self-hosted by default, but the managed Cloud deployment needs a ce
 - Composer auto-discovery for `stancl/tenancy` is disabled. `CloudTenancyServiceProvider` registers the package only when Cloud mode is explicitly enabled.
 - Self-hosted HTTP requests, Artisan commands, migrations, queue workers, and scheduler processes must not resolve or connect to a central database.
 - The central database is Cloud-only. It stores tenant metadata, domains, and Cloud queue infrastructure. Fiscal application data remains exclusively in the tenant database.
-- Tenant provisioning is performed through Artisan in this phase. A central UI, customer onboarding, and billing are out of scope.
+- The managed deployment now has a central administrator control plane. Its separate `admins` table and `admin` guard manage Ploi server registrations, cloud instance lifecycle, provisioning, and safe read-only synchronization of known Ploi sites.
+- A central cloud instance may map to one optional record in the cloud `users` table as owner. This mapping is control-plane metadata only; deleting the user clears the mapping and does not delete or archive the instance.
+- The central control plane stores only tenant registry, provisioning metadata, encrypted local database credentials, and non-sensitive allowlisted remote site metadata. It does not store tenant fiscal data.
 
 ## Consequences
 
 - Cloud configuration and tenant lifecycle commands must fail clearly when required central settings are missing.
 - Existing migrations will be split into tenant schema migrations, while self-hosted migration commands continue to apply the same complete application schema to the configured default database.
 - Every Cloud runtime boundary must initialize tenancy before accessing fiscal data. Automatic tests must cover both modes and prove that an unreachable central database does not affect self-hosted operation.
+- The central administrator control plane must not use destructive Ploi operations when an instance is archived, a synchronization fails, or Ploi reports a missing remote site.
