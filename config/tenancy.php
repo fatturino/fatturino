@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types=1);
+use App\Models\Tenant;
+use App\Tenancy\ApplicationConfigurationTenancyBootstrapper;
 use Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper;
 use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
 use Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper;
@@ -9,7 +11,6 @@ use Stancl\Tenancy\Features\TenantConfig;
 use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager;
-use App\Models\Tenant;
 
 return [
     'tenant_model' => Tenant::class,
@@ -18,6 +19,7 @@ return [
 
     'bootstrappers' => [
         DatabaseTenancyBootstrapper::class,
+        ApplicationConfigurationTenancyBootstrapper::class,
         CacheTenancyBootstrapper::class,
         FilesystemTenancyBootstrapper::class,
         QueueTenancyBootstrapper::class,

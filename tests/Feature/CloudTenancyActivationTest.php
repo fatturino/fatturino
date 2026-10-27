@@ -8,6 +8,7 @@ use App\Services\DemoCapabilities;
 use App\Services\DemoLoginCustomizer;
 use App\Services\NullLoginCustomizer;
 use App\Services\UnrestrictedCapabilities;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Stancl\Tenancy\TenancyServiceProvider;
 
 test('self-hosted mode does not register tenancy services', function () {
@@ -35,6 +36,9 @@ test('cloud mode activates the tenant database connection during tenancy initial
     $tenant = new Tenant([
         'id' => 'cloud-tenant',
         'tenancy_db_name' => ':memory:',
+        'app_key' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+        'app_url' => 'https://cloud-tenant.fatturino.test',
+        'app_instance_id' => 'cloud-tenant',
     ]);
 
     tenancy()->initialize($tenant);
@@ -66,6 +70,9 @@ test('cloud mode applies and restores the tenant demo configuration', function (
         'id' => 'demo-tenant',
         'tenancy_db_name' => ':memory:',
         'demo_enabled' => true,
+        'app_key' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+        'app_url' => 'https://demo.fatturino.test',
+        'app_instance_id' => 'demo',
     ]);
 
     tenancy()->initialize($tenant);
@@ -80,6 +87,85 @@ test('cloud mode applies and restores the tenant demo configuration', function (
         ->and(app(LoginCustomizer::class))->toBeInstanceOf(NullLoginCustomizer::class)
         ->and(app(EnvironmentCapabilities::class))->toBeInstanceOf(UnrestrictedCapabilities::class);
 
+    config()->set('database.default', 'sqlite');
+    app('db')->setDefaultConnection('sqlite');
+});
+
+test('cloud mode applies tenant application configuration and restores the central configuration', function () {
+    config()->set('cloud.enabled', true);
+    config()->set('database.connections.central', config('database.connections.sqlite'));
+    config()->set('database.connections.central.database', ':memory:');
+    config()->set('tenancy.central_domains', ['cloud.fatturino.test']);
+    config()->set('tenancy.database.central_connection', 'central');
+    config()->set('tenancy.database.template_tenant_connection', 'sqlite');
+    config()->set('app.key', 'base64://////////////////////////////////////////8=');
+    config()->set('app.url', 'https://central.fatturino.test');
+    config()->set('app.instance_id', 'central');
+
+    $provider = new CloudTenancyServiceProvider(app());
+    $provider->register();
+    $provider->boot();
+
+    $tenant = new Tenant([
+        'id' => 'configured-tenant',
+        'tenancy_db_name' => ':memory:',
+        'app_key' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+        'app_url' => 'https://configured.fatturino.test',
+        'app_instance_id' => 'configured',
+    ]);
+
+    tenancy()->initialize($tenant);
+
+    expect(config('app.key'))->toBe($tenant->getAttribute('app_key'))
+        ->and(config('app.url'))->toBe('https://configured.fatturino.test')
+        ->and(config('app.instance_id'))->toBe('configured');
+
+    tenancy()->end();
+
+    expect(config('app.key'))->toBe('base64://////////////////////////////////////////8=')
+        ->and(config('app.url'))->toBe('https://central.fatturino.test')
+        ->and(config('app.instance_id'))->toBe('central');
+
+    config()->set('database.default', 'sqlite');
+    app('db')->setDefaultConnection('sqlite');
+});
+
+test('cloud mode resets encryption when switching tenants', function () {
+    config()->set('cloud.enabled', true);
+    config()->set('database.connections.central', config('database.connections.sqlite'));
+    config()->set('database.connections.central.database', ':memory:');
+    config()->set('tenancy.central_domains', ['cloud.fatturino.test']);
+    config()->set('tenancy.database.central_connection', 'central');
+    config()->set('tenancy.database.template_tenant_connection', 'sqlite');
+
+    $provider = new CloudTenancyServiceProvider(app());
+    $provider->register();
+    $provider->boot();
+
+    $first = new Tenant([
+        'id' => 'first-tenant',
+        'tenancy_db_name' => ':memory:',
+        'app_key' => 'base64:'.base64_encode(str_repeat('a', 32)),
+        'app_url' => 'https://first.fatturino.test',
+        'app_instance_id' => 'first',
+    ]);
+    $second = new Tenant([
+        'id' => 'second-tenant',
+        'tenancy_db_name' => ':memory:',
+        'app_key' => 'base64:'.base64_encode(str_repeat('b', 32)),
+        'app_url' => 'https://second.fatturino.test',
+        'app_instance_id' => 'second',
+    ]);
+
+    tenancy()->initialize($first);
+    $encrypted = app('encrypter')->encryptString('first tenant value');
+    tenancy()->end();
+
+    tenancy()->initialize($second);
+
+    expect(fn (): string => app('encrypter')->decryptString($encrypted))->toThrow(DecryptException::class);
+
+    tenancy()->end();
     config()->set('database.default', 'sqlite');
     app('db')->setDefaultConnection('sqlite');
 });
