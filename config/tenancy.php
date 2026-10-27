@@ -53,7 +53,7 @@ return [
 
     'migration_parameters' => [
         '--force' => true,
-        '--path' => [database_path('migrations/tenant'), database_path('settings')],
+        '--path' => [database_path('migrations'), database_path('settings')],
         '--realpath' => true,
     ],
 

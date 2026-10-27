@@ -20,6 +20,6 @@ Fatturino is self-hosted by default, but the managed Cloud deployment needs a ce
 ## Consequences
 
 - Cloud configuration and tenant lifecycle commands must fail clearly when required central settings are missing.
-- Existing migrations will be split into tenant schema migrations, while self-hosted migration commands continue to apply the same complete application schema to the configured default database.
+- Until the tenant schema migrations are physically split, Cloud tenant initialization runs the existing `database/migrations` schema migrations before the settings migrations. Self-hosted migration commands continue to apply the same complete application schema to the configured default database.
 - Every Cloud runtime boundary must initialize tenancy before accessing fiscal data. Automatic tests must cover both modes and prove that an unreachable central database does not affect self-hosted operation.
 - The central administrator control plane must not use destructive Ploi operations when an instance is archived, a synchronization fails, or Ploi reports a missing remote site.

@@ -9,6 +9,14 @@ test('self-hosted mode does not register tenancy services', function () {
         ->and(app()->getProviders(TenancyServiceProvider::class))->toBeEmpty();
 });
 
+test('tenant migrations include the complete schema before settings migrations', function () {
+    $paths = config('tenancy.migration_parameters.--path');
+
+    expect($paths)->toBe([database_path('migrations'), database_path('settings')])
+        ->and(database_path('migrations/2026_01_01_000001_create_settings_table.php'))->toBeFile()
+        ->and(database_path('settings/2026_01_02_000001_create_backup_settings.php'))->toBeFile();
+});
+
 test('cloud mode activates the tenant database connection during tenancy initialization', function () {
     config()->set('cloud.enabled', true);
     config()->set('database.connections.central', config('database.connections.sqlite'));
