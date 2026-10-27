@@ -18,6 +18,7 @@ Fatturino is self-hosted by default, but the managed Cloud deployment needs a ce
 - A central cloud instance may map to one optional record in the cloud `users` table as owner. This mapping is control-plane metadata only; deleting the user clears the mapping and does not delete or archive the instance.
 - The central control plane stores only tenant registry, provisioning metadata, encrypted local database credentials, and non-sensitive allowlisted remote site metadata. It does not store tenant fiscal data.
 - Tenant application settings are stored in the tenant metadata JSON so both the control plane and the runtime can read them. `app_key` is intentionally stored in clear text, matching the existing tenant database credentials in that JSON. A central-database disclosure therefore also exposes tenant application keys; access to the central database must remain tightly restricted.
+- When OpenAPI configuration is managed by environment, a tenant may override `OPENAPI_SDI_API_TOKEN` and `OPENAPI_SDI_SANDBOX`; absent tenant values inherit the deployment-wide environment configuration.
 
 ## Consequences
 

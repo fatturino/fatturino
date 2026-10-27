@@ -101,6 +101,8 @@ test('cloud mode applies tenant application configuration and restores the centr
     config()->set('app.key', 'base64://////////////////////////////////////////8=');
     config()->set('app.url', 'https://central.fatturino.test');
     config()->set('app.instance_id', 'central');
+    config()->set('fe-openapi.api_token', 'general-token');
+    config()->set('fe-openapi.sandbox', false);
 
     $provider = new CloudTenancyServiceProvider(app());
     $provider->register();
@@ -112,19 +114,40 @@ test('cloud mode applies tenant application configuration and restores the centr
         'app_key' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
         'app_url' => 'https://configured.fatturino.test',
         'app_instance_id' => 'configured',
+        'openapi_sdi_api_token' => 'tenant-token',
+        'openapi_sdi_sandbox' => true,
     ]);
 
     tenancy()->initialize($tenant);
 
     expect(config('app.key'))->toBe($tenant->getAttribute('app_key'))
         ->and(config('app.url'))->toBe('https://configured.fatturino.test')
-        ->and(config('app.instance_id'))->toBe('configured');
+        ->and(config('app.instance_id'))->toBe('configured')
+        ->and(config('fe-openapi.api_token'))->toBe('tenant-token')
+        ->and(config('fe-openapi.sandbox'))->toBeTrue();
 
     tenancy()->end();
 
     expect(config('app.key'))->toBe('base64://////////////////////////////////////////8=')
         ->and(config('app.url'))->toBe('https://central.fatturino.test')
-        ->and(config('app.instance_id'))->toBe('central');
+        ->and(config('app.instance_id'))->toBe('central')
+        ->and(config('fe-openapi.api_token'))->toBe('general-token')
+        ->and(config('fe-openapi.sandbox'))->toBeFalse();
+
+    $inheritingTenant = new Tenant([
+        'id' => 'inheriting-tenant',
+        'tenancy_db_name' => ':memory:',
+        'app_key' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+        'app_url' => 'https://inheriting.fatturino.test',
+        'app_instance_id' => 'inheriting',
+    ]);
+
+    tenancy()->initialize($inheritingTenant);
+
+    expect(config('fe-openapi.api_token'))->toBe('general-token')
+        ->and(config('fe-openapi.sandbox'))->toBeFalse();
+
+    tenancy()->end();
 
     config()->set('database.default', 'sqlite');
     app('db')->setDefaultConnection('sqlite');

@@ -34,6 +34,16 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
             $this->config->set($key, $value);
         }
 
+        $openApiOverrides = array_filter([
+            'fe-openapi.api_token' => $tenant->getAttribute('openapi_sdi_api_token'),
+            'fe-openapi.sandbox' => $tenant->getAttribute('openapi_sdi_sandbox'),
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+
+        foreach ($openApiOverrides as $key => $value) {
+            $this->originalConfig[$key] = $this->config->get($key);
+            $this->config->set($key, $value);
+        }
+
         $this->resetEncrypter();
     }
 
