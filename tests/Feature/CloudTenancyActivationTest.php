@@ -1,8 +1,33 @@
 <?php
 
+use App\Models\Tenant;
+use App\Providers\CloudTenancyServiceProvider;
 use Stancl\Tenancy\TenancyServiceProvider;
 
 test('self-hosted mode does not register tenancy services', function () {
     expect(config('cloud.enabled'))->toBeFalse()
         ->and(app()->getProviders(TenancyServiceProvider::class))->toBeEmpty();
+});
+
+test('cloud mode activates the tenant database connection during tenancy initialization', function () {
+    config()->set('cloud.enabled', true);
+    config()->set('database.connections.central', config('database.connections.sqlite'));
+    config()->set('tenancy.database.central_connection', 'central');
+    config()->set('tenancy.database.template_tenant_connection', 'sqlite');
+
+    app()->register(TenancyServiceProvider::class);
+    (new CloudTenancyServiceProvider(app()))->boot();
+
+    $tenant = new Tenant([
+        'id' => 'cloud-tenant',
+        'tenancy_db_name' => ':memory:',
+    ]);
+
+    tenancy()->initialize($tenant);
+
+    expect(config('database.default'))->toBe('tenant');
+
+    tenancy()->end();
+
+    expect(config('database.default'))->toBe('central');
 });

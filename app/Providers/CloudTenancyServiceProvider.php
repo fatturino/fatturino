@@ -2,8 +2,13 @@
 
 namespace App\Providers;
 
+use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Stancl\Tenancy\Events;
+use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\TenancyServiceProvider;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 
 class CloudTenancyServiceProvider extends ServiceProvider
 {
@@ -15,6 +20,19 @@ class CloudTenancyServiceProvider extends ServiceProvider
 
         $this->validateConfiguration();
         $this->app->register(TenancyServiceProvider::class);
+    }
+
+    public function boot(): void
+    {
+        if (! config('cloud.enabled')) {
+            return;
+        }
+
+        Event::listen(Events\TenancyInitialized::class, Listeners\BootstrapTenancy::class);
+        Event::listen(Events\TenancyEnded::class, Listeners\RevertToCentralContext::class);
+
+        app(Router::class)->prependMiddlewareToGroup('web', InitializeTenancyByDomain::class);
+        app(Router::class)->prependMiddlewareToGroup('api', InitializeTenancyByDomain::class);
     }
 
     private function validateConfiguration(): void
