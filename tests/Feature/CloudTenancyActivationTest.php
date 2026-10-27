@@ -1,7 +1,13 @@
 <?php
 
+use App\Contracts\EnvironmentCapabilities;
+use App\Contracts\LoginCustomizer;
 use App\Models\Tenant;
 use App\Providers\CloudTenancyServiceProvider;
+use App\Services\DemoCapabilities;
+use App\Services\DemoLoginCustomizer;
+use App\Services\NullLoginCustomizer;
+use App\Services\UnrestrictedCapabilities;
 use Stancl\Tenancy\TenancyServiceProvider;
 
 test('self-hosted mode does not register tenancy services', function () {
@@ -64,9 +70,16 @@ test('cloud mode applies and restores the tenant demo configuration', function (
 
     tenancy()->initialize($tenant);
 
-    expect(config('demo.enabled'))->toBeTrue();
+    expect(config('demo.enabled'))->toBeTrue()
+        ->and(app(LoginCustomizer::class))->toBeInstanceOf(DemoLoginCustomizer::class)
+        ->and(app(EnvironmentCapabilities::class))->toBeInstanceOf(DemoCapabilities::class);
 
     tenancy()->end();
 
-    expect(config('demo.enabled'))->toBeFalse();
+    expect(config('demo.enabled'))->toBeFalse()
+        ->and(app(LoginCustomizer::class))->toBeInstanceOf(NullLoginCustomizer::class)
+        ->and(app(EnvironmentCapabilities::class))->toBeInstanceOf(UnrestrictedCapabilities::class);
+
+    config()->set('database.default', 'sqlite');
+    app('db')->setDefaultConnection('sqlite');
 });

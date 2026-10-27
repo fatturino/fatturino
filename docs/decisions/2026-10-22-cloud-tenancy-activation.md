@@ -13,7 +13,7 @@ Fatturino is self-hosted by default, but the managed Cloud deployment needs a ce
 - Composer auto-discovery for `stancl/tenancy` is disabled. `CloudTenancyServiceProvider` registers the package only when Cloud mode is explicitly enabled.
 - Self-hosted HTTP requests, Artisan commands, migrations, queue workers, and scheduler processes must not resolve or connect to a central database.
 - The central database is Cloud-only. It stores tenant metadata, domains, and Cloud queue infrastructure. Fiscal application data remains exclusively in the tenant database.
-- The central tenant metadata may enable demo mode per tenant through `demo_enabled`; the application key remains deployment-wide and is never tenant-specific.
+- The central tenant metadata may enable demo mode per tenant through `demo_enabled`; login customization and environment capabilities are resolved after tenancy initialization, while the application key remains deployment-wide and is never tenant-specific.
 - The managed deployment now has a central administrator control plane. Its separate `admins` table and `admin` guard manage Ploi server registrations, cloud instance lifecycle, provisioning, and safe read-only synchronization of known Ploi sites.
 - A central cloud instance may map to one optional record in the cloud `users` table as owner. This mapping is control-plane metadata only; deleting the user clears the mapping and does not delete or archive the instance.
 - The central control plane stores only tenant registry, provisioning metadata, encrypted local database credentials, and non-sensitive allowlisted remote site metadata. It does not store tenant fiscal data.

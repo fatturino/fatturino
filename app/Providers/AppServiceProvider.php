@@ -79,15 +79,13 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerEnvironmentBindings(): void
     {
-        if (config('demo.enabled')) {
-            $this->app->singleton(EnvironmentCapabilities::class, DemoCapabilities::class);
-            $this->app->singleton(LoginCustomizer::class, DemoLoginCustomizer::class);
+        $this->app->bind(EnvironmentCapabilities::class, fn (): EnvironmentCapabilities => config('demo.enabled')
+            ? new DemoCapabilities
+            : new UnrestrictedCapabilities);
 
-            return;
-        }
-
-        $this->app->singleton(EnvironmentCapabilities::class, UnrestrictedCapabilities::class);
-        $this->app->singleton(LoginCustomizer::class, NullLoginCustomizer::class);
+        $this->app->bind(LoginCustomizer::class, fn (): LoginCustomizer => config('demo.enabled')
+            ? new DemoLoginCustomizer
+            : new NullLoginCustomizer);
     }
 
     private function applyBackupCredentials(): void
