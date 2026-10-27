@@ -6,6 +6,7 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Stancl\Tenancy\Events;
+use Stancl\Tenancy\Features\TenantConfig;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\TenancyServiceProvider;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -19,6 +20,10 @@ class CloudTenancyServiceProvider extends ServiceProvider
         }
 
         $this->validateConfiguration();
+        TenantConfig::$storageToConfigMap = [
+            ...TenantConfig::$storageToConfigMap,
+            'demo_enabled' => 'demo.enabled',
+        ];
         $this->app->register(TenancyServiceProvider::class);
     }
 
