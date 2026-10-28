@@ -72,7 +72,7 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
     private function overrideBackupConfiguration(string $instanceId): void
     {
         $overrides = [
-            'backup.backup.name' => 'backups/'.$instanceId,
+            'backup.backup.name' => $instanceId.'/backups',
             'backup.backup.source.databases' => ['tenant'],
         ];
 

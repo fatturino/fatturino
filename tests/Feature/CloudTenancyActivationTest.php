@@ -106,7 +106,7 @@ test('cloud mode applies tenant application configuration and restores the centr
     config()->set('app.instance_id', 'central');
     config()->set('fe-openapi.api_token', 'general-token');
     config()->set('fe-openapi.sandbox', false);
-    config()->set('backup.backup.name', 'backups/central');
+    config()->set('backup.backup.name', 'central/backups');
     config()->set('backup.backup.source.databases', ['central']);
     config()->set('filesystems.disks.documents.driver', 's3');
     config()->set('filesystems.disks.documents.root', 'central/documents');
@@ -132,7 +132,7 @@ test('cloud mode applies tenant application configuration and restores the centr
         ->and(config('app.instance_id'))->toBe('configured')
         ->and(config('fe-openapi.api_token'))->toBe('tenant-token')
         ->and(config('fe-openapi.sandbox'))->toBeTrue()
-        ->and(config('backup.backup.name'))->toBe('backups/configured')
+        ->and(config('backup.backup.name'))->toBe('configured/backups')
         ->and(config('backup.backup.source.databases'))->toBe(['tenant'])
         ->and(config('filesystems.disks.documents.root'))->toBe('configured/documents');
 
@@ -143,7 +143,7 @@ test('cloud mode applies tenant application configuration and restores the centr
         ->and(config('app.instance_id'))->toBe('central')
         ->and(config('fe-openapi.api_token'))->toBe('general-token')
         ->and(config('fe-openapi.sandbox'))->toBeFalse()
-        ->and(config('backup.backup.name'))->toBe('backups/central')
+        ->and(config('backup.backup.name'))->toBe('central/backups')
         ->and(config('backup.backup.source.databases'))->toBe(['central'])
         ->and(config('filesystems.disks.documents.root'))->toBe('central/documents');
 

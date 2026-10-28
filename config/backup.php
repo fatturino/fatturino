@@ -21,8 +21,8 @@ return [
     'backup' => [
         // APP_INSTANCE_ID namespaces backups when several instances share a bucket.
         'name' => implode('/', array_filter([
-            'backups',
             trim((string) env('APP_INSTANCE_ID', ''), '/'),
+            'backups',
         ])),
 
         'source' => [
@@ -118,8 +118,8 @@ return [
     'monitor_backups' => [
         [
             'name' => implode('/', array_filter([
-                'backups',
                 trim((string) env('APP_INSTANCE_ID', ''), '/'),
+                'backups',
             ])),
             'disks' => ['s3'],
             'health_checks' => [
