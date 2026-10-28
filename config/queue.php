@@ -40,7 +40,8 @@ return [
             // Cloud workers consume one central queue while payload metadata restores tenant context.
             'connection' => env('DB_QUEUE_CONNECTION', env('FATTURINO_CLOUD', false) ? 'central' : null),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
-            'queue' => env('DB_QUEUE', 'default'),
+            // Cloud tenant workloads must not be consumed by the control-plane worker.
+            'queue' => env('DB_QUEUE', env('FATTURINO_CLOUD', false) ? 'tenant' : 'default'),
             'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
             'after_commit' => false,
         ],
