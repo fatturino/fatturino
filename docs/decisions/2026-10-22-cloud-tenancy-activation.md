@@ -21,7 +21,7 @@ Fatturino is self-hosted by default, but the managed Cloud deployment needs a ce
 - A Cloud instance is authoritative for its tenant registration and its public and technical domains. Every create, update, retry, and provisioning run synchronizes that registration exactly: stale domain ownership is reassigned, obsolete domains for that tenant are removed, and the correction is logged without credentials or application keys.
 - When OpenAPI configuration is managed by environment, a tenant may override `OPENAPI_SDI_API_TOKEN` and `OPENAPI_SDI_SANDBOX`; absent tenant values inherit the deployment-wide environment configuration.
 - Cloud scheduler events dispatch one isolated queue job per eligible tenant and task. The central database stores the shared queue; the queue payload restores the tenant context in the worker. Control-plane jobs use the `cloud` queue and tenant application jobs use the `tenant` queue, so workers never deserialize the other application’s jobs.
-- Backup execution in a tenant context uses that tenant database and stores archives below `{app_instance_id}/backups` in the shared S3 bucket. The central configuration is restored when tenancy ends.
+- Backup execution in a tenant context uses that tenant database and stores archives below `{app_instance_id}/backups` in the shared S3 bucket. Tenant backup and cleanup tasks must reload the Spatie `backup` configuration after tenancy initialization. The central configuration is restored when tenancy ends.
 - The `documents` disk is configured separately from Stancl's local filesystem suffixing. In Cloud S3 deployments its root is `{app_instance_id}/documents`, never a server filesystem path.
 
 ## Consequences

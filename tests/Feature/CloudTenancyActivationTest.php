@@ -233,8 +233,18 @@ test('Cloud scheduled jobs execute inside their tenant context', function () {
         ->once()
         ->with('openapi:reconcile')
         ->andReturn(0);
+    Artisan::shouldReceive('call')
+        ->once()
+        ->with('backup:run', ['--config' => 'backup', '--disable-notifications' => true])
+        ->andReturn(0);
+    Artisan::shouldReceive('call')
+        ->once()
+        ->with('backup:clean', ['--config' => 'backup', '--disable-notifications' => true])
+        ->andReturn(0);
 
     (new RunTenantScheduledTask(RunTenantScheduledTask::OPENAPI_RECONCILE, 'scheduled-tenant'))->handle();
+    (new RunTenantScheduledTask(RunTenantScheduledTask::BACKUP_RUN, 'scheduled-tenant'))->handle();
+    (new RunTenantScheduledTask(RunTenantScheduledTask::BACKUP_CLEAN, 'scheduled-tenant'))->handle();
 
     expect(config('app.instance_id'))->toBe('scheduled');
 

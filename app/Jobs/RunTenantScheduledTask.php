@@ -59,8 +59,8 @@ final class RunTenantScheduledTask implements ShouldQueue
             self::DEMO_REFRESH => Artisan::call('demo:refresh'),
             self::OPENAPI_RECONCILE => Artisan::call('openapi:reconcile'),
             self::OPENAPI_PRUNE_WEBHOOK_PAYLOADS => Artisan::call('openapi:prune-webhook-payloads'),
-            self::BACKUP_RUN => Artisan::call('backup:run', ['--disable-notifications' => true]),
-            self::BACKUP_CLEAN => Artisan::call('backup:clean', ['--disable-notifications' => true]),
+            self::BACKUP_RUN => Artisan::call('backup:run', ['--config' => 'backup', '--disable-notifications' => true]),
+            self::BACKUP_CLEAN => Artisan::call('backup:clean', ['--config' => 'backup', '--disable-notifications' => true]),
         };
 
         if ($exitCode !== 0) {
