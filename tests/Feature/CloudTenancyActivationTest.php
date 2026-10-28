@@ -9,6 +9,7 @@ use App\Services\DemoCapabilities;
 use App\Services\DemoLoginCustomizer;
 use App\Services\NullLoginCustomizer;
 use App\Services\UnrestrictedCapabilities;
+use App\Tenancy\ApplicationConfigurationTenancyBootstrapper;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Artisan;
 use Stancl\Tenancy\TenancyServiceProvider;
@@ -107,6 +108,8 @@ test('cloud mode applies tenant application configuration and restores the centr
     config()->set('fe-openapi.sandbox', false);
     config()->set('backup.backup.name', 'central/backups');
     config()->set('backup.backup.source.databases', ['central']);
+    config()->set('filesystems.disks.documents.driver', 's3');
+    config()->set('filesystems.disks.documents.root', 'central/documents');
 
     $provider = new CloudTenancyServiceProvider(app());
     $provider->register();
@@ -130,7 +133,8 @@ test('cloud mode applies tenant application configuration and restores the centr
         ->and(config('fe-openapi.api_token'))->toBe('tenant-token')
         ->and(config('fe-openapi.sandbox'))->toBeTrue()
         ->and(config('backup.backup.name'))->toBe('configured/backups')
-        ->and(config('backup.backup.source.databases'))->toBe(['tenant']);
+        ->and(config('backup.backup.source.databases'))->toBe(['tenant'])
+        ->and(config('filesystems.disks.documents.root'))->toBe('configured/documents');
 
     tenancy()->end();
 
@@ -140,7 +144,8 @@ test('cloud mode applies tenant application configuration and restores the centr
         ->and(config('fe-openapi.api_token'))->toBe('general-token')
         ->and(config('fe-openapi.sandbox'))->toBeFalse()
         ->and(config('backup.backup.name'))->toBe('central/backups')
-        ->and(config('backup.backup.source.databases'))->toBe(['central']);
+        ->and(config('backup.backup.source.databases'))->toBe(['central'])
+        ->and(config('filesystems.disks.documents.root'))->toBe('central/documents');
 
     $inheritingTenant = new Tenant([
         'id' => 'inheriting-tenant',
@@ -236,4 +241,25 @@ test('Cloud scheduled jobs execute inside their tenant context', function () {
     tenancy()->end();
     config()->set('database.default', 'sqlite');
     app('db')->setDefaultConnection('sqlite');
+});
+
+test('Cloud mode isolates local document storage per tenant', function () {
+    config()->set('filesystems.disks.documents.driver', 'local');
+    config()->set('filesystems.disks.documents.root', storage_path('app/private'));
+
+    $tenant = new Tenant([
+        'app_key' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+        'app_url' => 'https://local-documents.fatturino.test',
+        'app_instance_id' => 'local-documents',
+    ]);
+    $tenant->setAttribute('id', 123);
+    $bootstrapper = app(ApplicationConfigurationTenancyBootstrapper::class);
+
+    $bootstrapper->bootstrap($tenant);
+
+    expect(config('filesystems.disks.documents.root'))->toBe(storage_path('tenant123/app/private'));
+
+    $bootstrapper->revert();
+
+    expect(config('filesystems.disks.documents.root'))->toBe(storage_path('app/private'));
 });

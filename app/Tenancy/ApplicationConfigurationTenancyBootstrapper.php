@@ -6,6 +6,7 @@ namespace App\Tenancy;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\Facades\Storage;
 use LogicException;
 use Stancl\Tenancy\Contracts\TenancyBootstrapper;
 use Stancl\Tenancy\Contracts\Tenant;
@@ -35,6 +36,7 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
         }
 
         $this->overrideBackupConfiguration((string) $overrides['app.instance_id']);
+        $this->overrideDocumentStorageConfiguration($tenant, (string) $overrides['app.instance_id']);
 
         $openApiOverrides = array_filter([
             'fe-openapi.api_token' => $tenant->getAttribute('openapi_sdi_api_token'),
@@ -51,6 +53,8 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
 
     public function revert(): void
     {
+        Storage::forgetDisk('documents');
+
         foreach ($this->originalConfig as $key => $value) {
             $this->config->set($key, $value);
         }
@@ -76,5 +80,16 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
             $this->originalConfig[$key] = $this->config->get($key);
             $this->config->set($key, $value);
         }
+    }
+
+    private function overrideDocumentStorageConfiguration(Tenant $tenant, string $instanceId): void
+    {
+        $root = $this->config->get('filesystems.disks.documents.driver') === 's3'
+            ? $instanceId.'/documents'
+            : storage_path('tenant'.$tenant->getTenantKey().'/app/private');
+
+        $this->originalConfig['filesystems.disks.documents.root'] = $this->config->get('filesystems.disks.documents.root');
+        $this->config->set('filesystems.disks.documents.root', $root);
+        Storage::forgetDisk('documents');
     }
 }

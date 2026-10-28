@@ -48,11 +48,10 @@ return [
 
     'filesystem' => [
         'suffix_base' => 'tenant',
-        'disks' => ['local', 'public', 'documents'],
+        'disks' => ['local', 'public'],
         'root_override' => [
             'local' => '%storage_path%/app/private',
             'public' => '%storage_path%/app/public',
-            'documents' => '%storage_path%/app/private',
         ],
         'suffix_storage_path' => true,
         'asset_helper_tenancy' => false,

@@ -22,6 +22,7 @@ Fatturino is self-hosted by default, but the managed Cloud deployment needs a ce
 - When OpenAPI configuration is managed by environment, a tenant may override `OPENAPI_SDI_API_TOKEN` and `OPENAPI_SDI_SANDBOX`; absent tenant values inherit the deployment-wide environment configuration.
 - Cloud scheduler events dispatch one isolated queue job per eligible tenant and task. The central database stores the shared queue; the queue payload restores the tenant context in the worker.
 - Backup execution in a tenant context uses that tenant database and its `app_instance_id` backup namespace. The central configuration is restored when tenancy ends.
+- The `documents` disk is configured separately from Stancl's local filesystem suffixing. In Cloud S3 deployments its root is `{app_instance_id}/documents`, never a server filesystem path.
 
 ## Consequences
 
