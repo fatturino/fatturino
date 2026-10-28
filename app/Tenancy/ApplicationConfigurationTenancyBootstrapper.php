@@ -34,6 +34,8 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
             $this->config->set($key, $value);
         }
 
+        $this->overrideBackupConfiguration((string) $overrides['app.instance_id']);
+
         $openApiOverrides = array_filter([
             'fe-openapi.api_token' => $tenant->getAttribute('openapi_sdi_api_token'),
             'fe-openapi.sandbox' => $tenant->getAttribute('openapi_sdi_sandbox'),
@@ -61,5 +63,18 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
     {
         app()->forgetInstance('encrypter');
         Facade::clearResolvedInstance('encrypter');
+    }
+
+    private function overrideBackupConfiguration(string $instanceId): void
+    {
+        $overrides = [
+            'backup.backup.name' => $instanceId.'/backups',
+            'backup.backup.source.databases' => ['tenant'],
+        ];
+
+        foreach ($overrides as $key => $value) {
+            $this->originalConfig[$key] = $this->config->get($key);
+            $this->config->set($key, $value);
+        }
     }
 }

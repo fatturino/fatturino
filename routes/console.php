@@ -1,5 +1,7 @@
 <?php
 
+use App\Jobs\RunTenantScheduledTask;
+use App\Services\TenantScheduledTaskDispatcher;
 use App\Settings\BackupSettings;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -9,7 +11,37 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-if (config('demo.enabled')) {
+if (config('cloud.enabled')) {
+    $interval = max(1, min(60, (int) config('demo.reset_interval_minutes', 60)));
+
+    Schedule::call(fn () => app(TenantScheduledTaskDispatcher::class)->dispatch(RunTenantScheduledTask::DEMO_REFRESH))
+        ->cron("*/{$interval} * * * *")
+        ->name('cloud:demo-refresh')
+        ->withoutOverlapping();
+
+    Schedule::call(fn () => app(TenantScheduledTaskDispatcher::class)->dispatch(RunTenantScheduledTask::OPENAPI_RECONCILE))
+        ->twiceDailyAt(3, 15)
+        ->name('cloud:openapi-reconcile')
+        ->withoutOverlapping();
+
+    Schedule::call(fn () => app(TenantScheduledTaskDispatcher::class)->dispatch(RunTenantScheduledTask::OPENAPI_PRUNE_WEBHOOK_PAYLOADS))
+        ->dailyAt('03:45')
+        ->name('cloud:openapi-prune-webhook-payloads')
+        ->withoutOverlapping();
+
+    $runAt = (string) env('BACKUP_RUN_AT', '02:00');
+    $cleanAt = (string) env('BACKUP_CLEAN_AT', '03:30');
+
+    Schedule::call(fn () => app(TenantScheduledTaskDispatcher::class)->dispatch(RunTenantScheduledTask::BACKUP_RUN))
+        ->dailyAt($runAt)
+        ->name('cloud:backup-run')
+        ->withoutOverlapping();
+
+    Schedule::call(fn () => app(TenantScheduledTaskDispatcher::class)->dispatch(RunTenantScheduledTask::BACKUP_CLEAN))
+        ->dailyAt($cleanAt)
+        ->name('cloud:backup-clean')
+        ->withoutOverlapping();
+} elseif (config('demo.enabled')) {
     $interval = max(1, min(60, (int) config('demo.reset_interval_minutes', 60)));
     Schedule::command('demo:refresh')
         ->cron("*/{$interval} * * * *")

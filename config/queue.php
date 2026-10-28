@@ -37,7 +37,8 @@ return [
 
         'database' => [
             'driver' => 'database',
-            'connection' => env('DB_QUEUE_CONNECTION'),
+            // Cloud workers consume one central queue while payload metadata restores tenant context.
+            'connection' => env('DB_QUEUE_CONNECTION', env('FATTURINO_CLOUD', false) ? 'central' : null),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
             'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),

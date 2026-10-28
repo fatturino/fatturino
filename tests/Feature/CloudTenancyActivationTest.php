@@ -2,6 +2,7 @@
 
 use App\Contracts\EnvironmentCapabilities;
 use App\Contracts\LoginCustomizer;
+use App\Jobs\RunTenantScheduledTask;
 use App\Models\Tenant;
 use App\Providers\CloudTenancyServiceProvider;
 use App\Services\DemoCapabilities;
@@ -9,6 +10,7 @@ use App\Services\DemoLoginCustomizer;
 use App\Services\NullLoginCustomizer;
 use App\Services\UnrestrictedCapabilities;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\Artisan;
 use Stancl\Tenancy\TenancyServiceProvider;
 
 test('self-hosted mode does not register tenancy services', function () {
@@ -103,6 +105,8 @@ test('cloud mode applies tenant application configuration and restores the centr
     config()->set('app.instance_id', 'central');
     config()->set('fe-openapi.api_token', 'general-token');
     config()->set('fe-openapi.sandbox', false);
+    config()->set('backup.backup.name', 'central/backups');
+    config()->set('backup.backup.source.databases', ['central']);
 
     $provider = new CloudTenancyServiceProvider(app());
     $provider->register();
@@ -124,7 +128,9 @@ test('cloud mode applies tenant application configuration and restores the centr
         ->and(config('app.url'))->toBe('https://configured.fatturino.test')
         ->and(config('app.instance_id'))->toBe('configured')
         ->and(config('fe-openapi.api_token'))->toBe('tenant-token')
-        ->and(config('fe-openapi.sandbox'))->toBeTrue();
+        ->and(config('fe-openapi.sandbox'))->toBeTrue()
+        ->and(config('backup.backup.name'))->toBe('configured/backups')
+        ->and(config('backup.backup.source.databases'))->toBe(['tenant']);
 
     tenancy()->end();
 
@@ -132,7 +138,9 @@ test('cloud mode applies tenant application configuration and restores the centr
         ->and(config('app.url'))->toBe('https://central.fatturino.test')
         ->and(config('app.instance_id'))->toBe('central')
         ->and(config('fe-openapi.api_token'))->toBe('general-token')
-        ->and(config('fe-openapi.sandbox'))->toBeFalse();
+        ->and(config('fe-openapi.sandbox'))->toBeFalse()
+        ->and(config('backup.backup.name'))->toBe('central/backups')
+        ->and(config('backup.backup.source.databases'))->toBe(['central']);
 
     $inheritingTenant = new Tenant([
         'id' => 'inheriting-tenant',
@@ -187,6 +195,43 @@ test('cloud mode resets encryption when switching tenants', function () {
     tenancy()->initialize($second);
 
     expect(fn (): string => app('encrypter')->decryptString($encrypted))->toThrow(DecryptException::class);
+
+    tenancy()->end();
+    config()->set('database.default', 'sqlite');
+    app('db')->setDefaultConnection('sqlite');
+});
+
+test('Cloud scheduled jobs execute inside their tenant context', function () {
+    config()->set('cloud.enabled', true);
+    config()->set('database.connections.central', config('database.connections.sqlite'));
+    config()->set('database.connections.central.database', ':memory:');
+    config()->set('tenancy.central_domains', ['cloud.fatturino.test']);
+    config()->set('tenancy.database.central_connection', 'central');
+    config()->set('tenancy.database.template_tenant_connection', 'sqlite');
+    config()->set('demo.enabled', false);
+
+    $provider = new CloudTenancyServiceProvider(app());
+    $provider->register();
+    $provider->boot();
+
+    $tenant = new Tenant([
+        'id' => 'scheduled-tenant',
+        'tenancy_db_name' => ':memory:',
+        'app_key' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+        'app_url' => 'https://scheduled.fatturino.test',
+        'app_instance_id' => 'scheduled',
+    ]);
+
+    tenancy()->initialize($tenant);
+
+    Artisan::shouldReceive('call')
+        ->once()
+        ->with('openapi:reconcile')
+        ->andReturn(0);
+
+    (new RunTenantScheduledTask(RunTenantScheduledTask::OPENAPI_RECONCILE, 'scheduled-tenant'))->handle();
+
+    expect(config('app.instance_id'))->toBe('scheduled');
 
     tenancy()->end();
     config()->set('database.default', 'sqlite');
