@@ -105,6 +105,25 @@ it('renders SDI-locked self invoices as read-only', function () {
         ->assertDontSee('Aggiorna autofattura');
 });
 
+it('renders a reversal draft as read-only with its source document context', function () {
+    $user = User::factory()->create();
+    $source = SelfInvoice::factory()->create([
+        'number' => 'AUTO-42',
+        'date' => '2026-10-28',
+    ]);
+    $reversal = SelfInvoice::factory()->create([
+        'reversal_of_id' => $source->id,
+        'date' => now()->toDateString(),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.self-invoice.form', ['selfInvoice' => $reversal])
+        ->assertSee('Questa è la bozza di storno dell’autofattura AUTO-42 del 28/10/2026.')
+        ->assertSee('Questa autofattura non è più modificabile.')
+        ->assertDontSee('Aggiorna autofattura');
+});
+
 it('shows an SDI verification warning for an uncertain self invoice submission', function () {
     $user = User::factory()->create();
     $invoice = SelfInvoice::factory()->create(['date' => now()->toDateString()]);

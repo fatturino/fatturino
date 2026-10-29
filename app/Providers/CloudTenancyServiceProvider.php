@@ -8,8 +8,8 @@ use Illuminate\Support\ServiceProvider;
 use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Features\TenantConfig;
 use Stancl\Tenancy\Listeners;
-use Stancl\Tenancy\TenancyServiceProvider;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
+use Stancl\Tenancy\TenancyServiceProvider;
 
 class CloudTenancyServiceProvider extends ServiceProvider
 {

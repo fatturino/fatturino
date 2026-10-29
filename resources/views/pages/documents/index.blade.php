@@ -206,6 +206,9 @@ new #[Layout('layouts::app')] class extends Component {
     private function query(): Builder
     {
         $query = $this->baseQuery()->with('contact:id,name,email');
+        if ($this->type === 'self') {
+            $query->with(['reversal', 'reversalOf']);
+        }
         if ($this->supportsSdiSubmissionState()) {
             $query->with('activeSdiSubmission');
         }
@@ -465,7 +468,13 @@ new #[Layout('layouts::app')] class extends Component {
                             <x-app-link href="/{{ $definition['base'] }}/{{ $document->id }}/edit" class="rounded font-medium text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                                 {{ $document->number ?? 'Documento #'.$document->id }}
                             </x-app-link>
-                            <p class="mt-1 text-xs text-content-muted">Documento</p>
+                            @if($type === 'self' && $document->reversalOf)
+                                <p class="mt-1 text-xs text-content-muted">Storno di {{ $document->reversalOf->number }}</p>
+                            @elseif($type === 'self' && $document->reversal)
+                                <p class="mt-1 text-xs text-content-muted">Stornata da {{ $document->reversal->number }}</p>
+                            @else
+                                <p class="mt-1 text-xs text-content-muted">Documento</p>
+                            @endif
                         </td>
                         <td class="px-5 py-4 align-top text-content-muted">{{ \Carbon\Carbon::parse($document->date)->format('d/m/Y') }}</td>
                         <td class="px-5 py-4 align-top text-content">{{ $document->contact?->name ?? 'Non assegnato' }}</td>
@@ -522,6 +531,11 @@ new #[Layout('layouts::app')] class extends Component {
                             {{ $document->number ?? 'Documento #'.$document->id }}
                         </x-app-link>
                         <p class="mt-1 truncate text-sm text-content-muted">{{ $document->contact?->name ?? 'Non assegnato' }}</p>
+                        @if($type === 'self' && $document->reversalOf)
+                            <p class="mt-1 text-xs text-content-muted">Storno di {{ $document->reversalOf->number }}</p>
+                        @elseif($type === 'self' && $document->reversal)
+                            <p class="mt-1 text-xs text-content-muted">Stornata da {{ $document->reversal->number }}</p>
+                        @endif
                     </div>
                     <div class="flex shrink-0 items-start gap-1">
                         @if($this->supportsSdiSubmissionState())

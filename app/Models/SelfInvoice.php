@@ -95,6 +95,16 @@ class SelfInvoice extends FiscalDocument
         return $this->belongsTo(Contact::class);
     }
 
+    public function reversalOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reversal_of_id');
+    }
+
+    public function reversal(): HasOne
+    {
+        return $this->hasOne(self::class, 'reversal_of_id');
+    }
+
     public function sequence(): BelongsTo
     {
         return $this->belongsTo(Sequence::class);

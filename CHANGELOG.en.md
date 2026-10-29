@@ -11,6 +11,10 @@ e il progetto aderisce al [Versionamento Semantico](https://semver.org/lang/it/)
 
 ## [Unreleased]
 
+### Added
+
+- Sent TD17, TD18, and TD19 self-invoices can be reversed by creating a linked negative draft, without automatic SDI submission.
+
 ### Security
 
 - Restricted SMTP and S3 connection tests using the existing environment capabilities.

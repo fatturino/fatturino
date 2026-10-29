@@ -5,7 +5,7 @@
 ])
 
 @php
-    $canManagePayments = in_array($type, ['sales', 'purchase', 'self'], true);
+    $canManagePayments = in_array($type, ['sales', 'purchase', 'self'], true) && $document->reversal_of_id === null;
     // The modal lets the user supply a recipient even when the contact has no saved email.
     $canSendEmail = in_array($type, ['sales', 'credit', 'proforma'], true);
     $canValidateXml = in_array($type, ['sales', 'self', 'credit'], true)
@@ -19,6 +19,12 @@
     $canDownloadPdf = in_array($type, ['sales', 'self', 'proforma'], true);
     $canConvert = $type === 'proforma' && $document->isConvertible();
     $canDelete = $type === 'proforma' && $document->statusValue() !== 'converted';
+    $canReverseSelfInvoice = $type === 'self'
+        && $document->reversal_of_id === null
+        && $document->reversal === null
+        && in_array($document->document_type, ['TD17', 'TD18', 'TD19'], true)
+        && $document->status->value === 'sent'
+        && ! in_array($document->sdi_status, [\App\Enums\SdiStatus::Rejected, \App\Enums\SdiStatus::Error], true);
     $event = "document-action";
 @endphp
 
@@ -109,6 +115,13 @@
             <button type="button" role="menuitem" @click="open = false; $dispatch('{{ $event }}', { action: 'convert', id: {{ $document->id }} })" :disabled="busy" class="group flex w-full items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left text-sm font-medium text-content-muted hover:bg-primary-subtle hover:text-primary disabled:cursor-not-allowed disabled:opacity-50">
                 <x-icon name="o-arrow-path" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
                 <span class="flex-1">Converti in fattura</span>
+            </button>
+        @endif
+
+        @if($canReverseSelfInvoice)
+            <button type="button" role="menuitem" @click="open = false; $dispatch('{{ $event }}', { action: 'reverse-self-invoice', id: {{ $document->id }} })" :disabled="busy" class="group flex w-full items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left text-sm font-medium text-content-muted hover:bg-primary-subtle hover:text-primary disabled:cursor-not-allowed disabled:opacity-50">
+                <x-icon name="o-arrow-uturn-left" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
+                <span class="flex-1">Storna autofattura</span>
             </button>
         @endif
 

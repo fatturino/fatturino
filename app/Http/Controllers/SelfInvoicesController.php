@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateSelfInvoiceReversal;
 use App\Actions\SaveSelfInvoice;
 use App\Http\Controllers\Concerns\HandlesDocumentPayments;
 use App\Http\Controllers\Concerns\HandlesXmlSdiWorkflow;
@@ -10,10 +11,10 @@ use App\Models\SelfInvoice;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentEventRecorder;
 use App\Services\DocumentStorageService;
+use App\Services\Domain\SelfInvoiceDuplicateGuard;
 use App\Services\PostHogTelemetryService;
 use App\Services\SelfInvoiceXmlService;
 use App\Services\XmlWorkflowService;
-use App\Services\Domain\SelfInvoiceDuplicateGuard;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
 use Illuminate\Http\JsonResponse;
@@ -46,6 +47,28 @@ class SelfInvoicesController extends Controller
         $saveSelfInvoice->update($selfInvoice, $this->validatePayload($request));
 
         return redirect()->route('self-invoices.index');
+    }
+
+    public function reverse(SelfInvoice $selfInvoice, CreateSelfInvoiceReversal $createSelfInvoiceReversal): JsonResponse
+    {
+        $this->ensureSelfInvoicesAllowed();
+
+        $reversal = $createSelfInvoiceReversal->execute($selfInvoice);
+        app(DocumentEventRecorder::class)->created($reversal);
+        app(PostHogTelemetryService::class)->capture(
+            'self_invoice_reversal_created',
+            [
+                ...app(PostHogTelemetryService::class)->documentProperties($reversal),
+                'reversal_of_id' => $selfInvoice->id,
+            ],
+            request()->user(),
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bozza di storno creata. Controlla il documento prima di validarlo e inviarlo allo SDI.',
+            'redirect_url' => route('self-invoices.edit', ['selfInvoice' => $reversal]),
+        ]);
     }
 
     /** @return array<string, mixed> */

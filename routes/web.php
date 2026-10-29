@@ -99,6 +99,7 @@ Route::middleware('auth')->group(function () {
         ->defaults('title', 'Modifica Autofattura')
         ->defaults('breadcrumbs', [['label' => 'Autofatture', 'url' => '/self-invoices'], ['label' => 'Modifica']]);
     Route::put('/self-invoices/{selfInvoice}', [SelfInvoicesController::class, 'update'])->name('self-invoices.update');
+    Route::post('/self-invoices/{selfInvoice}/reverse', [SelfInvoicesController::class, 'reverse'])->name('self-invoices.reverse');
     Route::get('/self-invoices/{selfInvoice}/xml', [SelfInvoicesController::class, 'downloadXml'])->name('self-invoices.download-xml');
     Route::get('/self-invoices/{selfInvoice}/pdf', [SelfInvoicesController::class, 'downloadPdf'])->name('self-invoices.download-pdf');
     Route::post('/self-invoices/{selfInvoice}/validate-xml', [SelfInvoicesController::class, 'validateXml'])->name('self-invoices.validate-xml');

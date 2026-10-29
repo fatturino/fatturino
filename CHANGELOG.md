@@ -10,6 +10,10 @@ Il formato si ispira a [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0
 
 ## [Unreleased]
 
+### Aggiunto
+
+- Le autofatture TD17, TD18 e TD19 già inviate possono essere stornate creando una bozza collegata con importi negativi, senza invio automatico allo SDI.
+
 ### Sicurezza
 
 - Sono stati limitati i test di connessione SMTP e S3 mediante le capability di ambiente esistenti.

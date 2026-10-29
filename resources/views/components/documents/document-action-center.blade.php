@@ -86,6 +86,7 @@
                 if (detail.action === 'email') this.openEmail();
                 if (detail.action === 'payment') this.openPayment();
                 if (detail.action === 'convert') this.openConversion();
+                if (detail.action === 'reverse-self-invoice') this.openConfirm('reverse-self-invoice');
                 if (detail.action === 'validate-xml') this.openConfirm('validate-xml');
                 if (detail.action === 'send-sdi') this.openConfirm('send-sdi');
                 if (detail.action === 'delete') this.openConfirm('delete');
@@ -185,7 +186,8 @@
             openConfirm(action) {
                 const sending = action === 'send-sdi';
                 const deleting = action === 'delete';
-                this.confirm = { action, title: sending ? 'Conferma invio SDI' : (deleting ? 'Elimina proforma' : 'Conferma validazione XML'), submit: sending ? 'Invia a SDI' : (deleting ? 'Elimina proforma' : 'Verifica XML'), danger: sending || deleting, message: sending ? `Stai per inviare allo SDI ${this.documentLabel()}.\n\nQuesta azione è irreversibile. Dopo l'invio non potrai più modificarla.\n\nControlla prima di confermare:\n- Anagrafica cliente\n- Importi e aliquote IVA\n- Codice destinatario o PEC` : (deleting ? `Confermi l'eliminazione della proforma ${this.documentLabel()}?\n\nL'operazione è irreversibile.` : `Confermi la validazione XML di ${this.documentLabel()}?`) };
+                const reversing = action === 'reverse-self-invoice';
+                this.confirm = { action, title: sending ? 'Conferma invio SDI' : (deleting ? 'Elimina proforma' : (reversing ? 'Crea bozza di storno' : 'Conferma validazione XML')), submit: sending ? 'Invia a SDI' : (deleting ? 'Elimina proforma' : (reversing ? 'Crea bozza di storno' : 'Verifica XML')), danger: sending || deleting, message: sending ? `Stai per inviare allo SDI ${this.documentLabel()}.\n\nQuesta azione è irreversibile. Dopo l'invio non potrai più modificarla.\n\nControlla prima di confermare:\n- Anagrafica cliente\n- Importi e aliquote IVA\n- Codice destinatario o PEC` : (deleting ? `Confermi l'eliminazione della proforma ${this.documentLabel()}?\n\nL'operazione è irreversibile.` : (reversing ? `Creerai una bozza con lo stesso tipo documento e importi negativi, collegata all’autofattura ${this.documentLabel()}.\n\nLa bozza non verrà inviata automaticamente. Dopo il controllo dovrai validarla e inviarla allo SDI.` : `Confermi la validazione XML di ${this.documentLabel()}?`)) };
                 this.confirmOpen = true;
             },
             closeConfirm() { if (!this.busy) { this.confirmOpen = false; this.error = ''; } },
@@ -193,20 +195,25 @@
                 this.busy = true; this.error = '';
                 try {
                     const deleting = this.confirm.action === 'delete';
+                    const reversing = this.confirm.action === 'reverse-self-invoice';
                     const endpoint = this.confirm.action === 'send-sdi' ? 'send-sdi' : 'validate-xml';
                     const data = deleting
                         ? await this.$wire.deleteProforma(this.selectedDocument.id).then((deleted) => {
                             if (!deleted) throw new Error('La proforma è stata convertita e non può essere eliminata.');
                             return { message: 'Proforma eliminata.' };
                         })
-                        : await this.request(`${this.base}/${this.selectedDocument.id}/${endpoint}`, { method: 'POST' });
-                    if (!deleting) {
+                        : await this.request(`${this.base}/${this.selectedDocument.id}/${reversing ? 'reverse' : endpoint}`, { method: 'POST' });
+                    if (!deleting && !reversing) {
                         this.selectedDocument.status = data.document.status;
                         this.selectedDocument.sdiEditable = data.document.is_sdi_editable;
                     }
                     this.confirmOpen = false;
                     this.notify(data.message);
-                    await this.$wire.$refresh();
+                    if (reversing) {
+                        window.Livewire.navigate(data.redirect_url);
+                    } else {
+                        await this.$wire.$refresh();
+                    }
                 } catch (error) { this.error = error.message; } finally { this.busy = false; }
             },
             money(value) { return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format((value ?? 0) / 100); },

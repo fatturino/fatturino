@@ -45,7 +45,7 @@ new #[Layout('layouts::app')] class extends Component {
         $selfInvoice = $selfInvoice?->exists
             ? SelfInvoice::query()->find($selfInvoice->id)
                 : null;
-        $this->invoice = $selfInvoice?->load(['lines', 'activeSdiSubmission', 'events' => fn ($query) => $query->latest('occurred_at')]);
+        $this->invoice = $selfInvoice?->load(['lines', 'reversalOf', 'activeSdiSubmission', 'events' => fn ($query) => $query->latest('occurred_at')]);
         $this->date = now()->toDateString();
         $this->contactOptions = Contact::query()->orderBy('name')->get(['id', 'name', 'vat_number'])
             ->map(fn (Contact $c) => [
@@ -111,7 +111,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function getReadOnlyProperty(): bool
     {
-        return $this->invoice && (! $this->invoice->isSdiEditable() || $this->invoice->date->year < now()->year);
+        return $this->invoice && ($this->invoice->reversal_of_id !== null || ! $this->invoice->isSdiEditable() || $this->invoice->date->year < now()->year);
     }
 
     public function getNetTotalProperty(): float
@@ -153,7 +153,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function lineTotal(array $line): float
     {
-        return max(0, (float) ($line['quantity'] ?: 0)) * max(0, (float) ($line['unit_price'] ?: 0));
+        return max(0, (float) ($line['quantity'] ?: 0)) * (float) ($line['unit_price'] ?: 0);
     }
 
     private function vatPercent(string $value): float
@@ -163,9 +163,10 @@ new #[Layout('layouts::app')] class extends Component {
 };
 ?>
 
-<x-slot:header><div><p class="text-xs font-medium text-content-muted">Documenti</p><h1 class="text-lg font-semibold text-content">{{ $invoice ? 'Modifica autofattura' : 'Nuova autofattura' }}</h1></div></x-slot:header>
+<x-slot:header><div><p class="text-xs font-medium text-content-muted">Documenti</p><h1 class="text-lg font-semibold text-content">{{ $invoice?->reversal_of_id ? 'Storno autofattura' : ($invoice ? 'Modifica autofattura' : 'Nuova autofattura') }}</h1></div></x-slot:header>
 <section class="mx-auto max-w-7xl space-y-6 pb-24">
     @if(session('success'))<div class="rounded-md border border-success/20 bg-success-bg p-4 text-sm text-success">{{ session('success') }}</div>@endif
+    @if($invoice?->reversalOf)<div class="rounded-md border border-info/20 bg-info-bg p-4 text-sm text-info">Questa è la bozza di storno dell’autofattura {{ $invoice->reversalOf->number }} del {{ $invoice->reversalOf->date->format('d/m/Y') }}. Controlla il documento, poi <x-app-link href="{{ route('self-invoices.index') }}" class="font-semibold underline underline-offset-2">torna all’elenco</x-app-link> per verificare l’XML e inviarlo allo SDI.</div>@endif
     @if($this->readOnly)<div class="rounded-md border border-warning/20 bg-warning-bg p-4 text-sm text-warning">Questa autofattura non è più modificabile.</div>@endif
     <x-documents.sdi-submission-warning :submission="$invoice?->activeSdiSubmission" />
     @error('invoice')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror

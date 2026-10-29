@@ -73,6 +73,10 @@ class SaveSelfInvoice
                     throw ValidationException::withMessages(['invoice' => 'Questa autofattura non è più modificabile.']);
                 }
 
+                if ($lockedInvoice->reversal_of_id !== null) {
+                    throw ValidationException::withMessages(['invoice' => 'La bozza di storno è generata dall’autofattura originale e non può essere modificata.']);
+                }
+
                 [$header, $lines] = $this->prepare($payload, $lockedInvoice->sequence_id);
                 $this->duplicates->ensureUnique($header, $lockedInvoice->id);
                 $header['status'] = in_array($lockedInvoice->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
