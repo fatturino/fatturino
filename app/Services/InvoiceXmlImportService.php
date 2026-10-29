@@ -11,6 +11,7 @@ use App\Models\FiscalDocumentLine;
 use App\Models\PurchaseInvoice;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
+use App\Services\Domain\SelfInvoiceDuplicateGuard;
 use App\Services\Domain\DocumentNumberingService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -158,7 +159,7 @@ class InvoiceXmlImportService
 
                 // Self-invoice: persist document type and related invoice reference
                 if ($isSelfInvoice) {
-                    $this->applySelfInvoiceFields($body, $invoice);
+                    $this->applySelfInvoiceFields($body, $invoice, app(SelfInvoiceDuplicateGuard::class));
                 }
 
                 $this->createFiscalDocumentLines($body->DatiBeniServizi, $invoice);
@@ -199,7 +200,7 @@ class InvoiceXmlImportService
      * Populate self-invoice-specific fields: document type (TD17, TD18, etc.)
      * and the related original invoice reference from DatiFattureCollegate.
      */
-    protected function applySelfInvoiceFields(\SimpleXMLElement $body, Model $invoice): void
+    protected function applySelfInvoiceFields(\SimpleXMLElement $body, Model $invoice, SelfInvoiceDuplicateGuard $duplicates): void
     {
         $datiGenerali = $body->DatiGenerali;
         $documentType = $this->extractText($datiGenerali->DatiGeneraliDocumento->TipoDocumento);
@@ -212,6 +213,13 @@ class InvoiceXmlImportService
             $relatedNumber = $this->extractText($datiGenerali->DatiFattureCollegate->IdDocumento);
             $relatedDate = $this->extractText($datiGenerali->DatiFattureCollegate->Data);
         }
+
+        $duplicates->ensureUnique([
+            'contact_id' => $invoice->contact_id,
+            'document_type' => $documentType,
+            'related_invoice_number' => $relatedNumber,
+            'related_invoice_date' => $relatedDate,
+        ], $invoice->id);
 
         $invoice->update([
             'document_type' => $documentType,

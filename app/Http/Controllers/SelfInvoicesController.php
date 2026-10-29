@@ -13,6 +13,7 @@ use App\Services\DocumentStorageService;
 use App\Services\PostHogTelemetryService;
 use App\Services\SelfInvoiceXmlService;
 use App\Services\XmlWorkflowService;
+use App\Services\Domain\SelfInvoiceDuplicateGuard;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
 use Illuminate\Http\JsonResponse;
@@ -103,9 +104,16 @@ class SelfInvoicesController extends Controller
     public function sendToSdi(
         SelfInvoice $selfInvoice,
         SelfInvoiceXmlService $xmlService,
-        XmlWorkflowService $xmlWorkflow
+        XmlWorkflowService $xmlWorkflow,
+        SelfInvoiceDuplicateGuard $duplicates,
     ): JsonResponse|RedirectResponse {
         $this->ensureSelfInvoicesAllowed();
+        $duplicates->ensureUnique([
+            'contact_id' => $selfInvoice->contact_id,
+            'document_type' => $selfInvoice->document_type,
+            'related_invoice_number' => $selfInvoice->related_invoice_number,
+            'related_invoice_date' => $selfInvoice->related_invoice_date,
+        ], $selfInvoice->id);
 
         return $this->sendXmlDocumentToSdi(
             $selfInvoice,

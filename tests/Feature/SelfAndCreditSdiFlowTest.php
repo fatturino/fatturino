@@ -10,6 +10,7 @@ use App\Models\SelfInvoice;
 use App\Models\User;
 use App\Settings\CompanySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -62,6 +63,30 @@ test('self invoice validate xml sets status to xml_validated', function () {
         ],
     ]);
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::XmlValidated);
+});
+
+test('self invoice send stops before the provider when a historical equivalent exists', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['country' => 'DE', 'vat_number' => 'DE123456789']);
+    $reference = ['contact_id' => $contact->id, 'document_type' => 'TD17', 'related_invoice_number' => '3803690D-0033', 'related_invoice_date' => '2026-10-09'];
+    $historical = SelfInvoice::factory()->create($reference);
+    DB::table('fiscal_documents')->where('id', $historical->id)->update(['self_invoice_duplicate_key' => null]);
+    $invoice = SelfInvoice::factory()->create([...$reference, 'status' => InvoiceStatus::XmlValidated]);
+    $invoice->lines()->create([
+        'description' => 'Servizio estero',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+
+    $provider = Mockery::mock(SdiProvider::class);
+    $provider->shouldNotReceive('sendInvoice');
+    app()->instance(SdiProvider::class, $provider);
+
+    $this->actingAs($user)->postJson("/self-invoices/{$invoice->id}/send-sdi")
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.invoice.0', 'La fattura del fornitore 3803690D-0033 del 2026-10-09 risulta già associata a un\'altra autofattura.');
 });
 
 test('credit note validate xml sets status to xml_validated', function () {

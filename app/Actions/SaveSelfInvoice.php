@@ -8,8 +8,10 @@ use App\Models\SelfInvoice;
 use App\Services\DocumentSequenceResolver;
 use App\Services\Domain\DocumentNumberingService;
 use App\Services\Domain\FiscalDocumentMutationService;
+use App\Services\Domain\SelfInvoiceDuplicateGuard;
 use App\Settings\CompanySettings;
 use App\Support\FiscalRegimePolicy;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,27 +22,41 @@ class SaveSelfInvoice
         private readonly DocumentNumberingService $numbering,
         private readonly CompanySettings $companySettings,
         private readonly DocumentSequenceResolver $sequenceResolver,
+        private readonly SelfInvoiceDuplicateGuard $duplicates,
     ) {}
 
     /** @param array<string, mixed> $payload */
     public function create(array $payload): FiscalDocument
     {
         $this->ensureAllowed();
-        $sequence = $this->sequenceResolver->resolve('self_invoice');
-        $sequenceId = $sequence->id;
-        $numbering = $this->numbering->reserve($sequence, $payload['date']);
-        [$header, $lines] = $this->prepare($payload, $sequenceId);
+        $this->duplicates->ensureUnique($payload);
 
-        $invoice = $this->mutationService->create([
-            ...$header,
-            'type' => 'self_invoice',
-            'status' => InvoiceStatus::Draft,
-        ], $lines, $numbering);
-        $selfInvoice = (new SelfInvoice)->newFromBuilder($invoice->getAttributes());
-        $selfInvoice->setRelation('payments', $invoice->payments);
-        $selfInvoice->markAsPaidOnIssueDate();
+        try {
+            $sequence = $this->sequenceResolver->resolve('self_invoice');
+            $sequenceId = $sequence->id;
+            $numbering = $this->numbering->reserve($sequence, $payload['date']);
+            [$header, $lines] = $this->prepare($payload, $sequenceId);
 
-        return $selfInvoice->fresh(['lines', 'payments']);
+            $invoice = $this->mutationService->create([
+                ...$header,
+                'type' => 'self_invoice',
+                'status' => InvoiceStatus::Draft,
+            ], $lines, $numbering);
+            $selfInvoice = (new SelfInvoice)->newFromBuilder($invoice->getAttributes());
+            $selfInvoice->setRelation('payments', $invoice->payments);
+            $selfInvoice->markAsPaidOnIssueDate();
+
+            return $selfInvoice->fresh(['lines', 'payments']);
+        } catch (UniqueConstraintViolationException $exception) {
+            if ($this->duplicates->isDuplicateKeyViolation($exception)) {
+                throw $this->duplicates->duplicateException(
+                    (string) $payload['related_invoice_number'],
+                    $this->duplicates->normalizeDate($payload['related_invoice_date']),
+                );
+            }
+
+            throw $exception;
+        }
     }
 
     /** @param array<string, mixed> $payload */
@@ -48,21 +64,33 @@ class SaveSelfInvoice
     {
         $this->ensureAllowed();
 
-        return DB::transaction(function () use ($invoice, $payload) {
-            $lockedRecord = FiscalDocument::query()->lockForUpdate()->findOrFail($invoice->id);
-            /** @var SelfInvoice $lockedInvoice */
-            $lockedInvoice = (new SelfInvoice)->newFromBuilder($lockedRecord->getAttributes());
-            if (! $lockedInvoice->isSdiEditable() || $lockedInvoice->date?->year < now()->year) {
-                throw ValidationException::withMessages(['invoice' => 'Questa autofattura non è più modificabile.']);
+        try {
+            return DB::transaction(function () use ($invoice, $payload) {
+                $lockedRecord = FiscalDocument::query()->lockForUpdate()->findOrFail($invoice->id);
+                /** @var SelfInvoice $lockedInvoice */
+                $lockedInvoice = (new SelfInvoice)->newFromBuilder($lockedRecord->getAttributes());
+                if (! $lockedInvoice->isSdiEditable() || $lockedInvoice->date?->year < now()->year) {
+                    throw ValidationException::withMessages(['invoice' => 'Questa autofattura non è più modificabile.']);
+                }
+
+                [$header, $lines] = $this->prepare($payload, $lockedInvoice->sequence_id);
+                $this->duplicates->ensureUnique($header, $lockedInvoice->id);
+                $header['status'] = in_array($lockedInvoice->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
+                    ? InvoiceStatus::Draft
+                    : $lockedInvoice->status;
+
+                return $this->mutationService->update($lockedInvoice, $header, $lines);
+            });
+        } catch (UniqueConstraintViolationException $exception) {
+            if ($this->duplicates->isDuplicateKeyViolation($exception)) {
+                throw $this->duplicates->duplicateException(
+                    (string) $payload['related_invoice_number'],
+                    $this->duplicates->normalizeDate($payload['related_invoice_date']),
+                );
             }
 
-            [$header, $lines] = $this->prepare($payload, $lockedInvoice->sequence_id);
-            $header['status'] = in_array($lockedInvoice->status, [InvoiceStatus::XmlValidated, InvoiceStatus::Sent], true)
-                ? InvoiceStatus::Draft
-                : $lockedInvoice->status;
-
-            return $this->mutationService->update($lockedInvoice, $header, $lines);
-        });
+            throw $exception;
+        }
     }
 
     /** @return array{0: array<string, mixed>, 1: array<int, array<string, mixed>>} */

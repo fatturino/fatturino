@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Enums\VatRate;
+use App\Services\Domain\SelfInvoiceDuplicateGuard;
 use Carbon\CarbonInterface;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -138,6 +139,15 @@ class FiscalDocument extends Model
             if ($document->date && ! $document->fiscal_year) {
                 $document->fiscal_year = $document->date->year;
             }
+        });
+
+        static::saving(function (self $document): void {
+            if ($document->type !== 'self_invoice') {
+                return;
+            }
+
+            $document->{SelfInvoiceDuplicateGuard::KEY_COLUMN} = app(SelfInvoiceDuplicateGuard::class)
+                ->keyFromAttributes($document->getAttributes());
         });
     }
 
