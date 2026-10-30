@@ -131,7 +131,10 @@ class CreateSelfInvoiceReversal
                 ?? data_get($payload, 'data.notification.message.identificativo_sdi');
 
             if (filled($sdiId)) {
-                $invoice->update(['sdi_id' => (string) $sdiId]);
+                $invoice->newQueryWithoutScopes()
+                    ->whereKey($invoice)
+                    ->update(['sdi_id' => (string) $sdiId]);
+                $invoice->refresh();
 
                 return;
             }

@@ -17,6 +17,7 @@ use App\Services\BusinessFingerprintService;
 use App\Services\OpenApiSdiService;
 use App\Settings\CompanySettings;
 use App\Settings\OpenApiSettings;
+use Illuminate\Support\Facades\DB;
 
 afterEach(function () {
     Mockery::close();
@@ -571,10 +572,15 @@ test('customer notification persists the official SDI identifier', function () {
 
 test('reconcile publishes an in-app notification for a recovered SDI outcome', function () {
     User::factory()->create(['is_admin' => true]);
-    $invoice = SalesInvoice::factory()->create([
+    $invoice = SelfInvoice::factory()->create([
         'sdi_status' => SdiStatus::Sent,
         'sdi_uuid' => 'outbound-status-uuid',
     ]);
+    $duplicateKey = $invoice->self_invoice_duplicate_key;
+    $otherInvoice = SelfInvoice::factory()->create();
+
+    DB::table('fiscal_documents')->where('id', $invoice->id)->update(['self_invoice_duplicate_key' => null]);
+    DB::table('fiscal_documents')->where('id', $otherInvoice->id)->update(['self_invoice_duplicate_key' => $duplicateKey]);
 
     $service = Mockery::mock(OpenApiSdiService::class);
     $service->shouldReceive('isConfigured')->once()->andReturnTrue();

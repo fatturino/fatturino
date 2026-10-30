@@ -548,7 +548,9 @@ class ReconcileCommand extends Command
 
             if ($invoice->sdi_status === $newStatus) {
                 if (! $isDryRun && blank($invoice->sdi_id) && filled($sdiId)) {
-                    $invoice->update(['sdi_id' => (string) $sdiId]);
+                    $invoice->newQueryWithoutScopes()
+                        ->whereKey($invoice)
+                        ->update(['sdi_id' => (string) $sdiId]);
                 }
 
                 $stats['unchanged']++;
@@ -563,11 +565,12 @@ class ReconcileCommand extends Command
                 continue;
             }
 
-            $invoice->update([
+            $invoice->newQueryWithoutScopes()->whereKey($invoice)->update([
                 'sdi_status' => $newStatus->value,
                 'sdi_message' => $message,
                 'sdi_id' => filled($sdiId) ? (string) $sdiId : $invoice->sdi_id,
             ]);
+            $invoice->refresh();
 
             // Create outbound log only if not already recorded (idempotency on fiscal_document_id + event_type + status)
             $logExists = EiOutboundLog::where('fiscal_document_id', $invoice->id)
