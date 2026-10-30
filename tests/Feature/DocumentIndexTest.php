@@ -5,6 +5,7 @@ use App\Models\Contact;
 use App\Models\ProformaInvoice;
 use App\Models\SalesInvoice;
 use App\Models\SdiOutboundSubmission;
+use App\Models\SelfInvoice;
 use App\Models\User;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
@@ -66,6 +67,36 @@ it('filters open sales invoices across unpaid, partial, and overdue payment stat
         ->assertSee('FV-APERTA-PARZIALE')
         ->assertSee('FV-APERTA-SCADUTA')
         ->assertDontSee('FV-PAGATA');
+});
+
+it('excludes self invoice reversals from payment filters and the payment summary', function () {
+    $user = User::factory()->create();
+    $source = SelfInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'number' => 'AUTO-ORIGINALE',
+        'payment_status' => 'paid',
+    ]);
+    SelfInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'number' => 'AUTO-STORNO',
+        'payment_status' => 'unpaid',
+        'reversal_of_id' => $source->id,
+    ]);
+    SelfInvoice::factory()->create([
+        'date' => now()->toDateString(),
+        'number' => 'AUTO-DA-PAGARE',
+        'payment_status' => 'unpaid',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.index', ['type' => 'self'])
+        ->assertSee('Da saldare')
+        ->assertSee('>1</dd>', escape: false)
+        ->assertSee('Nessuna scaduta')
+        ->call('selectTab', 'unpaid')
+        ->assertSee('AUTO-DA-PAGARE')
+        ->assertDontSee('AUTO-STORNO');
 });
 
 it('shows a compact fiscal-year summary panel with payment operations', function () {

@@ -132,6 +132,12 @@ new #[Layout('layouts::app')] class extends Component {
         return $this->definition()['payments'];
     }
 
+    public function showsPaymentStatus(mixed $document): bool
+    {
+        return $this->hasPayments()
+            && ! ($this->type === 'self' && $document->reversal_of_id !== null);
+    }
+
     public function isActive(string $value): bool
     {
         return $value === '' ? $this->status === '' && $this->payment === '' : ($value === 'unpaid' || $value === 'overdue' ? $this->payment === $value : $this->status === $value);
@@ -225,6 +231,10 @@ new #[Layout('layouts::app')] class extends Component {
             $query->where('status', $this->status);
         }
         if ($this->payment !== '' && $this->hasPayments()) {
+            if ($this->type === 'self') {
+                $query->whereNull('reversal_of_id');
+            }
+
             $this->payment === 'open'
                 ? $query->whereIn('payment_status', ['unpaid', 'partial', 'overdue'])
                     : $query->where('payment_status', $this->payment);
@@ -248,8 +258,9 @@ new #[Layout('layouts::app')] class extends Component {
             "sum(case when status = 'sent' then 1 else 0 end) as sent",
         ];
         if ($this->hasPayments()) {
-            $select[] = "sum(case when payment_status in ('unpaid', 'partial', 'overdue') then 1 else 0 end) as open";
-            $select[] = "sum(case when payment_status = 'overdue' then 1 else 0 end) as overdue";
+            $paymentEligibility = $this->type === 'self' ? ' and reversal_of_id is null' : '';
+            $select[] = "sum(case when payment_status in ('unpaid', 'partial', 'overdue'){$paymentEligibility} then 1 else 0 end) as open";
+            $select[] = "sum(case when payment_status = 'overdue'{$paymentEligibility} then 1 else 0 end) as overdue";
         }
 
         return $this->baseQuery()->selectRaw(implode(', ', $select))->firstOrFail();
@@ -484,7 +495,7 @@ new #[Layout('layouts::app')] class extends Component {
                         <td class="px-5 py-4 align-top text-right font-medium tabular-nums text-content">{{ $this->money($document->total_vat) }}</td>
                         <td class="px-5 py-4 align-top text-right tabular-nums">
                             <p class="font-semibold text-content">{{ $this->money($document->total_gross) }}</p>
-                            @if($this->hasPayments() && (int) $document->net_due !== (int) $document->total_gross)
+                            @if($this->showsPaymentStatus($document) && (int) $document->net_due !== (int) $document->total_gross)
                                 <p class="mt-1 text-xs text-content-muted">Residuo {{ $this->money($document->net_due) }}</p>
                             @endif
                         </td>
@@ -500,7 +511,9 @@ new #[Layout('layouts::app')] class extends Component {
                         </td>
                         @if($this->hasPayments())
                             <td class="px-5 py-4 align-top whitespace-nowrap">
-                                <x-badge :value="$this->statusLabel($document->payment_status)" :variant="$this->statusTone($document->payment_status)" />
+                                @if($this->showsPaymentStatus($document))
+                                    <x-badge :value="$this->statusLabel($document->payment_status)" :variant="$this->statusTone($document->payment_status)" />
+                                @endif
                             </td>
                         @endif
                         <td class="px-3 py-4 align-top text-right"><x-documents.document-actions :document="$document" :type="$type" :base="$definition['base']" /></td>
@@ -554,7 +567,7 @@ new #[Layout('layouts::app')] class extends Component {
                     <div class="text-right">
                         <p class="text-xs text-content-muted">Totale</p>
                         <p class="mt-1 font-semibold tabular-nums text-content">{{ $this->money($document->total_gross) }}</p>
-                        @if($this->hasPayments() && (int) $document->net_due !== (int) $document->total_gross)
+                        @if($this->showsPaymentStatus($document) && (int) $document->net_due !== (int) $document->total_gross)
                             <p class="mt-1 text-xs tabular-nums text-content-muted">Residuo {{ $this->money($document->net_due) }}</p>
                         @endif
                     </div>
@@ -562,7 +575,7 @@ new #[Layout('layouts::app')] class extends Component {
                         <p class="text-xs text-content-muted">Scadenza</p>
                         <p class="mt-1 text-content">{{ $document->due_date?->format('d/m/Y') ?? 'Nessuna' }}</p>
                     </div>
-                    @if($this->hasPayments())
+                    @if($this->showsPaymentStatus($document))
                         <div class="text-right">
                             <p class="text-xs text-content-muted">Pagamento</p>
                             <div class="mt-1 inline-flex"><x-badge :value="$this->statusLabel($document->payment_status)" :variant="$this->statusTone($document->payment_status)" /></div>
