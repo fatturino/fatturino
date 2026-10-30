@@ -5,6 +5,8 @@ namespace App\Actions;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
+use App\Models\EiInboundLog;
+use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
 use App\Models\SelfInvoice;
 use App\Services\DocumentSequenceResolver;
@@ -36,6 +38,7 @@ class CreateSelfInvoiceReversal
             $source = (new SelfInvoice)->newFromBuilder($record->getAttributes());
             $source->load('lines');
 
+            $this->recoverSdiId($source);
             $this->ensureReversible($source);
 
             if (SelfInvoice::query()->where('reversal_of_id', $source->id)->exists()) {
@@ -99,6 +102,39 @@ class CreateSelfInvoiceReversal
 
         if ($invoice->reversal_of_id !== null) {
             throw ValidationException::withMessages(['invoice' => 'Non puoi creare uno storno di un altro storno.']);
+        }
+
+        if (blank($invoice->sdi_id)) {
+            throw ValidationException::withMessages([
+                'invoice' => 'Non è possibile stornare l’autofattura perché manca l’IdSdI della comunicazione originale.',
+            ]);
+        }
+    }
+
+    private function recoverSdiId(SelfInvoice $invoice): void
+    {
+        if (filled($invoice->sdi_id)) {
+            return;
+        }
+
+        $payloads = EiOutboundLog::query()
+            ->where('fiscal_document_id', $invoice->id)
+            ->latest('id')
+            ->pluck('raw_payload')
+            ->merge(EiInboundLog::query()
+                ->where('linked_fiscal_document_id', $invoice->id)
+                ->latest('id')
+                ->pluck('raw_payload'));
+
+        foreach ($payloads as $payload) {
+            $sdiId = data_get($payload, 'notification.message.identificativo_sdi')
+                ?? data_get($payload, 'data.notification.message.identificativo_sdi');
+
+            if (filled($sdiId)) {
+                $invoice->update(['sdi_id' => (string) $sdiId]);
+
+                return;
+            }
         }
     }
 }

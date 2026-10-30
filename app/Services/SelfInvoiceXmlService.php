@@ -50,6 +50,8 @@ class SelfInvoiceXmlService
 
     public function generate(SelfInvoice $invoice): string
     {
+        $invoice->loadMissing('reversalOf');
+
         $doc = new DigitalDocument;
 
         $companyCountry = $this->companySettings->company_country;
@@ -149,6 +151,12 @@ class SelfInvoiceXmlService
                 : Carbon::parse($invoice->related_invoice_date);
             $relatedDocument->setDocumentDate($relatedDate->toDateTime());
             $instance->addRelatedInvoice($relatedDocument);
+
+            if (filled($invoice->reversalOf?->sdi_id)) {
+                $relatedSdiDocument = new RelatedDocument;
+                $relatedSdiDocument->setDocumentNumber($invoice->reversalOf->sdi_id);
+                $instance->addRelatedInvoice($relatedSdiDocument);
+            }
         }
 
         // Lines

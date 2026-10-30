@@ -545,6 +545,30 @@ test('customer notification NS reopens outbound invoice for correction and resen
         ->and($invoice->isSdiEditable())->toBeTrue();
 });
 
+test('customer notification persists the official SDI identifier', function () {
+    $invoice = SelfInvoice::factory()->create([
+        'status' => InvoiceStatus::Sent,
+        'sdi_status' => SdiStatus::Sent,
+        'sdi_uuid' => 'outbound-self-invoice-uuid',
+    ]);
+
+    $this
+        ->withHeader('Authorization', 'Bearer webhook-secret')
+        ->postJson(route('openapi.webhook'), [
+            'event' => 'customer-notification',
+            'data' => [
+                'notification' => [
+                    'invoice_uuid' => 'outbound-self-invoice-uuid',
+                    'type' => 'RC',
+                    'message' => ['identificativo_sdi' => '18519436588'],
+                ],
+            ],
+        ])
+        ->assertOk();
+
+    expect($invoice->fresh()->sdi_id)->toBe('18519436588');
+});
+
 test('reconcile publishes an in-app notification for a recovered SDI outcome', function () {
     User::factory()->create(['is_admin' => true]);
     $invoice = SalesInvoice::factory()->create([
@@ -562,6 +586,7 @@ test('reconcile publishes an in-app notification for a recovered SDI outcome', f
             'notifications' => [[
                 'type' => 'RC',
                 'created_at' => now()->toIso8601String(),
+                'message' => ['identificativo_sdi' => '18519436588'],
             ]],
         ]);
     app()->instance(OpenApiSdiService::class, $service);
@@ -570,6 +595,7 @@ test('reconcile publishes an in-app notification for a recovered SDI outcome', f
         ->assertExitCode(0);
 
     expect($invoice->fresh()->sdi_status)->toBe(SdiStatus::Delivered)
+        ->and($invoice->fresh()->sdi_id)->toBe('18519436588')
         ->and(InAppNotification::query()->where('type', 'sdi.outcome.received')->count())->toBe(1)
         ->and(InAppNotification::query()->where('type', 'sdi.outcome.received')->value('resource_id'))->toBe($invoice->id);
 });

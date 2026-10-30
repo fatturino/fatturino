@@ -22,6 +22,7 @@ Il formato si ispira a [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0
 
 ### Modificato
 
+- Gli storni di autofatture TD17, TD18 e TD19 ora collegano separatamente numero/data e IdSdI della comunicazione errata; l'IdSdI ufficiale viene salvato dalle notifiche SDI e recuperato dai log storici quando disponibile.
 - L'installazione frontend è stata standardizzata su Bun e il lockfile npm è stato rimosso.
 - Sono state aggiunte linee guida open source per contribuzioni, condotta, sicurezza, issue e pull request.
 

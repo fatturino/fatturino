@@ -269,6 +269,7 @@ class SdiInboundProcessor
             'status' => $newStatus === SdiStatus::Rejected ? InvoiceStatus::Draft->value : $invoice->status,
             'sdi_status' => $newStatus->value,
             'sdi_message' => $message,
+            'sdi_id' => $notification['message']['identificativo_sdi'] ?? $invoice->sdi_id,
         ]);
 
         $outboundLog = EiOutboundLog::firstOrCreate(

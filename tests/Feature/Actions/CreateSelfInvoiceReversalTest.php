@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
+use App\Models\EiOutboundLog;
 use App\Models\SelfInvoice;
 use App\Models\Sequence;
 use App\Models\User;
@@ -30,6 +31,7 @@ function sentSelfInvoiceForReversal(string $documentType = 'TD17'): SelfInvoice
         'related_invoice_date' => '2026-10-20',
         'status' => InvoiceStatus::Sent,
         'sdi_status' => SdiStatus::Delivered,
+        'sdi_id' => '18519436588',
     ]);
     $invoice->lines()->create([
         'description' => 'Servizio estero',
@@ -93,9 +95,40 @@ it('creates an XML document with the source self invoice as its related document
     expect($xml)
         ->toContain('<TipoDocumento>TD18</TipoDocumento>')
         ->toContain('<IdDocumento>AUTO-42</IdDocumento>')
+        ->toContain('<IdDocumento>18519436588</IdDocumento>')
         ->toContain('<PrezzoTotale>-100.00000000</PrezzoTotale>')
         ->toContain('<ImponibileImporto>-100.00</ImponibileImporto>');
+    expect(substr_count($xml, '<DatiFattureCollegate>'))->toBe(2);
     expect(app(LocalXmlValidator::class)->validate($xml)['valid'])->toBeTrue();
+});
+
+it('recovers and persists the official SDI identifier from historical logs before creating a reversal', function () {
+    $source = sentSelfInvoiceForReversal();
+    $source->update(['sdi_id' => null]);
+    EiOutboundLog::create([
+        'fiscal_document_id' => $source->id,
+        'event_type' => 'RC',
+        'status' => SdiStatus::Delivered,
+        'raw_payload' => [
+            'notification' => [
+                'message' => ['identificativo_sdi' => '18519436588'],
+            ],
+        ],
+    ]);
+
+    $reversal = app(CreateSelfInvoiceReversal::class)->execute($source);
+
+    expect($source->fresh()->sdi_id)->toBe('18519436588');
+    expect(app(SelfInvoiceXmlService::class)->generate($reversal->fresh(['lines', 'contact'])))
+        ->toContain('<IdDocumento>18519436588</IdDocumento>');
+});
+
+it('refuses a reversal when the official SDI identifier cannot be recovered', function () {
+    $source = sentSelfInvoiceForReversal();
+    $source->update(['sdi_id' => null]);
+
+    expect(fn () => app(CreateSelfInvoiceReversal::class)->execute($source->fresh()))
+        ->toThrow(ValidationException::class);
 });
 
 it('does not create a second reversal for the same self invoice', function () {
