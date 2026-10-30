@@ -115,6 +115,76 @@ it('keeps payment and notes in tabs while showing active fiscal options in the c
         ->assertSet('tab', 'notes');
 });
 
+it('preserves the fiscal options disclosure while Livewire updates its contents', function () {
+    $user = User::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->assertSee('wire:ignore.self', escape: false)
+        ->set('withholding_tax_enabled', true)
+        ->assertSet('withholding_tax_enabled', true)
+        ->assertSee('Ritenuta 20%')
+        ->set('withholding_tax_percent', '25.00')
+        ->assertSet('withholding_tax_percent', '25.00')
+        ->assertSee('Ritenuta 25%')
+        ->set('withholding_tax_enabled', false)
+        ->assertSet('withholding_tax_enabled', false)
+        ->assertSee('Nessuna');
+});
+
+it('restores the selected fiscal options after saving and reopening an invoice', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    configureSalesInvoiceFormSequence();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form')
+        ->set('contact_id', $contact->id)
+        ->set('withholding_tax_enabled', true)
+        ->set('withholding_tax_percent', '25.00')
+        ->set('fund_enabled', true)
+        ->set('fund_type', 'TC01')
+        ->set('fund_percent', '4.00')
+        ->set('fund_vat_rate', 'R22')
+        ->set('fund_has_deduction', true)
+        ->set('stamp_duty_applied', true)
+        ->set('stamp_duty_charged_to_customer', false)
+        ->set('split_payment', true)
+        ->set('lines', [validSalesInvoiceLine()])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $invoice = SalesInvoice::query()->sole();
+
+    expect($invoice->withholding_tax_enabled)->toBeTrue()
+        ->and((float) $invoice->withholding_tax_percent)->toBe(25.0)
+        ->and((bool) $invoice->fund_enabled)->toBeTrue()
+        ->and($invoice->fund_type)->toBe('TC01')
+        ->and((float) $invoice->fund_percent)->toBe(4.0)
+        ->and($invoice->fund_vat_rate)->toBe('R22')
+        ->and((bool) $invoice->fund_has_deduction)->toBeTrue()
+        ->and($invoice->stamp_duty_applied)->toBeTrue()
+        ->and($invoice->stamp_duty_charged_to_customer)->toBeFalse()
+        ->and($invoice->split_payment)->toBeTrue()
+        ->and($invoice->vat_payability)->toBe('S');
+
+    Livewire::test('pages::documents.sales.form', ['invoice' => $invoice])
+        ->assertSet('withholding_tax_enabled', true)
+        ->assertSet('withholding_tax_percent', '25')
+        ->assertSet('fund_enabled', true)
+        ->assertSet('fund_type', 'TC01')
+        ->assertSet('fund_percent', '4')
+        ->assertSet('fund_vat_rate', 'R22')
+        ->assertSet('fund_has_deduction', true)
+        ->assertSet('stamp_duty_applied', true)
+        ->assertSet('stamp_duty_charged_to_customer', false)
+        ->assertSet('split_payment', true)
+        ->assertSet('vat_payability', 'S');
+});
+
 it('keeps quantity in the primary invoice line editor and details as a disclosure', function () {
     $user = User::factory()->create();
     configureSalesInvoiceFormSequence();

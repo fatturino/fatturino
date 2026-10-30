@@ -32,7 +32,7 @@
 @endphp
 
 @if($editorVariant)
-    <details @if($variant === 'editor' && $activeOptions->isNotEmpty()) open @endif class="rounded-xl border border-border bg-white">
+    <details wire:ignore.self @if($variant === 'editor' && $activeOptions->isNotEmpty()) open @endif class="rounded-xl border border-border bg-white">
         <summary class="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-content marker:hidden"><span>Opzioni fiscali</span><span class="ml-auto max-w-32 truncate text-right text-xs font-medium text-content-muted">{{ $activeOptions->isNotEmpty() ? $activeOptions->join(', ') : 'Nessuna' }}</span><x-icon name="o-chevron-down" class="size-4 flex-none text-content-muted" /></summary>
         <div class="border-t border-border px-5 pb-5">
 @else
