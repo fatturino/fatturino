@@ -121,7 +121,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     private function rules(): array
     {
-        $rules = ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'related_invoice_number' => 'nullable|string', 'related_invoice_date' => 'nullable|date', 'notes' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric', 'lines.*.vat_rate' => 'required|string'];
+        $rules = ['contact_id' => 'required|exists:contacts,id', 'date' => 'required|date', 'related_invoice_number' => 'nullable|string', 'related_invoice_date' => 'nullable|date', 'notes' => 'nullable|string', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric', 'lines.*.vat_rate' => 'required|string'];
 
         return $rules;
     }
@@ -146,9 +146,15 @@ new #[Layout('layouts::app')] class extends Component {
         return app(CompanySettings::class)->company_fiscal_regime === 'RF19';
     }
 
+    /**
+     * SDI amount-only lines (e.g. discounts) often arrive with quantity 0 and the amount in unit_price.
+     */
     private function lineTotal(array $line): float
     {
-        return max(0, (float) ($line['quantity'] ?: 0)) * (float) ($line['unit_price'] ?: 0);
+        $quantity = max(0, (float) ($line['quantity'] ?: 0));
+        $unitPrice = (float) ($line['unit_price'] ?: 0);
+
+        return $quantity > 0 ? $quantity * $unitPrice : $unitPrice;
     }
 
     private function vatPercent(string $rate): float

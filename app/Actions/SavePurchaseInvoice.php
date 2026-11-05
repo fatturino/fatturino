@@ -36,8 +36,11 @@ class SavePurchaseInvoice
     /** @param array<string, mixed> $line */
     private function buildLinePayload(array $line): array
     {
-        $total = (float) $line['quantity'] * (float) $line['unit_price'];
+        $quantity = (float) $line['quantity'];
+        $unitPrice = (float) $line['unit_price'];
+        // SDI amount-only lines (discounts) often have quantity 0 with the amount in unit_price.
+        $total = $quantity > 0 ? $quantity * $unitPrice : $unitPrice;
 
-        return ['description' => $line['description'], 'quantity' => (float) $line['quantity'], 'unit_of_measure' => ($line['unit_of_measure'] ?? null) ?: null, 'unit_price' => (int) round((float) $line['unit_price'] * 100), 'discount_percent' => null, 'discount_amount' => null, 'vat_rate' => $line['vat_rate'], 'total' => (int) round($total * 100)];
+        return ['description' => $line['description'], 'quantity' => $quantity, 'unit_of_measure' => ($line['unit_of_measure'] ?? null) ?: null, 'unit_price' => (int) round($unitPrice * 100), 'discount_percent' => null, 'discount_amount' => null, 'vat_rate' => $line['vat_rate'], 'total' => (int) round($total * 100)];
     }
 }

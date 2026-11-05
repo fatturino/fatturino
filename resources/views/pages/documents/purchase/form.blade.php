@@ -68,7 +68,7 @@ new #[Layout('layouts::app')] class extends Component {
 
             return null;
         }
-        $saved = $save->update($this->invoice, $this->validate(['contact_id' => 'required|exists:contacts,id', 'number' => 'required|string', 'date' => 'required|date', 'due_date' => 'nullable|date', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0.01', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric', 'lines.*.vat_rate' => 'required|string']));
+        $saved = $save->update($this->invoice, $this->validate(['contact_id' => 'required|exists:contacts,id', 'number' => 'required|string', 'date' => 'required|date', 'due_date' => 'nullable|date', 'lines' => 'required|array|min:1', 'lines.*.description' => 'required|string', 'lines.*.quantity' => 'required|numeric|min:0', 'lines.*.unit_of_measure' => 'nullable|string', 'lines.*.unit_price' => 'required|numeric', 'lines.*.vat_rate' => 'required|string']));
         app(PostHogTelemetryService::class)->capture('purchase_invoice_updated', app(PostHogTelemetryService::class)->documentProperties($saved), auth()->user());
 
         return $this->redirectRoute('purchase-invoices.index', navigate: true);
@@ -81,17 +81,23 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function getNetTotalProperty(): float
     {
-        return array_sum(array_map($this->lineTotal(...), $this->lines));
+        return round(array_sum(array_map($this->lineTotal(...), $this->lines)), 2);
     }
 
     public function getVatTotalProperty(): float
     {
-        return array_sum(array_map(fn ($l) => $this->lineTotal($l) * (VatRate::tryFrom($l['vat_rate'])?->percent() ?? 0) / 100, $this->lines));
+        return round(array_sum(array_map(fn ($l) => $this->lineTotal($l) * (VatRate::tryFrom($l['vat_rate'])?->percent() ?? 0) / 100, $this->lines)), 2);
     }
 
+    /**
+     * SDI amount-only lines (e.g. discounts) often arrive with quantity 0 and the amount in unit_price.
+     */
     private function lineTotal(array $line): float
     {
-        return max(0, (float) ($line['quantity'] ?: 0)) * (float) ($line['unit_price'] ?: 0);
+        $quantity = max(0, (float) ($line['quantity'] ?: 0));
+        $unitPrice = (float) ($line['unit_price'] ?: 0);
+
+        return $quantity > 0 ? $quantity * $unitPrice : $unitPrice;
     }
 
     private function lineState(array $line): array
