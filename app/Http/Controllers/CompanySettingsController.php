@@ -5,16 +5,17 @@ namespace App\Http\Controllers;
 use App\Enums\AtecoCode;
 use App\Enums\FiscalRegime;
 use App\Rules\ItalianVatNumber;
+use App\Services\CompanyLogoStorage;
 use App\Settings\CompanySettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class CompanySettingsController extends Controller
 {
-    public function update(Request $request, CompanySettings $settings): RedirectResponse
+    public function update(Request $request, CompanySettings $settings, CompanyLogoStorage $logoStorage): RedirectResponse
     {
         $validated = $request->validate([
             'company_name' => 'required|string',
@@ -38,7 +39,7 @@ class CompanySettingsController extends Controller
 
         $previousLogoPath = $settings->company_logo_path;
         if ($request->hasFile('company_logo')) {
-            $settings->company_logo_path = $request->file('company_logo')->store('logos', 'public');
+            $settings->company_logo_path = $logoStorage->store($request->file('company_logo'));
         } elseif ($request->boolean('remove_logo')) {
             $settings->company_logo_path = null;
         }
@@ -46,7 +47,7 @@ class CompanySettingsController extends Controller
         $oldRegime = $settings->company_fiscal_regime;
         $oldRf19SelfInvoicesEnabled = $settings->rf19_self_invoices_enabled;
 
-        $validated['company_vat_number'] = ItalianVatNumber::normalize($validated['company_vat_number'] ?? null);
+        $validated['company_vat_number'] = ItalianVatNumber::normalize($validated['company_vat_number'] ?? null) ?? '';
         $validated['company_ateco_codes'] = array_values(array_unique($validated['company_ateco_codes'] ?? []));
         unset($validated['company_logo'], $validated['remove_logo']);
 
@@ -54,7 +55,7 @@ class CompanySettingsController extends Controller
         $settings->save();
 
         if ($previousLogoPath && $previousLogoPath !== $settings->company_logo_path) {
-            Storage::disk('public')->delete($previousLogoPath);
+            $logoStorage->delete($previousLogoPath);
         }
 
         if ($oldRegime !== $settings->company_fiscal_regime || $oldRf19SelfInvoicesEnabled !== $settings->rf19_self_invoices_enabled) {
@@ -68,5 +69,22 @@ class CompanySettingsController extends Controller
         }
 
         return redirect()->route('settings.company');
+    }
+
+    public function logo(CompanySettings $settings, CompanyLogoStorage $logoStorage): Response
+    {
+        $path = $settings->company_logo_path;
+
+        if (! $logoStorage->exists($path)) {
+            abort(404);
+        }
+
+        $contents = $logoStorage->get($path);
+        $mimeType = $logoStorage->mimeType($path) ?: 'application/octet-stream';
+
+        return response($contents, 200, [
+            'Content-Type' => $mimeType,
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
     }
 }

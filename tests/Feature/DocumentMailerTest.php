@@ -579,10 +579,10 @@ test('document mail html includes fatturino footer without company logo', functi
 });
 
 test('document mail html embeds company logo when present', function () {
-    Storage::fake('public');
+    Storage::fake('logos');
 
     $logoPath = 'logos/company-logo.png';
-    Storage::disk('public')->put(
+    Storage::disk('logos')->put(
         $logoPath,
         base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
     );
@@ -601,4 +601,26 @@ test('document mail html embeds company logo when present', function () {
         ->toContain('Inviato con')
         ->toContain('Fatturino')
         ->toContain('https://fatturino.it');
+});
+
+test('document mail embeds legacy public logo when logos disk is empty', function () {
+    Storage::fake('logos');
+    Storage::fake('public');
+
+    $logoPath = 'logos/legacy-logo.png';
+    Storage::disk('public')->put(
+        $logoPath,
+        base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
+    );
+
+    $company = app(CompanySettings::class);
+    $company->company_name = 'Legacy Logo';
+    $company->company_logo_path = $logoPath;
+
+    $html = (new DocumentMail('Oggetto test', 'Corpo legacy'))->render();
+
+    expect($html)
+        ->toContain('<img')
+        ->toContain('data:image/')
+        ->toContain('alt="Legacy Logo"');
 });

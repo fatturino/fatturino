@@ -8,7 +8,7 @@ Fatturino must retain the exact XML submitted to or received from SDI and the fi
 
 ## Decision
 
-Document artifacts use Laravel's `documents` disk. `DOCUMENTS_DISK=local` remains the compatible self-hosted default; cloud deployments set `DOCUMENTS_DISK=s3`. `APP_INSTANCE_ID` optionally namespaces documents and backups. XML and PDF snapshots use `{format}/{category}/{year}/{public_ulid}/{filename}` under the disk root. Existing keys are immutable: identical writes are no-ops and different content fails.
+Document artifacts use Laravel's `documents` disk. `DOCUMENTS_DISK=local` remains the compatible self-hosted default; cloud deployments set `DOCUMENTS_DISK=s3`. `APP_INSTANCE_ID` optionally namespaces documents and backups. XML and PDF snapshots use `{format}/{category}/{year}/{public_ulid}/{filename}` under the disk root. Existing keys are immutable: identical writes are no-ops and different content fails. The same `DOCUMENTS_DISK` switch also drives the mutable company-logo `logos` disk; see `2026-11-05-company-logo-durable-storage.md`.
 
 Validated XML is persisted before `xml_validated`; submission reuses that artifact. Final PDFs are persisted before definitive download or mail attachment. Inbound XML is copied to the same disk.
 

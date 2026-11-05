@@ -110,6 +110,8 @@ test('cloud mode applies tenant application configuration and restores the centr
     config()->set('backup.backup.source.databases', ['central']);
     config()->set('filesystems.disks.documents.driver', 's3');
     config()->set('filesystems.disks.documents.root', 'central/documents');
+    config()->set('filesystems.disks.logos.driver', 's3');
+    config()->set('filesystems.disks.logos.root', 'central/logos');
 
     $provider = new CloudTenancyServiceProvider(app());
     $provider->register();
@@ -134,7 +136,8 @@ test('cloud mode applies tenant application configuration and restores the centr
         ->and(config('fe-openapi.sandbox'))->toBeTrue()
         ->and(config('backup.backup.name'))->toBe('configured/backups')
         ->and(config('backup.backup.source.databases'))->toBe(['tenant'])
-        ->and(config('filesystems.disks.documents.root'))->toBe('configured/documents');
+        ->and(config('filesystems.disks.documents.root'))->toBe('configured/documents')
+        ->and(config('filesystems.disks.logos.root'))->toBe('configured/logos');
 
     tenancy()->end();
 
@@ -145,7 +148,8 @@ test('cloud mode applies tenant application configuration and restores the centr
         ->and(config('fe-openapi.sandbox'))->toBeFalse()
         ->and(config('backup.backup.name'))->toBe('central/backups')
         ->and(config('backup.backup.source.databases'))->toBe(['central'])
-        ->and(config('filesystems.disks.documents.root'))->toBe('central/documents');
+        ->and(config('filesystems.disks.documents.root'))->toBe('central/documents')
+        ->and(config('filesystems.disks.logos.root'))->toBe('central/logos');
 
     $inheritingTenant = new Tenant([
         'id' => 'inheriting-tenant',
@@ -256,6 +260,8 @@ test('Cloud scheduled jobs execute inside their tenant context', function () {
 test('Cloud mode isolates local document storage per tenant', function () {
     config()->set('filesystems.disks.documents.driver', 'local');
     config()->set('filesystems.disks.documents.root', storage_path('app/private'));
+    config()->set('filesystems.disks.logos.driver', 'local');
+    config()->set('filesystems.disks.logos.root', storage_path('app/private'));
 
     $tenant = new Tenant([
         'app_key' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
@@ -267,9 +273,11 @@ test('Cloud mode isolates local document storage per tenant', function () {
 
     $bootstrapper->bootstrap($tenant);
 
-    expect(config('filesystems.disks.documents.root'))->toBe(storage_path('tenant123/app/private'));
+    expect(config('filesystems.disks.documents.root'))->toBe(storage_path('tenant123/app/private'))
+        ->and(config('filesystems.disks.logos.root'))->toBe(storage_path('tenant123/app/private'));
 
     $bootstrapper->revert();
 
-    expect(config('filesystems.disks.documents.root'))->toBe(storage_path('app/private'));
+    expect(config('filesystems.disks.documents.root'))->toBe(storage_path('app/private'))
+        ->and(config('filesystems.disks.logos.root'))->toBe(storage_path('app/private'));
 });

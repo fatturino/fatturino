@@ -95,7 +95,7 @@ test('company settings reject unknown ateco codes', function () {
 });
 
 test('company settings reject logo files larger than one megabyte', function () {
-    Storage::fake('public');
+    Storage::fake('logos');
     $user = User::factory()->create();
     $settings = app(CompanySettings::class);
     app()->instance(EnvironmentCapabilities::class, new UnrestrictedCapabilities);
@@ -106,6 +106,95 @@ test('company settings reject logo files larger than one megabyte', function () 
         'company_fiscal_regime' => $settings->company_fiscal_regime ?: 'RF01',
         'company_logo' => UploadedFile::fake()->create('logo.png', 1025, 'image/png'),
     ])->assertSessionHasErrors('company_logo');
+});
+
+test('company settings store logo on the logos disk', function () {
+    Storage::fake('logos');
+    Storage::fake('public');
+    $user = User::factory()->create();
+    $settings = app(CompanySettings::class);
+    app()->instance(EnvironmentCapabilities::class, new UnrestrictedCapabilities);
+
+    $this->actingAs($user)->put(route('settings.company.update'), [
+        'company_name' => $settings->company_name ?: 'Test Company',
+        'company_vat_number' => $settings->company_vat_number ?: '12345678903',
+        'company_tax_code' => $settings->company_tax_code ?: '12345678903',
+        'company_address' => $settings->company_address ?: 'Via Test 1',
+        'company_postal_code' => $settings->company_postal_code ?: '20100',
+        'company_city' => $settings->company_city ?: 'Milano',
+        'company_province' => $settings->company_province ?: 'MI',
+        'company_country' => 'IT',
+        'company_email' => $settings->company_email ?: 'info@example.it',
+        'company_pec' => $settings->company_pec ?: 'pec@example.it',
+        'company_sdi_code' => $settings->company_sdi_code ?: '1234567',
+        'company_fiscal_regime' => $settings->company_fiscal_regime ?: 'RF01',
+        'rf19_self_invoices_enabled' => $settings->rf19_self_invoices_enabled,
+        'company_ateco_codes' => $settings->company_ateco_codes,
+        'company_logo' => UploadedFile::fake()->image('logo.png', 40, 20),
+        'remove_logo' => false,
+    ])->assertSessionHasNoErrors()
+        ->assertRedirect(route('settings.company'));
+
+    $updated = app(CompanySettings::class);
+    expect($updated->company_logo_path)->not->toBeNull()
+        ->and($updated->company_logo_path)->toStartWith('logos/')
+        ->and(Storage::disk('logos')->exists($updated->company_logo_path))->toBeTrue()
+        ->and(Storage::disk('public')->exists($updated->company_logo_path))->toBeFalse();
+});
+
+test('company settings replace deletes previous logo from logos disk', function () {
+    Storage::fake('logos');
+    Storage::fake('public');
+    $user = User::factory()->create();
+    $settings = app(CompanySettings::class);
+    app()->instance(EnvironmentCapabilities::class, new UnrestrictedCapabilities);
+
+    $previousPath = 'logos/previous-logo.png';
+    Storage::disk('logos')->put($previousPath, 'old-logo');
+    $settings->company_logo_path = $previousPath;
+    $settings->save();
+
+    $this->actingAs($user)->put(route('settings.company.update'), [
+        'company_name' => $settings->company_name ?: 'Test Company',
+        'company_vat_number' => $settings->company_vat_number ?: '12345678903',
+        'company_tax_code' => $settings->company_tax_code ?: '12345678903',
+        'company_address' => $settings->company_address ?: 'Via Test 1',
+        'company_postal_code' => $settings->company_postal_code ?: '20100',
+        'company_city' => $settings->company_city ?: 'Milano',
+        'company_province' => $settings->company_province ?: 'MI',
+        'company_country' => 'IT',
+        'company_email' => $settings->company_email ?: 'info@example.it',
+        'company_pec' => $settings->company_pec ?: 'pec@example.it',
+        'company_sdi_code' => $settings->company_sdi_code ?: '1234567',
+        'company_fiscal_regime' => $settings->company_fiscal_regime ?: 'RF01',
+        'rf19_self_invoices_enabled' => $settings->rf19_self_invoices_enabled,
+        'company_ateco_codes' => $settings->company_ateco_codes,
+        'company_logo' => UploadedFile::fake()->image('new-logo.png', 40, 20),
+        'remove_logo' => false,
+    ])->assertSessionHasNoErrors()
+        ->assertRedirect(route('settings.company'));
+
+    $updated = app(CompanySettings::class);
+    expect(Storage::disk('logos')->exists($previousPath))->toBeFalse()
+        ->and($updated->company_logo_path)->not->toBe($previousPath)
+        ->and(Storage::disk('logos')->exists($updated->company_logo_path))->toBeTrue();
+});
+
+test('authenticated users can stream the company logo', function () {
+    Storage::fake('logos');
+    $user = User::factory()->create();
+    $settings = app(CompanySettings::class);
+    $logoPath = 'logos/preview.png';
+    $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+    Storage::disk('logos')->put($logoPath, $png);
+    $settings->company_logo_path = $logoPath;
+    $settings->save();
+
+    $response = $this->actingAs($user)->get(route('settings.company.logo'));
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toStartWith('image/')
+        ->and($response->getContent())->toBe($png);
 });
 
 // Test tax code format

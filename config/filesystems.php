@@ -63,6 +63,29 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Company logo uses the same DOCUMENTS_DISK switch as fiscal snapshots.
+         * Cloud deployments keep the binary on S3; local installs stay private.
+         */
+        'logos' => [
+            'driver' => env('DOCUMENTS_DISK', 'local') === 's3' ? 's3' : 'local',
+            'root' => env('DOCUMENTS_DISK', 'local') === 's3'
+                ? implode('/', array_filter([
+                    trim((string) env('APP_INSTANCE_ID', ''), '/'),
+                    'logos',
+                ]))
+                : storage_path('app/private'),
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

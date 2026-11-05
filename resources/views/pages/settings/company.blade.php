@@ -4,10 +4,10 @@ use App\Contracts\EnvironmentCapabilities;
 use App\Enums\AtecoCode;
 use App\Enums\FiscalRegime;
 use App\Rules\ItalianVatNumber;
+use App\Services\CompanyLogoStorage;
 use App\Settings\CompanySettings;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -60,7 +60,7 @@ new #[Layout('layouts::app')] class extends Component {
         $this->companyLogoPath = $settings->company_logo_path;
     }
 
-    public function save(CompanySettings $settings): void
+    public function save(CompanySettings $settings, CompanyLogoStorage $logoStorage): void
     {
         $this->ensureAllowed();
         $this->company_ateco_codes = collect($this->company_ateco_codes)
@@ -72,7 +72,7 @@ new #[Layout('layouts::app')] class extends Component {
         $validated = $this->validate();
         $previousLogoPath = $settings->company_logo_path;
         if ($this->company_logo) {
-            $settings->company_logo_path = $this->company_logo->store('logos', 'public');
+            $settings->company_logo_path = $logoStorage->store($this->company_logo);
         } elseif ($this->remove_logo) {
             $settings->company_logo_path = null;
         }
@@ -84,7 +84,7 @@ new #[Layout('layouts::app')] class extends Component {
         $settings->fill($validated);
         $settings->save();
         if ($previousLogoPath && $previousLogoPath !== $settings->company_logo_path) {
-            Storage::disk('public')->delete($previousLogoPath);
+            $logoStorage->delete($previousLogoPath);
         }
         $this->companyLogoPath = $settings->company_logo_path;
         $this->company_logo = null;
@@ -158,7 +158,7 @@ new #[Layout('layouts::app')] class extends Component {
                 <p x-show="localError" x-cloak class="text-sm text-danger" role="alert" x-text="localError"></p>@error('company_logo')<p class="text-sm text-danger" role="alert">{{ $message }}</p>@enderror
                 <div x-show="fileName" x-cloak class="flex items-center gap-3 rounded-lg bg-surface-muted p-3" aria-live="polite"><img x-show="preview" :src="preview" alt="Anteprima del nuovo logo" class="size-10 rounded border border-border bg-white object-contain p-1"><div class="min-w-0 flex-1"><p class="truncate text-sm font-medium text-content" x-text="fileName"></p><p class="text-xs text-content-muted" x-text="fileSize"></p></div><button type="button" x-on:click="clear()" class="inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-content transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20">Annulla</button></div>
                 <div x-show="uploading" x-cloak role="status" aria-live="polite"><div class="flex justify-between text-xs font-medium text-primary"><span>Caricamento in corso</span><span x-text="progress + '%'"></span></div><div class="mt-2 h-1.5 overflow-hidden rounded-full bg-primary/15"><div class="h-full bg-primary transition-all" :style="`width: ${progress}%`"></div></div></div>
-                @if($companyLogoPath && ! $remove_logo)<div class="flex flex-col gap-3 rounded-lg border border-border-light p-3 sm:flex-row sm:items-center"><img src="{{ asset('storage/'.$companyLogoPath) }}" alt="Logo azienda attuale" class="size-12 rounded border border-border bg-white object-contain p-1"><span class="flex-1 text-sm text-content-muted">Logo attuale</span><x-toggle wire:model="remove_logo" label="Rimuovi logo" hint="La rimozione verrà applicata al salvataggio." /></div>@endif
+                @if($companyLogoPath && ! $remove_logo)<div class="flex flex-col gap-3 rounded-lg border border-border-light p-3 sm:flex-row sm:items-center"><img src="{{ route('settings.company.logo') }}" alt="Logo azienda attuale" class="size-12 rounded border border-border bg-white object-contain p-1"><span class="flex-1 text-sm text-content-muted">Logo attuale</span><x-toggle wire:model="remove_logo" label="Rimuovi logo" hint="La rimozione verrà applicata al salvataggio." /></div>@endif
             </div>
         </div></article>
 

@@ -8,12 +8,12 @@ use App\Models\ProformaInvoice;
 use App\Settings\CompanySettings;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdfInstance;
-use Illuminate\Support\Facades\Storage;
 
 class CourtesyPdfService
 {
     public function __construct(
-        protected CompanySettings $companySettings
+        protected CompanySettings $companySettings,
+        protected CompanyLogoStorage $logoStorage,
     ) {}
 
     /**
@@ -94,19 +94,19 @@ class CourtesyPdfService
     }
 
     /**
-     * Read the company logo from the public disk and return a base64-encoded data URI.
+     * Read the company logo and return a base64-encoded data URI.
      * dompdf cannot resolve storage URLs in all environments, so we inline the image.
      */
     private function getLogoBase64(): ?string
     {
         $path = $this->companySettings->company_logo_path;
+        $contents = $this->logoStorage->get($path);
 
-        if (! $path || ! Storage::disk('public')->exists($path)) {
+        if ($contents === null) {
             return null;
         }
 
-        $contents = Storage::disk('public')->get($path);
-        $mimeType = Storage::disk('public')->mimeType($path);
+        $mimeType = $this->logoStorage->mimeType($path) ?: 'image/png';
 
         return 'data:'.$mimeType.';base64,'.base64_encode($contents);
     }

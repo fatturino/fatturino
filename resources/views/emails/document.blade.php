@@ -7,10 +7,10 @@
 </head>
 <body style="font-family: Arial, sans-serif; font-size: 15px; color: #222; background: #f9f9f9; margin: 0; padding: 32px;">
     <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 40px; border: 1px solid #e5e7eb;">
-        @if (! empty($companyLogoPath))
+        @if (! empty($companyLogoContents) && ! empty($companyLogoName))
             <div style="margin-bottom: 28px; text-align: left;">
                 <img
-                    src="{{ $message->embed($companyLogoPath) }}"
+                    src="{{ $message->embedData($companyLogoContents, $companyLogoName, $companyLogoMime ?? 'image/png') }}"
                     alt="{{ $companyLogoAlt }}"
                     style="display: block; max-height: 56px; max-width: 220px; height: auto; width: auto;"
                 >

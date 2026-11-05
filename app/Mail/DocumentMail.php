@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\CreditNote;
 use App\Models\ProformaInvoice;
 use App\Models\SalesInvoice;
+use App\Services\CompanyLogoStorage;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentStorageService;
 use App\Settings\CompanySettings;
@@ -14,7 +15,6 @@ use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Support\Facades\Storage;
 
 class DocumentMail extends Mailable
 {
@@ -47,11 +47,14 @@ class DocumentMail extends Mailable
     public function content(): Content
     {
         $companySettings = app(CompanySettings::class);
+        $logo = $this->resolveCompanyLogo(app(CompanyLogoStorage::class), $companySettings);
 
         return new Content(
             view: 'emails.document',
             with: [
-                'companyLogoPath' => $this->resolveCompanyLogoPath($companySettings),
+                'companyLogoContents' => $logo['contents'] ?? null,
+                'companyLogoName' => $logo['name'] ?? null,
+                'companyLogoMime' => $logo['mime'] ?? null,
                 'companyLogoAlt' => $companySettings->company_name
                     ?: __('app.settings.company.logo_preview_alt'),
             ],
@@ -115,14 +118,22 @@ class DocumentMail extends Mailable
         return new Address($this->replyToAddress, $this->replyToName ?: null);
     }
 
-    private function resolveCompanyLogoPath(CompanySettings $companySettings): ?string
+    /**
+     * @return array{contents: string, name: string, mime: string}|null
+     */
+    private function resolveCompanyLogo(CompanyLogoStorage $logoStorage, CompanySettings $companySettings): ?array
     {
         $path = $companySettings->company_logo_path;
+        $contents = $logoStorage->get($path);
 
-        if ($path === null || $path === '' || ! Storage::disk('public')->exists($path)) {
+        if ($contents === null) {
             return null;
         }
 
-        return Storage::disk('public')->path($path);
+        return [
+            'contents' => $contents,
+            'name' => basename($path),
+            'mime' => $logoStorage->mimeType($path) ?: 'image/png',
+        ];
     }
 }

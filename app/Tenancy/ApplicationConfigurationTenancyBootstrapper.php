@@ -37,6 +37,7 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
 
         $this->overrideBackupConfiguration((string) $overrides['app.instance_id']);
         $this->overrideDocumentStorageConfiguration($tenant, (string) $overrides['app.instance_id']);
+        $this->overrideLogoStorageConfiguration($tenant, (string) $overrides['app.instance_id']);
 
         $openApiOverrides = array_filter([
             'fe-openapi.api_token' => $tenant->getAttribute('openapi_sdi_api_token'),
@@ -54,6 +55,7 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
     public function revert(): void
     {
         Storage::forgetDisk('documents');
+        Storage::forgetDisk('logos');
 
         foreach ($this->originalConfig as $key => $value) {
             $this->config->set($key, $value);
@@ -91,5 +93,16 @@ final class ApplicationConfigurationTenancyBootstrapper implements TenancyBootst
         $this->originalConfig['filesystems.disks.documents.root'] = $this->config->get('filesystems.disks.documents.root');
         $this->config->set('filesystems.disks.documents.root', $root);
         Storage::forgetDisk('documents');
+    }
+
+    private function overrideLogoStorageConfiguration(Tenant $tenant, string $instanceId): void
+    {
+        $root = $this->config->get('filesystems.disks.logos.driver') === 's3'
+            ? $instanceId.'/logos'
+            : storage_path('tenant'.$tenant->getTenantKey().'/app/private');
+
+        $this->originalConfig['filesystems.disks.logos.root'] = $this->config->get('filesystems.disks.logos.root');
+        $this->config->set('filesystems.disks.logos.root', $root);
+        Storage::forgetDisk('logos');
     }
 }

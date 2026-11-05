@@ -148,6 +148,7 @@ Route::middleware('auth')->group(function () {
 
     // Settings
     Route::livewire('/company-settings', 'pages::settings.company')->name('settings.company')->defaults('title', 'Dati Azienda');
+    Route::get('/company-settings/logo', [CompanySettingsController::class, 'logo'])->name('settings.company.logo');
     Route::put('/company-settings', [CompanySettingsController::class, 'update'])->middleware('capability:edit-company-settings')->name('settings.company.update');
     Route::livewire('/invoice-settings', 'pages::settings.invoice')->name('settings.invoice')->defaults('title', 'Impostazioni Fatture');
     Route::put('/invoice-settings', [InvoiceSettingsController::class, 'update'])->middleware('capability:edit-invoice-settings')->name('settings.invoice.update');
