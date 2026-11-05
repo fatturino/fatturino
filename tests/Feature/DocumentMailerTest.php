@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\SendPaymentReminderJob;
 use App\Mail\DocumentMail;
 use App\Models\Contact;
 use App\Models\DocumentEvent;
@@ -11,6 +12,7 @@ use App\Settings\CompanySettings;
 use App\Settings\EmailSettings;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -109,7 +111,27 @@ test('manual payment reminder records a dedicated sent event', function () {
     app(DocumentMailer::class)->sendPaymentReminderNow($invoice, 'upcoming', $contact->email, 'Promemoria', 'Corpo');
 
     Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->emailSubject === 'Promemoria');
-    expect(DocumentEvent::query()->where('fiscal_document_id', $invoice->id)->where('event_type', 'payment_reminder_sent')->count())->toBe(1);
+    expect(DocumentEvent::query()->where('fiscal_document_id', $invoice->id)->where('event_type', 'payment_reminder_queued')->count())->toBe(1)
+        ->and(DocumentEvent::query()->where('fiscal_document_id', $invoice->id)->where('event_type', 'payment_reminder_sent')->count())->toBe(1);
+});
+
+test('sendPaymentReminder dispatches a queued job without sending immediately', function () {
+    Queue::fake();
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = FiscalDocument::factory()->create(['contact_id' => $contact->id, 'number' => 'FT-REM-003', 'due_date' => now()->toDateString(), 'total_gross' => 10000]);
+
+    app(DocumentMailer::class)->sendPaymentReminder($invoice, 'upcoming', $contact->email, 'Promemoria', 'Corpo', false);
+
+    Queue::assertPushed(SendPaymentReminderJob::class, function (SendPaymentReminderJob $job) use ($contact, $invoice) {
+        return $job->recipientEmail === $contact->email
+            && $job->subject === 'Promemoria'
+            && $job->body === 'Corpo'
+            && $job->scenario === 'upcoming'
+            && $job->attachPdf === false
+            && $job->document->is($invoice);
+    });
+    expect(DocumentEvent::query()->where('fiscal_document_id', $invoice->id)->where('event_type', 'payment_reminder_queued')->count())->toBe(1)
+        ->and(DocumentEvent::query()->where('fiscal_document_id', $invoice->id)->where('event_type', 'payment_reminder_sent')->count())->toBe(0);
 });
 
 test('open payment reminder templates render remaining balance without due date', function () {
@@ -172,9 +194,14 @@ test('payment reminder send accepts upcoming invoices beyond seven days', functi
             'attach_pdf' => false,
         ])
         ->assertOk()
-        ->assertJson(['success' => true]);
+        ->assertJson([
+            'success' => true,
+            'message' => 'Sollecito accodato correttamente.',
+        ]);
 
     Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->emailSubject === 'Promemoria lontano');
+    expect(DocumentEvent::query()->where('fiscal_document_id', $invoice->id)->where('event_type', 'payment_reminder_queued')->count())->toBe(1)
+        ->and(DocumentEvent::query()->where('fiscal_document_id', $invoice->id)->where('event_type', 'payment_reminder_sent')->count())->toBe(1);
 });
 
 test('payment reminder send rejects invoices with zero remaining balance', function () {

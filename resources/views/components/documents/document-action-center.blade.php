@@ -207,7 +207,7 @@
                     if (this.emailKind === 'reminder') payload.scenario = this.reminderScenario;
                     const data = await this.request(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     this.emailOpen = false;
-                    this.notify(data.message ?? (this.emailKind === 'reminder' ? 'Sollecito inviato correttamente.' : 'Email accodata correttamente.'));
+                    this.notify(data.message ?? (this.emailKind === 'reminder' ? 'Sollecito accodato correttamente.' : 'Email accodata correttamente.'));
                 } catch (error) { this.error = error.message; } finally { this.busy = false; }
             },
             openPayment() { this.paymentOpen = true; this.resetPaymentForm(); },

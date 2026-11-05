@@ -23,6 +23,7 @@ Manual initiation keeps legal, commercial, and relationship decisions with the o
 ## Consequences
 
 - No scheduler sends payment reminders automatically.
-- Reminder content and delivery outcomes are auditable through the document-event flow.
+- Manual reminder sends are queued (`SendPaymentReminderJob`); the HTTP response returns after enqueue so PDF generation and SMTP do not block the modal.
+- Reminder content and delivery outcomes are auditable through the document-event flow (`payment_reminder_queued`, then `payment_reminder_sent` / `payment_reminder_failed` in the worker).
 - Mail transport failures are reported safely without exposing provider credentials or raw exception details to the browser.
 - Invoices without a due date can still receive a payment reminder via scenario `open`.

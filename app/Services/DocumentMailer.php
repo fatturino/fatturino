@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\PaymentStatus;
 use App\Jobs\SendDocumentMailJob;
+use App\Jobs\SendPaymentReminderJob;
 use App\Mail\DocumentMail;
 use App\Settings\CompanySettings;
 use App\Settings\EmailSettings;
@@ -103,6 +104,19 @@ class DocumentMailer
         return $this->replacePlaceholders($this->paymentReminderTemplate($scenario, 'body'), $document);
     }
 
+    /**
+     * Queue a payment reminder so PDF generation and SMTP stay off the HTTP request.
+     */
+    public function sendPaymentReminder(Model $document, string $scenario, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = '', string $bcc = ''): void
+    {
+        $this->documentEvents->paymentReminderQueued($document, $scenario, $recipientEmail, $subject, $cc, $bcc);
+
+        SendPaymentReminderJob::dispatch($recipientEmail, $subject, $body, $document, $scenario, $attachPdf, $cc, $bcc);
+    }
+
+    /**
+     * Send a payment reminder immediately in the current process (tests / sync callers).
+     */
     public function sendPaymentReminderNow(Model $document, string $scenario, string $recipientEmail, string $subject, string $body, bool $attachPdf = true, string $cc = '', string $bcc = ''): void
     {
         $this->documentEvents->paymentReminderQueued($document, $scenario, $recipientEmail, $subject, $cc, $bcc);
@@ -110,7 +124,7 @@ class DocumentMailer
         try {
             $this->deliverPaymentReminder($recipientEmail, $subject, $body, $document, $scenario, $attachPdf, $cc, $bcc);
         } catch (Throwable $exception) {
-            $this->documentEvents->paymentReminderFailed($document, $scenario, $recipientEmail, $subject, $exception->getMessage(), $cc, $bcc);
+            $this->recordPaymentReminderFailure($document, $scenario, $recipientEmail, $subject, $exception->getMessage(), $cc, $bcc);
 
             throw $exception;
         }
@@ -303,7 +317,10 @@ class DocumentMailer
         $this->markEmailAsFailed($document, $recipientEmail, $cc, $bcc, $errorMessage);
     }
 
-    private function deliverPaymentReminder(string $recipientEmail, string $subject, string $body, Model $document, string $scenario, bool $attachPdf, string $cc, string $bcc): void
+    /**
+     * Apply mail overrides and send the reminder synchronously. Called from SendPaymentReminderJob.
+     */
+    public function deliverPaymentReminder(string $recipientEmail, string $subject, string $body, Model $document, string $scenario, bool $attachPdf, string $cc, string $bcc): void
     {
         $this->applyMailOverrides();
 
@@ -324,6 +341,11 @@ class DocumentMailer
         if ($event !== null) {
             $this->inAppNotifications->documentEmailSent($document, $event);
         }
+    }
+
+    public function recordPaymentReminderFailure(Model $document, string $scenario, string $recipientEmail, string $subject, string $errorMessage, string $cc = '', string $bcc = ''): void
+    {
+        $this->documentEvents->paymentReminderFailed($document, $scenario, $recipientEmail, $subject, $errorMessage, $cc, $bcc);
     }
 
     /**

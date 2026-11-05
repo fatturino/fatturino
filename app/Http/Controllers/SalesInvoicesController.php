@@ -224,7 +224,7 @@ class SalesInvoicesController extends Controller
         }
 
         try {
-            $mailer->sendPaymentReminderNow(
+            $mailer->sendPaymentReminder(
                 $invoice,
                 $scenario,
                 $recipient,
@@ -246,7 +246,7 @@ class SalesInvoicesController extends Controller
             $request->user(),
         );
 
-        return response()->json(['success' => true, 'message' => 'Sollecito inviato correttamente.']);
+        return response()->json(['success' => true, 'message' => 'Sollecito accodato correttamente.']);
     }
 
     private function paymentReminderScenario(Request $request, SalesInvoice $invoice): string
