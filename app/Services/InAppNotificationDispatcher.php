@@ -6,6 +6,7 @@ use App\Enums\SdiStatus;
 use App\Models\DocumentEvent;
 use App\Models\EiInboundLog;
 use App\Models\EiOutboundLog;
+use App\Models\SdiOutboundSubmission;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use LogicException;
@@ -16,6 +17,40 @@ class InAppNotificationDispatcher
         private readonly InAppNotificationPublisher $publisher,
         private readonly NotificationRecipientResolver $recipientResolver,
     ) {}
+
+    public function sdiSendAccepted(Model $document, SdiOutboundSubmission $submission, string $message): void
+    {
+        $number = $document->getAttribute('number') ?: '#'.$document->getKey();
+
+        $this->publish(
+            type: 'sdi.send.accepted',
+            category: 'sdi',
+            severity: 'success',
+            title: 'Invio SDI accettato',
+            body: $message !== '' ? $message : "Il documento {$number} è stato accettato dal provider SDI.",
+            sourceType: 'sdi_outbound_submission',
+            sourceId: (string) $submission->id,
+            dedupeKey: "sdi-send-accepted:{$submission->id}",
+            document: $document,
+        );
+    }
+
+    public function sdiSendFailed(Model $document, SdiOutboundSubmission $submission, string $message, bool $uncertain = false): void
+    {
+        $number = $document->getAttribute('number') ?: '#'.$document->getKey();
+
+        $this->publish(
+            type: $uncertain ? 'sdi.send.unknown' : 'sdi.send.failed',
+            category: 'sdi',
+            severity: $uncertain ? 'warning' : 'error',
+            title: $uncertain ? 'Invio SDI da verificare' : 'Invio SDI fallito',
+            body: $message !== '' ? $message : "L'invio allo SDI del documento {$number} non è riuscito.",
+            sourceType: 'sdi_outbound_submission',
+            sourceId: (string) $submission->id,
+            dedupeKey: 'sdi-send-'.($uncertain ? 'unknown' : 'failed').":{$submission->id}",
+            document: $document,
+        );
+    }
 
     public function sdiOutcomeReceived(Model $document, EiOutboundLog $outboundLog, SdiStatus $status, string $message): void
     {

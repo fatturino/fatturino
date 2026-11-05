@@ -151,7 +151,10 @@ test('self invoices and credit notes use the durable SDI submission workflow', f
 
     $this->actingAs($user)->postJson("/{$routePrefix}/{$document->id}/send-sdi")
         ->assertOk()
-        ->assertJsonPath('document.status', InvoiceStatus::Sent->value);
+        ->assertJsonPath('message', 'Invio allo SDI accodato.')
+        ->assertJsonPath('document.status', InvoiceStatus::XmlValidated->value);
+
+    expect($document->fresh()->status)->toBe(InvoiceStatus::Sent);
 
     $this->assertDatabaseHas('sdi_outbound_submissions', [
         'fiscal_document_id' => $document->id,

@@ -11,5 +11,6 @@ This directory is the canonical, versioned location for Fatturino Architecture D
 | [2026-10-04](2026-10-04-open-source-release-baseline.md)    | Accepted | Bun lockfile, CI release baseline, and public-repository hygiene |
 | [2026-10-14](2026-10-14-sdi-outbound-driver-neutrality.md)  | Accepted | Provider-neutral, fail-closed outbound SDI submission            |
 | [2026-11-05](2026-11-05-company-logo-durable-storage.md)    | Accepted | Company logo on durable logos disk (DOCUMENTS_DISK)              |
+| [2026-11-05](2026-11-05-sdi-outbound-enqueue.md)            | Accepted | Queue outbound SDI send; notify provider results in-app          |
 
 Do not edit or add decision records outside this directory. When a decision changes, create a new ADR that references the prior record and marks it superseded; do not rewrite historical rationale.

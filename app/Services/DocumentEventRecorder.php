@@ -67,6 +67,19 @@ class DocumentEventRecorder
         ]);
     }
 
+    public function sdiQueued(Model $document, ?int $submissionId = null, ?string $message = null): ?DocumentEvent
+    {
+        return $this->record($document, [
+            'event_type' => 'sdi_queued',
+            'channel' => 'sdi',
+            'status' => 'queued',
+            'title' => 'Invio SDI accodato',
+            'message' => $message ?? 'Invio allo SDI accodato.',
+            'technical_reference_type' => $submissionId ? 'sdi_outbound_submission' : null,
+            'technical_reference_id' => $submissionId,
+        ]);
+    }
+
     public function sdiSent(Model $document, ?int $outboundLogId = null, ?string $message = null): ?DocumentEvent
     {
         return $this->record($document, [

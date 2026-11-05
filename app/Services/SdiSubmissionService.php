@@ -24,17 +24,38 @@ class SdiSubmissionService
     ) {}
 
     /**
-     * @return array{success: bool, submission: SdiOutboundSubmission, error_message?: string, sent_message?: string, outcome_unknown?: bool, local_persist_failed?: bool}
+     * Acquire the outbound lock and create a dispatching submission without calling the provider.
+     *
+     * @return array{success: bool, submission: SdiOutboundSubmission, error_message?: string}|SdiOutboundSubmission
      */
-    public function send(FiscalDocument $document, string $xml, string $fileName, string $sentMessage): array
+    public function acquireForSend(FiscalDocument $document, string $xml): SdiOutboundSubmission|array
     {
         $fingerprint = $this->fingerprints->buildFromXml($xml);
         $driverKey = $this->driverSelector->selectForNewSubmission();
-        $submission = $this->acquire($document, $xml, $fingerprint, $driverKey);
 
-        if ($submission instanceof SdiOutboundSubmission === false) {
-            return $submission;
+        return $this->acquire($document, $xml, $fingerprint, $driverKey);
+    }
+
+    /**
+     * Submit an already-acquired dispatching submission to the provider and finalize local state.
+     *
+     * @return array{success: bool, submission: SdiOutboundSubmission, error_message?: string, sent_message?: string, outcome_unknown?: bool, local_persist_failed?: bool}
+     */
+    public function complete(SdiOutboundSubmission $submission, string $xml, string $fileName, string $sentMessage): array
+    {
+        $submission->refresh();
+
+        if ($submission->status !== SdiSubmissionStatus::Dispatching) {
+            return [
+                'success' => false,
+                'submission' => $submission,
+                'error_message' => 'Questa submission SDI non è più in stato di invio.',
+                'outcome_unknown' => $submission->status->blocksNewSubmission(),
+            ];
         }
+
+        $document = FiscalDocument::withoutGlobalScopes()->findOrFail($submission->fiscal_document_id);
+        $fingerprint = $submission->business_fingerprint ?: $this->fingerprints->buildFromXml($xml);
 
         $providerResult = $this->drivers->get($submission->provider)->submit(new SdiSubmissionCommand(
             $xml,
@@ -112,6 +133,38 @@ class SdiSubmissionService
             'submission' => $completedSubmission,
             'sent_message' => $completedSubmission->support_message ?? $sentMessage,
         ];
+    }
+
+    /**
+     * Release a dispatching lock when the provider was never contacted.
+     */
+    public function abandonBeforeProvider(SdiOutboundSubmission $submission, string $message): void
+    {
+        $submission->refresh();
+
+        if ($submission->status !== SdiSubmissionStatus::Dispatching) {
+            return;
+        }
+
+        $submission->update([
+            'status' => SdiSubmissionStatus::ProviderRejected,
+            'active_document_lock' => null,
+            'support_message' => $this->supportMessage($message),
+        ]);
+    }
+
+    /**
+     * @return array{success: bool, submission: SdiOutboundSubmission, error_message?: string, sent_message?: string, outcome_unknown?: bool, local_persist_failed?: bool}
+     */
+    public function send(FiscalDocument $document, string $xml, string $fileName, string $sentMessage): array
+    {
+        $submission = $this->acquireForSend($document, $xml);
+
+        if ($submission instanceof SdiOutboundSubmission === false) {
+            return $submission;
+        }
+
+        return $this->complete($submission, $xml, $fileName, $sentMessage);
     }
 
     private function acquire(FiscalDocument $document, string $xml, string $fingerprint, string $driverKey): SdiOutboundSubmission|array

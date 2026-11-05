@@ -5,15 +5,18 @@ use App\Enums\InvoiceStatus;
 use App\Enums\SdiStatus;
 use App\Enums\SdiSubmissionStatus;
 use App\Enums\VatRate;
+use App\Jobs\SendDocumentToSdiJob;
 use App\Models\Contact;
 use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
+use App\Models\InAppNotification;
 use App\Models\SdiOutboundSubmission;
 use App\Models\Sequence;
 use App\Models\User;
 use App\Services\DocumentEventRecorder;
 use App\Settings\CompanySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -105,13 +108,69 @@ test('send to sdi endpoint sends only xml validated invoices', function () {
     $response->assertStatus(422)->assertJson(['success' => false]);
 });
 
-test('send to sdi endpoint returns updated document payload on success', function () {
+test('send to sdi endpoint queues submission and returns queued document payload', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
 
     $invoice = FiscalDocument::factory()->create([
         'contact_id' => $contact->id,
         'status' => InvoiceStatus::XmlValidated,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Servizio',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+    $invoice->calculateTotals();
+
+    $provider = Mockery::mock(SdiProvider::class);
+    $provider->shouldReceive('sendInvoice')->never();
+    app()->instance(SdiProvider::class, $provider);
+
+    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi");
+
+    $response->assertOk()->assertJson([
+        'success' => true,
+        'message' => 'Invio allo SDI accodato.',
+        'document' => [
+            'status' => InvoiceStatus::XmlValidated->value,
+            'sdi_status' => null,
+            'is_sdi_editable' => true,
+        ],
+    ]);
+
+    $this->assertDatabaseHas('sdi_outbound_submissions', [
+        'fiscal_document_id' => $invoice->id,
+        'provider' => 'openapi_legacy',
+        'status' => SdiSubmissionStatus::Dispatching->value,
+        'active_document_lock' => (string) $invoice->id,
+    ]);
+    $this->assertDatabaseHas('document_events', [
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'sdi_queued',
+        'channel' => 'sdi',
+        'status' => 'queued',
+    ]);
+
+    Queue::assertPushed(SendDocumentToSdiJob::class, function (SendDocumentToSdiJob $job) use ($invoice, $user) {
+        return $job->actingUserId === $user->id
+            && SdiOutboundSubmission::query()->find($job->submissionId)?->fiscal_document_id === $invoice->id;
+    });
+});
+
+test('queued sdi job finalizes the document after provider acceptance', function () {
+    $user = User::factory()->create(['is_admin' => true]);
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::XmlValidated,
+        'number' => 'FV-2026-100',
     ]);
 
     $invoice->lines()->create([
@@ -134,16 +193,9 @@ test('send to sdi endpoint returns updated document payload on success', functio
         ]);
     app()->instance(SdiProvider::class, $provider);
 
-    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi");
-
-    $response->assertOk()->assertJson([
-        'success' => true,
-        'document' => [
-            'status' => InvoiceStatus::Sent->value,
-            'sdi_status' => SdiStatus::Sent->value,
-            'is_sdi_editable' => false,
-        ],
-    ]);
+    $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi")
+        ->assertOk()
+        ->assertJsonPath('message', 'Invio allo SDI accodato.');
 
     $invoice->refresh();
 
@@ -168,10 +220,11 @@ test('send to sdi endpoint returns updated document payload on success', functio
         'channel' => 'sdi',
         'status' => 'success',
     ]);
+    expect(InAppNotification::query()->where('type', 'sdi.send.accepted')->count())->toBe(1);
 });
 
-test('send to sdi endpoint stays successful when document event logging fails after provider success', function () {
-    $user = User::factory()->create();
+test('queued sdi job stays successful when document event logging fails after provider success', function () {
+    $user = User::factory()->create(['is_admin' => true]);
     $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
 
     $invoice = FiscalDocument::factory()->create([
@@ -199,22 +252,15 @@ test('send to sdi endpoint stays successful when document event logging fails af
         ]);
     app()->instance(SdiProvider::class, $provider);
 
-    $recorder = Mockery::mock(DocumentEventRecorder::class);
+    $recorder = Mockery::mock(DocumentEventRecorder::class)->makePartial();
+    $recorder->shouldReceive('sdiQueued')->andReturn(null);
     $recorder->shouldReceive('sdiSent')
         ->once()
         ->andThrow(new RuntimeException('event log unavailable'));
     app()->instance(DocumentEventRecorder::class, $recorder);
 
-    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi");
-
-    $response->assertOk()->assertJson([
-        'success' => true,
-        'document' => [
-            'status' => InvoiceStatus::Sent->value,
-            'sdi_status' => SdiStatus::Sent->value,
-            'is_sdi_editable' => false,
-        ],
-    ]);
+    $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi")
+        ->assertOk();
 
     $invoice->refresh();
 
@@ -245,8 +291,8 @@ test('validate xml endpoint returns uniform json when document is not editable',
     ]);
 });
 
-test('send to sdi endpoint logs send_failed and returns uniform json on provider failure', function () {
-    $user = User::factory()->create();
+test('queued sdi job logs send_failed and notifies on provider failure', function () {
+    $user = User::factory()->create(['is_admin' => true]);
     $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
 
     $invoice = FiscalDocument::factory()->create([
@@ -272,17 +318,14 @@ test('send to sdi endpoint logs send_failed and returns uniform json on provider
         ]);
     app()->instance(SdiProvider::class, $provider);
 
-    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi");
+    $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi")
+        ->assertOk()
+        ->assertJsonPath('success', true);
 
-    $response->assertStatus(422)->assertJson([
-        'success' => false,
-        'error' => 'Provider offline',
-        'document' => [
-            'status' => InvoiceStatus::XmlValidated->value,
-            'sdi_status' => null,
-            'is_sdi_editable' => true,
-        ],
-    ]);
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::XmlValidated->value)
+        ->and($invoice->sdi_status)->toBeNull();
 
     $log = EiOutboundLog::query()
         ->where('fiscal_document_id', $invoice->id)
@@ -292,10 +335,17 @@ test('send to sdi endpoint logs send_failed and returns uniform json on provider
     expect($log)->not->toBeNull()
         ->and($log->status)->toBe(SdiStatus::Error)
         ->and($log->message)->toBe('Provider offline');
+
+    expect(InAppNotification::query()->where('type', 'sdi.send.failed')->count())->toBe(1);
+    $this->assertDatabaseHas('sdi_outbound_submissions', [
+        'fiscal_document_id' => $invoice->id,
+        'status' => SdiSubmissionStatus::ProviderRejected->value,
+        'active_document_lock' => null,
+    ]);
 });
 
 test('a retry after an ambiguous provider outcome does not invoke the provider twice', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['is_admin' => true]);
     $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
     $invoice = FiscalDocument::factory()->create([
         'contact_id' => $contact->id,
@@ -319,8 +369,8 @@ test('a retry after an ambiguous provider outcome does not invoke the provider t
     app()->instance(SdiProvider::class, $provider);
 
     $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi")
-        ->assertStatus(422)
-        ->assertJsonPath('success', false);
+        ->assertOk()
+        ->assertJsonPath('success', true);
 
     $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi")
         ->assertStatus(422)
@@ -331,6 +381,7 @@ test('a retry after an ambiguous provider outcome does not invoke the provider t
         'status' => SdiSubmissionStatus::OutcomeUnknown->value,
         'active_document_lock' => (string) $invoice->id,
     ]);
+    expect(InAppNotification::query()->where('type', 'sdi.send.unknown')->count())->toBe(1);
 });
 
 test('updating a rejected invoice resets workflow status to draft so it can be revalidated', function () {

@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Enums\InvoiceStatus;
-use App\Enums\SdiStatus;
-use App\Models\EiOutboundLog;
+use App\Jobs\SendDocumentToSdiJob;
+use App\Models\FiscalDocument;
+use App\Models\SdiOutboundSubmission;
 use App\Services\DocumentEventRecorder;
 use App\Services\DocumentStorageService;
-use App\Services\PostHogTelemetryService;
 use App\Services\SdiSubmissionService;
 use App\Services\XmlWorkflowService;
-use App\Support\InvoiceAuditDispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
@@ -153,41 +152,14 @@ trait HandlesXmlSdiWorkflow
         }
 
         $fileName = $xmlService->generateFileName($document);
-        $submissionResult = app(SdiSubmissionService::class)->send(
-            $document,
-            $xml,
-            $fileName,
-            $sentMessage,
-        );
+        $fiscalDocument = $document instanceof FiscalDocument
+            ? $document
+            : FiscalDocument::withoutGlobalScopes()->findOrFail($document->id);
 
-        if (! ($submissionResult['success'] ?? false)) {
-            $errorMessage = $submissionResult['error_message'] ?? 'Invio allo SDI fallito.';
-            $outboundLog = null;
+        $acquired = app(SdiSubmissionService::class)->acquireForSend($fiscalDocument, $xml);
 
-            $this->runSdiSideEffect('record outbound send failure log', function () use (&$outboundLog, $document, $errorMessage, $submissionResult) {
-                $outboundLog = EiOutboundLog::create([
-                    'fiscal_document_id' => $document->id,
-                    'event_type' => ! empty($submissionResult['outcome_unknown']) ? 'send_outcome_unknown' : 'send_failed',
-                    'status' => SdiStatus::Error->value,
-                    'message' => $errorMessage,
-                    'raw_payload' => array_filter([
-                        'submission_id' => $submissionResult['submission']->id ?? null,
-                        'submission_status' => $submissionResult['submission']->status?->value ?? null,
-                    ]),
-                ]);
-            }, $document);
-
-            $this->runSdiSideEffect('record failed document event', function () use ($document, $outboundLog, $errorMessage) {
-                app(DocumentEventRecorder::class)->record($document, [
-                    'event_type' => 'sdi_sent',
-                    'channel' => 'sdi',
-                    'status' => 'failed',
-                    'title' => 'Invio SDI fallito',
-                    'message' => $errorMessage,
-                    'technical_reference_type' => 'ei_outbound_log',
-                    'technical_reference_id' => $outboundLog?->id,
-                ]);
-            }, $document);
+        if ($acquired instanceof SdiOutboundSubmission === false) {
+            $errorMessage = $acquired['error_message'] ?? 'Invio allo SDI fallito.';
 
             if (request()->expectsJson()) {
                 return $this->workflowErrorResponse($document, $errorMessage);
@@ -196,51 +168,31 @@ trait HandlesXmlSdiWorkflow
             return back()->withErrors(['action' => $errorMessage]);
         }
 
-        $providerId = $submissionResult['submission']->provider;
-        $outboundLog = EiOutboundLog::query()
-            ->where('fiscal_document_id', $document->id)
-            ->where('event_type', 'sent')
-            ->where('status', SdiStatus::Sent->value)
-            ->first();
+        $queuedMessage = 'Invio allo SDI accodato.';
 
-        $this->runSdiSideEffect('record document event', function () use ($document, $outboundLog, $submissionResult, $sentMessage) {
-            app(DocumentEventRecorder::class)->sdiSent(
-                $document,
-                $outboundLog?->id,
-                $submissionResult['sent_message'] ?? $sentMessage
-            );
+        $this->runSdiSideEffect('record queued document event', function () use ($document, $acquired, $queuedMessage) {
+            app(DocumentEventRecorder::class)->sdiQueued($document, $acquired->id, $queuedMessage);
         }, $document);
 
-        $this->runSdiSideEffect('dispatch audit', function () use ($document, $providerId) {
-            InvoiceAuditDispatcher::dispatch($document, 'sdi_sent', [
-                'provider' => $providerId,
-                'uuid' => $document->sdi_uuid,
-            ]);
-        }, $document);
-
-        $this->runSdiSideEffect('capture telemetry', function () use ($document, $providerId) {
-            app(PostHogTelemetryService::class)->capture(
-                'document_sent_to_sdi',
-                array_merge(
-                    app(PostHogTelemetryService::class)->documentProperties($document),
-                    ['provider' => $providerId]
-                ),
-                request()->user()
-            );
-        }, $document);
+        SendDocumentToSdiJob::dispatch(
+            $acquired->id,
+            $fileName,
+            $sentMessage,
+            request()->user()?->id,
+        )->afterResponse();
 
         $document->refresh();
 
         if (! request()->expectsJson()) {
             return back()->with('toast', [
                 'type' => 'success',
-                'title' => 'Operazione completata',
-                'message' => $sentMessage,
+                'title' => 'Operazione accodata',
+                'message' => $queuedMessage,
                 'duration' => 4500,
             ]);
         }
 
-        return $this->workflowSuccessResponse($document, $sentMessage);
+        return $this->workflowSuccessResponse($document, $queuedMessage);
     }
 
     private function storeXmlSnapshot(object $document, string $xml, string $filename): string
@@ -303,7 +255,7 @@ trait HandlesXmlSdiWorkflow
         try {
             $callback();
         } catch (Throwable $exception) {
-            Log::channel('fe-openapi')->error('SDI send side effect failed after successful provider submission', [
+            Log::channel('fe-openapi')->error('SDI send side effect failed while queueing submission', [
                 'operation' => $operation,
                 'fiscal_document_id' => $document->id ?? null,
                 'sdi_uuid' => $document->sdi_uuid ?? null,
