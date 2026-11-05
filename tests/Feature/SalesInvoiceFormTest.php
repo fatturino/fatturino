@@ -63,6 +63,8 @@ it('renders the sales invoice as a tabbed form with invoice lines and a fiscal s
         ->assertSee('Pagamento')
         ->assertSee('Note')
         ->assertSee('Opzioni fiscali')
+        ->assertSee('date-picker-date', escape: false)
+        ->assertSee('date-picker-due-date', escape: false)
         ->assertSee('aria-label="Sezioni fattura"', escape: false)
         ->assertSee('role="tablist"', escape: false)
         ->assertSee('sales-panel-payment', escape: false);

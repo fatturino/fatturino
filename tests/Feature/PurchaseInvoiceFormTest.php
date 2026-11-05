@@ -49,3 +49,49 @@ it('renders SDI-locked purchase invoices as read-only', function () {
         ->assertSee('Questa fattura non è più modificabile.')
         ->assertDontSee('Aggiorna fattura');
 });
+
+it('includes negative discount lines in purchase invoice totals', function () {
+    $user = User::factory()->create();
+    $invoice = PurchaseInvoice::factory()->create(['date' => now()->toDateString()]);
+    $invoice->lines()->create(['description' => 'Servizio', 'quantity' => 1, 'unit_price' => 10000, 'vat_rate' => 'R22', 'total' => 10000]);
+    $invoice->lines()->create(['description' => 'Sconto', 'quantity' => 1, 'unit_price' => -5000, 'vat_rate' => 'R22', 'total' => -5000]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::documents.purchase.form', ['purchaseInvoice' => $invoice])
+        ->assertSet('lines.1.unit_price', '-50.00')
+        ->assertSee('-50,00');
+
+    expect($component->get('netTotal'))->toEqual(50.0)
+        ->and($component->get('vatTotal'))->toEqual(11.0);
+});
+
+it('persists a purchase invoice line with a negative unit price', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create();
+    $sequence = Sequence::factory()->create(['type' => 'purchase']);
+    $invoice = PurchaseInvoice::factory()->create([
+        'contact_id' => $contact->id,
+        'sequence_id' => $sequence->id,
+        'date' => now()->toDateString(),
+    ]);
+    $invoice->lines()->create(['description' => 'Acquisto', 'quantity' => 1, 'unit_price' => 10000, 'vat_rate' => 'R22', 'total' => 10000]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.purchase.form', ['purchaseInvoice' => $invoice])
+        ->set('lines', [
+            validPurchaseInvoiceLine('Servizio'),
+            [...validPurchaseInvoiceLine('Sconto'), 'unit_price' => '-25.00'],
+        ])
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('purchase-invoices.index'));
+
+    $lines = $invoice->fresh()->lines()->orderBy('id')->get();
+
+    expect($lines)->toHaveCount(2)
+        ->and($lines[1]->unit_price)->toBe(-2500)
+        ->and($lines[1]->total)->toBe(-2500)
+        ->and($invoice->fresh()->total_net)->toBe(7500);
+});

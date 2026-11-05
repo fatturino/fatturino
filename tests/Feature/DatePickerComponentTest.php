@@ -20,6 +20,21 @@ it('renders an Italian single-date picker with accessible calendar semantics', f
         ->toContain('PageDown');
 });
 
+it('keeps Alpine component identifiers stable across renders', function () {
+    $template = '<div x-data="{ payment: { paidAt: \"\" } }"><x-date-picker id="payment-date" x-model="payment.paidAt" /></div>';
+
+    $firstRender = Blade::render($template);
+    $secondRender = Blade::render($template);
+    $differentId = Blade::render('<div x-data="{ dueAt: \"\" }"><x-date-picker id="due-date" x-model="dueAt" /></div>');
+
+    expect($firstRender)
+        ->toContain('payment-date')
+        ->toBe($secondRender)
+        ->and($differentId)
+        ->toContain('due-date')
+        ->not->toContain('payment-date');
+});
+
 it('registers the Alpine date picker before Livewire starts Alpine', function () {
     $appLayout = file_get_contents(resource_path('views/layouts/app.blade.php'));
     $guestLayout = file_get_contents(resource_path('views/layouts/guest.blade.php'));

@@ -9,14 +9,17 @@
     'range' => false,
     'startWireModel' => null,
     'endWireModel' => null,
+    'id' => null,
 ])
 
 @php
     $wireModel = $attributes->wire('model');
-    $wireModelName = $wireModel?->value();
+    $wireModelName = filled($wireModel?->value()) ? $wireModel->value() : null;
     $errorKey = $wireModelName ?? $startWireModel;
     $error = $errorKey ? ($errors ?? new \Illuminate\Support\ViewErrorBag)->first($errorKey) : null;
-    $id = 'date-picker-'.str()->uuid();
+    $bindingName = $wireModelName
+        ?? collect([$startWireModel, $endWireModel])->filter()->implode('-');
+    $id ??= 'date-picker-'.str($bindingName ?: str()->uuid())->slug();
     $describedBy = collect([$hint ? "{$id}-hint" : null, $error ? "{$id}-error" : null])->filter()->implode(' ');
 @endphp
 
