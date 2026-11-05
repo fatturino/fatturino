@@ -35,7 +35,7 @@ class CompanySettings extends Settings
 
     public bool $rf19_self_invoices_enabled;
 
-    // Logo for courtesy PDF documents
+    // Logo for courtesy PDF documents and outbound document emails
     public ?string $company_logo_path;
 
     // Professional fund (Cassa Previdenziale)

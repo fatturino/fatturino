@@ -776,7 +776,8 @@ return [
 
             'logo_section' => 'Company Logo',
             'logo_upload' => 'Upload Logo',
-            'logo_hint' => 'PNG or JPG, max 512 KB. Recommended: 400x200 px.',
+            'logo_hint' => 'PNG or JPG, max 512 KB. Recommended: 400x200 px. Shown on documents and emails.',
+            'logo_dropzone_hint' => 'The logo will appear on company documents and emails.',
             'logo_preview_alt' => 'Company logo',
             'remove_logo' => 'Remove',
             'logo_removed' => 'Logo removed.',
@@ -1070,6 +1071,11 @@ return [
         'test_connection_hint' => 'Sends a test email to the sender address to verify the connection.',
         'placeholders_hint' => 'Available variables: {CLIENTE}, {NUMERO_DOCUMENTO}, {DATA_DOCUMENTO}, {IMPORTO_NETTO}, {IMPORTO_IVA}, {IMPORTO_TOTALE}, {AZIENDA}, {PARTITA_IVA_AZIENDA}, {EMAIL_CLIENTE}, {FATTURE_NON_SALDATE}',
         'attach_pdf' => 'Attach courtesy PDF',
+
+        // Shared HTML layout branding
+        'branding_footer_prefix' => 'Sent with',
+        'branding_footer_brand' => 'Fatturino',
+        'branding_footer_url' => 'https://fatturino.it',
     ],
 
     'errors' => [

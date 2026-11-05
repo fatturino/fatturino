@@ -817,7 +817,8 @@ return [
 
             'logo_section' => 'Logo Aziendale',
             'logo_upload' => 'Carica Logo',
-            'logo_hint' => 'PNG o JPG, max 512 KB. Raccomandato: 400x200 px.',
+            'logo_hint' => 'PNG o JPG, max 512 KB. Raccomandato: 400x200 px. Mostrato nei documenti e nelle email.',
+            'logo_dropzone_hint' => 'Il logo verrà mostrato nei documenti aziendali e nelle email.',
             'logo_preview_alt' => 'Logo azienda',
             'remove_logo' => 'Rimuovi',
             'logo_removed' => 'Logo rimosso.',
@@ -1124,6 +1125,11 @@ return [
         'test_connection_hint' => 'Invia un\'email di prova all\'indirizzo mittente per verificare la connessione.',
         'placeholders_hint' => 'Variabili disponibili: {CLIENTE}, {NUMERO_DOCUMENTO}, {DATA_DOCUMENTO}, {IMPORTO_NETTO}, {IMPORTO_IVA}, {IMPORTO_TOTALE}, {AZIENDA}, {PARTITA_IVA_AZIENDA}, {EMAIL_CLIENTE}, {FATTURE_NON_SALDATE}',
         'attach_pdf' => 'Allega PDF cortesia',
+
+        // Shared HTML layout branding
+        'branding_footer_prefix' => 'Inviato con',
+        'branding_footer_brand' => 'Fatturino',
+        'branding_footer_url' => 'https://fatturino.it',
     ],
 
     'pdf' => [

@@ -7,12 +7,14 @@ use App\Models\ProformaInvoice;
 use App\Models\SalesInvoice;
 use App\Services\CourtesyPdfService;
 use App\Services\DocumentStorageService;
+use App\Settings\CompanySettings;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Support\Facades\Storage;
 
 class DocumentMail extends Mailable
 {
@@ -44,7 +46,16 @@ class DocumentMail extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.document');
+        $companySettings = app(CompanySettings::class);
+
+        return new Content(
+            view: 'emails.document',
+            with: [
+                'companyLogoPath' => $this->resolveCompanyLogoPath($companySettings),
+                'companyLogoAlt' => $companySettings->company_name
+                    ?: __('app.settings.company.logo_preview_alt'),
+            ],
+        );
     }
 
     public function attachments(): array
@@ -102,5 +113,16 @@ class DocumentMail extends Mailable
         }
 
         return new Address($this->replyToAddress, $this->replyToName ?: null);
+    }
+
+    private function resolveCompanyLogoPath(CompanySettings $companySettings): ?string
+    {
+        $path = $companySettings->company_logo_path;
+
+        if ($path === null || $path === '' || ! Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        return Storage::disk('public')->path($path);
     }
 }

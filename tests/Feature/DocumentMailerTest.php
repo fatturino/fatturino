@@ -11,6 +11,7 @@ use App\Settings\CompanySettings;
 use App\Settings\EmailSettings;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     // Set minimal company settings for placeholder rendering
@@ -561,4 +562,43 @@ test('deliver sends through Scaleway TEM when selected', function () {
             && str_contains($replyToHeader['value'] ?? '', 'fatture@example.com')
             && $request['subject'] === 'Oggetto';
     });
+});
+
+test('document mail html includes fatturino footer without company logo', function () {
+    $company = app(CompanySettings::class);
+    $company->company_logo_path = null;
+
+    $html = (new DocumentMail('Oggetto test', "Ciao cliente,\n\ncorpo messaggio."))->render();
+
+    expect($html)
+        ->toContain('Ciao cliente')
+        ->toContain('Inviato con')
+        ->toContain('Fatturino')
+        ->toContain('https://fatturino.it')
+        ->not->toContain('<img');
+});
+
+test('document mail html embeds company logo when present', function () {
+    Storage::fake('public');
+
+    $logoPath = 'logos/company-logo.png';
+    Storage::disk('public')->put(
+        $logoPath,
+        base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
+    );
+
+    $company = app(CompanySettings::class);
+    $company->company_name = 'Azienda Logo';
+    $company->company_logo_path = $logoPath;
+
+    $html = (new DocumentMail('Oggetto test', 'Corpo con logo'))->render();
+
+    expect($html)
+        ->toContain('Corpo con logo')
+        ->toContain('<img')
+        ->toContain('data:image/')
+        ->toContain('alt="Azienda Logo"')
+        ->toContain('Inviato con')
+        ->toContain('Fatturino')
+        ->toContain('https://fatturino.it');
 });
