@@ -300,6 +300,7 @@ new #[Layout('layouts::app')] class extends Component {
         'status' => $this->statusValue($document->status),
         'sdiEditable' => $document->isSdiEditable(),
         'paymentStatus' => $this->statusValue($document->payment_status),
+        'dueDate' => $document->due_date?->format('Y-m-d'),
         'totalGross' => (int) $document->total_gross,
         'netDue' => (int) $document->net_due,
         'totalPaid' => (int) $document->total_paid,

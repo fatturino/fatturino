@@ -186,6 +186,8 @@ class DocumentMailer
             ['upcoming', 'body'] => $this->emailSettings->template_payment_reminder_upcoming_body,
             ['overdue', 'subject'] => $this->emailSettings->template_payment_reminder_overdue_subject,
             ['overdue', 'body'] => $this->emailSettings->template_payment_reminder_overdue_body,
+            ['open', 'subject'] => $this->emailSettings->template_payment_reminder_open_subject,
+            ['open', 'body'] => $this->emailSettings->template_payment_reminder_open_body,
             default => throw new \InvalidArgumentException('Scenario sollecito non valido.'),
         };
     }

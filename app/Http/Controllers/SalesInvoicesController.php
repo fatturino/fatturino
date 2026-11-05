@@ -251,14 +251,18 @@ class SalesInvoicesController extends Controller
 
     private function paymentReminderScenario(Request $request, SalesInvoice $invoice): string
     {
-        $scenario = $request->validate(['scenario' => ['required', Rule::in(['upcoming', 'overdue'])]])['scenario'];
+        $scenario = $request->validate(['scenario' => ['required', Rule::in(['open', 'upcoming', 'overdue'])]])['scenario'];
         $dueDate = $invoice->due_date ? Carbon::parse($invoice->due_date)->startOfDay() : null;
-        $open = $invoice->remainingBalance() > 0;
 
-        abort_unless($open && $dueDate !== null, 422, 'La fattura non è idonea al sollecito.');
+        abort_unless($invoice->remainingBalance() > 0, 422, 'La fattura non è idonea al sollecito.');
 
-        $expectedScenario = $dueDate->lt(today()) ? 'overdue' : 'upcoming';
-        abort_unless($scenario === $expectedScenario && $dueDate->lte(today()->addDays(7)), 422, 'Lo scenario del sollecito non è valido per questa fattura.');
+        $expectedScenario = match (true) {
+            $dueDate === null => 'open',
+            $dueDate->lt(today()) => 'overdue',
+            default => 'upcoming',
+        };
+
+        abort_unless($scenario === $expectedScenario, 422, 'Lo scenario del sollecito non è valido per questa fattura.');
 
         return $scenario;
     }

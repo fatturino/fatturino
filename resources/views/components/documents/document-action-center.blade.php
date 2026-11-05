@@ -1,12 +1,23 @@
-<div x-cloak x-effect="document.documentElement.classList.toggle('modal-open', emailOpen || paymentOpen || conversionOpen || confirmOpen)" @keydown.escape.window="if (emailOpen) closeEmail(); else if (paymentOpen) closePayment(); else if (conversionOpen) closeConversion(); else if (confirmOpen) closeConfirm();">
+<div x-cloak x-effect="document.documentElement.classList.toggle('modal-open', emailTypeOpen || emailOpen || paymentOpen || conversionOpen || confirmOpen)" @keydown.escape.window="if (emailTypeOpen) closeEmailType(); else if (emailOpen) closeEmail(); else if (paymentOpen) closePayment(); else if (conversionOpen) closeConversion(); else if (confirmOpen) closeConfirm();">
 <template x-teleport="body">
 <div>
     <div x-show="notice.show" x-transition class="fixed bottom-6 right-6 z-[80] max-w-md rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-lg" :class="notice.type === 'error' ? 'bg-error' : 'bg-success'" role="status" aria-live="polite"><span x-text="notice.message"></span><button type="button" class="ml-4 opacity-80 hover:opacity-100" @click="notice.show = false" aria-label="Chiudi"><x-icon name="o-x-mark" class="inline size-4" /></button></div>
+    <div x-show="emailTypeOpen" x-trap.inert.noscroll="emailTypeOpen" class="modal-viewport" role="dialog" aria-modal="true" aria-labelledby="document-email-type-title">
+        <div class="modal-backdrop bg-black/30" @click="closeEmailType()"></div>
+        <div class="modal-panel modal-panel--md rounded-xl bg-white p-6">
+            <div class="mb-5 flex items-center justify-between gap-4"><div><h2 id="document-email-type-title" class="text-lg font-bold text-content" x-text="`Invia email ${documentLabel()}`"></h2><p class="mt-1 text-sm text-content-muted">Scegli se inviare la prima notifica al cliente o un sollecito di pagamento.</p></div><button type="button" class="rounded-md p-1 text-content-muted hover:bg-surface-muted" @click="closeEmailType()" aria-label="Chiudi"><x-icon name="o-x-mark" class="size-5" /></button></div>
+            <div class="space-y-3">
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3"><input x-model="emailKind" type="radio" value="notification"><span><span class="block text-sm font-semibold">Prima notifica al cliente</span><span class="block text-xs text-content-muted">Invia la fattura con il template di notifica.</span></span></label>
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3"><input x-model="emailKind" type="radio" value="reminder"><span><span class="block text-sm font-semibold">Sollecito di pagamento</span><span class="block text-xs text-content-muted">Richiede il pagamento del saldo ancora aperto.</span></span></label>
+            </div>
+            <div class="mt-6 flex justify-end gap-3"><button type="button" class="btn-ghost" @click="closeEmailType()">Annulla</button><button type="button" class="btn-brand" @click="confirmEmailType()">Continua</button></div>
+        </div>
+    </div>
     <div x-show="emailOpen" x-trap.inert.noscroll="emailOpen" x-init="$watch('emailOpen', (open) => open && $nextTick(() => $refs.emailRecipient?.focus()))" class="modal-viewport" role="dialog" aria-modal="true" aria-labelledby="document-email-title">
         <div class="modal-backdrop bg-black/30" @click="closeEmail()"></div>
         <div class="modal-panel modal-panel--lg rounded-xl bg-white p-6">
-            <div class="mb-5 flex items-center justify-between gap-4"><h2 id="document-email-title" class="text-lg font-bold text-content" x-text="`Invia email ${documentLabel()}`"></h2><button type="button" class="rounded-md p-1 text-content-muted hover:bg-surface-muted" @click="closeEmail()" aria-label="Chiudi"><x-icon name="o-x-mark" class="size-5" /></button></div>
-            <template x-if="emailLoading"><p class="py-10 text-center text-sm text-content-muted">Caricamento anteprima email...</p></template>
+            <div class="mb-5 flex items-center justify-between gap-4"><h2 id="document-email-title" class="text-lg font-bold text-content" x-text="emailModalTitle()"></h2><button type="button" class="rounded-md p-1 text-content-muted hover:bg-surface-muted" @click="closeEmail()" aria-label="Chiudi"><x-icon name="o-x-mark" class="size-5" /></button></div>
+            <template x-if="emailLoading"><p class="py-10 text-center text-sm text-content-muted" x-text="emailKind === 'reminder' ? 'Caricamento anteprima sollecito...' : 'Caricamento anteprima email...'"></p></template>
             <form x-show="!emailLoading" class="space-y-4" @submit.prevent="submitEmail()">
                 <div><label for="email-recipient" class="mb-1 block text-sm font-semibold">Destinatario</label><input x-ref="emailRecipient" id="email-recipient" x-model="email.recipientEmail" type="email" required class="input-field h-11 w-full rounded-md border border-border px-3"></div>
                 <div class="grid gap-4 sm:grid-cols-2"><div><label for="email-cc" class="mb-1 block text-sm font-semibold">CC (opzionale)</label><input id="email-cc" x-model="email.cc" type="email" class="input-field h-11 w-full rounded-md border border-border px-3"></div><div><label for="email-bcc" class="mb-1 block text-sm font-semibold">CCN (opzionale)</label><input id="email-bcc" x-model="email.bcc" type="email" class="input-field h-11 w-full rounded-md border border-border px-3"></div></div>
@@ -14,7 +25,7 @@
                 <label class="flex items-start justify-between gap-4 rounded-lg border border-border-light bg-surface-muted p-3"><span><span class="block text-sm font-semibold">Allega documento</span><span class="block text-xs text-content-muted">Include il PDF nell'email.</span></span><input x-model="email.attachPdf" type="checkbox" class="mt-1 size-4 rounded border-border text-primary"></label>
                 <div><label for="email-body" class="mb-1 block text-sm font-semibold">Messaggio</label><textarea id="email-body" x-model="email.body" rows="12" class="input-field w-full resize-y rounded-md border border-border px-3 py-2"></textarea></div>
                 <p x-show="error" x-text="error" class="text-sm text-error"></p>
-                <div class="flex justify-end gap-3"><button type="button" class="btn-ghost" @click="closeEmail()">Annulla</button><button type="submit" class="btn-brand" :disabled="busy"><span x-text="busy ? 'Invio in corso...' : 'Invia email'"></span></button></div>
+                <div class="flex justify-end gap-3"><button type="button" class="btn-ghost" @click="closeEmail()">Annulla</button><button type="submit" class="btn-brand" :disabled="busy"><span x-text="busy ? 'Invio in corso...' : (emailKind === 'reminder' ? 'Conferma e invia' : 'Invia email')"></span></button></div>
             </form>
         </div>
     </div>
@@ -66,8 +77,11 @@
             selectedDocument: null,
             busy: false,
             error: '',
+            emailTypeOpen: false,
             emailOpen: false,
             emailLoading: false,
+            emailKind: 'notification',
+            reminderScenario: null,
             paymentOpen: false,
             conversionOpen: false,
             confirmOpen: false,
@@ -83,7 +97,7 @@
 
                 this.selectedDocument = document;
                 this.error = '';
-                if (detail.action === 'email') this.openEmail();
+                if (detail.action === 'email') this.startEmailFlow();
                 if (detail.action === 'payment') this.openPayment();
                 if (detail.action === 'convert') this.openConversion();
                 if (detail.action === 'reverse-self-invoice') this.openConfirm('reverse-self-invoice');
@@ -93,6 +107,24 @@
             },
             documentLabel() {
                 return this.selectedDocument?.number ?? (this.selectedDocument ? `#${this.selectedDocument.id}` : '');
+            },
+            canChooseEmailType() {
+                return this.type === 'sales'
+                    && this.selectedDocument?.status !== 'draft'
+                    && this.remainingBalance() > 0;
+            },
+            reminderScenarioForDocument() {
+                const dueDate = this.selectedDocument?.dueDate;
+                if (!dueDate) return 'open';
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const due = new Date(`${dueDate}T00:00:00`);
+                return due < today ? 'overdue' : 'upcoming';
+            },
+            emailModalTitle() {
+                if (this.emailKind !== 'reminder') return `Invia email ${this.documentLabel()}`;
+                if (this.reminderScenario === 'upcoming') return `Invia promemoria di pagamento ${this.documentLabel()}`;
+                return `Invia sollecito di pagamento ${this.documentLabel()}`;
             },
             csrf() {
                 return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
@@ -113,7 +145,27 @@
                 window.clearTimeout(this.notice.timeout);
                 this.notice = { show: true, message, type, timeout: window.setTimeout(() => { this.notice.show = false; }, 4500) };
             },
+            startEmailFlow() {
+                this.emailKind = 'notification';
+                this.reminderScenario = null;
+                if (this.canChooseEmailType()) {
+                    this.emailTypeOpen = true;
+                    return;
+                }
+                this.openEmail();
+            },
+            closeEmailType() { if (!this.busy) { this.emailTypeOpen = false; this.error = ''; } },
+            confirmEmailType() {
+                this.emailTypeOpen = false;
+                if (this.emailKind === 'reminder') {
+                    this.openReminder();
+                    return;
+                }
+                this.openEmail();
+            },
             async openEmail() {
+                this.emailKind = 'notification';
+                this.reminderScenario = null;
                 this.emailOpen = true;
                 this.emailLoading = true;
                 try {
@@ -127,14 +179,35 @@
                     this.emailLoading = false;
                 }
             },
-            closeEmail() { if (!this.busy) { this.emailOpen = false; this.error = ''; } },
+            async openReminder() {
+                this.emailKind = 'reminder';
+                this.reminderScenario = this.reminderScenarioForDocument();
+                this.emailOpen = true;
+                this.emailLoading = true;
+                try {
+                    const data = await this.request(`${this.base}/${this.selectedDocument.id}/payment-reminder-preview?scenario=${this.reminderScenario}`);
+                    const preview = data.preview ?? {};
+                    this.email = { recipientEmail: preview.recipient_email ?? '', cc: preview.cc ?? '', bcc: preview.bcc ?? '', subject: preview.subject ?? '', body: preview.body ?? '', attachPdf: preview.attach_pdf ?? true };
+                } catch (error) {
+                    this.closeEmail();
+                    this.notify(error.message, 'error');
+                } finally {
+                    this.emailLoading = false;
+                }
+            },
+            closeEmail() { if (!this.busy) { this.emailOpen = false; this.error = ''; this.emailKind = 'notification'; this.reminderScenario = null; } },
             async submitEmail() {
                 this.busy = true;
                 this.error = '';
                 try {
-                    const data = await this.request(`${this.base}/${this.selectedDocument.id}/send-email`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipient_email: this.email.recipientEmail, cc: this.email.cc || null, bcc: this.email.bcc || null, subject: this.email.subject || null, body: this.email.body || null, attach_pdf: this.email.attachPdf }) });
+                    const payload = { recipient_email: this.email.recipientEmail, cc: this.email.cc || null, bcc: this.email.bcc || null, subject: this.email.subject || null, body: this.email.body || null, attach_pdf: this.email.attachPdf };
+                    const endpoint = this.emailKind === 'reminder'
+                        ? `${this.base}/${this.selectedDocument.id}/send-payment-reminder`
+                        : `${this.base}/${this.selectedDocument.id}/send-email`;
+                    if (this.emailKind === 'reminder') payload.scenario = this.reminderScenario;
+                    const data = await this.request(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     this.emailOpen = false;
-                    this.notify(data.message ?? 'Email accodata correttamente.');
+                    this.notify(data.message ?? (this.emailKind === 'reminder' ? 'Sollecito inviato correttamente.' : 'Email accodata correttamente.'));
                 } catch (error) { this.error = error.message; } finally { this.busy = false; }
             },
             openPayment() { this.paymentOpen = true; this.resetPaymentForm(); },

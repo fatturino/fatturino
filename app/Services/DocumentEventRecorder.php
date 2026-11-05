@@ -158,7 +158,11 @@ class DocumentEventRecorder
             'channel' => 'email',
             'status' => $status,
             'title' => $title,
-            'message' => $scenario === 'overdue' ? 'Scenario: overdue. Sollecito per fattura scaduta.' : 'Scenario: upcoming. Promemoria per fattura in scadenza.',
+            'message' => match ($scenario) {
+                'overdue' => 'Scenario: overdue. Sollecito per fattura scaduta.',
+                'open' => 'Scenario: open. Sollecito per fattura ancora da pagare.',
+                default => 'Scenario: upcoming. Promemoria per fattura in scadenza.',
+            },
             'recipient_email' => $recipientEmail,
             'cc' => $cc,
             'bcc' => $bcc,

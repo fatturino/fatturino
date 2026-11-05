@@ -37,6 +37,8 @@ beforeEach(function () {
     $settings->template_payment_reminder_upcoming_body = '{CLIENTE} {IMPORTO_RESIDUO} {DATA_SCADENZA}';
     $settings->template_payment_reminder_overdue_subject = 'Sollecito {NUMERO_DOCUMENTO} {DATA_SCADENZA}';
     $settings->template_payment_reminder_overdue_body = '{CLIENTE} {IMPORTO_RESIDUO} {DATA_SCADENZA}';
+    $settings->template_payment_reminder_open_subject = 'Sollecito aperto {NUMERO_DOCUMENTO}';
+    $settings->template_payment_reminder_open_body = '{CLIENTE} {IMPORTO_RESIDUO}';
     $settings->template_proforma_subject = 'Preventivo n. {NUMERO_DOCUMENTO}';
     $settings->template_proforma_body = 'Gentile {CLIENTE}, preventivo n. {NUMERO_DOCUMENTO}.';
     $settings->auto_send_sales = false;
@@ -107,6 +109,88 @@ test('manual payment reminder records a dedicated sent event', function () {
 
     Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->emailSubject === 'Promemoria');
     expect(DocumentEvent::query()->where('fiscal_document_id', $invoice->id)->where('event_type', 'payment_reminder_sent')->count())->toBe(1);
+});
+
+test('open payment reminder templates render remaining balance without due date', function () {
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'number' => 'FT-OPEN-001',
+        'due_date' => null,
+        'total_gross' => 150000,
+        'total_paid' => 50000,
+    ]);
+
+    $mailer = app(DocumentMailer::class);
+
+    expect($mailer->renderPaymentReminderSubject('open', $invoice))->toBe('Sollecito aperto FT-OPEN-001')
+        ->and($mailer->renderPaymentReminderBody('open', $invoice))->toContain('Mario Rossi')
+        ->toContain('€ 1.000,00');
+});
+
+test('payment reminder preview accepts invoices without due date using open scenario', function () {
+    $user = User::factory()->create();
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'number' => 'FT-OPEN-002',
+        'status' => 'sent',
+        'due_date' => null,
+        'total_gross' => 10000,
+        'total_paid' => 0,
+    ]);
+
+    $this->actingAs($user)
+        ->getJson("/sell-invoices/{$invoice->id}/payment-reminder-preview?scenario=open")
+        ->assertOk()
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('preview.scenario', 'open')
+        ->assertJsonPath('preview.subject', 'Sollecito aperto FT-OPEN-002');
+});
+
+test('payment reminder send accepts upcoming invoices beyond seven days', function () {
+    Mail::fake();
+
+    $user = User::factory()->create();
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'number' => 'FT-FAR-001',
+        'status' => 'sent',
+        'due_date' => now()->addDays(30)->toDateString(),
+        'total_gross' => 10000,
+        'total_paid' => 0,
+    ]);
+
+    $this->actingAs($user)
+        ->postJson("/sell-invoices/{$invoice->id}/send-payment-reminder", [
+            'scenario' => 'upcoming',
+            'recipient_email' => 'mario@example.com',
+            'subject' => 'Promemoria lontano',
+            'body' => 'Corpo',
+            'attach_pdf' => false,
+        ])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    Mail::assertSent(DocumentMail::class, fn (DocumentMail $mail) => $mail->emailSubject === 'Promemoria lontano');
+});
+
+test('payment reminder send rejects invoices with zero remaining balance', function () {
+    $user = User::factory()->create();
+    $contact = Contact::create(['name' => 'Mario Rossi', 'email' => 'mario@example.com']);
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'number' => 'FT-PAID-001',
+        'status' => 'sent',
+        'due_date' => null,
+        'total_gross' => 10000,
+        'total_paid' => 10000,
+    ]);
+
+    $this->actingAs($user)
+        ->getJson("/sell-invoices/{$invoice->id}/payment-reminder-preview?scenario=open")
+        ->assertStatus(422);
 });
 
 test('send dispatches DocumentMail with default template', function () {
