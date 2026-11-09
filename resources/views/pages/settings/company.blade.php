@@ -125,13 +125,44 @@ new #[Layout('layouts::app')] class extends Component {
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Configurazione</p><h1 class="text-lg font-bold text-content">Dati azienda</h1></div></x-slot:header>
 <section class="space-y-6">
     <form wire:submit="save" class="grid max-w-6xl gap-6 lg:grid-cols-2">
-        @if(session('success'))<div class="lg:col-span-2 rounded-lg border border-success/20 bg-success-bg p-4 text-sm font-medium text-success" role="status">{{ session('success') }}</div>@endif
+        @if(session('success'))
+            <div class="lg:col-span-2">
+                <x-alert variant="success">{{ session('success') }}</x-alert>
+            </div>
+        @endif
 
-        <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6"><h2 class="text-base font-bold text-content">Informazioni generali</h2><div class="mt-5 space-y-4"><x-settings.input wire:model="company_name" label="Nome azienda *" autocomplete="organization"/><x-settings.input wire:model="company_vat_number" label="Partita IVA"/><x-settings.input wire:model="company_tax_code" label="Codice fiscale"/></div></article>
-        <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6"><h2 class="text-base font-bold text-content">Indirizzo</h2><div class="mt-5 grid gap-4 sm:grid-cols-2"><div class="sm:col-span-2"><x-settings.input wire:model="company_address" label="Via" autocomplete="street-address"/></div><x-settings.input wire:model="company_postal_code" label="CAP" autocomplete="postal-code"/><x-settings.input wire:model="company_city" label="Città" autocomplete="address-level2"/><x-settings.input wire:model="company_province" label="Provincia" maxlength="2"/><label class="block text-sm font-medium text-content">Paese *<x-select wire:model="company_country" :options="$this->countries()" option-value="value" option-label="label" /></label></div></article>
-        <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6"><h2 class="text-base font-bold text-content">Fatturazione elettronica</h2><div class="mt-5 space-y-4"><label class="block text-sm font-medium text-content">Regime fiscale *<x-select wire:model.live="company_fiscal_regime" :options="$this->fiscalRegimes()" option-value="value" option-label="label" /></label><x-settings.input wire:model="company_email" type="email" label="Email" autocomplete="email"/><x-settings.input wire:model="company_pec" label="PEC"/><x-settings.input wire:model="company_sdi_code" label="Codice SDI" maxlength="7"/>@if($company_fiscal_regime === 'RF19')<x-toggle wire:model="rf19_self_invoices_enabled" label="Abilita autofatture RF19" hint="Solo per operazioni con l’estero." />@endif</div></article>
+        <x-settings.panel title="Informazioni generali">
+            <div class="space-y-4">
+                <x-settings.input wire:model="company_name" label="Nome azienda *" autocomplete="organization"/>
+                <x-settings.input wire:model="company_vat_number" label="Partita IVA"/>
+                <x-settings.input wire:model="company_tax_code" label="Codice fiscale"/>
+            </div>
+        </x-settings.panel>
 
-        <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6"><h2 class="text-base font-bold text-content">Codici ATECO e logo</h2><div class="mt-5 space-y-6">
+        <x-settings.panel title="Indirizzo">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2"><x-settings.input wire:model="company_address" label="Via" autocomplete="street-address"/></div>
+                <x-settings.input wire:model="company_postal_code" label="CAP" autocomplete="postal-code"/>
+                <x-settings.input wire:model="company_city" label="Città" autocomplete="address-level2"/>
+                <x-settings.input wire:model="company_province" label="Provincia" maxlength="2"/>
+                <label class="block text-sm font-medium text-content">Paese *<x-select wire:model="company_country" :options="$this->countries()" option-value="value" option-label="label" /></label>
+            </div>
+        </x-settings.panel>
+
+        <x-settings.panel title="Fatturazione elettronica">
+            <div class="space-y-4">
+                <label class="block text-sm font-medium text-content">Regime fiscale *<x-select wire:model.live="company_fiscal_regime" :options="$this->fiscalRegimes()" option-value="value" option-label="label" /></label>
+                <x-settings.input wire:model="company_email" type="email" label="Email" autocomplete="email"/>
+                <x-settings.input wire:model="company_pec" label="PEC"/>
+                <x-settings.input wire:model="company_sdi_code" label="Codice SDI" maxlength="7"/>
+                @if($company_fiscal_regime === 'RF19')
+                    <x-toggle wire:model="rf19_self_invoices_enabled" label="Abilita autofatture RF19" hint="Solo per operazioni con l’estero." />
+                @endif
+            </div>
+        </x-settings.panel>
+
+        <x-settings.panel title="Codici ATECO e logo">
+            <div class="space-y-6">
             <div x-data="{
                 selected: @entangle('company_ateco_codes'), query: '', results: [], loading: false, error: '', open: false, activeIndex: -1, timer: null, controller: null,
                 labels: {{ Js::from(collect($company_ateco_codes)->mapWithKeys(fn ($code) => [$code => $this->atecoLabel($code)])) }},
@@ -160,8 +191,15 @@ new #[Layout('layouts::app')] class extends Component {
                 <div x-show="uploading" x-cloak role="status" aria-live="polite"><div class="flex justify-between text-xs font-medium text-primary"><span>Caricamento in corso</span><span x-text="progress + '%'"></span></div><div class="mt-2 h-1.5 overflow-hidden rounded-full bg-primary/15"><div class="h-full bg-primary transition-all" :style="`width: ${progress}%`"></div></div></div>
                 @if($companyLogoPath && ! $remove_logo)<div class="flex flex-col gap-3 rounded-lg border border-border-light p-3 sm:flex-row sm:items-center"><img src="{{ route('settings.company.logo') }}" alt="Logo azienda attuale" class="size-12 rounded border border-border bg-white object-contain p-1"><span class="flex-1 text-sm text-content-muted">Logo attuale</span><x-toggle wire:model="remove_logo" label="Rimuovi logo" hint="La rimozione verrà applicata al salvataggio." /></div>@endif
             </div>
-        </div></article>
+            </div>
+        </x-settings.panel>
 
-        <div class="flex flex-col-reverse gap-3 border-t border-border-light pt-5 sm:flex-row sm:items-center lg:col-span-2">@if(app(EnvironmentCapabilities::class)->can('edit-company-settings'))<button wire:loading.attr="disabled" wire:target="save,company_logo" class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60" type="submit"><span wire:loading.remove wire:target="save">Salva impostazioni</span><span wire:loading wire:target="save" role="status">Salvataggio in corso...</span></button>@else<p class="text-sm text-content-muted">Configurazione in sola lettura.</p>@endif</div>
+        <div class="flex flex-col-reverse gap-3 border-t border-border-light pt-5 sm:flex-row sm:items-center lg:col-span-2">
+            @if(app(EnvironmentCapabilities::class)->can('edit-company-settings'))
+                <x-button type="submit" label="Salva impostazioni" size="cta" spinner="save" wire:target="save,company_logo" />
+            @else
+                <p class="text-sm text-content-muted">Configurazione in sola lettura.</p>
+            @endif
+        </div>
     </form>
 </section>

@@ -114,7 +114,7 @@
                     <button
                         type="button"
                         role="menuitem"
-                        @click="open = false; if (confirm(@js(__('app.common.confirm_delete')))) { $wire.delete({{ $payment->id }}) }"
+                        @click="open = false; $dispatch('confirm-dialog', { message: @js(__('app.common.confirm_delete')), callback: () => $wire.delete({{ $payment->id }}) })"
                         class="group flex w-full items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left text-sm font-medium text-danger hover:bg-danger/5"
                     >
                         <x-icon name="o-trash" class="size-5 shrink-0 opacity-50 group-hover:opacity-80" />

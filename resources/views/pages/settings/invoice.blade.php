@@ -132,32 +132,29 @@ new #[Layout('layouts::app')] class extends Component {
 <section class="space-y-6">
     <form wire:submit="save" class="max-w-6xl space-y-6">
         @if(session('success'))
-            <div class="rounded-lg border border-success/20 bg-success-bg p-4 text-sm font-medium text-success" role="status">{{ session('success') }}</div>
+            <x-alert variant="success">{{ session('success') }}</x-alert>
         @endif
 
         <fieldset @disabled(! $canEdit) class="grid gap-6 lg:grid-cols-2" @class(['select-none opacity-70' => ! $canEdit])>
-            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-                <h2 class="text-base font-bold text-content">Predefiniti</h2>
-                <div class="mt-5 space-y-4">
+            <x-settings.panel title="Predefiniti">
+                <div class="space-y-4">
                     <x-select label="Aliquota IVA" wire:model="default_vat_rate" :disabled="! $canEdit" :options="$this->vatRates()" />
                 </div>
-            </article>
+            </x-settings.panel>
 
             @if(! $this->isRf19())
-                <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-                    <h2 class="text-base font-bold text-content">Ritenuta d'acconto</h2>
-                    <div class="mt-5 space-y-4">
+                <x-settings.panel title="Ritenuta d'acconto">
+                    <div class="space-y-4">
                         <x-toggle wire:model.live="withholding_tax_enabled" :disabled="! $canEdit" label="Abilita ritenuta" />
                         @if($withholding_tax_enabled)
                             <x-settings.input wire:model="withholding_tax_percent" :disabled="! $canEdit" type="number" label="Percentuale" />
                         @endif
                     </div>
-                </article>
+                </x-settings.panel>
             @endif
 
-            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-                <h2 class="text-base font-bold text-content">Cassa previdenziale</h2>
-                <div class="mt-5 space-y-4">
+            <x-settings.panel title="Cassa previdenziale">
+                <div class="space-y-4">
                     <x-toggle wire:model.live="fund_enabled" :disabled="! $canEdit" label="Abilita cassa" />
                     @if($fund_enabled)
                         <div class="space-y-4 border-t border-border-light pt-4">
@@ -168,11 +165,10 @@ new #[Layout('layouts::app')] class extends Component {
                         </div>
                     @endif
                 </div>
-            </article>
+            </x-settings.panel>
 
-            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-                <h2 class="text-base font-bold text-content">Bollo virtuale</h2>
-                <div class="mt-5 space-y-4">
+            <x-settings.panel title="Bollo virtuale">
+                <div class="space-y-4">
                     <x-toggle wire:model.live="auto_stamp_duty" :disabled="! $canEdit" label="Applica automaticamente (€2,00)" />
                     @if($auto_stamp_duty)
                         <div class="border-t border-border-light pt-4">
@@ -180,40 +176,31 @@ new #[Layout('layouts::app')] class extends Component {
                         </div>
                     @endif
                 </div>
-            </article>
+            </x-settings.panel>
 
-            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-                <h2 class="text-base font-bold text-content">Pagamenti</h2>
-                <div class="mt-5 space-y-4">
+            <x-settings.panel title="Pagamenti">
+                <div class="space-y-4">
                     <x-select label="Metodo" wire:model="default_payment_method" :disabled="! $canEdit" :options="$this->paymentMethods()" />
                     <x-select label="Termini" wire:model="default_payment_terms" :disabled="! $canEdit" :options="$this->paymentTerms()" />
                     <x-settings.input wire:model="default_bank_name" :disabled="! $canEdit" label="Banca" />
                     <x-settings.input wire:model="default_bank_iban" :disabled="! $canEdit" label="IBAN" />
                 </div>
-            </article>
+            </x-settings.panel>
 
-            <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-                <h2 class="text-base font-bold text-content">IVA e note</h2>
-                <div class="mt-5 space-y-4">
+            <x-settings.panel title="IVA e note">
+                <div class="space-y-4">
                     <x-select label="Esigibilità" wire:model="default_vat_payability" :disabled="$this->isRf19() || ! $canEdit" :options="$this->vatPayabilityOptions()" />
                     @if(! $this->isRf19())
                         <x-toggle wire:model="default_split_payment" :disabled="! $canEdit" label="Split payment predefinito" />
                     @endif
-                    <label class="block text-sm font-medium text-content">
-                        Note
-                        <textarea wire:model="default_notes" @disabled(! $canEdit) class="mt-1.5 block min-h-28 w-full rounded-lg border border-border-strong bg-white px-3 py-2.5 text-sm leading-6 text-content placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-content-muted" rows="3"></textarea>
-                        @error('default_notes')<span class="mt-1 block text-xs text-danger">{{ $message }}</span>@enderror
-                    </label>
+                    <x-textarea wire:model="default_notes" :disabled="! $canEdit" label="Note" :rows="3" />
                 </div>
-            </article>
+            </x-settings.panel>
         </fieldset>
 
         <div class="flex flex-col-reverse gap-3 border-t border-border-light pt-5 sm:flex-row sm:items-center">
             @if($canEdit)
-                <button wire:loading.attr="disabled" wire:target="save" class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60" type="submit">
-                    <span wire:loading.remove wire:target="save">Salva impostazioni</span>
-                    <span wire:loading wire:target="save" role="status">Salvataggio in corso...</span>
-                </button>
+                <x-button type="submit" label="Salva impostazioni" size="cta" spinner="save" />
             @else
                 <p class="text-sm text-content-muted">Configurazione in sola lettura.</p>
             @endif

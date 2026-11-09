@@ -125,11 +125,98 @@ new #[Layout('layouts::app')] class extends Component {
     }
 };
 ?>
-<x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Configurazione</p><h1 class="text-lg font-bold text-content">Template email</h1></div></x-slot:header>
-<form wire:submit="save" class="space-y-6">@if(session('success'))<div class="rounded-md border border-success/20 bg-success-bg p-4 text-sm text-success">{{ session('success') }}</div>@endif @error('smtp')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror
-<div class="grid gap-6 lg:grid-cols-2"><article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Provider invio email</h2>@if($this->smtpManagedByEnv())<p class="mt-4 text-sm text-content-muted">Configurato tramite variabili d'ambiente.</p>@else<div class="mt-4 space-y-4"><x-select label="Provider" wire:model.live="mail_provider" :options="['smtp' => 'SMTP', 'scaleway_tem' => 'Scaleway TEM']" />@if($mail_provider === 'scaleway_tem')<x-settings.input wire:model="scaleway_tem_region" label="Regione"/><x-settings.input wire:model="scaleway_tem_project_id" label="Project ID"/><x-settings.input wire:model="scaleway_tem_secret_key" type="password" label="Secret key" placeholder="Lascia vuoto per mantenere quella attuale"/>@else<x-settings.input wire:model="smtp_host" label="Host"/><div class="grid grid-cols-2 gap-4"><x-settings.input wire:model="smtp_port" label="Porta"/><x-select label="Crittografia" wire:model="smtp_encryption" :options="['' => 'Nessuna', 'tls' => 'TLS', 'ssl' => 'SSL']" /></div><x-settings.input wire:model="smtp_username" label="Username"/><x-settings.input wire:model="smtp_password" type="password" label="Password" placeholder="Lascia vuoto per mantenere quella attuale"/>@endif</div>@endif</article>
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Mittente</h2><div class="mt-4 space-y-4"><x-settings.input wire:model="from_address" type="email" label="Indirizzo Reply-To"/><x-settings.input wire:model="from_name" label="Nome visualizzato"/>@if(! $this->smtpManagedByEnv())<button wire:click="testConnection" type="button" class="rounded-md border border-border px-4 py-2 text-sm font-semibold">Test connessione</button>@endif</div></article>
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Template fatture di vendita</h2><div class="mt-4 space-y-4"><x-settings.input wire:model="template_sales_subject" label="Oggetto"/><label class="block text-sm font-semibold">Corpo<textarea wire:model="template_sales_body" rows="10" class="mt-2 block w-full rounded-md border border-border px-3 py-2"></textarea></label><p class="text-xs text-content-muted">{{ __('app.email.placeholders_hint') }}</p><label class="flex gap-2 text-sm"><input wire:model="auto_send_sales" type="checkbox"> Invio automatico</label></div></article>
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)] lg:col-span-2"><h2 class="font-bold">Template solleciti di pagamento</h2><p class="mt-1 text-sm text-content-muted">I solleciti si preparano e inviano manualmente dalla lista fatture o dalla dashboard.</p><div class="mt-4 grid gap-6 lg:grid-cols-3"><div class="space-y-4"><h3 class="text-sm font-semibold">Fattura in scadenza</h3><x-settings.input wire:model="template_payment_reminder_upcoming_subject" label="Oggetto"/><label class="block text-sm font-semibold">Corpo<textarea wire:model="template_payment_reminder_upcoming_body" rows="10" class="mt-2 block w-full rounded-md border border-border px-3 py-2"></textarea></label></div><div class="space-y-4"><h3 class="text-sm font-semibold">Fattura scaduta</h3><x-settings.input wire:model="template_payment_reminder_overdue_subject" label="Oggetto"/><label class="block text-sm font-semibold">Corpo<textarea wire:model="template_payment_reminder_overdue_body" rows="10" class="mt-2 block w-full rounded-md border border-border px-3 py-2"></textarea></label></div><div class="space-y-4"><h3 class="text-sm font-semibold">Fattura senza scadenza</h3><x-settings.input wire:model="template_payment_reminder_open_subject" label="Oggetto"/><label class="block text-sm font-semibold">Corpo<textarea wire:model="template_payment_reminder_open_body" rows="10" class="mt-2 block w-full rounded-md border border-border px-3 py-2"></textarea></label></div></div><p class="mt-4 text-xs text-content-muted">Variabili disponibili: {CLIENTE}, {NUMERO_DOCUMENTO}, {IMPORTO_RESIDUO}, {DATA_SCADENZA}, {AZIENDA}, {EMAIL_CLIENTE}.</p></article>
-<article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Template proforma</h2><div class="mt-4 space-y-4"><x-settings.input wire:model="template_proforma_subject" label="Oggetto"/><label class="block text-sm font-semibold">Corpo<textarea wire:model="template_proforma_body" rows="10" class="mt-2 block w-full rounded-md border border-border px-3 py-2"></textarea></label><p class="text-xs text-content-muted">{{ __('app.email.placeholders_hint') }}</p><label class="flex gap-2 text-sm"><input wire:model="auto_send_proforma" type="checkbox"> Invio automatico</label></div></article></div>
-@if(app(EnvironmentCapabilities::class)->can('edit-email-settings'))<button class="rounded-md bg-primary px-5 py-2.5 text-sm font-bold text-white">Salva impostazioni</button>@else<p class="text-sm text-content-muted">Configurazione in sola lettura.</p>@endif</form>
+<x-slot:header>
+    <div>
+        <p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Configurazione</p>
+        <h1 class="text-lg font-bold text-content">Template email</h1>
+    </div>
+</x-slot:header>
+
+<form wire:submit="save" class="space-y-6">
+    @if(session('success'))
+        <x-alert variant="success">{{ session('success') }}</x-alert>
+    @endif
+    @error('smtp')
+        <x-alert variant="danger">{{ $message }}</x-alert>
+    @enderror
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <x-settings.panel title="Provider invio email">
+            @if($this->smtpManagedByEnv())
+                <p class="text-sm text-content-muted">Configurato tramite variabili d'ambiente.</p>
+            @else
+                <div class="space-y-4">
+                    <x-select label="Provider" wire:model.live="mail_provider" :options="['smtp' => 'SMTP', 'scaleway_tem' => 'Scaleway TEM']" />
+                    @if($mail_provider === 'scaleway_tem')
+                        <x-settings.input wire:model="scaleway_tem_region" label="Regione"/>
+                        <x-settings.input wire:model="scaleway_tem_project_id" label="Project ID"/>
+                        <x-settings.input wire:model="scaleway_tem_secret_key" type="password" label="Secret key" placeholder="Lascia vuoto per mantenere quella attuale"/>
+                    @else
+                        <x-settings.input wire:model="smtp_host" label="Host"/>
+                        <div class="grid grid-cols-2 gap-4">
+                            <x-settings.input wire:model="smtp_port" label="Porta"/>
+                            <x-select label="Crittografia" wire:model="smtp_encryption" :options="['' => 'Nessuna', 'tls' => 'TLS', 'ssl' => 'SSL']" />
+                        </div>
+                        <x-settings.input wire:model="smtp_username" label="Username"/>
+                        <x-settings.input wire:model="smtp_password" type="password" label="Password" placeholder="Lascia vuoto per mantenere quella attuale"/>
+                    @endif
+                </div>
+            @endif
+        </x-settings.panel>
+
+        <x-settings.panel title="Mittente">
+            <div class="space-y-4">
+                <x-settings.input wire:model="from_address" type="email" label="Indirizzo Reply-To"/>
+                <x-settings.input wire:model="from_name" label="Nome visualizzato"/>
+                @if(! $this->smtpManagedByEnv())
+                    <x-button label="Test connessione" wire:click="testConnection" variant="secondary" size="cta" spinner="testConnection" />
+                @endif
+            </div>
+        </x-settings.panel>
+
+        <x-settings.panel title="Template fatture di vendita">
+            <div class="space-y-4">
+                <x-settings.input wire:model="template_sales_subject" label="Oggetto"/>
+                <x-textarea wire:model="template_sales_body" label="Corpo" :rows="10" />
+                <p class="text-xs text-content-muted">{{ __('app.email.placeholders_hint') }}</p>
+                <label class="flex gap-2 text-sm text-content"><input wire:model="auto_send_sales" type="checkbox" class="size-4 rounded border-border text-primary focus:ring-primary/20"> Invio automatico</label>
+            </div>
+        </x-settings.panel>
+
+        <x-settings.panel title="Template solleciti di pagamento" subtitle="I solleciti si preparano e inviano manualmente dalla lista fatture o dalla dashboard." class="lg:col-span-2">
+            <div class="grid gap-6 lg:grid-cols-3">
+                <div class="space-y-4">
+                    <h3 class="text-sm font-semibold text-content">Fattura in scadenza</h3>
+                    <x-settings.input wire:model="template_payment_reminder_upcoming_subject" label="Oggetto"/>
+                    <x-textarea wire:model="template_payment_reminder_upcoming_body" label="Corpo" :rows="10" />
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-sm font-semibold text-content">Fattura scaduta</h3>
+                    <x-settings.input wire:model="template_payment_reminder_overdue_subject" label="Oggetto"/>
+                    <x-textarea wire:model="template_payment_reminder_overdue_body" label="Corpo" :rows="10" />
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-sm font-semibold text-content">Fattura senza scadenza</h3>
+                    <x-settings.input wire:model="template_payment_reminder_open_subject" label="Oggetto"/>
+                    <x-textarea wire:model="template_payment_reminder_open_body" label="Corpo" :rows="10" />
+                </div>
+            </div>
+            <p class="mt-4 text-xs text-content-muted">Variabili disponibili: {CLIENTE}, {NUMERO_DOCUMENTO}, {IMPORTO_RESIDUO}, {DATA_SCADENZA}, {AZIENDA}, {EMAIL_CLIENTE}.</p>
+        </x-settings.panel>
+
+        <x-settings.panel title="Template proforma">
+            <div class="space-y-4">
+                <x-settings.input wire:model="template_proforma_subject" label="Oggetto"/>
+                <x-textarea wire:model="template_proforma_body" label="Corpo" :rows="10" />
+                <p class="text-xs text-content-muted">{{ __('app.email.placeholders_hint') }}</p>
+                <label class="flex gap-2 text-sm text-content"><input wire:model="auto_send_proforma" type="checkbox" class="size-4 rounded border-border text-primary focus:ring-primary/20"> Invio automatico</label>
+            </div>
+        </x-settings.panel>
+    </div>
+
+    @if(app(EnvironmentCapabilities::class)->can('edit-email-settings'))
+        <x-button type="submit" label="Salva impostazioni" size="cta" spinner="save" />
+    @else
+        <p class="text-sm text-content-muted">Configurazione in sola lettura.</p>
+    @endif
+</form>

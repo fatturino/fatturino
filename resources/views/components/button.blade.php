@@ -32,31 +32,35 @@ $sizeClasses = match($size) {
     'xs' => 'px-2 py-1 text-xs gap-1',
     'sm' => 'px-3 py-1.5 text-sm gap-1.5',
     'md' => 'px-4 py-2 text-sm gap-2',
-    'lg' => 'px-6 py-3 text-base gap-2',
+    'cta' => 'h-11 px-4 text-sm gap-2',
+    'lg' => 'h-11 px-6 text-base gap-2',
     default => 'px-4 py-2 text-sm gap-2',
 };
 
-// Icon-only controls follow the same rounded control language as other buttons.
-$isIconOnly = !$label && $icon;
+$isIconOnly = ! $label && $icon;
 if ($isIconOnly) {
     $sizeClasses = match($size) {
         'xs' => 'size-7 text-xs',
         'sm' => 'size-8 text-sm',
         'md' => 'size-9 text-sm',
+        'cta' => 'size-11 text-base',
         'lg' => 'size-11 text-base',
         default => 'size-8 text-sm',
     };
 }
 
-// Spinner target for Livewire loading states
-$spinnerAttrs = '';
-if ($spinner) {
-    $spinnerAttrs = "wire:loading.attr='disabled' wire:target='{$spinner}'";
+$attributes = $attributes->class(trim("$baseClasses $variantClasses $sizeClasses"));
+if ($isIconOnly && $ariaLabel) {
+    $attributes = $attributes->merge(['aria-label' => $ariaLabel]);
 }
 @endphp
 
+@php
+$spinnerTarget = $attributes->get('wire:target', $spinner);
+@endphp
+
 @if($link)
-    <x-app-link :href="$link" :full-reload="$attributes->has('download')" @if($isIconOnly && $ariaLabel) aria-label="{{ $ariaLabel }}" @endif {{ $attributes->merge(['class' => "$baseClasses $variantClasses $sizeClasses"]) }}>
+    <x-app-link :href="$link" :full-reload="$attributes->has('download')" {{ $attributes }}>
         @if($icon)
             <x-icon :name="$icon" />
         @endif
@@ -64,29 +68,24 @@ if ($spinner) {
             <span @if($responsive) class="hidden sm:inline" @endif>{{ $label }}</span>
         @endif
         @if($spinner)
-            <x-icon name="spinner" class="animate-spin" wire:loading wire:target="{{ $spinner }}" />
+            <x-icon name="o-spinner" class="animate-spin" wire:loading wire:target="{{ $spinnerTarget }}" />
         @endif
     </x-app-link>
 @else
-    <button type="{{ $type }}"
-            @if($isIconOnly && $ariaLabel) aria-label="{{ $ariaLabel }}" @endif
-            {{ $attributes->merge(['class' => "$baseClasses $variantClasses $sizeClasses"]) }}
-            @if($spinner) wire:loading.attr="disabled" wire:target="{{ $spinner }}" @endif
+    <button
+        type="{{ $type }}"
+        @if($spinner) wire:loading.attr="disabled" wire:target="{{ $spinnerTarget }}" @endif
+        {{ $attributes->except(['wire:target']) }}
     >
         @if($icon)
-            <span @if($spinner) wire:loading.remove wire:target="{{ $spinner }}" @endif>
-                <x-icon :name="$icon" />
-            </span>
+            <span @if($spinner) wire:loading.remove wire:target="{{ $spinnerTarget }}" @endif><x-icon :name="$icon" /></span>
         @endif
         @if($label)
-            <span @if($responsive) class="hidden sm:inline" @endif
-                  @if($spinner) wire:loading.remove wire:target="{{ $spinner }}" @endif>
-                {{ $label }}
-            </span>
+            <span @if($responsive) class="hidden sm:inline" @endif @if($spinner) wire:loading.remove wire:target="{{ $spinnerTarget }}" @endif>{{ $label }}</span>
         @endif
         @if($spinner)
-            <x-icon name="spinner" class="animate-spin" wire:loading wire:target="{{ $spinner }}" />
-            <span class="animate-pulse" wire:loading wire:target="{{ $spinner }}">...</span>
+            <x-icon name="o-spinner" class="animate-spin" wire:loading wire:target="{{ $spinnerTarget }}" />
+            <span class="animate-pulse" wire:loading wire:target="{{ $spinnerTarget }}">...</span>
         @endif
     </button>
 @endif

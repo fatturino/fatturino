@@ -352,43 +352,36 @@ new #[Layout('layouts::app')] class extends Component {
     x-data="documentActionCenter(@js($actionConfig))"
     x-on:document-action.window="handleAction($event.detail)"
 >
-    <section class="overflow-hidden rounded-xl border border-border bg-border" aria-labelledby="document-summary-title">
-        <div class="flex flex-col gap-4 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div>
-                <p class="text-xs font-medium text-content-muted">Anno fiscale {{ $fiscalYear }}</p>
-                <h2 id="document-summary-title" class="mt-1 text-base font-semibold text-content">Riepilogo {{ strtolower($definition['plural']) }}</h2>
-            </div>
+    @php
+        $hasFilters = $search !== '' || $status !== '' || $payment !== '';
+    @endphp
 
-            @if($definition['create'])
-                <x-app-link href="/{{ $definition['base'] }}/create" class="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 active:translate-y-px">
-                    {{ $definition['create'] }}
-                </x-app-link>
-            @endif
-        </div>
+    <x-page-summary
+        :eyebrow="'Anno fiscale '.$fiscalYear"
+        :title="'Riepilogo '.strtolower($definition['plural'])"
+        title-id="document-summary-title"
+    >
+        @if($definition['create'])
+            <x-slot:actions>
+                <x-button
+                    :label="$definition['create']"
+                    :link="'/' . $definition['base'] . '/create'"
+                    size="cta"
+                    class="shrink-0 active:translate-y-px"
+                />
+            </x-slot:actions>
+        @endif
 
-        <dl class="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">Documenti</dt>
-                <dd class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $total }}</dd>
-                <p class="mt-1 text-xs text-content-muted">{{ $definition['plural'] }}</p>
-            </div>
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">Imponibile</dt>
-                <dd class="mt-1 truncate text-xl font-semibold tabular-nums text-content">{{ $this->money($net) }}</dd>
-                <p class="mt-1 text-xs text-content-muted">Totale netto</p>
-            </div>
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">IVA</dt>
-                <dd class="mt-1 truncate text-xl font-semibold tabular-nums text-content">{{ $this->money($vat) }}</dd>
-                <p class="mt-1 text-xs text-content-muted">Imposte</p>
-            </div>
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">{{ $operationalStat['label'] }}</dt>
-                <dd class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $operationalStat['value'] }}</dd>
-                <p @class(['mt-1 text-xs', $operationalStat['detailClass']])>{{ $operationalStat['detail'] }}</p>
-            </div>
-        </dl>
-    </section>
+        <x-page-summary.stat label="Documenti" :value="$total" :detail="$definition['plural']" />
+        <x-page-summary.stat label="Imponibile" :value="$this->money($net)" detail="Totale netto" truncate />
+        <x-page-summary.stat label="IVA" :value="$this->money($vat)" detail="Imposte" truncate />
+        <x-page-summary.stat
+            :label="$operationalStat['label']"
+            :value="$operationalStat['value']"
+            :detail="$operationalStat['detail']"
+            :detail-class="$operationalStat['detailClass']"
+        />
+    </x-page-summary>
 
     @if($type === 'purchase')
         <p class="rounded-lg border border-info/20 bg-info-bg px-4 py-3 text-sm text-info">Le fatture di acquisto vengono importate automaticamente dallo SDI.</p>
@@ -415,17 +408,12 @@ new #[Layout('layouts::app')] class extends Component {
             <input id="document-search" wire:model.live.debounce.350ms="search" type="search" class="block h-11 w-full rounded-lg border border-border-strong bg-white py-2 pl-10 pr-3 text-sm text-content placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Cerca per numero o {{ strtolower($definition['contact']) }}">
         </div>
 
-        @if($search !== '' || $status !== '' || $payment !== '')
-            <button wire:click="resetFilters" type="button" class="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-content-muted transition hover:bg-surface-muted hover:text-content focus:outline-none focus:ring-2 focus:ring-primary/20">
-                Cancella filtri
-            </button>
+        @if($hasFilters)
+            <x-button label="Cancella filtri" wire:click="resetFilters" variant="ghost" size="cta" />
         @endif
     </div>
 
-    <div wire:loading.flex wire:target="search,status,payment,sort,direction" class="hidden items-center gap-2 rounded-lg border border-info/20 bg-info-bg px-4 py-3 text-sm text-info" role="status">
-        <span class="size-4 animate-pulse rounded bg-current/30" aria-hidden="true"></span>
-        Aggiornamento documenti in corso
-    </div>
+    <x-loading-banner target="search,status,payment,sort,direction">Aggiornamento documenti in corso</x-loading-banner>
 
     <div class="hidden overflow-x-auto border-y border-border bg-white lg:block">
         <table class="min-w-full text-left text-sm">
@@ -521,14 +509,16 @@ new #[Layout('layouts::app')] class extends Component {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $this->hasPayments() ? 10 : 9 }}" class="px-5 py-14 text-center">
-                            <x-icon name="o-inbox" class="mx-auto size-8 text-content-muted" aria-hidden="true" />
-                            <p class="mt-3 text-sm font-medium text-content">{{ $search !== '' || $status !== '' || $payment !== '' ? 'Nessun documento corrisponde ai filtri.' : 'Nessuna '.$definition['singular'].' ancora registrata.' }}</p>
-                            @if($search !== '' || $status !== '' || $payment !== '')
-                                <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">Cancella filtri</button>
-                            @elseif($definition['create'])
-                                <x-app-link href="/{{ $definition['base'] }}/create" class="mt-3 inline-flex text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ $definition['create'] }}</x-app-link>
-                            @endif
+                        <td colspan="{{ $this->hasPayments() ? 10 : 9 }}">
+                            <x-empty-state
+                                :title="$hasFilters ? 'Nessun documento corrisponde ai filtri.' : 'Nessuna '.$definition['singular'].' ancora registrata.'"
+                            >
+                                @if($hasFilters)
+                                    <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">Cancella filtri</button>
+                                @elseif($definition['create'])
+                                    <x-app-link href="/{{ $definition['base'] }}/create" class="mt-3 inline-flex text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ $definition['create'] }}</x-app-link>
+                                @endif
+                            </x-empty-state>
                         </td>
                     </tr>
                 @endforelse
@@ -590,15 +580,15 @@ new #[Layout('layouts::app')] class extends Component {
                 </div>
             </article>
         @empty
-            <div class="px-5 py-14 text-center">
-                <x-icon name="o-inbox" class="mx-auto size-8 text-content-muted" aria-hidden="true" />
-                <p class="mt-3 text-sm font-medium text-content">{{ $search !== '' || $status !== '' || $payment !== '' ? 'Nessun documento corrisponde ai filtri.' : 'Nessuna '.$definition['singular'].' ancora registrata.' }}</p>
-                @if($search !== '' || $status !== '' || $payment !== '')
+            <x-empty-state
+                :title="$hasFilters ? 'Nessun documento corrisponde ai filtri.' : 'Nessuna '.$definition['singular'].' ancora registrata.'"
+            >
+                @if($hasFilters)
                     <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">Cancella filtri</button>
                 @elseif($definition['create'])
                     <x-app-link href="/{{ $definition['base'] }}/create" class="mt-3 inline-flex text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ $definition['create'] }}</x-app-link>
                 @endif
-            </div>
+            </x-empty-state>
         @endforelse
     </div>
 

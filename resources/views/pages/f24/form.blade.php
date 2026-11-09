@@ -296,7 +296,6 @@ new #[Layout('layouts::app')] class extends Component {
 
 @php
     $fieldClass = 'input-field mt-1.5 block w-full';
-    $textareaClass = 'textarea-field input-field mt-1.5 block w-full';
     $grouped = $this->lineIndexesBySection();
     $sections = [
         [
@@ -339,48 +338,42 @@ new #[Layout('layouts::app')] class extends Component {
 
 <form wire:submit="save" class="mx-auto max-w-5xl space-y-6 pb-24">
     @if($ocr_warning)
-        <div class="rounded-lg border border-warning/30 bg-warning-bg px-4 py-3 text-sm text-warning" role="status">{{ $ocr_warning }}</div>
+        <x-alert variant="warning">{{ $ocr_warning }}</x-alert>
     @endif
 
     @if($source_file_name)
-        <div class="rounded-xl border border-border bg-white px-4 py-3 text-sm text-content-muted sm:px-5">
-            {{ __('app.f24.attached_file') }}: <span class="font-medium text-content">{{ $source_file_name }}</span>
-            @if($source_file_path)
-                · <x-app-link :href="route('f24.attachment', ['path' => $source_file_path])" class="font-medium text-primary hover:underline" target="_blank" rel="noopener">{{ __('app.f24.open_attachment') }}</x-app-link>
-            @endif
-        </div>
+        <x-settings.panel>
+            <p class="text-sm text-content-muted">
+                {{ __('app.f24.attached_file') }}:
+                <span class="font-medium text-content">{{ $source_file_name }}</span>
+                @if($source_file_path)
+                    · <x-app-link :href="route('f24.attachment', ['path' => $source_file_path])" class="font-medium text-primary hover:underline" target="_blank" rel="noopener">{{ __('app.f24.open_attachment') }}</x-app-link>
+                @endif
+            </p>
+        </x-settings.panel>
     @endif
 
-    <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
-        <h2 class="text-base font-semibold text-content">{{ __('app.f24.payment_details') }}</h2>
-        <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <label class="block text-sm font-medium text-content">
-                {{ __('app.f24.col_status') }}
-                <select wire:model="status" class="{{ $fieldClass }}">
-                    <option value="planned">{{ __('app.f24.status_planned') }}</option>
-                    <option value="paid">{{ __('app.f24.status_paid') }}</option>
-                    <option value="cancelled">{{ __('app.f24.status_cancelled') }}</option>
-                </select>
-                @error('status') <span class="mt-1 block text-xs text-danger">{{ $message }}</span> @enderror
-            </label>
-            <label class="block text-sm font-medium text-content">
-                {{ __('app.f24.col_due') }}
-                <input type="date" wire:model="due_date" class="{{ $fieldClass }}">
-            </label>
-            <label class="block text-sm font-medium text-content">
-                {{ __('app.f24.col_paid') }}
-                <input type="date" wire:model="paid_at" class="{{ $fieldClass }}">
-            </label>
-            <label class="block text-sm font-medium text-content sm:col-span-2">
-                {{ __('app.f24.protocol') }}
-                <input type="text" wire:model="protocol_number" class="{{ $fieldClass }}" maxlength="64">
-            </label>
-            <label class="block text-sm font-medium text-content sm:col-span-2 lg:col-span-3">
-                {{ __('app.f24.notes') }}
-                <textarea wire:model="notes" rows="3" class="{{ $textareaClass }}"></textarea>
-            </label>
+    <x-settings.panel :title="__('app.f24.payment_details')">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <x-select
+                :label="__('app.f24.col_status')"
+                wire:model="status"
+                :options="[
+                    'planned' => __('app.f24.status_planned'),
+                    'paid' => __('app.f24.status_paid'),
+                    'cancelled' => __('app.f24.status_cancelled'),
+                ]"
+            />
+            <x-settings.input :label="__('app.f24.col_due')" type="date" wire:model="due_date" />
+            <x-settings.input :label="__('app.f24.col_paid')" type="date" wire:model="paid_at" />
+            <div class="sm:col-span-2">
+                <x-settings.input :label="__('app.f24.protocol')" type="text" wire:model="protocol_number" maxlength="64" />
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3">
+                <x-textarea :label="__('app.f24.notes')" wire:model="notes" :rows="3" />
+            </div>
         </div>
-    </article>
+    </x-settings.panel>
 
     <div class="space-y-5">
         @foreach($sections as $section)
@@ -502,8 +495,8 @@ new #[Layout('layouts::app')] class extends Component {
     </div>
 
     <div class="flex flex-wrap items-center justify-end gap-3">
-        <x-app-link :href="route('f24.index')" class="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-medium text-content transition hover:border-border-strong hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.cancel') }}</x-app-link>
-        <button type="submit" wire:loading.attr="disabled" class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50">{{ __('app.f24.confirm_save') }}</button>
+        <x-button :label="__('app.common.cancel')" :link="route('f24.index')" variant="secondary" size="cta" />
+        <x-button type="submit" :label="__('app.f24.confirm_save')" size="cta" spinner="save" />
     </div>
     <p class="text-xs text-content-muted">{{ __('app.f24.human_review_note') }}</p>
 </form>

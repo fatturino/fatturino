@@ -255,19 +255,27 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <span class="text-xs text-content-muted" role="status" aria-live="polite"><span wire:loading.remove wire:target="loadStats">Aggiornato ora</span><span wire:loading wire:target="loadStats">Aggiornamento dati in corso</span></span>
-            <button wire:click="loadStats" wire:loading.attr="disabled" wire:loading.attr="aria-busy" wire:target="loadStats" type="button" class="btn-outline inline-flex h-11 items-center justify-center px-4 text-sm"><span wire:loading.remove wire:target="loadStats">Aggiorna</span><span wire:loading wire:target="loadStats">Aggiornamento…</span></button>
+            <x-button label="Aggiorna" wire:click="loadStats" variant="secondary" size="cta" spinner="loadStats" />
             @if($isCurrentYear)
-                <x-app-link :href="route('sell-invoices.create')" class="btn-brand inline-flex h-11 items-center justify-center px-4 text-sm">Nuova fattura</x-app-link>
+                <x-button label="Nuova fattura" :link="route('sell-invoices.create')" size="cta" />
             @endif
         </div>
     </div>
 
     @unless($isCurrentYear)
-        <p class="rounded-lg border border-warning/30 bg-warning-bg px-4 py-3 text-sm text-warning">Visualizzazione in sola lettura per l'anno fiscale {{ $fiscalYear }}.</p>
+        <x-alert variant="warning">Visualizzazione in sola lettura per l'anno fiscale {{ $fiscalYear }}.</x-alert>
     @endunless
 
     @if(! $stats['hasInvoices'] && ! $stats['hasContacts'])
-        <div class="rounded-xl border border-info/20 bg-info-bg p-5"><h2 class="font-semibold text-content">Inizia dalla tua prima fattura</h2><p class="mt-1 text-sm text-content-muted">Crea un contatto e poi registra una fattura: qui vedrai incassi, scadenze e attività recente.</p>@if($isCurrentYear)<div class="mt-4 flex flex-wrap gap-2"><x-app-link :href="route('contacts.create')" class="inline-flex h-10 items-center rounded-lg border border-border bg-white px-3 text-sm font-medium text-content">Nuovo contatto</x-app-link><x-app-link :href="route('sell-invoices.create')" class="inline-flex h-10 items-center rounded-lg bg-primary px-3 text-sm font-medium text-white">Nuova fattura</x-app-link></div>@endif</div>
+        <x-alert variant="info" title="Inizia dalla tua prima fattura">
+            <p>Crea un contatto e poi registra una fattura: qui vedrai incassi, scadenze e attività recente.</p>
+            @if($isCurrentYear)
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <x-button label="Nuovo contatto" :link="route('contacts.create')" variant="secondary" size="md" />
+                    <x-button label="Nuova fattura" :link="route('sell-invoices.create')" size="md" />
+                </div>
+            @endif
+        </x-alert>
     @endif
 
     <x-dashboard.summary :items="$summaryItems" />

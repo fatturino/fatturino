@@ -34,7 +34,7 @@
         accept="{{ $accept }}"
         @if($multiple) multiple @endif
         wire:loading.attr="disabled"
-        wire:target="import"
+        wire:target="{{ $target }}"
         x-on:change="fileNames = Array.from($event.target.files).map(file => file.name)"
         {{ $attributes->merge(['class' => 'peer sr-only']) }}
     >

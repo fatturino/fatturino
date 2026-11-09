@@ -93,41 +93,46 @@ new #[Layout('layouts::app')] class extends Component {
 </x-slot:header>
 
 <section class="space-y-5">
-    <section class="overflow-hidden rounded-xl border border-border bg-border" aria-labelledby="contact-summary-title">
-        <div class="flex flex-col gap-4 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div>
-                <p class="text-xs font-medium text-content-muted">Anagrafiche</p>
-                <h2 id="contact-summary-title" class="mt-1 text-base font-semibold text-content">Riepilogo contatti</h2>
-            </div>
+    <x-page-summary
+        eyebrow="Anagrafiche"
+        title="Riepilogo contatti"
+        title-id="contact-summary-title"
+    >
+        <x-slot:actions>
+            <x-button
+                label="Nuovo contatto"
+                :link="route('contacts.create')"
+                size="cta"
+                class="shrink-0 active:translate-y-px"
+            />
+        </x-slot:actions>
 
-            <x-app-link :href="route('contacts.create')" class="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 active:translate-y-px">
-                Nuovo contatto
-            </x-app-link>
-        </div>
-
-        <dl class="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">Contatti</dt>
-                <dd id="contact-summary-total" class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $aggregates->total }}</dd>
-                <p class="mt-1 text-xs text-content-muted">Clienti e fornitori</p>
-            </div>
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">Clienti</dt>
-                <dd id="contact-summary-customers" class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $aggregates->customers }}</dd>
-                <p class="mt-1 text-xs text-content-muted">Abilitati alle vendite</p>
-            </div>
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">Fornitori</dt>
-                <dd id="contact-summary-suppliers" class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $aggregates->suppliers }}</dd>
-                <p class="mt-1 text-xs text-content-muted">Abilitati agli acquisti</p>
-            </div>
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">Da completare</dt>
-                <dd id="contact-summary-incomplete" class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $aggregates->incomplete }}</dd>
-                <p @class(['mt-1 text-xs', $aggregates->incomplete > 0 ? 'text-warning' : 'text-content-muted'])>{{ $aggregates->incomplete > 0 ? 'Dati fiscali o recapiti mancanti' : 'Anagrafiche complete' }}</p>
-            </div>
-        </dl>
-    </section>
+        <x-page-summary.stat
+            label="Contatti"
+            :value="$aggregates->total"
+            detail="Clienti e fornitori"
+            value-id="contact-summary-total"
+        />
+        <x-page-summary.stat
+            label="Clienti"
+            :value="$aggregates->customers"
+            detail="Abilitati alle vendite"
+            value-id="contact-summary-customers"
+        />
+        <x-page-summary.stat
+            label="Fornitori"
+            :value="$aggregates->suppliers"
+            detail="Abilitati agli acquisti"
+            value-id="contact-summary-suppliers"
+        />
+        <x-page-summary.stat
+            label="Da completare"
+            :value="$aggregates->incomplete"
+            :detail="$aggregates->incomplete > 0 ? 'Dati fiscali o recapiti mancanti' : 'Anagrafiche complete'"
+            :detail-class="$aggregates->incomplete > 0 ? 'text-warning' : 'text-content-muted'"
+            value-id="contact-summary-incomplete"
+        />
+    </x-page-summary>
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="relative w-full sm:max-w-xl">
@@ -140,9 +145,7 @@ new #[Layout('layouts::app')] class extends Component {
         </div>
 
         @if($search !== '')
-            <button wire:click="resetFilters" type="button" class="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-content-muted transition hover:bg-surface-muted hover:text-content focus:outline-none focus:ring-2 focus:ring-primary/20">
-                Cancella ricerca
-            </button>
+            <x-button label="Cancella ricerca" wire:click="resetFilters" variant="ghost" size="cta" />
         @endif
     </div>
 
@@ -182,8 +185,11 @@ new #[Layout('layouts::app')] class extends Component {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-5 py-12 text-center text-sm text-content-muted">
-                            {{ $search !== '' ? 'Nessun contatto corrisponde alla ricerca.' : 'Nessun contatto ancora registrato.' }}
+                        <td colspan="4">
+                            <x-empty-state
+                                class="py-12"
+                                :title="$search !== '' ? 'Nessun contatto corrisponde alla ricerca.' : 'Nessun contatto ancora registrato.'"
+                            />
                         </td>
                     </tr>
                 @endforelse

@@ -36,6 +36,7 @@ Il nome Fatturino, l'identità indigo/navy e il tema chiaro sono vincolanti per 
 
 - Dati reali della dashboard, route e componenti esistenti nel repository.
 - Asset del marchio in [`public/brand`](public/brand).
+- Kit UI ufficiale: Blade in [`resources/views/components`](resources/views/components), token in [`resources/css/fatturino.css`](resources/css/fatturino.css), sistema documentato in [`DESIGN.md`](DESIGN.md). Tailkit è solo ispirazione (nessun package né ID catalogo nel repo).
 - Non fabbricare dati, testimonianze o promesse di prodotto.
 
 ## Product Principles

@@ -48,24 +48,24 @@
                 x-transition:leave="transition ease-in duration-150"
                 x-transition:leave-start="opacity-100 scale-100"
                 x-transition:leave-end="opacity-0 scale-95"
-                class="modal-panel modal-panel--sm bg-base-100 rounded-box shadow-xl p-6"
+                class="modal-panel modal-panel--sm rounded-xl bg-white p-6 shadow-[var(--shadow-modal)]"
                 x-on:click.stop
             >
             {{-- Icon --}}
-            <div class="flex justify-center mb-4">
-                <div class="bg-warning/10 rounded-full p-3">
-                    <x-icon name="o-exclamation-triangle" class="w-8 h-8 text-warning" />
+            <div class="mb-4 flex justify-center">
+                <div class="rounded-full bg-warning/10 p-3">
+                    <x-icon name="o-exclamation-triangle" class="size-8 text-warning" />
                 </div>
             </div>
 
             {{-- Title --}}
-            <h3 id="global-confirm-title" class="text-lg font-semibold text-center mb-2">{{ __('app.common.confirm_title') }}</h3>
+            <h3 id="global-confirm-title" class="mb-2 text-center text-lg font-semibold text-content">{{ __('app.common.confirm_title') }}</h3>
 
             {{-- Message --}}
-            <p class="text-center text-base-content/70 mb-6" x-text="message"></p>
+            <p class="mb-6 text-center text-sm text-content-muted" x-text="message"></p>
 
             {{-- Actions --}}
-            <div class="flex gap-3 justify-end">
+            <div class="flex justify-end gap-3">
                 <x-button
                     :label="__('app.common.cancel')"
                     x-on:click="cancel()"

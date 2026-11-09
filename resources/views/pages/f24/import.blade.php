@@ -109,20 +109,23 @@ new #[Layout('layouts::app')] class extends Component {
 </x-slot:header>
 
 <section class="mx-auto max-w-xl space-y-5">
-    <article class="rounded-xl border border-border bg-white p-5 sm:p-6">
+    <x-settings.panel>
         <p class="text-sm text-content-muted">{{ __('app.f24.import_help') }}</p>
         <form wire:submit="process" class="mt-5 space-y-4">
-            <label class="block text-sm font-medium text-content">
-                {{ __('app.f24.upload_label') }}
-                <input type="file" wire:model="upload" accept="application/pdf,image/png,image/jpeg,image/webp" class="input-field mt-1.5 block w-full py-2">
-                @error('upload') <span class="mt-1 block text-xs text-danger">{{ $message }}</span> @enderror
-            </label>
+            <x-imports.dropzone
+                wire:model="upload"
+                :label="__('app.f24.upload_label')"
+                description="PDF o immagine fino a 10 MB."
+                accept="application/pdf,image/png,image/jpeg,image/webp"
+                error-key="upload"
+                target="upload"
+            />
             <div wire:loading wire:target="upload,process" class="text-sm text-content-muted">{{ __('app.f24.ocr_reading') }}</div>
             <div class="flex flex-wrap justify-end gap-3">
-                <x-app-link :href="route('f24.index')" class="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-medium text-content transition hover:border-border-strong hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.cancel') }}</x-app-link>
-                <button type="submit" class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50" wire:loading.attr="disabled">{{ __('app.f24.continue_review') }}</button>
+                <x-button :label="__('app.common.cancel')" :link="route('f24.index')" variant="secondary" size="cta" />
+                <x-button type="submit" :label="__('app.f24.continue_review')" size="cta" spinner="process" />
             </div>
         </form>
-    </article>
+    </x-settings.panel>
     <p class="text-xs text-content-muted">{{ __('app.f24.human_review_note') }}</p>
 </section>

@@ -226,20 +226,14 @@ new #[Layout('layouts::app')] class extends Component {
                 </div>
             @endif
 
-            <x-app-link :href="$resultLink['href']" class="mt-5 inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-medium text-content transition hover:border-border-strong hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20">{{ $resultLink['label'] }}</x-app-link>
+            <x-button :label="$resultLink['label']" :link="$resultLink['href']" variant="secondary" size="md" class="mt-5" />
         </article>
     @endif
 
     @if(! $selfInvoiceImportEnabled)
-        <article class="rounded-xl border border-warning/30 bg-warning/10 p-5 sm:p-6">
-            <div class="flex items-start gap-3">
-                <x-icon name="o-exclamation-triangle" class="mt-0.5 size-5 shrink-0 text-warning" />
-                <div>
-                    <h2 class="text-base font-semibold text-content">Autofatture disabilitate per RF19</h2>
-                    <p class="mt-1 text-sm text-content-muted">Puoi riattivarle da Dati Azienda per le operazioni estero che richiedono TD17, TD18 o TD19.</p>
-                </div>
-            </div>
-        </article>
+        <x-alert variant="warning" title="Autofatture disabilitate per RF19">
+            Puoi riattivarle da Dati Azienda per le operazioni estero che richiedono TD17, TD18 o TD19.
+        </x-alert>
     @endif
 
     <form wire:submit="import" class="rounded-xl border border-border bg-white p-5 sm:p-6">
@@ -265,7 +259,7 @@ new #[Layout('layouts::app')] class extends Component {
 
         <div class="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-xs text-content-muted">I file vengono elaborati subito e non viene creato uno storico delle importazioni.</p>
-            <button type="submit" wire:loading.attr="disabled" wire:target="import,xmlFiles,csvFile" class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"><span wire:loading.remove wire:target="import">Avvia importazione</span><span wire:loading wire:target="import" class="inline-flex items-center gap-2"><x-icon name="o-arrow-path" class="size-4 animate-spin" />Importazione in corso...</span></button>
+            <x-button type="submit" label="Avvia importazione" size="cta" spinner="import" class="shrink-0" />
         </div>
     </form>
 </section>

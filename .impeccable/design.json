@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-09T15:38:54Z",
+  "title": "Design System: Fatturino",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Interactive Indigo",
+        "canonical": "#5951BA",
+        "tonalRamp": ["#1A1B3C", "#2D2D5C", "#393675", "#484295", "#5951BA", "#9188E1", "#D8D4FA", "#F5F4FF"]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Indigo Hover",
+        "canonical": "#484295",
+        "tonalRamp": ["#1A1B3C", "#2D2D5C", "#393675", "#484295", "#5951BA", "#9188E1", "#D8D4FA", "#F5F4FF"]
+      },
+      "primary-subtle": {
+        "role": "primary",
+        "displayName": "Indigo Mist",
+        "canonical": "#F5F4FF",
+        "tonalRamp": ["#1A1B3C", "#2D2D5C", "#393675", "#484295", "#5951BA", "#9188E1", "#D8D4FA", "#F5F4FF"]
+      },
+      "sidebar": {
+        "role": "secondary",
+        "displayName": "Ledger Navy",
+        "canonical": "#10213D",
+        "tonalRamp": ["#0A1528", "#10213D", "#27345E", "#3A4A6A", "#5C6B86", "#AAB5C4", "#D8DEE8", "#F8FAFC"]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Cool Mist",
+        "canonical": "#F4F6FA",
+        "tonalRamp": ["#172033", "#526077", "#6B7280", "#C7CED9", "#E1E5EC", "#F3F5F8", "#F4F6FA", "#FFFFFF"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["#172033", "#526077", "#6B7280", "#C7CED9", "#E1E5EC", "#F3F5F8", "#F4F6FA", "#FFFFFF"]
+      },
+      "content": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#172033",
+        "tonalRamp": ["#172033", "#2A3548", "#3D4A60", "#526077", "#6B7280", "#9AA3B2", "#C7CED9", "#F4F6FA"]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Fiscal Success",
+        "canonical": "#067647",
+        "tonalRamp": ["#054F31", "#067647", "#079455", "#3BAA75", "#6CC191", "#A6E3C0", "#D1FADF", "#ECFDF3"]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Due Amber",
+        "canonical": "#A15C07",
+        "tonalRamp": ["#713B04", "#854B06", "#A15C07", "#C07A1A", "#DC9A3C", "#F5C97A", "#FCE7B6", "#FFF8EB"]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Alert Crimson",
+        "canonical": "#B42318",
+        "tonalRamp": ["#7A150F", "#912018", "#B42318", "#D92D20", "#F04438", "#FDA29B", "#FEE4E2", "#FEF3F2"]
+      },
+      "info": {
+        "role": "semantic",
+        "displayName": "Info Blue",
+        "canonical": "#175CD3",
+        "tonalRamp": ["#0F3B8C", "#144CA5", "#175CD3", "#2E90FA", "#53B1FD", "#B2DDFF", "#D1E9FF", "#EFF8FF"]
+      }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "Page and panel headings." },
+      "body": { "displayName": "Body", "purpose": "Default operational copy and table cells." },
+      "label": { "displayName": "Label", "purpose": "KPI captions, badges, meta labels." }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "none",
+        "purpose": "Resting cards and panels stay flat."
+      },
+      {
+        "name": "elevated",
+        "value": "0 10px 24px rgba(23, 32, 51, 0.12)",
+        "purpose": "Brief floating panels."
+      },
+      {
+        "name": "modal",
+        "value": "0 18px 40px rgba(23, 32, 51, 0.18)",
+        "purpose": "Confirm dialogs and blocking overlays."
+      },
+      {
+        "name": "input-focus",
+        "value": "0 0 0 3px color-mix(in srgb, #5951BA 18%, transparent)",
+        "purpose": "Field focus glow."
+      }
+    ],
+    "motion": [
+      {
+        "name": "duration-fast",
+        "value": "150ms",
+        "purpose": "Button and control color transitions."
+      },
+      {
+        "name": "duration-base",
+        "value": "220ms",
+        "purpose": "Default UI transitions."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Standard ease-out for shell motion."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main CTA; indigo fill, h-11 for list/form actions.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Nuova fattura</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 2.75rem; padding: 0 1rem; border: none; border-radius: 0.5rem; background: var(--color-primary, #5951BA); color: #fff; font-family: Outfit, sans-serif; font-size: 0.875rem; font-weight: 500; transition: background-color 150ms; cursor: pointer; } .ds-btn-primary:hover { background: var(--color-primary-hover, #484295); } .ds-btn-primary:focus-visible { outline: 2px solid #5951BA; outline-offset: 2px; box-shadow: 0 0 0 4px color-mix(in srgb, #5951BA 24%, transparent); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outline action on white paper.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Annulla</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; height: 2.75rem; padding: 0 1rem; border: 1px solid var(--color-border, #E1E5EC); border-radius: 0.5rem; background: #fff; color: var(--color-content, #172033); font-family: Outfit, sans-serif; font-size: 0.875rem; font-weight: 500; transition: border-color 150ms, background-color 150ms; cursor: pointer; } .ds-btn-secondary:hover { border-color: var(--color-border-strong, #C7CED9); background: var(--color-surface-muted, #F3F5F8); } .ds-btn-secondary:focus-visible { outline: 2px solid #5951BA; outline-offset: 2px; }"
+    },
+    {
+      "name": "Settings Panel",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White bordered panel for settings and form sections.",
+      "html": "<article class=\"ds-panel\"><h2 class=\"ds-panel-title\">Dati pagamento</h2><p class=\"ds-panel-body\">Protocollo, scadenze e note F24.</p></article>",
+      "css": ".ds-panel { background: #fff; border: 1px solid var(--color-border, #E1E5EC); border-radius: 0.875rem; padding: 1.25rem; box-shadow: none; font-family: Outfit, sans-serif; } .ds-panel-title { margin: 0; font-size: 1rem; font-weight: 700; color: #172033; } .ds-panel-body { margin: 0.5rem 0 0; font-size: 0.875rem; color: #526077; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "h-11 field with strong border and indigo focus.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Protocollo</span><input class=\"ds-input\" type=\"text\" placeholder=\"Numero protocollo\" /></label>",
+      "css": ".ds-field { display: block; font-family: Outfit, sans-serif; } .ds-field-label { display: block; font-size: 0.875rem; font-weight: 500; color: #172033; } .ds-input { display: block; width: 100%; height: 2.75rem; margin-top: 0.375rem; padding: 0 0.75rem; border: 1px solid var(--color-border-strong, #C7CED9); border-radius: 0.5rem; background: #fff; color: #172033; font-size: 0.875rem; } .ds-input:focus { outline: none; border-color: #5951BA; box-shadow: 0 0 0 3px color-mix(in srgb, #5951BA 18%, transparent); }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Soft semantic status pill.",
+      "html": "<span class=\"ds-badge ds-badge-warning\">Scade tra 7 giorni</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 9999px; padding: 0.25rem 0.5rem; font-family: Outfit, sans-serif; font-size: 0.75rem; font-weight: 600; line-height: 1rem; white-space: nowrap; } .ds-badge-warning { background: color-mix(in oklab, #A15C07 10%, transparent); color: #A15C07; }"
+    },
+    {
+      "name": "Info Alert",
+      "kind": "custom",
+      "refersTo": "alert",
+      "description": "Soft bordered status banner.",
+      "html": "<div class=\"ds-alert\" role=\"status\"><strong class=\"ds-alert-title\">Inizia dalla tua prima fattura</strong><p class=\"ds-alert-body\">Crea un contatto e poi registra una fattura.</p></div>",
+      "css": ".ds-alert { display: flex; flex-direction: column; gap: 0.25rem; padding: 1rem; border: 1px solid color-mix(in srgb, #175CD3 30%, transparent); border-radius: 0.5rem; background: color-mix(in srgb, #175CD3 10%, transparent); color: #175CD3; font-family: Outfit, sans-serif; font-size: 0.875rem; } .ds-alert-title { font-weight: 600; } .ds-alert-body { margin: 0; opacity: 0.9; }"
+    },
+    {
+      "name": "Sidebar Nav",
+      "kind": "nav",
+      "refersTo": "sidebar",
+      "description": "Navy structural shell with indigo active accent.",
+      "html": "<nav class=\"ds-sidebar\"><a class=\"ds-nav-item\" href=\"#\">Documenti</a><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\">Oggi</a></nav>",
+      "css": ".ds-sidebar { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.75rem; background: #10213D; color: #F8FAFC; font-family: Outfit, sans-serif; } .ds-nav-item { display: block; padding: 0.625rem 0.75rem; border-radius: 0.5rem; color: #AAB5C4; text-decoration: none; font-size: 0.875rem; font-weight: 500; } .ds-nav-item:hover { color: #F8FAFC; } .ds-nav-item-active { background: #27345E; color: #F8FAFC; box-shadow: inset 2px 0 0 #B9B3F0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Cool Ledger Desk",
+    "overview": "Fatturino is an Operate-mode product UI: dense enough for daily fiscal work, calm enough to trust with real money and deadlines. Structure lives in cool navy and misty neutrals; indigo appears only when the user can act. Surfaces stay flat and bordered; elevation is reserved for overlays that interrupt the desk.\n\nThe system rejects decorative gradients, dark-mode chrome for the main canvas, and purple-on-white marketing tropes. Tailkit may inspire patterns, but the official kit is the Blade components under resources/views/components plus tokens in resources/css/fatturino.css.",
+    "keyCharacteristics": [
+      "Light canvas with dark navy sidebar (structural, not interactive purple)",
+      "Indigo reserved for CTAs, focus, and active accents",
+      "Flat cards with hairline borders; shadows only on modals/elevated overlays",
+      "Outfit sans throughout; status color is semantic, never decorative",
+      "List shell pattern: page summary + raw table + mobile cards"
+    ],
+    "rules": [
+      {
+        "name": "The Interaction-Only Indigo Rule",
+        "body": "Indigo is for interaction (CTA, focus, active accent). Do not paint large structural surfaces indigo.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Status Rule",
+        "body": "Green/amber/red/blue communicate state (paid, due, error, info). Never use them as brand decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The One-Family Rule",
+        "body": "Stay on Outfit. Do not introduce a second display face for app chrome.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Resting surfaces are flat. Shadows appear only for transient overlays (modals, elevated menus).",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Blade kit components (x-button, x-alert, x-settings.panel, list-shell pieces) before inventing new chrome.",
+      "Do keep indigo rare and actionable; structure stays navy/mist/white.",
+      "Do keep list pages as summary + table + mobile cards.",
+      "Do preserve keyboard focus rings and Italian operational copy density.",
+      "Do treat Tailkit as inspiration only — no package, no catalog IDs in the repo."
+    ],
+    "donts": [
+      "Don't paint the canvas or large cards indigo/purple.",
+      "Don't add resting drop shadows to cards or KPI strips.",
+      "Don't reintroduce Mary-era partials/*-actions or unused dashboard widgets.",
+      "Don't change routes, data, or business logic during UI work (PRODUCT constraint).",
+      "Don't invent a second typeface or dark-mode app shell."
+    ]
+  }
+}

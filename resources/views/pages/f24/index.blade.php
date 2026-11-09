@@ -146,50 +146,48 @@ new #[Layout('layouts::app')] class extends Component {
 
 @php
     $fieldClass = 'input-field mt-1.5 block w-full';
+    $hasFilters = $status !== '' || $category !== '';
 @endphp
 
 <section class="space-y-5">
-    <section class="overflow-hidden rounded-xl border border-border bg-border" aria-labelledby="f24-summary-title">
-        <div class="flex flex-col gap-4 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div>
-                <p class="text-xs font-medium text-content-muted">{{ __('app.f24.summary') }}</p>
-                <h2 id="f24-summary-title" class="mt-1 text-base font-semibold text-content">{{ __('app.f24.summary_for_year', ['year' => $fiscalYear]) }}</h2>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <x-app-link :href="route('f24.create')" class="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.f24.new') }}</x-app-link>
-                <x-app-link :href="route('f24.import')" class="inline-flex h-11 shrink-0 items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-medium text-content transition hover:border-border-strong hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.f24.import_pdf') }}</x-app-link>
-            </div>
-        </div>
-        <dl class="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">{{ __('app.f24.paid_ytd') }}</dt>
-                <dd class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $this->currency($summary['paid_total_cents']) }}</dd>
-            </div>
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">{{ __('app.f24.planned_total') }}</dt>
-                <dd class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $this->currency($summary['planned_total_cents']) }}</dd>
-            </div>
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">{{ __('app.f24.overdue_total') }}</dt>
-                <dd @class(['mt-1 text-xl font-semibold tabular-nums', $summary['overdue_total_cents'] > 0 ? 'text-danger' : 'text-content'])>{{ $this->currency($summary['overdue_total_cents']) }}</dd>
-            </div>
-            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
-                <dt class="text-xs font-medium text-content-muted">{{ __('app.f24.iva_summary') }}</dt>
-                <dd class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $this->currency($summary['iva_paid_cents'] + $summary['iva_planned_cents']) }}</dd>
-                <p class="mt-1 text-xs text-content-muted">
-                    {{ __('app.f24.iva_paid') }}: <span class="font-medium tabular-nums text-content">{{ $this->currency($summary['iva_paid_cents']) }}</span>
-                    · {{ __('app.f24.iva_planned') }}: <span class="font-medium tabular-nums text-content">{{ $this->currency($summary['iva_planned_cents']) }}</span>
-                </p>
-            </div>
-        </dl>
+    <x-page-summary
+        :eyebrow="__('app.f24.summary')"
+        :title="__('app.f24.summary_for_year', ['year' => $fiscalYear])"
+        title-id="f24-summary-title"
+        metrics-class="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-4"
+    >
+        <x-slot:actions>
+            <x-button :label="__('app.f24.new')" :link="route('f24.create')" size="cta" class="shrink-0" />
+            <x-button :label="__('app.f24.import_pdf')" :link="route('f24.import')" variant="secondary" size="cta" class="shrink-0" />
+        </x-slot:actions>
+
+        <x-page-summary.stat :label="__('app.f24.paid_ytd')" :value="$this->currency($summary['paid_total_cents'])" />
+        <x-page-summary.stat :label="__('app.f24.planned_total')" :value="$this->currency($summary['planned_total_cents'])" />
+        <x-page-summary.stat
+            :label="__('app.f24.overdue_total')"
+            :value="$this->currency($summary['overdue_total_cents'])"
+            :value-class="$summary['overdue_total_cents'] > 0 ? 'text-danger' : 'text-content'"
+        />
+        <x-page-summary.stat
+            :label="__('app.f24.iva_summary')"
+            :value="$this->currency($summary['iva_paid_cents'] + $summary['iva_planned_cents'])"
+        >
+            <p class="mt-1 text-xs text-content-muted">
+                {{ __('app.f24.iva_paid') }}: <span class="font-medium tabular-nums text-content">{{ $this->currency($summary['iva_paid_cents']) }}</span>
+                · {{ __('app.f24.iva_planned') }}: <span class="font-medium tabular-nums text-content">{{ $this->currency($summary['iva_planned_cents']) }}</span>
+            </p>
+        </x-page-summary.stat>
+
         @if($summary['by_category'] !== [])
-            <div class="flex flex-wrap gap-3 border-t border-border bg-white px-4 py-3 text-xs text-content-muted sm:px-5">
-                @foreach($summary['by_category'] as $cat => $amount)
-                    <span><span class="font-medium text-content">{{ \App\Enums\F24Category::from($cat)->label() }}:</span> {{ $this->currency($amount) }}</span>
-                @endforeach
-            </div>
+            <x-slot:footer>
+                <div class="flex flex-wrap gap-3 border-t border-border bg-white px-4 py-3 text-xs text-content-muted sm:px-5">
+                    @foreach($summary['by_category'] as $cat => $amount)
+                        <span><span class="font-medium text-content">{{ \App\Enums\F24Category::from($cat)->label() }}:</span> {{ $this->currency($amount) }}</span>
+                    @endforeach
+                </div>
+            </x-slot:footer>
         @endif
-    </section>
+    </x-page-summary>
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div class="grid w-full flex-1 gap-3 sm:grid-cols-2">
@@ -214,15 +212,12 @@ new #[Layout('layouts::app')] class extends Component {
                 </select>
             </label>
         </div>
-        @if($status !== '' || $category !== '')
-            <button type="button" wire:click="resetFilters" class="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-content-muted transition hover:bg-surface-muted hover:text-content focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.reset') }}</button>
+        @if($hasFilters)
+            <x-button :label="__('app.common.reset')" wire:click="resetFilters" variant="ghost" size="cta" />
         @endif
     </div>
 
-    <div wire:loading.flex wire:target="status,category" class="hidden items-center gap-2 rounded-lg border border-info/20 bg-info-bg px-4 py-3 text-sm text-info" role="status">
-        <span class="size-4 animate-pulse rounded bg-current/30" aria-hidden="true"></span>
-        {{ __('app.f24.updating') }}
-    </div>
+    <x-loading-banner target="status,category">{{ __('app.f24.updating') }}</x-loading-banner>
 
     <div class="hidden overflow-x-auto border-y border-border bg-white lg:block">
         <table class="min-w-full text-left text-sm">
@@ -270,18 +265,20 @@ new #[Layout('layouts::app')] class extends Component {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-5 py-14 text-center">
-                            <x-icon name="o-inbox" class="mx-auto size-8 text-content-muted" aria-hidden="true" />
-                            <p class="mt-3 text-sm font-medium text-content">{{ $status !== '' || $category !== '' ? __('app.f24.empty_filtered') : __('app.f24.empty_title') }}</p>
-                            @if($status !== '' || $category !== '')
-                                <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.reset') }}</button>
-                            @else
-                                <p class="mt-1 text-sm text-content-muted">{{ __('app.f24.empty_body') }}</p>
-                                <div class="mt-4 flex flex-wrap justify-center gap-2">
-                                    <x-app-link :href="route('f24.create')" class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition hover:bg-primary-hover">{{ __('app.f24.new') }}</x-app-link>
-                                    <x-app-link :href="route('f24.import')" class="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-3 text-sm font-medium text-content transition hover:bg-surface-muted">{{ __('app.f24.import_pdf') }}</x-app-link>
-                                </div>
-                            @endif
+                        <td colspan="6">
+                            <x-empty-state
+                                :title="$hasFilters ? __('app.f24.empty_filtered') : __('app.f24.empty_title')"
+                                :body="$hasFilters ? null : __('app.f24.empty_body')"
+                            >
+                                @if($hasFilters)
+                                    <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.reset') }}</button>
+                                @else
+                                    <x-slot:actions>
+                                        <x-button :label="__('app.f24.new')" :link="route('f24.create')" size="md" />
+                                        <x-button :label="__('app.f24.import_pdf')" :link="route('f24.import')" variant="secondary" size="md" />
+                                    </x-slot:actions>
+                                @endif
+                            </x-empty-state>
                         </td>
                     </tr>
                 @endforelse
@@ -332,19 +329,19 @@ new #[Layout('layouts::app')] class extends Component {
                 </div>
             </article>
         @empty
-            <div class="px-5 py-14 text-center">
-                <x-icon name="o-inbox" class="mx-auto size-8 text-content-muted" aria-hidden="true" />
-                <p class="mt-3 text-sm font-medium text-content">{{ $status !== '' || $category !== '' ? __('app.f24.empty_filtered') : __('app.f24.empty_title') }}</p>
-                @if($status !== '' || $category !== '')
+            <x-empty-state
+                :title="$hasFilters ? __('app.f24.empty_filtered') : __('app.f24.empty_title')"
+                :body="$hasFilters ? null : __('app.f24.empty_body')"
+            >
+                @if($hasFilters)
                     <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.reset') }}</button>
                 @else
-                    <p class="mt-1 text-sm text-content-muted">{{ __('app.f24.empty_body') }}</p>
-                    <div class="mt-4 flex flex-wrap justify-center gap-2">
-                        <x-app-link :href="route('f24.create')" class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition hover:bg-primary-hover">{{ __('app.f24.new') }}</x-app-link>
-                        <x-app-link :href="route('f24.import')" class="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-3 text-sm font-medium text-content transition hover:bg-surface-muted">{{ __('app.f24.import_pdf') }}</x-app-link>
-                    </div>
+                    <x-slot:actions>
+                        <x-button :label="__('app.f24.new')" :link="route('f24.create')" size="md" />
+                        <x-button :label="__('app.f24.import_pdf')" :link="route('f24.import')" variant="secondary" size="md" />
+                    </x-slot:actions>
                 @endif
-            </div>
+            </x-empty-state>
         @endforelse
     </div>
 

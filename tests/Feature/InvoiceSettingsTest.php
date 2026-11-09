@@ -20,7 +20,7 @@ test('invoice settings render editable controls and non-rf19 options when permit
     app(CompanySettings::class)->fill(['company_fiscal_regime' => 'RF01'])->save();
 
     Livewire::test('pages::settings.invoice')
-        ->assertSee("Ritenuta d'acconto", false)
+        ->assertSee("Ritenuta d'acconto")
         ->assertSee('Split payment predefinito')
         ->assertSee('Salva impostazioni')
         ->assertDontSee('Configurazione in sola lettura.');

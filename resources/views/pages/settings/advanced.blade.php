@@ -39,5 +39,88 @@ new #[Layout('layouts::app')] class extends Component {
     }
 };
 ?>
-<x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Diagnostica</p><h1 class="text-lg font-bold text-content">Avanzate</h1></div></x-slot:header>
-<section class="space-y-6"><article class="rounded-xl border border-warning/30 bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Riconcilia invii SDI</h2><p class="mt-2 text-sm text-content-muted">Cerca su OpenAPI gli invii già accettati ma non finalizzati localmente. Non invia nuovi documenti allo SDI.</p><button wire:click="reconcileOutboundSends" wire:loading.attr="disabled" wire:target="reconcileOutboundSends" type="button" class="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"><span wire:loading.remove wire:target="reconcileOutboundSends">Avvia riconciliazione</span><span wire:loading wire:target="reconcileOutboundSends">Riconciliazione in corso...</span></button>@if($reconciliationError)<div class="mt-4 rounded-md border border-danger/20 bg-danger-bg p-3 text-sm text-danger">{{ $reconciliationError }}</div>@endif @if($reconciliationOutput)<pre class="mt-4 max-h-72 overflow-auto rounded-md bg-surface-muted p-3 text-xs text-content">{{ $reconciliationOutput }}</pre>@endif</article><article class="overflow-hidden rounded-xl border border-border-light bg-white shadow-[var(--shadow-card)]"><div class="border-b border-border-light p-5"><h2 class="font-bold">Eventi in ingresso</h2></div><div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-surface-muted text-xs uppercase text-content-muted"><tr><th class="px-4 py-3">Evento</th><th class="px-4 py-3">Stato</th><th class="px-4 py-3">Tentativi</th><th class="px-4 py-3">Data</th><th class="px-4 py-3">Errore</th></tr></thead><tbody class="divide-y divide-border-light">@forelse($inboundLogs as $log)<tr><td class="px-4 py-3"><p class="font-semibold">{{ $log->event_name }}</p><p class="font-mono text-xs text-content-muted">{{ $log->source_uuid }}</p></td><td class="px-4 py-3">{{ $log->processing_status }}</td><td class="px-4 py-3">{{ $log->attempts }}</td><td class="px-4 py-3">{{ $log->created_at?->format('d/m/Y H:i') }}</td><td class="px-4 py-3 text-danger">{{ $log->error_message }}</td></tr>@empty<tr><td colspan="5" class="px-4 py-10 text-center text-content-muted">Nessun evento registrato.</td></tr>@endforelse</tbody></table></div></article><article class="overflow-hidden rounded-xl border border-border-light bg-white shadow-[var(--shadow-card)]"><div class="border-b border-border-light p-5"><h2 class="font-bold">Eventi in uscita</h2></div><div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-surface-muted text-xs uppercase text-content-muted"><tr><th class="px-4 py-3">Evento</th><th class="px-4 py-3">Documento</th><th class="px-4 py-3">Stato</th><th class="px-4 py-3">Data</th><th class="px-4 py-3">Messaggio</th></tr></thead><tbody class="divide-y divide-border-light">@forelse($outboundLogs as $log)<tr><td class="px-4 py-3">{{ $log->event_type }}</td><td class="px-4 py-3">{{ $log->fiscal_document_id }}</td><td class="px-4 py-3">{{ $log->status }}</td><td class="px-4 py-3">{{ $log->created_at?->format('d/m/Y H:i') }}</td><td class="px-4 py-3">{{ $log->message }}</td></tr>@empty<tr><td colspan="5" class="px-4 py-10 text-center text-content-muted">Nessun evento registrato.</td></tr>@endforelse</tbody></table></div></article></section>
+<x-slot:header>
+    <div>
+        <p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Diagnostica</p>
+        <h1 class="text-lg font-bold text-content">Avanzate</h1>
+    </div>
+</x-slot:header>
+
+<section class="space-y-6">
+    <x-settings.panel title="Riconcilia invii SDI" subtitle="Cerca su OpenAPI gli invii già accettati ma non finalizzati localmente. Non invia nuovi documenti allo SDI." tone="warning">
+        <x-button label="Avvia riconciliazione" wire:click="reconcileOutboundSends" size="cta" spinner="reconcileOutboundSends" />
+        @if($reconciliationError)
+            <x-alert variant="danger" class="mt-4">{{ $reconciliationError }}</x-alert>
+        @endif
+        @if($reconciliationOutput)
+            <pre class="mt-4 max-h-72 overflow-auto rounded-lg bg-surface-muted p-3 text-xs text-content">{{ $reconciliationOutput }}</pre>
+        @endif
+    </x-settings.panel>
+
+    <x-settings.panel flush>
+        <div class="border-b border-border-light p-5">
+            <h2 class="text-base font-bold text-content">Eventi in ingresso</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+                <thead class="border-b border-border bg-surface-muted text-content-muted">
+                    <tr>
+                        <th class="px-4 py-3 text-xs font-medium">Evento</th>
+                        <th class="px-4 py-3 text-xs font-medium">Stato</th>
+                        <th class="px-4 py-3 text-xs font-medium">Tentativi</th>
+                        <th class="px-4 py-3 text-xs font-medium">Data</th>
+                        <th class="px-4 py-3 text-xs font-medium">Errore</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    @forelse($inboundLogs as $log)
+                        <tr>
+                            <td class="px-4 py-3">
+                                <p class="font-semibold text-content">{{ $log->event_name }}</p>
+                                <p class="font-mono text-xs text-content-muted">{{ $log->source_uuid }}</p>
+                            </td>
+                            <td class="px-4 py-3">{{ $log->processing_status }}</td>
+                            <td class="px-4 py-3">{{ $log->attempts }}</td>
+                            <td class="px-4 py-3">{{ $log->created_at?->format('d/m/Y H:i') }}</td>
+                            <td class="px-4 py-3 text-danger">{{ $log->error_message }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="px-4 py-10 text-center text-content-muted">Nessun evento registrato.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </x-settings.panel>
+
+    <x-settings.panel flush>
+        <div class="border-b border-border-light p-5">
+            <h2 class="text-base font-bold text-content">Eventi in uscita</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+                <thead class="border-b border-border bg-surface-muted text-content-muted">
+                    <tr>
+                        <th class="px-4 py-3 text-xs font-medium">Evento</th>
+                        <th class="px-4 py-3 text-xs font-medium">Documento</th>
+                        <th class="px-4 py-3 text-xs font-medium">Stato</th>
+                        <th class="px-4 py-3 text-xs font-medium">Data</th>
+                        <th class="px-4 py-3 text-xs font-medium">Messaggio</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    @forelse($outboundLogs as $log)
+                        <tr>
+                            <td class="px-4 py-3">{{ $log->event_type }}</td>
+                            <td class="px-4 py-3">{{ $log->fiscal_document_id }}</td>
+                            <td class="px-4 py-3">{{ $log->status }}</td>
+                            <td class="px-4 py-3">{{ $log->created_at?->format('d/m/Y H:i') }}</td>
+                            <td class="px-4 py-3">{{ $log->message }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="px-4 py-10 text-center text-content-muted">Nessun evento registrato.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </x-settings.panel>
+</section>

@@ -186,7 +186,8 @@ it('removes the legacy fetch implementation and JSON UI endpoints', function () 
 
     expect($page)->not->toContain('fetch(')
         ->and($page)->not->toContain('window.location.reload')
-        ->and($page)->toContain('wire:loading.attr="disabled"');
+        ->and($page)->toContain('spinner=')
+        ->and($page)->toContain('wire:click');
 
     $this->postJson('/api/v1/openapi/save')->assertNotFound();
     $this->postJson('/api/v1/openapi/activate')->assertNotFound();

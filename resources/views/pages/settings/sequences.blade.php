@@ -145,49 +145,86 @@ $this->typeLabel($sequence->type)
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Numerazione documenti</p><h1 class="text-lg font-bold text-content">Sequenze</h1></div></x-slot:header>
 
 <section class="space-y-6">
-    @if(session('success'))<div class="rounded-md border border-success/20 bg-success-bg p-4 text-sm text-success">{{ session('success') }}</div>@endif
-    @error('sequence')<div class="rounded-md border border-danger/20 bg-danger-bg p-4 text-sm text-danger">{{ $message }}</div>@enderror
+    @if(session('success'))
+        <x-alert variant="success">{{ session('success') }}</x-alert>
+    @endif
+    @error('sequence')
+        <x-alert variant="danger">{{ $message }}</x-alert>
+    @enderror
 
-    <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
-        <h2 class="font-bold">{{ $editingId ? 'Modifica sezionale' : 'Nuovo sezionale' }}</h2>
+    <x-settings.panel :title="$editingId ? 'Modifica sezionale' : 'Nuovo sezionale'">
         @if($canManage)
-            <form wire:submit="{{ $editingId ? 'update' : 'storeSequence' }}" class="mt-4 grid gap-4 md:grid-cols-4">
-                <label class="block text-sm font-semibold text-content">Nome<input wire:model="name" class="mt-2 block w-full rounded-md border border-border px-3 py-2" type="text">@error('name')<span class="mt-1 block text-xs text-danger">{{ $message }}</span>@enderror</label>
-                <label class="block text-sm font-semibold text-content">Tipo<x-select wire:model="type" :disabled="$editingId && Sequence::find($editingId)?->is_system" :options="$this->typeOptions()" option-value="value" option-label="label" />@error('type')<span class="mt-1 block text-xs text-danger">{{ $message }}</span>@enderror</label>
-                <label class="block text-sm font-semibold text-content">Formato<input wire:model="pattern" class="mt-2 block w-full rounded-md border border-border px-3 py-2 font-mono" type="text">@error('pattern')<span class="mt-1 block text-xs text-danger">{{ $message }}</span>@enderror</label>
-                <div class="flex items-end gap-2"><button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-bold text-white" wire:loading.attr="disabled">{{ $editingId ? 'Aggiorna' : 'Crea' }}</button>@if($editingId)<button wire:click="cancel" type="button" class="rounded-md border border-border px-4 py-2 text-sm font-semibold">Annulla</button>@endif</div>
+            <form wire:submit="{{ $editingId ? 'update' : 'storeSequence' }}" class="grid gap-4 md:grid-cols-4">
+                <x-settings.input wire:model="name" label="Nome" />
+                <label class="block text-sm font-medium text-content">
+                    Tipo
+                    <x-select wire:model="type" :disabled="$editingId && Sequence::find($editingId)?->is_system" :options="$this->typeOptions()" option-value="value" option-label="label" />
+                    @error('type')<span class="mt-1 block text-xs text-danger">{{ $message }}</span>@enderror
+                </label>
+                <x-settings.input wire:model="pattern" label="Formato" class="font-mono" />
+                <div class="flex items-end gap-2">
+                    <x-button type="submit" :label="$editingId ? 'Aggiorna' : 'Crea'" size="cta" :spinner="$editingId ? 'update' : 'storeSequence'" />
+                    @if($editingId)
+                        <x-button label="Annulla" wire:click="cancel" variant="secondary" size="cta" />
+                    @endif
+                </div>
             </form>
         @else
-            <p class="mt-2 text-sm text-content-muted">La configurazione è in sola lettura in questa modalità.</p>
+            <p class="text-sm text-content-muted">La configurazione è in sola lettura in questa modalità.</p>
         @endif
-    </article>
+    </x-settings.panel>
 
-    <article class="overflow-hidden rounded-xl border border-border-light bg-white shadow-[var(--shadow-card)]">
+    <x-settings.panel flush>
         <div class="overflow-x-auto">
             <table class="min-w-full text-left text-sm">
-                <thead class="bg-surface-muted text-xs uppercase tracking-wide text-content-muted"><tr><th class="px-5 py-3">Nome</th><th class="px-5 py-3">Formato</th><th class="px-5 py-3">Tipo</th><th class="px-5 py-3 text-right">Azioni</th></tr></thead>
-                <tbody class="divide-y divide-border-light">
+                <thead class="border-b border-border bg-surface-muted text-content-muted">
+                    <tr>
+                        <th class="px-5 py-3 text-xs font-medium">Nome</th>
+                        <th class="px-5 py-3 text-xs font-medium">Formato</th>
+                        <th class="px-5 py-3 text-xs font-medium">Tipo</th>
+                        <th class="px-5 py-3 text-right text-xs font-medium">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
                     @forelse($sequences as $sequence)
-                        <tr>
-                            <td class="px-5 py-4 font-semibold">{{ $sequence->name }} @if($sequence->is_system)<x-badge value="Sistema" variant="neutral" class="ml-2 align-middle" />@endif @if($this->isDefault($sequence))<x-badge value="Predefinito" variant="primary" class="ml-2 align-middle" />@endif</td>
+                        <tr class="transition-colors hover:bg-surface-muted/70">
+                            <td class="px-5 py-4 font-semibold text-content">
+                                {{ $sequence->name }}
+                                @if($sequence->is_system)<x-badge value="Sistema" variant="neutral" class="ml-2 align-middle" />@endif
+                                @if($this->isDefault($sequence))<x-badge value="Predefinito" variant="primary" class="ml-2 align-middle" />@endif
+                            </td>
                             <td class="px-5 py-4 font-mono text-content-muted">{{ $sequence->pattern }}</td>
                             <td class="px-5 py-4 text-content-muted">{{ $this->typeLabel($sequence->type) }}</td>
                             <td class="px-5 py-4 text-right">
                                 @if($canManage)
-                                    @if(! $this->isDefault($sequence) && app(DocumentSequenceResolver::class)->settingKey($sequence->type))<button wire:click="setDefault({{ $sequence->id }})" class="text-sm font-semibold text-primary">Imposta predefinito</button>@endif
+                                    @if(! $this->isDefault($sequence) && app(DocumentSequenceResolver::class)->settingKey($sequence->type))
+                                        <button wire:click="setDefault({{ $sequence->id }})" type="button" class="text-sm font-semibold text-primary">Imposta predefinito</button>
+                                    @endif
                                     @if(! $this->isDefault($sequence))
-                                        <button wire:click="edit({{ $sequence->id }})" class="ml-4 text-sm font-semibold text-primary">Modifica</button>
-                                        @if(! $sequence->is_system)<button wire:click="delete({{ $sequence->id }})" wire:confirm="Eliminare il sezionale '{{ $sequence->name }}'?" class="ml-4 text-sm font-semibold text-danger">Elimina</button>@endif
+                                        <button wire:click="edit({{ $sequence->id }})" type="button" class="ml-4 text-sm font-semibold text-primary">Modifica</button>
+                                        @if(! $sequence->is_system)
+                                            <button
+                                                type="button"
+                                                class="ml-4 text-sm font-semibold text-danger"
+                                                @click="$dispatch('confirm-dialog', { message: @js('Eliminare il sezionale \''.$sequence->name.'\'?'), callback: () => $wire.delete({{ $sequence->id }}) })"
+                                            >Elimina</button>
+                                        @endif
                                     @endif
                                 @endif
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="px-5 py-12 text-center text-sm text-content-muted">Nessun sezionale ancora creato.</td></tr>
+                        <tr>
+                            <td colspan="4">
+                                <x-empty-state class="py-12" title="Nessun sezionale ancora creato." />
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        @if($sequences->hasPages())<div class="border-t border-border-light px-5 py-4">{{ $sequences->links() }}</div>@endif
-    </article>
+        @if($sequences->hasPages())
+            <div class="border-t border-border-light px-5 py-4">{{ $sequences->links() }}</div>
+        @endif
+    </x-settings.panel>
 </section>

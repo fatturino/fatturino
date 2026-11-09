@@ -241,8 +241,13 @@
                     await this.$wire.$refresh();
                 } catch (error) { this.error = error.message; } finally { this.busy = false; }
             },
-            async deletePayment(entry) {
-                if (!window.confirm(`Eliminare questo ${this.paymentCopy().action}?`)) return;
+            deletePayment(entry) {
+                this.$dispatch('confirm-dialog', {
+                    message: `Eliminare questo ${this.paymentCopy().action}?`,
+                    callback: () => { void this.executeDeletePayment(entry); },
+                });
+            },
+            async executeDeletePayment(entry) {
                 this.busy = true; this.error = '';
                 try {
                     const data = await this.request(`${this.base}/${this.selectedDocument.id}/payments/${entry.id}`, { method: 'DELETE' });

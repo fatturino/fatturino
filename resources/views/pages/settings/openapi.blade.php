@@ -152,14 +152,88 @@ new #[Layout('layouts::app')] class extends Component {
 ?>
 <x-slot:header><div><p class="text-xs font-bold uppercase tracking-[.12em] text-content-muted">Configurazione</p><h1 class="text-lg font-bold text-content">Fatturazione elettronica</h1></div></x-slot:header>
 <section class="space-y-6">
-    @if($message)<div role="status" class="rounded-md border p-4 text-sm {{ $messageIsSuccess ? 'border-success/20 bg-success-bg text-success' : 'border-danger/20 bg-danger-bg text-danger' }}">{{ $message }}</div>@endif
-    <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]">
-        <div class="flex items-center justify-between"><div><h2 class="font-bold">Servizio OpenAPI</h2><p class="mt-1 text-sm text-content-muted">Codice destinatario: <strong>{{ $this->codiceDestinatario() }}</strong></p></div><x-badge :value="($demoMode || $activated) ? 'Attivo' : 'Non attivo'" :variant="($demoMode || $activated) ? 'success' : 'neutral'" /></div>
-        @if($managedByEnv || $demoMode)<p class="mt-4 text-sm text-content-muted">{{ $demoMode ? 'Modalità demo: servizio sempre attivo.' : 'Configurazione gestita dalle variabili d’ambiente.' }}</p>@else
-        <div class="mt-4 grid gap-4 md:grid-cols-2"><label class="block text-sm font-semibold">API token<input wire:model="apiToken" @disabled($activated) type="password" autocomplete="new-password" class="mt-2 block w-full rounded-md border border-border px-3 py-2"><span class="mt-1 block text-xs font-normal text-content-muted">Lascia vuoto per mantenere quello attuale.</span></label><label class="flex items-center gap-2 self-end text-sm"><input wire:model.live="sandbox" @disabled($activated) type="checkbox"> Modalità sandbox</label><label class="block text-sm font-semibold">Codice SDI<input wire:model="companySdiCode" @disabled($activated) class="mt-2 block w-full rounded-md border border-border px-3 py-2"></label><label class="block text-sm font-semibold">URL webhook base<input wire:model="webhookUrl" @disabled($activated) class="mt-2 block w-full rounded-md border border-border px-3 py-2" placeholder="https://mio-dominio.it"></label></div>
+    @if($message)
+        <x-alert :variant="$messageIsSuccess ? 'success' : 'danger'">{{ $message }}</x-alert>
+    @endif
+
+    <x-settings.panel>
+        <x-slot:heading>
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-base font-bold text-content">Servizio OpenAPI</h2>
+                    <p class="mt-1 text-sm text-content-muted">Codice destinatario: <strong>{{ $this->codiceDestinatario() }}</strong></p>
+                </div>
+                <x-badge :value="($demoMode || $activated) ? 'Attivo' : 'Non attivo'" :variant="($demoMode || $activated) ? 'success' : 'neutral'" />
+            </div>
+        </x-slot:heading>
+
+        @if($managedByEnv || $demoMode)
+            <p class="text-sm text-content-muted">{{ $demoMode ? 'Modalità demo: servizio sempre attivo.' : 'Configurazione gestita dalle variabili d’ambiente.' }}</p>
+        @else
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <x-settings.input wire:model="apiToken" type="password" autocomplete="new-password" :disabled="$activated" label="API token" />
+                    <p class="mt-1 text-xs text-content-muted">Lascia vuoto per mantenere quello attuale.</p>
+                </div>
+                <label class="flex items-center gap-2 self-end text-sm text-content">
+                    <input wire:model.live="sandbox" @disabled($activated) type="checkbox" class="size-4 rounded border-border text-primary focus:ring-primary/20">
+                    Modalità sandbox
+                </label>
+                <x-settings.input wire:model="companySdiCode" :disabled="$activated" label="Codice SDI" />
+                <x-settings.input wire:model="webhookUrl" :disabled="$activated" label="URL webhook base" placeholder="https://mio-dominio.it" />
+            </div>
         @endif
-        @if(app(EnvironmentCapabilities::class)->can('edit-sdi-settings'))<div class="mt-5 flex flex-wrap gap-2"><button wire:click="checkConnection" wire:loading.attr="disabled" wire:target="checkConnection" type="button" class="rounded-md border border-border px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"><span wire:loading.remove wire:target="checkConnection">Verifica connessione</span><span wire:loading wire:target="checkConnection">Verifica in corso...</span></button>@if(! $activated && ! $managedByEnv && ! $demoMode)<button wire:click="save" wire:loading.attr="disabled" wire:target="save" type="button" class="rounded-md border border-border px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"><span wire:loading.remove wire:target="save">Salva</span><span wire:loading wire:target="save">Salvataggio...</span></button>@endif@if(! $activated && ! $demoMode)<button wire:click="activate" wire:loading.attr="disabled" wire:target="activate" type="button" class="rounded-md bg-primary px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"><span wire:loading.remove wire:target="activate">Attiva</span><span wire:loading wire:target="activate">Attivazione...</span></button>@endif@if($activated && ! $demoMode)<button wire:click="deactivate" wire:confirm="Sei sicuro di voler disattivare il servizio?" wire:loading.attr="disabled" wire:target="deactivate" type="button" class="rounded-md bg-danger px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"><span wire:loading.remove wire:target="deactivate">Disattiva</span><span wire:loading wire:target="deactivate">Disattivazione...</span></button>@endif</div>@endif
-    </article>
-    <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Webhook</h2><p class="mt-2 text-sm text-content-muted">Callback: <code>{{ $webhookCallbackUrl }}</code></p><p class="mt-2 text-sm {{ $hasWebhookSecret ? 'text-success' : 'text-content-muted' }}">{{ $hasWebhookSecret ? 'Webhook configurato.' : 'Webhook non configurato.' }}</p>@if($sandbox)<div class="mt-4 border-t pt-4"><p class="text-sm font-semibold">Simulazione sandbox</p><div class="mt-3 flex flex-wrap gap-2"><x-select wire:model="simulationType" :options="['supplier-invoice' => 'Supplier invoice', 'customer-notification' => 'Customer notification', 'customer-invoice' => 'Customer invoice']" /><input wire:model="invoiceUuid" class="rounded-md border border-border px-3 py-2 text-sm" placeholder="Invoice UUID (opzionale)"><button wire:click="simulateWebhook" wire:loading.attr="disabled" wire:target="simulateWebhook" type="button" class="rounded-md border border-border px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"><span wire:loading.remove wire:target="simulateWebhook">Invia simulazione</span><span wire:loading wire:target="simulateWebhook">Invio...</span></button></div>@error('simulationType')<p class="mt-2 text-sm text-danger">{{ $message }}</p>@enderror @error('invoiceUuid')<p class="mt-2 text-sm text-danger">{{ $message }}</p>@enderror</div>@endif</article>
-    <article class="rounded-xl border border-border-light bg-white p-5 shadow-[var(--shadow-card)]"><h2 class="font-bold">Conservazione digitale</h2>@if($conservationAcknowledged)<p class="mt-2 text-sm text-success">Obbligo di conservazione preso in carico.</p>@else<p class="mt-2 text-sm text-content-muted">Le fatture elettroniche devono essere conservate per dieci anni.</p><div class="mt-4 flex gap-2"><x-app-link href="https://ivaservizi.agenziaentrate.gov.it" external target="_blank" rel="noopener noreferrer" class="rounded-md border border-border px-4 py-2 text-sm font-semibold">Apri Agenzia Entrate</x-app-link><button wire:click="acknowledgeConservation" wire:loading.attr="disabled" wire:target="acknowledgeConservation" type="button" class="rounded-md bg-primary px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"><span wire:loading.remove wire:target="acknowledgeConservation">Ho preso visione</span><span wire:loading wire:target="acknowledgeConservation">Aggiornamento...</span></button></div>@endif</article>
+
+        @if(app(EnvironmentCapabilities::class)->can('edit-sdi-settings'))
+            <div class="mt-5 flex flex-wrap gap-2">
+                <x-button label="Verifica connessione" wire:click="checkConnection" variant="secondary" size="cta" spinner="checkConnection" />
+                @if(! $activated && ! $managedByEnv && ! $demoMode)
+                    <x-button label="Salva" wire:click="save" variant="secondary" size="cta" spinner="save" />
+                @endif
+                @if(! $activated && ! $demoMode)
+                    <x-button label="Attiva" wire:click="activate" size="cta" spinner="activate" />
+                @endif
+                @if($activated && ! $demoMode)
+                    <x-button
+                        label="Disattiva"
+                        variant="danger"
+                        size="cta"
+                        spinner="deactivate"
+                        @click="$dispatch('confirm-dialog', { message: 'Sei sicuro di voler disattivare il servizio?', callback: () => $wire.deactivate() })"
+                    />
+                @endif
+            </div>
+        @endif
+    </x-settings.panel>
+
+    <x-settings.panel title="Webhook">
+        <p class="text-sm text-content-muted">Callback: <code>{{ $webhookCallbackUrl }}</code></p>
+        <p @class(['mt-2 text-sm', $hasWebhookSecret ? 'text-success' : 'text-content-muted'])>
+            {{ $hasWebhookSecret ? 'Webhook configurato.' : 'Webhook non configurato.' }}
+        </p>
+        @if($sandbox)
+            <div class="mt-4 border-t border-border pt-4">
+                <p class="text-sm font-semibold text-content">Simulazione sandbox</p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <x-select wire:model="simulationType" :options="['supplier-invoice' => 'Supplier invoice', 'customer-notification' => 'Customer notification', 'customer-invoice' => 'Customer invoice']" />
+                    <x-settings.input wire:model="invoiceUuid" placeholder="Invoice UUID (opzionale)" />
+                    <x-button label="Invia simulazione" wire:click="simulateWebhook" variant="secondary" size="cta" spinner="simulateWebhook" />
+                </div>
+                @error('simulationType')<p class="mt-2 text-sm text-danger">{{ $message }}</p>@enderror
+                @error('invoiceUuid')<p class="mt-2 text-sm text-danger">{{ $message }}</p>@enderror
+            </div>
+        @endif
+    </x-settings.panel>
+
+    <x-settings.panel title="Conservazione digitale">
+        @if($conservationAcknowledged)
+            <p class="text-sm text-success">Obbligo di conservazione preso in carico.</p>
+        @else
+            <p class="text-sm text-content-muted">Le fatture elettroniche devono essere conservate per dieci anni.</p>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <x-button label="Apri Agenzia Entrate" link="https://ivaservizi.agenziaentrate.gov.it" variant="secondary" size="cta" target="_blank" rel="noopener noreferrer" />
+                <x-button label="Ho preso visione" wire:click="acknowledgeConservation" size="cta" spinner="acknowledgeConservation" />
+            </div>
+        @endif
+    </x-settings.panel>
 </section>
