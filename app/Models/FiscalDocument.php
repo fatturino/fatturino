@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\SdiStatus;
 use App\Enums\VatRate;
 use App\Services\Domain\SelfInvoiceDuplicateGuard;
+use App\Support\Ulid;
 use Carbon\CarbonInterface;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Support\Ulid;
 use Parental\HasChildren;
 
 class FiscalDocument extends Model
