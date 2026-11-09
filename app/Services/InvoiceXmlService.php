@@ -39,7 +39,7 @@ class InvoiceXmlService
 
     /**
      * Build SDI-compliant filename: CC + IdCodice + '_' + ProgressivoInvio + .xml
-     * e.g. IT04826950166_00001.xml
+     * e.g. IT01234567890_00001.xml
      */
     public function generateFileName(FiscalDocument $invoice): string
     {

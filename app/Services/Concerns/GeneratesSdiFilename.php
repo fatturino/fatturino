@@ -9,7 +9,7 @@ trait GeneratesSdiFilename
 {
     /**
      * Build an SDI-compliant filename: {CountryCode}{VatNumber}_{Progressive}.xml
-     * e.g. IT04826950166_00001.xml
+     * e.g. IT01234567890_00001.xml
      *
      * Rules:
      * - CountryCode: 2 uppercase letters from settings
