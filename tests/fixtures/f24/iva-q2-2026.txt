@@ -1,0 +1,105 @@
+                                                                                                                                                                                                                                                                                                                              Mod. F24
+
+                                                                                                                                                                                                      DELEGA IRREVOCABILE A:
+
+                                                                                          MODELLO DI PAGAMENTO
+                                                                                                                                                                                                                                   AGENZIA                                                                          PROV.
+                                                                                          UNIFICATO                                                                                                    PER L'ACCREDITO ALLA TESORERIA COMPETENTE
+                                                                                            CONTRIBUENTE
+                                                                                                                                                                                                                                                                                                  Barrare in caso di anno d'imposta
+                                                                                         CODICE FISCALE                                    XXXXXXXXXXXXXXXX                                                                                                                                        non coincidente con anno solare
+                                                                                                                                           cognome, denominazione o ragione sociale                                                                                                  nome
+
+
+
+
+Realizzato con tecnologia SMART FORMS - www.arthurinformatica.comper DATEV KOINOS srl
+                                                                                         DATI ANAGRAFICI                                   ROSSI                                                                                                                                     MARIO  
+                                                                                                                                           data di nascita                                        sesso (M o F)                         comune (o Stato estero) di nascita                                                               prov.
+                                                                                                                                                giorno        mese             anno
+                                                                                                                                                  15           03               1980                      M                               MILANO                                                                                          PV
+                                                                                                                                           comune                                                                                                  prov.      via e numero civico
+
+                                                                                        DOMICILIO FISCALE                                  ITALIA                                                                                               MI             Via ESEMPIO 1   
+
+                                                                                         CODICE FISCALE del coobbligato, erede,
+                                                                                         genitore, tutore o curatore fallimentare                                                                                                                                                                           codice identificativo
+
+                                                                                            SEZIONE ERARIO
+                                                                                                                                                                                             rateazione/regione/             anno di
+                                                                                                                                                                     codice tributo                                                              importi a debito versati        importi a credito compensati
+                                                                                                                                                                                                prov./mese rif.           riferimento
+                                                                                                                                                                               6032                                              2026                        2.314,76
+                                                                                         IMPOSTE DIRETTE - IVA
+                                                                                         RITENUTE ALLA FONTE
+                                                                                         ALTRI TRIBUTI ED INTERESSI
+
+                                                                                         codice ufficio                      codice atto                                                                                                                                                                        +/–      SALDO (A–B)
+                                                                                                                                                                                                            TOTALE                      A                    2.314,76 B                                         +            2.314,76
+                                                                                            SEZIONE INPS
+                                                                                         codice            causale                              matricola INPS/codice INPS/                           periodo di riferimento:
+                                                                                          sede            contributo                                   filiale azienda                  da        mm/aaaa       a        mm/aaaa                 importi a debito versati        importi a credito compensati
+
+
+
+
+                                                                                                                                                                                                                                                                                                                +/–      SALDO (C–D)
+                                                                                                                                                                                                            TOTALE                      C                                    D
+                                                                                            SEZIONE REGIONI
+                                                                                          codice                                                                                                rateazione/                  anno di
+                                                                                                                                                                     codice tributo                                                              importi a debito versati        importi a credito compensati
+                                                                                         regione                                                                                                 mese rif.                riferimento
+
+
+
+
+                                                                                                                                                                                                                                                                                                                +/–      SALDO (E–F)
+                                                                                                                                                                                                            TOTALE                      E                                    F
+                                                                                            SEZIONE IMU E ALTRI TRIBUTI LOCALI IDENTIFICATIVO OPERAZIONE
+                                                                                         codice ente /                 Immob.                       numero                                      rateazione/
+                                                                                                                        variati                    immobili          codice tributo                                    anno di riferimento       importi a debito versati        importi a credito compensati
+                                                                                        codice comune         Ravv.               Acc.    Saldo                                                  mese rif.
+
+
+
+
+                CONFORME AL DECRETO DIRETTORE AGENZIA DELLE ENTRATE 19/06/2013
+                                                                                                                                                                                                                                                                                                                +/–      SALDO (G–H)
+                                                                                                  detrazione                                                                                                TOTALE                      G                                    H
+                                                                                            SEZIONE ALTRI ENTI PREVIDENZIALI ED ASSICURATIVI
+                                                                                                                                                                                                         numero
+                                                                                                                                   codice sede                 codice ditta                           di riferimento
+                                                                                                                                                                                                                           causale               importi a debito versati        importi a credito compensati
+                                                                                                                                                                                      c.c.
+
+
+
+                                                                                         INAIL
+                                                                                                                                                                                                                                                                                                                +/–        SALDO (I–L)
+                                                                                                                                                                                                            TOTALE                       I                                   L
+                                                                                                                                          causale                                                     periodo di riferimento:
+                                                                                         codice ente        codice sede                  contributo
+                                                                                                                                                                codice posizione        da        mm/aaaa       a        mm/aaaa                 importi a debito versati        importi a credito compensati
+
+
+
+                                                                                                                                                                                                                                                                                                                +/–     SALDO (M–N)
+                                                                                                                                                                                                            TOTALE                      M                                    N
+                                                                                         FIRMA                                                                                                                                                 SALDO FINALE
+                                                                                                                                                                                                                                                                                                    EURO +                            2.314,76
+
+
+                                                                                         ESTREMI DEL VERSAMENTO                                                      (DA COMPILARE A CURA DI BANCA/POSTE/AGENTE DELLA RISCOSSIONE)
+                                                                                                                                                              CODICE BANCA/POSTE/AGENTE DELLA RISCOSSIONE                                        Pagamento effettuato con assegno                                bancario/postale
+                                                                                                                   DATA
+                                                                                                                                                                       AZIENDA                           CAB/SPORTELLO                                                                                           circolare/vaglia postale
+                                                                                                                                                                                                                                                 n.ro
+                                                                                            giorno          mese                         anno
+                                                                                                                                                                                                                                                 tratto / emesso su
+                                                                                                                                                                                                                                                                                      cod. ABI                              CAB
+
+
+                                                                                        Autorizzo addebito su
+                                                                                        conto corrente codice IBAN                       IT                                                                                                             firma
+                                                                                                                                                                                      1° COPIA PER LA BANCA/POSTE/AGENTE DELLA RISCOSSIONE
+

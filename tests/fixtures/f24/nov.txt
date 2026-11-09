@@ -19,7 +19,7 @@
                                                                                                           data di nascita                                       sesso (M o F)   comune (o Stato estero) di nascita                                                                       prov.
                                                                                                                 giorno         mese             anno
                                                                                                                                                                     M           MILANO                                                                                                MI
-                                                                                                                06             11              1987
+                                                                                                                15              03               1980
                                                                                                            comune                                                                                      prov.         via e numero civico
 
                                                                     DOMICILIO FISCALE COMUNE                                                                                                     MI              Via ESEMPIO 1

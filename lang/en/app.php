@@ -171,6 +171,7 @@ return [
         'open_attachment' => 'Open file',
         'ocr_tools_missing' => 'Could not read fields automatically. Fill them in by hand — the file stays attached.',
         'ocr_partial' => 'Incomplete reading. Review and complete the fields by hand.',
+        'date_from_filename' => 'Date taken from the filename or the usual VAT due date: check it before saving.',
         'ocr_failed' => 'Reading failed. Fill the fields by hand — the file stays attached.',
         'ocr_unsupported_type' => 'File type not supported for automatic reading. Fill by hand.',
         'dashboard_title' => 'Tax · F24',

@@ -171,6 +171,7 @@ return [
         'open_attachment' => 'Apri file',
         'ocr_tools_missing' => 'Non sono riuscito a leggere i campi in automatico. Compilali a mano: il file resta allegato.',
         'ocr_partial' => 'Lettura incompleta. Controlla e completa i campi a mano.',
+        'date_from_filename' => 'Data presa dal nome file o dalla scadenza tipica IVA: controllala prima di salvare.',
         'ocr_failed' => 'Lettura non riuscita. Compila i campi a mano: il file resta allegato.',
         'ocr_unsupported_type' => 'Tipo file non supportato per la lettura automatica. Compila a mano.',
         'dashboard_title' => 'Fisco · F24',

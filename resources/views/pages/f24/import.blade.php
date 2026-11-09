@@ -69,13 +69,20 @@ new #[Layout('layouts::app')] class extends Component {
             ];
         }
 
+        $guessedDate = $parsed['paid_at']
+            ?? $parser->guessDateFromFilename($originalName)
+            ?? $parser->guessDueDateFromIvaLines($parsed['lines']);
+
         $warning = $extracted['warning']
             ?? ($parsed['matched'] ? null : __('app.f24.ocr_partial'));
+        if ($parsed['paid_at'] === null && $guessedDate !== null) {
+            $warning = $warning ?? __('app.f24.date_from_filename');
+        }
 
         session()->put('f24_import_draft', [
             'public_id' => $publicId,
-            'paid_at' => $parsed['paid_at'] ?? now()->toDateString(),
-            'due_date' => $parsed['paid_at'] ?? now()->toDateString(),
+            'paid_at' => $guessedDate,
+            'due_date' => $guessedDate,
             'protocol_number' => $parsed['protocol_number'] ?? null,
             'source_file_path' => $path,
             'source_file_name' => $originalName,

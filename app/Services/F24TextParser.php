@@ -370,6 +370,49 @@ class F24TextParser
         return null;
     }
 
+    /**
+     * When the PDF leaves ESTREMI empty, the filename often still carries the due date
+     * (e.g. "scad. 20.08.2026" or "16.11.2026").
+     */
+    public function guessDateFromFilename(string $filename): ?string
+    {
+        if (preg_match('/\b(?:scad\.?\s*)?(\d{1,2})[.\-\/](\d{1,2})[.\-\/](20\d{2})\b/iu', $filename, $m)) {
+            return sprintf('%s-%02d-%02d', $m[3], (int) $m[2], (int) $m[1]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Ordinary Italian quarterly IVA due dates for known tribute codes (tracking assist only).
+     *
+     * @param  list<array<string, mixed>>  $lines
+     */
+    public function guessDueDateFromIvaLines(array $lines): ?string
+    {
+        foreach ($lines as $line) {
+            $code = (string) ($line['tribute_code'] ?? '');
+            $year = (int) ($line['reference_year'] ?? 0);
+            if ($year < 2020) {
+                continue;
+            }
+
+            $due = match ($code) {
+                '6031' => sprintf('%d-05-16', $year),
+                '6032' => sprintf('%d-08-20', $year),
+                '6033' => sprintf('%d-11-16', $year),
+                '6035' => sprintf('%d-12-27', $year),
+                default => null,
+            };
+
+            if ($due !== null) {
+                return $due;
+            }
+        }
+
+        return null;
+    }
+
     private function eurosToCents(string $amount): int
     {
         $normalized = str_replace('.', '', $amount);

@@ -100,3 +100,30 @@ it('parses quarterly IVA F24 without rateazione and prefers estremi date over de
         ->and($line['credit_cents'])->toBe(0)
         ->and($line['label'])->toBe('IVA trimestrale - 3° trimestre');
 });
+
+it('parses Q2 IVA F24 with empty estremi date fields', function () {
+    $parser = app(F24TextParser::class);
+    $text = file_get_contents(base_path('tests/Fixtures/f24/iva-q2-2026.txt'));
+    $parsed = $parser->parse($text);
+
+    expect($parsed['matched'])->toBeTrue()
+        ->and($parsed['paid_at'])->toBeNull()
+        ->and($parsed['lines'])->toHaveCount(1);
+
+    $line = $parsed['lines'][0];
+    expect($line['tribute_code'])->toBe('6032')
+        ->and($line['category'])->toBe('iva')
+        ->and($line['debit_cents'])->toBe(231476)
+        ->and($parser->guessDateFromFilename('Mario Rossi - F24 scad. 20.08.2026.pdf'))->toBe('2026-08-20')
+        ->and($parser->guessDueDateFromIvaLines($parsed['lines']))->toBe('2026-08-20');
+});
+
+it('guesses Q1 IVA due date from tribute code when filename has no date', function () {
+    $parser = app(F24TextParser::class);
+
+    expect($parser->guessDateFromFilename('Mario Rossi - F24 IVA 1° Trim 2026.pdf'))->toBeNull()
+        ->and($parser->guessDueDateFromIvaLines([[
+            'tribute_code' => '6031',
+            'reference_year' => '2026',
+        ]]))->toBe('2026-05-16');
+});
