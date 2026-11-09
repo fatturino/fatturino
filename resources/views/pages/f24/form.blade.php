@@ -346,7 +346,7 @@ new #[Layout('layouts::app')] class extends Component {
         <div class="rounded-xl border border-border bg-white px-4 py-3 text-sm text-content-muted sm:px-5">
             {{ __('app.f24.attached_file') }}: <span class="font-medium text-content">{{ $source_file_name }}</span>
             @if($source_file_path)
-                · <a href="{{ route('f24.attachment', ['path' => $source_file_path]) }}" class="font-medium text-primary hover:underline" target="_blank" rel="noopener">{{ __('app.f24.open_attachment') }}</a>
+                · <x-app-link :href="route('f24.attachment', ['path' => $source_file_path])" class="font-medium text-primary hover:underline" target="_blank" rel="noopener">{{ __('app.f24.open_attachment') }}</x-app-link>
             @endif
         </div>
     @endif

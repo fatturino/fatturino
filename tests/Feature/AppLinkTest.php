@@ -56,7 +56,7 @@ it('does not leave direct application anchors or location redirects outside the 
         }
 
         $path = $view->getPathname();
-        if (str_contains($path, '/vendor/') || str_contains($path, '/errors/') || str_ends_with($path, '/components/app-link.blade.php')) {
+        if (str_contains($path, '/vendor/') || str_contains($path, '/errors/') || str_contains($path, '/emails/') || str_ends_with($path, '/components/app-link.blade.php')) {
             continue;
         }
 

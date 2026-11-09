@@ -11,15 +11,19 @@ it('renders every destination in a task-oriented sidebar hierarchy', function ()
         ->toContain('>Documenti</p>')
         ->toContain('>Fatture di vendita</span>')
         ->toContain('>Fatture di acquisto</span>')
+        ->toContain('>Fisco</p>')
+        ->toContain('>Versamenti F24</span>')
         ->toContain('>Clienti e fornitori</span>')
         ->toContain('>Dati azienda</span>')
         ->toContain('>Diagnostica</span>')
         ->toContain('href="'.route('dashboard').'"')
+        ->toContain('href="'.route('f24.index').'"')
         ->toContain('href="'.route('contacts.index').'"')
         ->toContain('href="'.route('settings.advanced').'"');
 
-    expect(substr_count($html, '<svg'))->toBe(15);
+    expect(substr_count($html, '<svg'))->toBe(16);
     expect(strpos($html, '>Documenti</p>'))
+        ->toBeLessThan(strpos($html, '>Fisco</p>'))
         ->toBeLessThan(strpos($html, '>Dati</p>'))
         ->toBeLessThan(strpos($html, '>Impostazioni</p>'));
 });
@@ -50,6 +54,8 @@ it('renders every sidebar label from the active locale', function () {
         ->toContain('>Documents</p>')
         ->toContain('>Sales invoices</span>')
         ->toContain('>Purchase invoices</span>')
+        ->toContain('>Tax</p>')
+        ->toContain('>F24 payments</span>')
         ->toContain('>Customers &amp; suppliers</span>')
         ->toContain('>E-invoicing</span>')
         ->toContain('>Diagnostics</span>')
