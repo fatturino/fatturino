@@ -321,12 +321,12 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
                     <span class="font-semibold tabular-nums text-content">{{ $this->currency(abs($vatCheck)) }}</span>
                     {{ $vatCheck >= 0 ? __('app.f24.vat_check_still_due') : __('app.f24.vat_check_overpaid') }}
                 </p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">
-                    {{ __('app.f24.vat_check_hint') }}
-                    · IVA incassata separata
+                <p class="mt-1 text-xs text-content-muted">
+                    IVA incassata separata
                     <span class="font-semibold tabular-nums text-content-secondary">{{ $this->currency($stats['collectedVatYtd']) }}</span>
                 </p>
             </div>
+            <p class="sm:col-span-3 text-xs leading-5 text-content-muted">{{ __('app.f24.vat_check_hint') }}</p>
         </section>
     @endif
 
