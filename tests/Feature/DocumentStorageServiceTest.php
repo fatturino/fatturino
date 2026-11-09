@@ -50,3 +50,34 @@ it('uses the document disk root as the S3 namespace root', function () {
     expect($path)->toBe('xml/sales/2026/01M3VVDHF70NR8S6HFCZYTPY6C/IT01234567890_00001.xml')
         ->and(Storage::disk('documents')->exists($path))->toBeTrue();
 });
+
+it('stores F24 attachments in a dedicated f24 folder on the document disk', function () {
+    $storage = app(DocumentStorageService::class);
+
+    $path = $storage->storeF24Attachment('%PDF-1.4', 2026, '01F24PUBLICID000000000000', 'quietanza.pdf');
+
+    expect($path)->toBe('documents/f24/2026/01F24PUBLICID000000000000/quietanza.pdf')
+        ->and($storage->getContents($path))->toBe('%PDF-1.4')
+        ->and($storage->exists($path))->toBeTrue();
+});
+
+it('stores F24 attachments under f24/ when the document disk is S3', function () {
+    config(['filesystems.disks.documents.driver' => 's3']);
+    Storage::fake('documents');
+
+    $storage = app(DocumentStorageService::class);
+    $path = $storage->storeF24Attachment('%PDF-1.4', 2026, '01F24PUBLICID000000000000', 'quietanza.pdf');
+
+    expect($path)->toBe('f24/2026/01F24PUBLICID000000000000/quietanza.pdf')
+        ->and(Storage::disk('documents')->exists($path))->toBeTrue();
+
+    $seen = $storage->withLocalPath($path, function (string $absolute) {
+        expect(is_file($absolute))->toBeTrue()
+            ->and(file_get_contents($absolute))->toBe('%PDF-1.4');
+
+        return $absolute;
+    });
+
+    expect($seen)->not->toBeNull()
+        ->and(is_file($seen))->toBeFalse();
+});

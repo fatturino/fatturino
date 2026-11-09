@@ -38,6 +38,79 @@ class DocumentStorageService
     }
 
     /**
+     * Store an F24 source attachment under documents/f24/{year}/{id}/{file}.
+     */
+    public function storeF24Attachment(string $content, int $year, string $publicId, string $filename): string
+    {
+        $path = $this->path(implode('/', [
+            'f24',
+            (string) $year,
+            trim($publicId, '/'),
+            ltrim($filename, '/'),
+        ]));
+
+        $this->storeImmutable($path, $content);
+
+        return $path;
+    }
+
+    /**
+     * Absolute filesystem path for a documents-disk file (local driver only).
+     */
+    public function absolutePath(string $relativePath): ?string
+    {
+        $disk = Storage::disk(self::DISK);
+
+        if (! $disk->exists($relativePath)) {
+            return null;
+        }
+
+        if (config('filesystems.disks.'.self::DISK.'.driver') !== 'local') {
+            return null;
+        }
+
+        return $disk->path($relativePath);
+    }
+
+    /**
+     * Run a callback with a local filesystem path for the given documents-disk object.
+     * On S3 (or any non-local driver) the file is copied to a temp path and removed afterwards.
+     *
+     * @template T
+     *
+     * @param  callable(string $absolutePath): T  $callback
+     * @return T|null
+     */
+    public function withLocalPath(string $relativePath, callable $callback): mixed
+    {
+        $absolute = $this->absolutePath($relativePath);
+        if ($absolute !== null) {
+            return $callback($absolute);
+        }
+
+        $contents = $this->getContents($relativePath);
+        if ($contents === null) {
+            return null;
+        }
+
+        $extension = pathinfo($relativePath, PATHINFO_EXTENSION);
+        $tmpPath = sys_get_temp_dir().'/fatturino-doc-'.bin2hex(random_bytes(8))
+            .($extension !== '' ? '.'.$extension : '');
+
+        try {
+            if (file_put_contents($tmpPath, $contents) === false) {
+                throw new RuntimeException("Unable to materialize document snapshot locally: {$relativePath}");
+            }
+
+            return $callback($tmpPath);
+        } finally {
+            if (is_file($tmpPath)) {
+                @unlink($tmpPath);
+            }
+        }
+    }
+
+    /**
      * Read a stored XML file. Returns null if not found.
      */
     public function getXml(string $path): ?string
@@ -49,6 +122,14 @@ class DocumentStorageService
      * Read a stored PDF file. Returns null if not found.
      */
     public function getPdf(string $path): ?string
+    {
+        return $this->get($path);
+    }
+
+    /**
+     * Read any stored document binary. Returns null if not found.
+     */
+    public function getContents(string $path): ?string
     {
         return $this->get($path);
     }

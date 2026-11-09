@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Str;
+use App\Support\Ulid;
 use Parental\HasChildren;
 
 class FiscalDocument extends Model
@@ -118,7 +118,9 @@ class FiscalDocument extends Model
     {
         static::creating(function (self $document) {
             if (empty($document->public_id)) {
-                $document->public_id = (string) Str::ulid();
+                $document->public_id = Ulid::generate();
+            } else {
+                $document->public_id = strtolower((string) $document->public_id);
             }
 
             $sequenceType = null;

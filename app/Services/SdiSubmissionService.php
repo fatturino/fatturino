@@ -10,6 +10,7 @@ use App\Models\FiscalDocument;
 use App\Models\SdiOutboundSubmission;
 use App\Sdi\SdiSubmissionCommand;
 use App\Sdi\SdiSubmissionResult;
+use App\Support\Ulid;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -195,7 +196,7 @@ class SdiSubmissionService
 
                 return SdiOutboundSubmission::create([
                     'fiscal_document_id' => $lockedDocument->id,
-                    'idempotency_key' => (string) Str::ulid(),
+                    'idempotency_key' => Ulid::generate(),
                     'provider' => $driverKey,
                     'status' => SdiSubmissionStatus::Dispatching,
                     'active_document_lock' => (string) $lockedDocument->id,

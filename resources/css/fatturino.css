@@ -1104,3 +1104,87 @@ textarea.form-focus {
         box-shadow: none;
     }
 }
+
+/* ═══════════════════════════════════════════
+   F24 section blocks (inspired by Modello F24)
+   ═══════════════════════════════════════════ */
+
+.f24-section {
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--color-info) 28%, var(--color-border));
+    border-radius: var(--radius-xl);
+    background: var(--color-info-bg);
+}
+
+.f24-section__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-info);
+    color: #fff;
+}
+
+.f24-section__title {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.f24-section__hint {
+    margin: 0.15rem 0 0;
+    font-size: 0.75rem;
+    color: color-mix(in srgb, #fff 78%, transparent);
+}
+
+.f24-section__body {
+    padding: 0.75rem;
+}
+
+.f24-section__row {
+    margin-bottom: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--color-info) 18%, var(--color-border));
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    padding: 1rem;
+}
+
+.f24-section__row:last-child {
+    margin-bottom: 0;
+}
+
+.f24-section__empty {
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.f24-section__add {
+    display: inline-flex;
+    height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    border: 1px solid color-mix(in srgb, #fff 45%, transparent);
+    background: color-mix(in srgb, #fff 14%, transparent);
+    padding: 0 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #fff;
+    transition: background-color var(--duration-fast) var(--ease-out);
+    cursor: pointer;
+}
+
+.f24-section__add:hover {
+    background: color-mix(in srgb, #fff 24%, transparent);
+}
+
+.f24-section__add:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, #fff 35%, transparent);
+}

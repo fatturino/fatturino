@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\F24PaymentStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
+use App\Models\F24Payment;
 use App\Models\FiscalDocument;
 use App\Models\ProformaInvoice;
 use App\Models\PurchaseInvoice;
@@ -567,6 +569,79 @@ class ReportService
      * All dashboard statistics as a named array ready to be passed to a view.
      * Pre-computes shared values to avoid redundant DB queries for derived metrics.
      */
+    /**
+     * Fiscal F24 outflow summary for the selected year (manual tracking only).
+     *
+     * @return array{
+     *     paid_total_cents: int,
+     *     planned_total_cents: int,
+     *     overdue_total_cents: int,
+     *     by_category: array<string, int>,
+     *     upcoming: Collection<int, F24Payment>
+     * }
+     */
+    public function f24Summary(int $year = 0): array
+    {
+        $year = $year ?: now()->year;
+        $today = now()->startOfDay();
+
+        $payments = F24Payment::query()
+            ->with('lines')
+            ->whereIn('status', [F24PaymentStatus::Paid->value, F24PaymentStatus::Planned->value])
+            ->where(function ($query) use ($year) {
+                $query->whereYear('paid_at', $year)
+                    ->orWhere(function ($query) use ($year) {
+                        $query->whereNull('paid_at')->whereYear('due_date', $year);
+                    })
+                    ->orWhere(function ($query) use ($year) {
+                        $query->whereNull('paid_at')->whereNull('due_date')->whereYear('created_at', $year);
+                    });
+            })
+            ->get();
+
+        $paidTotal = 0;
+        $plannedTotal = 0;
+        $overdueTotal = 0;
+        $byCategory = [];
+
+        foreach ($payments as $payment) {
+            $amount = max(0, (int) $payment->balance_cents);
+            if ($payment->status === F24PaymentStatus::Paid) {
+                $paidTotal += $amount;
+            } else {
+                $plannedTotal += $amount;
+                if ($payment->due_date !== null && $payment->due_date->lt($today)) {
+                    $overdueTotal += $amount;
+                }
+            }
+
+            foreach ($payment->lines as $line) {
+                $key = $line->category->value;
+                $byCategory[$key] = ($byCategory[$key] ?? 0) + max(0, (int) $line->debit_cents - (int) $line->credit_cents);
+            }
+        }
+
+        $upcoming = F24Payment::query()
+            ->with('lines')
+            ->where('status', F24PaymentStatus::Planned->value)
+            ->where(function ($query) use ($today) {
+                $query->whereNull('due_date')
+                    ->orWhereDate('due_date', '<=', $today->copy()->addDays(30));
+            })
+            ->orderByRaw('due_date is null')
+            ->orderBy('due_date')
+            ->limit(5)
+            ->get();
+
+        return [
+            'paid_total_cents' => $paidTotal,
+            'planned_total_cents' => $plannedTotal,
+            'overdue_total_cents' => $overdueTotal,
+            'by_category' => $byCategory,
+            'upcoming' => $upcoming,
+        ];
+    }
+
     public function getDashboardStats(int $year = 0): array
     {
         $year = $year ?: now()->year;
@@ -578,6 +653,7 @@ class ReportService
         $vatCollectedYtd = $this->vatCollectedYtd($year);
         $vatOnPurchasesYtd = $this->vatOnPurchasesYtd($year);
         $paymentSummary = $this->paymentSummary($year);
+        $f24Summary = $this->f24Summary($year);
 
         $collectedNetYtd = array_sum(array_column($paymentSummary, 'collected_net'));
         $collectedVatYtd = array_sum(array_column($paymentSummary, 'collected_vat'));
@@ -617,6 +693,10 @@ class ReportService
             'draftCount' => FiscalDocument::where('status', 'draft')->whereYear('date', $year)->count(),
             'readyForSdiCount' => FiscalDocument::where('status', 'xml_validated')->whereYear('date', $year)->count(),
             'hasInvoices' => $invoicesYtd > 0,
+            'f24PaidYtd' => $f24Summary['paid_total_cents'],
+            'f24PlannedTotal' => $f24Summary['planned_total_cents'],
+            'f24OverdueTotal' => $f24Summary['overdue_total_cents'],
+            'f24Upcoming' => $f24Summary['upcoming'],
         ];
     }
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CreditNotesController;
 use App\Http\Controllers\EmailSettingsController;
+use App\Http\Controllers\F24AttachmentController;
 use App\Http\Controllers\InvoiceSettingsController;
 use App\Http\Controllers\OpenApiWebhookController;
 use App\Http\Controllers\ProformaInvoicesController;
@@ -142,6 +143,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/proforma/{proformaInvoice}/pdf', [ProformaInvoicesController::class, 'downloadPdf'])->name('proforma.download-pdf');
     Route::get('/proforma/{proformaInvoice}/email-preview', [ProformaInvoicesController::class, 'emailPreview'])->name('proforma.email-preview');
     Route::post('/proforma/{proformaInvoice}/send-email', [ProformaInvoicesController::class, 'sendEmail'])->name('proforma.send-email');
+
+    // F24 tax payments (manual tracking)
+    Route::livewire('/f24', 'pages::f24.index')->name('f24.index');
+    Route::livewire('/f24/create', 'pages::f24.form')->name('f24.create')
+        ->defaults('title', 'Nuovo versamento F24')
+        ->defaults('breadcrumbs', [['label' => 'Versamenti F24', 'url' => '/f24'], ['label' => 'Nuovo']]);
+    Route::livewire('/f24/import', 'pages::f24.import')->name('f24.import')
+        ->defaults('title', 'Importa F24')
+        ->defaults('breadcrumbs', [['label' => 'Versamenti F24', 'url' => '/f24'], ['label' => 'Importa']]);
+    Route::livewire('/f24/{f24Payment}/edit', 'pages::f24.form')->name('f24.edit')
+        ->defaults('title', 'Modifica versamento F24')
+        ->defaults('breadcrumbs', [['label' => 'Versamenti F24', 'url' => '/f24'], ['label' => 'Modifica']]);
+    Route::get('/f24/attachment', F24AttachmentController::class)->name('f24.attachment');
 
     // Sequences
     Route::livewire('/sequences', 'pages::settings.sequences')->name('sequences.index')->defaults('title', 'Sequenze');

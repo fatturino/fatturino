@@ -5,6 +5,7 @@ namespace App\Services\Domain;
 use App\Enums\InvoiceStatus;
 use App\Models\FiscalDocument;
 use App\Models\Sequence;
+use App\Support\Ulid;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -30,7 +31,7 @@ class FiscalDocumentMutationService
 
             $document = FiscalDocument::query()->create([
                 ...$header,
-                'public_id' => (string) str()->ulid(),
+                'public_id' => Ulid::generate(),
                 'fiscal_year' => $resolvedNumbering['fiscal_year'],
                 'sequential_number' => $resolvedNumbering['sequential_number'],
                 'number' => $resolvedNumbering['number'],

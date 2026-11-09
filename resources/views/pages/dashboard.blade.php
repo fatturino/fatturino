@@ -91,6 +91,16 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
             ])
             ->values()
             ->all();
+        $stats['f24Upcoming'] = collect($stats['f24Upcoming'] ?? [])
+            ->map(fn ($payment) => [
+                'id' => $payment->id,
+                'label' => $payment->primaryLabel(),
+                'due_date' => $this->formatDate($payment->due_date),
+                'amount_cents' => (int) $payment->balance_cents,
+                'is_overdue' => $payment->isOverdue(),
+                'href' => route('f24.edit', $payment),
+            ])
+            ->all();
         $this->stats = $stats;
     }
 
@@ -222,7 +232,15 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
 
     <div class="grid gap-6 xl:grid-cols-12">
         <div class="xl:col-span-7"><x-dashboard.attention-queue :items="$attentionItems" :first-due-date="$firstDueDate" :urgency-count="$attentionUrgencyCount" /></div>
-        <div class="xl:col-span-5"><x-dashboard.upcoming-due-dates :invoices="$stats['upcomingDueDates']" /></div>
+        <div class="xl:col-span-5 space-y-6">
+            <x-dashboard.upcoming-due-dates :invoices="$stats['upcomingDueDates']" />
+            <x-dashboard.f24-summary
+                :paid-ytd="$stats['f24PaidYtd'] ?? 0"
+                :planned-total="$stats['f24PlannedTotal'] ?? 0"
+                :overdue-total="$stats['f24OverdueTotal'] ?? 0"
+                :upcoming="$stats['f24Upcoming'] ?? []"
+            />
+        </div>
     </div>
 
     <x-dashboard.recent-document-list :invoices="$stats['recentInvoices']" />

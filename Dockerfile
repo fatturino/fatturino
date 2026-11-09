@@ -62,6 +62,9 @@ RUN --mount=type=cache,id=apt-${TARGETPLATFORM},target=/var/cache/apt,sharing=lo
         postgresql-client \
         git \
         nano \
+        poppler-utils \
+        tesseract-ocr \
+        tesseract-ocr-ita \
     && ln -s "$(find /usr/lib/postgresql -type f -path '*/bin/psql' -print -quit)" /usr/local/bin/psql \
     && ln -s "$(find /usr/lib/postgresql -type f -path '*/bin/pg_dump' -print -quit)" /usr/local/bin/pg_dump
 
