@@ -9,12 +9,12 @@
     "devDependencies": {
         "concurrently": "^9.2.5",
         "laravel-vite-plugin": "^2.1.0",
-        "tailwindcss": "^4.3.3",
-        "vite": "^7.3.7"
+        "tailwindcss": "^4.3.5",
+        "vite": "^7.3.8"
     },
     "dependencies": {
-        "@tailwindcss/vite": "^4.3.3",
-        "posthog-js": "^1.438.10"
+        "@tailwindcss/vite": "^4.3.5",
+        "posthog-js": "^1.447.4"
     },
     "overrides": {
         "fflate": "0.4.9",
@@ -22,6 +22,7 @@
         "picomatch": "2.3.2",
         "postcss": "8.5.23",
         "rollup": "4.59.0",
-        "source-map-js": "^1.2.2"
+        "source-map-js": "^1.2.2",
+        "dompurify": "3.4.17"
     }
 }
