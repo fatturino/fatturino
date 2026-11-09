@@ -2,10 +2,13 @@
 
 use App\Enums\F24PaymentStatus;
 use App\Models\Contact;
+use App\Models\CreditNote;
 use App\Models\F24Payment;
 use App\Models\FiscalDocument;
+use App\Models\ProformaInvoice;
 use App\Models\PurchaseInvoice;
 use App\Models\SalesInvoice;
+use App\Models\SelfInvoice;
 use App\Services\ReportService;
 use Carbon\Carbon;
 
@@ -219,6 +222,33 @@ test('vat collected ytd sums total vat from all invoices this year', function ()
     makeInvoice('2025-12-01', 12200, ['total_vat' => 9999]); // previous year — excluded
 
     expect($this->service->vatCollectedYtd())->toBe(4400);
+});
+
+test('vat collected ytd excludes self invoices and proformas and subtracts credit notes', function () {
+    makeInvoice('2026-02-01', 12200, ['total_vat' => 2200, 'type' => 'sales']);
+
+    SelfInvoice::factory()->create([
+        'date' => '2026-03-01',
+        'total_vat' => 5000,
+        'total_net' => 25000,
+        'total_gross' => 30000,
+    ]);
+
+    ProformaInvoice::factory()->create([
+        'date' => '2026-04-01',
+        'total_vat' => 3300,
+        'total_net' => 15000,
+        'total_gross' => 18300,
+    ]);
+
+    CreditNote::factory()->create([
+        'date' => '2026-05-01',
+        'total_vat' => 200,
+        'total_net' => 1000,
+        'total_gross' => 1200,
+    ]);
+
+    expect($this->service->vatCollectedYtd(2026))->toBe(2000);
 });
 
 // ---------------------------------------------------------------------------

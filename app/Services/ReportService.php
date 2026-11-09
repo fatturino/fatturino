@@ -183,16 +183,18 @@ class ReportService
     }
 
     /**
-     * Total VAT charged on all invoices for the given year (in cents).
+     * Total output VAT for the given year (in cents).
+     *
+     * Rough dashboard check: sales VAT minus credit-note VAT.
+     * Self-invoices and proformas are excluded — reverse-charge VAT is not
+     * "collected then recovered" in this simplified view.
      */
     public function vatCollectedYtd(int $year = 0): int
     {
         $year = $year ?: now()->year;
         [$start, $end] = $this->yearDateRange($year);
 
-        return (int) FiscalDocument::whereBetween('date', [$start, $end])
-            ->where('type', '!=', 'purchase')
-            ->sum('total_vat');
+        return $this->sumOutputVat($start, $end);
     }
 
     /**
@@ -219,9 +221,7 @@ class ReportService
             $start = Carbon::create($year, ($q - 1) * 3 + 1, 1)->startOfDay();
             $end = Carbon::create($year, $q * 3, 1)->endOfMonth();
 
-            $collected = (int) FiscalDocument::whereBetween('date', [$start, $end])
-                ->where('type', '!=', 'purchase')
-                ->sum('total_vat');
+            $collected = $this->sumOutputVat($start, $end);
             $purchases = (int) PurchaseInvoice::betweenDates($start, $end)->sum('total_vat');
 
             $quarters[] = [
@@ -233,6 +233,19 @@ class ReportService
         }
 
         return $quarters;
+    }
+
+    /**
+     * Output VAT for a date range: sales (+), credit notes (−).
+     * Excludes self_invoice and proforma for the rough dashboard VAT check.
+     */
+    private function sumOutputVat(Carbon|string $start, Carbon|string $end): int
+    {
+        return (int) FiscalDocument::query()
+            ->whereBetween('date', [$start, $end])
+            ->whereIn('type', ['sales', 'credit_note'])
+            ->selectRaw("COALESCE(SUM(CASE WHEN type = 'credit_note' THEN -total_vat ELSE total_vat END), 0) as vat_total")
+            ->value('vat_total');
     }
 
     /**
