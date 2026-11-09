@@ -168,6 +168,26 @@ it('shows f24 summary metrics on the dashboard', function () {
         ->assertSee(__('app.f24.dashboard_title'));
 });
 
+it('lists upcoming f24 deadlines in the attention queue', function () {
+    $user = User::factory()->create();
+    $payment = F24Payment::factory()->withIrpefLine(484384)->create([
+        'status' => F24PaymentStatus::Planned,
+        'due_date' => now()->addDays(7)->toDateString(),
+        'paid_at' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::dashboard')
+        ->assertOk()
+        ->assertSee('Richiede attenzione')
+        ->assertSee(__('app.f24.attention_action'))
+        ->assertSee(__('app.f24.attention_upcoming', ['date' => now()->addDays(7)->format('d/m/Y')]))
+        ->assertSee('IRPEF - saldo')
+        ->assertSee('€ 4.843,84')
+        ->assertSee(route('f24.edit', $payment), false);
+});
+
 it('keeps import review as a human confirmation step without auto-saving', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

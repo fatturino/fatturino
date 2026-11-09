@@ -99,7 +99,8 @@ class F24TextParser
     private function parseTributeRows(string $body, string $defaultSection): array
     {
         $lines = [];
-        $pattern = '/\b(\d{4})\s+(\d{4})\s+(20\d{2})(\s+)('.self::AMOUNT.')(?:\s+('.self::AMOUNT.'))?/u';
+        // Installment/rateazione is optional: quarterly IVA often prints only code + year + amount.
+        $pattern = '/\b(\d{4})(?:\s+(\d{4}))?\s+(20\d{2})(\s+)('.self::AMOUNT.')(?:\s+('.self::AMOUNT.'))?/u';
 
         if (! preg_match_all($pattern, $body, $matches, PREG_SET_ORDER)) {
             return [];
@@ -111,7 +112,7 @@ class F24TextParser
                 continue;
             }
 
-            $installment = $m[2];
+            $installment = $m[2] !== '' ? $m[2] : null;
             $year = $m[3];
             $gap = strlen($m[4]);
             $firstAmount = $m[5];
@@ -324,6 +325,15 @@ class F24TextParser
 
     private function guessPaidAt(string $text): ?string
     {
+        // Prefer the bank/payment block; ignore decree footers such as 19/06/2013.
+        if (preg_match('/ESTREMI\s+DEL\s+VERSAMENTO[\s\S]{0,3000}?\bgiorno\b[\s\S]{0,400}?\b(\d{1,2})\s+(\d{1,2})\s+(20\d{2})\b/iu', $text, $m)) {
+            return sprintf('%s-%02d-%02d', $m[3], (int) $m[2], (int) $m[1]);
+        }
+
+        if (preg_match('/ESTREMI\s+DEL\s+VERSAMENTO[\s\S]{0,3000}?\b(\d{1,2})\s+(\d{1,2})\s+(20\d{2})\b/iu', $text, $m)) {
+            return sprintf('%s-%02d-%02d', $m[3], (int) $m[2], (int) $m[1]);
+        }
+
         if (preg_match('/\bDATA\b[\s\S]{0,400}?\b(\d{1,2})\s+(\d{1,2})\s+(20\d{2})\b/u', $text, $m)) {
             return sprintf('%s-%02d-%02d', $m[3], (int) $m[2], (int) $m[1]);
         }
@@ -332,9 +342,18 @@ class F24TextParser
             return sprintf('%s-%s-%s', $m[3], $m[2], $m[1]);
         }
 
-        if (preg_match('/\b(\d{2})[\/.\-](\d{2})[\/.\-](20\d{2})\b/', $text, $m)) {
-            return sprintf('%s-%s-%s', $m[3], $m[2], $m[1]);
+        if (preg_match_all('/\b(\d{2})[\/.\-](\d{2})[\/.\-](20\d{2})\b/', $text, $matches, PREG_SET_ORDER)) {
+            $candidates = array_values(array_filter(
+                $matches,
+                fn (array $m) => (int) $m[3] >= 2020
+            ));
+            if ($candidates !== []) {
+                $m = $candidates[array_key_last($candidates)];
+
+                return sprintf('%s-%s-%s', $m[3], $m[2], $m[1]);
+            }
         }
+
         if (preg_match('/\b(20\d{2})[\/.\-](\d{2})[\/.\-](\d{2})\b/', $text, $m)) {
             return sprintf('%s-%s-%s', $m[1], $m[2], $m[3]);
         }

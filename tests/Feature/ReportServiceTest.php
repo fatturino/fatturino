@@ -1,6 +1,8 @@
 <?php
 
+use App\Enums\F24PaymentStatus;
 use App\Models\Contact;
+use App\Models\F24Payment;
 use App\Models\FiscalDocument;
 use App\Models\PurchaseInvoice;
 use App\Models\SalesInvoice;
@@ -443,6 +445,54 @@ test('getDashboardStats includes vatOnPurchasesYtd and vatBalanceYtd', function 
     expect($stats['vatCollectedYtd'])->toBe(2200);
     expect($stats['vatOnPurchasesYtd'])->toBe(1000);
     expect($stats['vatBalanceYtd'])->toBe(1200);
+});
+
+test('f24Summary tracks IVA paid and planned separately for year-end check', function () {
+    F24Payment::factory()->paid()->withIrpefLine(10000)->create([
+        'paid_at' => '2026-03-01',
+        'due_date' => '2026-03-01',
+    ]);
+
+    $paidIva = F24Payment::factory()->paid()->create([
+        'paid_at' => '2026-05-16',
+        'due_date' => '2026-05-16',
+    ]);
+    $paidIva->lines()->create([
+        'position' => 0,
+        'section' => 'erario',
+        'category' => 'iva',
+        'tribute_code' => '6031',
+        'reference_year' => '2026',
+        'debit_cents' => 200000,
+        'credit_cents' => 0,
+        'label' => 'IVA Q1',
+    ]);
+    $paidIva->recalculateTotals();
+
+    $plannedIva = F24Payment::factory()->create([
+        'status' => F24PaymentStatus::Planned,
+        'due_date' => '2026-11-16',
+        'paid_at' => null,
+    ]);
+    $plannedIva->lines()->create([
+        'position' => 0,
+        'section' => 'erario',
+        'category' => 'iva',
+        'tribute_code' => '6033',
+        'reference_year' => '2026',
+        'debit_cents' => 484384,
+        'credit_cents' => 0,
+        'label' => 'IVA Q3',
+    ]);
+    $plannedIva->recalculateTotals();
+
+    $summary = $this->service->f24Summary(2026);
+    $stats = $this->service->getDashboardStats(2026);
+
+    expect($summary['iva_paid_cents'])->toBe(200000)
+        ->and($summary['iva_planned_cents'])->toBe(484384)
+        ->and($stats['f24IvaPaidYtd'])->toBe(200000)
+        ->and($stats['f24IvaPlannedYtd'])->toBe(484384);
 });
 
 test('revenue projection uses elapsed calendar months and excludes VAT', function () {

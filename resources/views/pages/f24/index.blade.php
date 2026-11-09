@@ -151,7 +151,7 @@ new #[Layout('layouts::app')] class extends Component {
                 <x-app-link :href="route('f24.import')" class="inline-flex h-11 shrink-0 items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-medium text-content transition hover:border-border-strong hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.f24.import_pdf') }}</x-app-link>
             </div>
         </div>
-        <dl class="grid grid-cols-1 gap-px bg-border sm:grid-cols-3">
+        <dl class="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
             <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
                 <dt class="text-xs font-medium text-content-muted">{{ __('app.f24.paid_ytd') }}</dt>
                 <dd class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $this->currency($summary['paid_total_cents']) }}</dd>
@@ -163,6 +163,14 @@ new #[Layout('layouts::app')] class extends Component {
             <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
                 <dt class="text-xs font-medium text-content-muted">{{ __('app.f24.overdue_total') }}</dt>
                 <dd @class(['mt-1 text-xl font-semibold tabular-nums', $summary['overdue_total_cents'] > 0 ? 'text-danger' : 'text-content'])>{{ $this->currency($summary['overdue_total_cents']) }}</dd>
+            </div>
+            <div class="min-w-0 bg-white px-4 py-4 sm:px-5">
+                <dt class="text-xs font-medium text-content-muted">{{ __('app.f24.iva_summary') }}</dt>
+                <dd class="mt-1 text-xl font-semibold tabular-nums text-content">{{ $this->currency($summary['iva_paid_cents'] + $summary['iva_planned_cents']) }}</dd>
+                <p class="mt-1 text-xs text-content-muted">
+                    {{ __('app.f24.iva_paid') }}: <span class="font-medium tabular-nums text-content">{{ $this->currency($summary['iva_paid_cents']) }}</span>
+                    · {{ __('app.f24.iva_planned') }}: <span class="font-medium tabular-nums text-content">{{ $this->currency($summary['iva_planned_cents']) }}</span>
+                </p>
             </div>
         </dl>
         @if($summary['by_category'] !== [])

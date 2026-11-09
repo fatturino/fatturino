@@ -82,3 +82,21 @@ it('parses Zucchetti layout November F24 with single INPS row', function () {
         ->and($line['inps_period_to'])->toBe('12/2026')
         ->and($line['debit_cents'])->toBe(128275);
 });
+
+it('parses quarterly IVA F24 without rateazione and prefers estremi date over decree footer', function () {
+    $text = file_get_contents(base_path('tests/Fixtures/f24/iva-q3-2026.txt'));
+    $parsed = app(F24TextParser::class)->parse($text);
+
+    expect($parsed['matched'])->toBeTrue()
+        ->and($parsed['paid_at'])->toBe('2026-11-16')
+        ->and($parsed['lines'])->toHaveCount(1);
+
+    $line = $parsed['lines'][0];
+    expect($line['tribute_code'])->toBe('6033')
+        ->and($line['category'])->toBe('iva')
+        ->and($line['reference_year'])->toBe('2026')
+        ->and($line['installment_or_month'])->toBeNull()
+        ->and($line['debit_cents'])->toBe(484384)
+        ->and($line['credit_cents'])->toBe(0)
+        ->and($line['label'])->toBe('IVA trimestrale - 3° trimestre');
+});

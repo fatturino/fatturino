@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\F24Category;
 use App\Enums\F24PaymentStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\VatRate;
@@ -576,6 +577,8 @@ class ReportService
      *     paid_total_cents: int,
      *     planned_total_cents: int,
      *     overdue_total_cents: int,
+     *     iva_paid_cents: int,
+     *     iva_planned_cents: int,
      *     by_category: array<string, int>,
      *     upcoming: Collection<int, F24Payment>
      * }
@@ -602,11 +605,14 @@ class ReportService
         $paidTotal = 0;
         $plannedTotal = 0;
         $overdueTotal = 0;
+        $ivaPaid = 0;
+        $ivaPlanned = 0;
         $byCategory = [];
 
         foreach ($payments as $payment) {
             $amount = max(0, (int) $payment->balance_cents);
-            if ($payment->status === F24PaymentStatus::Paid) {
+            $isPaid = $payment->status === F24PaymentStatus::Paid;
+            if ($isPaid) {
                 $paidTotal += $amount;
             } else {
                 $plannedTotal += $amount;
@@ -616,8 +622,17 @@ class ReportService
             }
 
             foreach ($payment->lines as $line) {
+                $net = max(0, (int) $line->debit_cents - (int) $line->credit_cents);
                 $key = $line->category->value;
-                $byCategory[$key] = ($byCategory[$key] ?? 0) + max(0, (int) $line->debit_cents - (int) $line->credit_cents);
+                $byCategory[$key] = ($byCategory[$key] ?? 0) + $net;
+
+                if ($line->category === F24Category::Iva) {
+                    if ($isPaid) {
+                        $ivaPaid += $net;
+                    } else {
+                        $ivaPlanned += $net;
+                    }
+                }
             }
         }
 
@@ -637,6 +652,8 @@ class ReportService
             'paid_total_cents' => $paidTotal,
             'planned_total_cents' => $plannedTotal,
             'overdue_total_cents' => $overdueTotal,
+            'iva_paid_cents' => $ivaPaid,
+            'iva_planned_cents' => $ivaPlanned,
             'by_category' => $byCategory,
             'upcoming' => $upcoming,
         ];
@@ -696,6 +713,8 @@ class ReportService
             'f24PaidYtd' => $f24Summary['paid_total_cents'],
             'f24PlannedTotal' => $f24Summary['planned_total_cents'],
             'f24OverdueTotal' => $f24Summary['overdue_total_cents'],
+            'f24IvaPaidYtd' => $f24Summary['iva_paid_cents'],
+            'f24IvaPlannedYtd' => $f24Summary['iva_planned_cents'],
             'f24Upcoming' => $f24Summary['upcoming'],
         ];
     }

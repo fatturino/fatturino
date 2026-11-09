@@ -17,5 +17,6 @@ Fatturino tracks electronic invoices and customer payments, not the taxpayer’s
 
 - New tenant tables `f24_payments` / `f24_payment_lines`.
 - Sidebar section **Fisco → Versamenti F24** and a dashboard summary widget.
+- Dashboard / F24 index may show an **IVA tracking check**: document VAT balance vs F24 IVA lines (paid vs planned). This remains tracking only and is not an official VAT liquidation.
 - Future Cassetto Fiscale / A-Cube structured import remains out of scope for this decision.
 - Operators must keep the tribute-code JSON updated when AdE tables change for the codes we care about.

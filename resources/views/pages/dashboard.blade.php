@@ -197,8 +197,25 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
     if ($partialCount > 0) {
         $attentionItems[] = ['title' => 'Incassi parziali', 'detail' => $partialCount.' '.($partialCount === 1 ? 'fattura ha un residuo da incassare' : 'fatture hanno un residuo da incassare'), 'value' => null, 'href' => '/sell-invoices?payment=partial', 'tone' => 'warning', 'action' => $attentionAction.' parziali'];
     }
+    $f24AttentionItems = collect($stats['f24Upcoming'] ?? [])
+        ->map(function (array $payment) {
+            $dueLabel = $payment['due_date'] ?? __('app.f24.status_planned');
+
+            return [
+                'title' => $payment['label'],
+                'detail' => $payment['is_overdue']
+                    ? __('app.f24.attention_overdue', ['date' => $dueLabel])
+                    : __('app.f24.attention_upcoming', ['date' => $dueLabel]),
+                'value' => $this->currency($payment['amount_cents']),
+                'href' => $payment['href'],
+                'tone' => $payment['is_overdue'] ? 'danger' : 'warning',
+                'action' => __('app.f24.attention_action'),
+            ];
+        })
+        ->all();
     $attentionItems = [
         ...$stats['proformaIssuanceDeadlines'],
+        ...$f24AttentionItems,
         ...$attentionItems,
     ];
     $firstDueDate = null;
@@ -246,7 +263,46 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
     <x-dashboard.recent-document-list :invoices="$stats['recentInvoices']" />
 
     @if($hasVatAccounting)
-        <section class="dashboard-vat-summary grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end" aria-labelledby="vat-summary-title"><div><h2 id="vat-summary-title" class="text-sm font-semibold text-content">Saldo IVA {{ $periodLabel }}</h2><p class="mt-1 text-sm text-content-muted"><span class="font-semibold tabular-nums text-content">{{ $this->currency(abs($stats['vatBalanceYtd'])) }}</span> {{ $stats['vatBalanceYtd'] >= 0 ? 'da versare' : 'a credito' }}</p></div><p class="text-xs leading-5 text-content-muted sm:text-right">IVA incassata separata<br class="hidden sm:block"> <span class="font-semibold tabular-nums text-content-secondary">{{ $this->currency($stats['collectedVatYtd']) }}</span></p></section>
+        @php
+            $f24IvaPaid = (int) ($stats['f24IvaPaidYtd'] ?? 0);
+            $f24IvaPlanned = (int) ($stats['f24IvaPlannedYtd'] ?? 0);
+            $f24IvaTotal = $f24IvaPaid + $f24IvaPlanned;
+            $vatCheck = (int) $stats['vatBalanceYtd'] - $f24IvaPaid;
+        @endphp
+        <section class="dashboard-vat-summary grid gap-4 p-4 sm:grid-cols-3 sm:items-end" aria-labelledby="vat-summary-title">
+            <div>
+                <h2 id="vat-summary-title" class="text-sm font-semibold text-content">Saldo IVA {{ $periodLabel }}</h2>
+                <p class="mt-1 text-sm text-content-muted">
+                    <span class="font-semibold tabular-nums text-content">{{ $this->currency(abs($stats['vatBalanceYtd'])) }}</span>
+                    {{ $stats['vatBalanceYtd'] >= 0 ? 'da versare' : 'a credito' }}
+                </p>
+                <p class="mt-1 text-xs text-content-muted">{{ __('app.f24.vat_check_from_docs') }}</p>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-content">{{ __('app.f24.iva_summary') }}</p>
+                <p class="mt-1 text-sm text-content-muted">
+                    <span class="font-semibold tabular-nums text-content">{{ $this->currency($f24IvaTotal) }}</span>
+                </p>
+                <p class="mt-1 text-xs text-content-muted">
+                    {{ __('app.f24.iva_paid') }}:
+                    <span class="font-semibold tabular-nums text-content-secondary">{{ $this->currency($f24IvaPaid) }}</span>
+                    · {{ __('app.f24.iva_planned') }}:
+                    <span class="font-semibold tabular-nums text-content-secondary">{{ $this->currency($f24IvaPlanned) }}</span>
+                </p>
+            </div>
+            <div class="sm:text-right">
+                <p class="text-sm font-semibold text-content">{{ __('app.f24.vat_check_title') }}</p>
+                <p class="mt-1 text-sm text-content-muted">
+                    <span class="font-semibold tabular-nums text-content">{{ $this->currency(abs($vatCheck)) }}</span>
+                    {{ $vatCheck >= 0 ? __('app.f24.vat_check_still_due') : __('app.f24.vat_check_overpaid') }}
+                </p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    {{ __('app.f24.vat_check_hint') }}
+                    · IVA incassata separata
+                    <span class="font-semibold tabular-nums text-content-secondary">{{ $this->currency($stats['collectedVatYtd']) }}</span>
+                </p>
+            </div>
+        </section>
     @endif
 
     <x-dashboard.revenue-chart :revenue-trend="$stats['revenueTrend']" :revenue-projection="$stats['revenueProjection']" :revenue-ytd="$stats['revenueYtd']" :fiscal-year="$fiscalYear" />
