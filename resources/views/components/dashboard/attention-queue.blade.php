@@ -12,16 +12,25 @@
 
         <div class="dashboard-attention-list mt-5">
             @foreach($items as $item)
-                @if(($item['type'] ?? null) === 'proforma_issuance')
-                    <div @class(['dashboard-attention-row dashboard-attention-priority -mx-2 gap-3 rounded-lg px-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-2', 'bg-danger-bg/60' => $item['tone'] === 'danger'])>
+                @if(in_array($item['type'] ?? null, ['proforma_issuance', 'f24_deadline'], true))
+                    <div @class([
+                        'dashboard-attention-row dashboard-attention-priority -mx-2 gap-3 rounded-lg px-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-2',
+                        'bg-danger-bg/60 ring-1 ring-danger/20' => $item['tone'] === 'danger',
+                        'bg-warning-bg/80 ring-1 ring-warning/25' => $item['tone'] === 'warning',
+                    ])>
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-content">{{ $item['title'] }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ $item['detail'] }}</p>
-                            <p @class(['mt-2 text-xs font-medium leading-5', 'text-danger' => $item['tone'] === 'danger', 'text-warning' => $item['tone'] === 'warning'])>{{ $item['meta'] }}</p>
+                            @if(($item['meta'] ?? null) !== null)
+                                <p @class(['mt-2 text-xs font-medium leading-5', 'text-danger' => $item['tone'] === 'danger', 'text-warning' => $item['tone'] === 'warning', 'text-content-muted' => ! in_array($item['tone'], ['danger', 'warning'], true)])>{{ $item['meta'] }}</p>
+                            @endif
+                            @if(($item['amount'] ?? null) !== null)
+                                <p class="mt-1 text-sm font-semibold tabular-nums text-content">{{ $item['amount'] }}</p>
+                            @endif
                         </div>
                         <div class="dashboard-attention-action min-w-0 sm:text-right">
-                            <span @class(['block text-sm font-semibold tabular-nums', 'text-danger' => $item['tone'] === 'danger', 'text-warning' => $item['tone'] === 'warning'])>{{ $item['value'] }}</span>
-                            @if($item['convert_action'])
+                            <span @class(['block text-sm font-semibold', 'tabular-nums' => ($item['type'] ?? null) !== 'f24_deadline', 'text-danger' => $item['tone'] === 'danger', 'text-warning' => $item['tone'] === 'warning', 'text-content' => ! in_array($item['tone'], ['danger', 'warning'], true)])>{{ $item['value'] }}</span>
+                            @if($item['convert_action'] ?? null)
                                 <form method="POST" action="{{ $item['convert_action'] }}" class="mt-3 sm:mt-2">
                                     @csrf
                                     <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover sm:min-h-9 sm:w-auto sm:px-3 sm:text-xs">{{ $item['action'] }}</button>
@@ -32,13 +41,18 @@
                         </div>
                     </div>
                 @else
-                    <x-app-link :href="$item['href']" class="dashboard-list-link dashboard-attention-row dashboard-attention-secondary -mx-2 gap-3 rounded-lg border border-border-light px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-2">
+                    <x-app-link :href="$item['href']" @class([
+                        'dashboard-list-link dashboard-attention-row dashboard-attention-secondary -mx-2 gap-3 rounded-lg border px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-2',
+                        'border-danger/30 bg-danger-bg/40' => $item['tone'] === 'danger',
+                        'border-warning/30 bg-warning-bg/50' => $item['tone'] === 'warning',
+                        'border-border-light' => ! in_array($item['tone'], ['danger', 'warning'], true),
+                    ])>
                         <span class="min-w-0">
                             <span class="block text-sm font-medium text-content">{{ $item['title'] }}</span>
                             <span class="mt-1 block text-xs leading-5 text-content-muted">{{ $item['detail'] }}</span>
                         </span>
                         <span class="dashboard-attention-action min-w-0 sm:text-right">
-                            <span @class(['block text-sm font-semibold tabular-nums', 'text-danger' => $item['tone'] === 'danger', 'text-content' => $item['tone'] !== 'danger'])>{{ $item['value'] }}</span>
+                            <span @class(['block text-sm font-semibold tabular-nums', 'text-danger' => $item['tone'] === 'danger', 'text-warning' => $item['tone'] === 'warning', 'text-content' => ! in_array($item['tone'], ['danger', 'warning'], true)])>{{ $item['value'] }}</span>
                             <span class="mt-1 block text-xs font-medium text-primary">{{ $item['action'] }}</span>
                         </span>
                     </x-app-link>

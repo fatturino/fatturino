@@ -182,10 +182,28 @@ it('lists upcoming f24 deadlines in the attention queue', function () {
         ->assertOk()
         ->assertSee('Richiede attenzione')
         ->assertSee(__('app.f24.attention_action'))
-        ->assertSee(__('app.f24.attention_upcoming', ['date' => now()->addDays(7)->format('d/m/Y')]))
+        ->assertSee(__('app.f24.attention_urgent'))
+        ->assertSee(trans_choice('app.f24.attention_due_in', 7, ['count' => 7]))
+        ->assertSee(__('app.f24.attention_detail', ['date' => now()->addDays(7)->format('d/m/Y')]))
         ->assertSee('IRPEF - saldo')
         ->assertSee('€ 4.843,84')
+        ->assertSee('bg-warning-bg/80', false)
         ->assertSee(route('f24.edit', $payment), false);
+});
+
+it('highlights near-due f24 rows on the index', function () {
+    $user = User::factory()->create();
+    F24Payment::factory()->withIrpefLine(10000)->create([
+        'status' => F24PaymentStatus::Planned,
+        'due_date' => now()->addDays(3)->toDateString(),
+        'paid_at' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::f24.index')
+        ->assertOk()
+        ->assertSee('bg-warning-bg/60', false);
 });
 
 it('keeps import review as a human confirmation step without auto-saving', function () {

@@ -87,6 +87,15 @@ new #[Layout('layouts::app')] class extends Component {
         return 'neutral';
     }
 
+    public function isNearDue(F24Payment $payment): bool
+    {
+        if ($payment->status !== F24PaymentStatus::Planned || $payment->due_date === null) {
+            return false;
+        }
+
+        return $payment->due_date->copy()->startOfDay()->lte(now()->startOfDay()->addDays(7));
+    }
+
     public function render()
     {
         $payments = $this->query()
@@ -229,7 +238,15 @@ new #[Layout('layouts::app')] class extends Component {
             </thead>
             <tbody class="divide-y divide-border">
                 @forelse($payments as $payment)
-                    <tr wire:key="f24-{{ $payment->id }}" class="transition-colors hover:bg-surface-muted/70 focus-within:bg-primary-subtle">
+                    <tr
+                        wire:key="f24-{{ $payment->id }}"
+                        @class([
+                            'transition-colors focus-within:bg-primary-subtle',
+                            'bg-danger-bg/50 hover:bg-danger-bg/70' => $payment->isOverdue(),
+                            'bg-warning-bg/60 hover:bg-warning-bg/80' => ! $payment->isOverdue() && $this->isNearDue($payment),
+                            'hover:bg-surface-muted/70' => ! $payment->isOverdue() && ! $this->isNearDue($payment),
+                        ])
+                    >
                         <td class="px-5 py-4 align-top">
                             <x-app-link :href="route('f24.edit', $payment)" class="rounded font-medium text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                                 {{ $payment->primaryLabel() }}
@@ -274,7 +291,14 @@ new #[Layout('layouts::app')] class extends Component {
 
     <div class="divide-y divide-border border-y border-border bg-white lg:hidden">
         @forelse($payments as $payment)
-            <article wire:key="f24-mobile-{{ $payment->id }}" class="p-4">
+            <article
+                wire:key="f24-mobile-{{ $payment->id }}"
+                @class([
+                    'p-4',
+                    'bg-danger-bg/40' => $payment->isOverdue(),
+                    'bg-warning-bg/50' => ! $payment->isOverdue() && $this->isNearDue($payment),
+                ])
+            >
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <x-app-link :href="route('f24.edit', $payment)" class="block truncate rounded text-sm font-semibold text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">

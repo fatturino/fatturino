@@ -92,14 +92,37 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
             ->values()
             ->all();
         $stats['f24Upcoming'] = collect($stats['f24Upcoming'] ?? [])
-            ->map(fn ($payment) => [
-                'id' => $payment->id,
-                'label' => $payment->primaryLabel(),
-                'due_date' => $this->formatDate($payment->due_date),
-                'amount_cents' => (int) $payment->balance_cents,
-                'is_overdue' => $payment->isOverdue(),
-                'href' => route('f24.edit', $payment),
+            ->map(function ($payment) {
+                $dueDate = $payment->due_date === null ? null : $payment->due_date->copy()->startOfDay();
+                $daysUntilDue = $dueDate === null ? null : now()->startOfDay()->diffInDays($dueDate, false);
+                [$dueTone, $dueLabel, $dueDetail, $isUrgent] = match (true) {
+                    $daysUntilDue === null => ['warning', __('app.f24.status_planned'), __('app.f24.attention_no_due'), false],
+                    $daysUntilDue < 0 => ['danger', __('app.f24.status_overdue'), trans_choice('app.f24.attention_overdue_by', abs($daysUntilDue), ['count' => abs($daysUntilDue)]), true],
+                    $daysUntilDue === 0 => ['danger', __('app.f24.attention_due_today'), __('app.f24.attention_due_today_detail'), true],
+                    $daysUntilDue <= 7 => ['warning', __('app.f24.attention_urgent'), trans_choice('app.f24.attention_due_in', $daysUntilDue, ['count' => $daysUntilDue]), true],
+                    default => ['info', __('app.f24.attention_soon'), trans_choice('app.f24.attention_due_in', $daysUntilDue, ['count' => $daysUntilDue]), false],
+                };
+
+                return [
+                    'id' => $payment->id,
+                    'label' => $payment->primaryLabel(),
+                    'due_date' => $this->formatDate($payment->due_date),
+                    'amount_cents' => (int) $payment->balance_cents,
+                    'is_overdue' => $payment->isOverdue(),
+                    'days_until_due' => $daysUntilDue,
+                    'due_tone' => $dueTone,
+                    'due_label' => $dueLabel,
+                    'due_detail' => $dueDetail,
+                    'is_urgent' => $isUrgent,
+                    'href' => route('f24.edit', $payment),
+                ];
+            })
+            ->sortBy([
+                ['is_urgent', 'desc'],
+                ['days_until_due', 'asc'],
+                ['id', 'asc'],
             ])
+            ->values()
             ->all();
         $this->stats = $stats;
     }
@@ -199,16 +222,18 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
     }
     $f24AttentionItems = collect($stats['f24Upcoming'] ?? [])
         ->map(function (array $payment) {
-            $dueLabel = $payment['due_date'] ?? __('app.f24.status_planned');
+            $dueDateLabel = $payment['due_date'] ?? __('app.f24.status_planned');
 
             return [
+                'type' => 'f24_deadline',
                 'title' => $payment['label'],
-                'detail' => $payment['is_overdue']
-                    ? __('app.f24.attention_overdue', ['date' => $dueLabel])
-                    : __('app.f24.attention_upcoming', ['date' => $dueLabel]),
-                'value' => $this->currency($payment['amount_cents']),
+                'detail' => __('app.f24.attention_detail', ['date' => $dueDateLabel]),
+                'meta' => $payment['due_detail'],
+                'value' => $payment['due_label'],
+                'amount' => $this->currency($payment['amount_cents']),
                 'href' => $payment['href'],
-                'tone' => $payment['is_overdue'] ? 'danger' : 'warning',
+                'tone' => $payment['due_tone'],
+                'is_urgent' => $payment['is_urgent'],
                 'action' => __('app.f24.attention_action'),
             ];
         })
