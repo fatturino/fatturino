@@ -93,6 +93,43 @@ it('marks a planned f24 payment as paid from the index', function () {
         ->and($payment->fresh()->paid_at)->not->toBeNull();
 });
 
+it('renders the kebab action menu for planned f24 payments on the index', function () {
+    $user = User::factory()->create();
+    $payment = F24Payment::factory()->withIrpefLine(50000)->create([
+        'status' => F24PaymentStatus::Planned,
+        'due_date' => now()->addDays(5)->toDateString(),
+        'source_file_path' => 'f24/'.now()->year.'/demo/quietanza.pdf',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('f24.index'))
+        ->assertOk()
+        ->assertSee('aria-label="'.__('app.f24.actions_for', ['label' => 'IRPEF - saldo']).'"', false)
+        ->assertSee('x-teleport="body"', false)
+        ->assertSee('x-ref="menu"', false)
+        ->assertSee(__('app.f24.edit'))
+        ->assertSee(__('app.f24.mark_paid'))
+        ->assertSee(__('app.f24.open_attachment'))
+        ->assertSee(__('app.common.delete'))
+        ->assertSee(route('f24.edit', $payment), false)
+        ->assertSee(route('f24.attachment', ['path' => $payment->source_file_path]), false);
+});
+
+it('hides mark paid for already paid f24 payments on the index', function () {
+    $user = User::factory()->create();
+    F24Payment::factory()->paid()->withIrpefLine(20000)->create([
+        'paid_at' => now()->toDateString(),
+        'due_date' => now()->toDateString(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('f24.index'))
+        ->assertOk()
+        ->assertSee(__('app.f24.edit'))
+        ->assertDontSee(__('app.f24.mark_paid'))
+        ->assertSee(__('app.common.delete'));
+});
+
 it('saves an f24 payment from the livewire form', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

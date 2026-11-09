@@ -63,6 +63,30 @@ new #[Layout('layouts::app')] class extends Component {
         return '€ '.number_format($cents / 100, 2, ',', '.');
     }
 
+    public function statusLabel(F24Payment $payment): string
+    {
+        return $payment->isOverdue()
+            ? __('app.f24.status_overdue')
+            : $payment->status->label();
+    }
+
+    public function statusTone(F24Payment $payment): string
+    {
+        if ($payment->status === F24PaymentStatus::Paid) {
+            return 'success';
+        }
+
+        if ($payment->status === F24PaymentStatus::Planned && $payment->isOverdue()) {
+            return 'danger';
+        }
+
+        if ($payment->status === F24PaymentStatus::Planned) {
+            return 'warning';
+        }
+
+        return 'neutral';
+    }
+
     public function render()
     {
         $payments = $this->query()
@@ -173,71 +197,126 @@ new #[Layout('layouts::app')] class extends Component {
                 </select>
             </label>
         </div>
-        <button type="button" wire:click="resetFilters" class="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-content-muted transition hover:bg-surface-muted hover:text-content focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.reset') }}</button>
-    </div>
-
-    <div class="overflow-x-auto border-y border-border bg-white">
-        @if($payments->isEmpty())
-            <div class="px-5 py-10 text-center">
-                <p class="font-medium text-content">{{ __('app.f24.empty_title') }}</p>
-                <p class="mt-1 text-sm text-content-muted">{{ __('app.f24.empty_body') }}</p>
-                <div class="mt-4 flex flex-wrap justify-center gap-2">
-                    <x-app-link :href="route('f24.create')" class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition hover:bg-primary-hover">{{ __('app.f24.new') }}</x-app-link>
-                    <x-app-link :href="route('f24.import')" class="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-3 text-sm font-medium text-content transition hover:bg-surface-muted">{{ __('app.f24.import_pdf') }}</x-app-link>
-                </div>
-            </div>
-        @else
-            <table class="min-w-full text-left text-sm">
-                <thead class="border-b border-border bg-surface-muted text-content-muted">
-                    <tr>
-                        <th class="px-5 py-3 text-xs font-medium">{{ __('app.f24.col_label') }}</th>
-                        <th class="px-5 py-3 text-xs font-medium">{{ __('app.f24.col_status') }}</th>
-                        <th class="px-5 py-3 text-xs font-medium">{{ __('app.f24.col_due') }}</th>
-                        <th class="px-5 py-3 text-xs font-medium">{{ __('app.f24.col_paid') }}</th>
-                        <th class="px-5 py-3 text-right text-xs font-medium">{{ __('app.f24.col_amount') }}</th>
-                        <th class="px-5 py-3 text-xs font-medium"><span class="sr-only">{{ __('app.common.filters') }}</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($payments as $payment)
-                        <tr wire:key="f24-{{ $payment->id }}" class="border-b border-border transition-colors hover:bg-surface-muted/70">
-                            <td class="px-5 py-3">
-                                <p class="font-medium text-content">{{ $payment->primaryLabel() }}</p>
-                                <p class="text-xs text-content-muted">
-                                    {{ $payment->lines->count() }} {{ $payment->lines->count() === 1 ? __('app.f24.one_line') : __('app.f24.many_lines') }}
-                                    @if($payment->protocol_number)
-                                        · {{ $payment->protocol_number }}
-                                    @endif
-                                </p>
-                            </td>
-                            <td class="px-5 py-3">
-                                <span @class([
-                                    'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-                                    'bg-success-bg text-success' => $payment->status === \App\Enums\F24PaymentStatus::Paid,
-                                    'bg-danger-bg text-danger' => $payment->status === \App\Enums\F24PaymentStatus::Planned && $payment->isOverdue(),
-                                    'bg-warning-bg text-warning' => $payment->status === \App\Enums\F24PaymentStatus::Planned && ! $payment->isOverdue(),
-                                    'bg-surface-muted text-content-muted' => $payment->status === \App\Enums\F24PaymentStatus::Cancelled,
-                                ])>
-                                    {{ $payment->isOverdue() ? __('app.f24.status_overdue') : $payment->status->label() }}
-                                </span>
-                            </td>
-                            <td class="px-5 py-3 tabular-nums text-content-muted">{{ $payment->due_date?->format('d/m/Y') ?? '—' }}</td>
-                            <td class="px-5 py-3 tabular-nums text-content-muted">{{ $payment->paid_at?->format('d/m/Y') ?? '—' }}</td>
-                            <td class="px-5 py-3 text-right font-medium tabular-nums text-content">{{ $this->currency((int) $payment->balance_cents) }}</td>
-                            <td class="px-5 py-3">
-                                <div class="flex flex-wrap justify-end gap-3">
-                                    <x-app-link :href="route('f24.edit', $payment)" class="text-sm font-medium text-primary hover:underline">{{ __('app.f24.edit') }}</x-app-link>
-                                    @if($payment->status === \App\Enums\F24PaymentStatus::Planned)
-                                        <button type="button" wire:click="markPaid({{ $payment->id }})" class="text-sm font-medium text-success hover:underline">{{ __('app.f24.mark_paid') }}</button>
-                                    @endif
-                                    <button type="button" wire:click="delete({{ $payment->id }})" wire:confirm="{{ __('app.common.confirm_delete') }}" class="text-sm font-medium text-danger hover:underline">{{ __('app.common.delete') }}</button>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            <div class="border-t border-border px-5 py-3">{{ $payments->links() }}</div>
+        @if($status !== '' || $category !== '')
+            <button type="button" wire:click="resetFilters" class="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-content-muted transition hover:bg-surface-muted hover:text-content focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.reset') }}</button>
         @endif
     </div>
+
+    <div wire:loading.flex wire:target="status,category" class="hidden items-center gap-2 rounded-lg border border-info/20 bg-info-bg px-4 py-3 text-sm text-info" role="status">
+        <span class="size-4 animate-pulse rounded bg-current/30" aria-hidden="true"></span>
+        {{ __('app.f24.updating') }}
+    </div>
+
+    <div class="hidden overflow-x-auto border-y border-border bg-white lg:block">
+        <table class="min-w-full text-left text-sm">
+            <thead class="border-b border-border bg-surface-muted text-content-muted">
+                <tr>
+                    <th scope="col" class="px-5 py-3 text-xs font-medium">{{ __('app.f24.col_label') }}</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-medium">{{ __('app.f24.col_status') }}</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-medium">{{ __('app.f24.col_due') }}</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-medium">{{ __('app.f24.col_paid') }}</th>
+                    <th scope="col" class="px-5 py-3 text-right text-xs font-medium">{{ __('app.f24.col_amount') }}</th>
+                    <th scope="col" class="w-14 px-3 py-3 text-right text-xs font-medium"><span class="sr-only">{{ __('app.f24.col_actions') }}</span></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+                @forelse($payments as $payment)
+                    <tr wire:key="f24-{{ $payment->id }}" class="transition-colors hover:bg-surface-muted/70 focus-within:bg-primary-subtle">
+                        <td class="px-5 py-4 align-top">
+                            <x-app-link :href="route('f24.edit', $payment)" class="rounded font-medium text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                {{ $payment->primaryLabel() }}
+                            </x-app-link>
+                            <p class="mt-1 text-xs text-content-muted">
+                                {{ $payment->lines->count() }} {{ $payment->lines->count() === 1 ? __('app.f24.one_line') : __('app.f24.many_lines') }}
+                                @if($payment->protocol_number)
+                                    · {{ $payment->protocol_number }}
+                                @endif
+                            </p>
+                        </td>
+                        <td class="px-5 py-4 align-top whitespace-nowrap">
+                            <x-badge :value="$this->statusLabel($payment)" :variant="$this->statusTone($payment)" />
+                        </td>
+                        <td class="px-5 py-4 align-top whitespace-nowrap tabular-nums text-content-muted">{{ $payment->due_date?->format('d/m/Y') ?? '—' }}</td>
+                        <td class="px-5 py-4 align-top whitespace-nowrap tabular-nums text-content-muted">{{ $payment->paid_at?->format('d/m/Y') ?? '—' }}</td>
+                        <td class="px-5 py-4 align-top text-right font-semibold tabular-nums text-content">{{ $this->currency((int) $payment->balance_cents) }}</td>
+                        <td class="px-3 py-4 align-top text-right">
+                            <x-f24.f24-actions :payment="$payment" />
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-5 py-14 text-center">
+                            <x-icon name="o-inbox" class="mx-auto size-8 text-content-muted" aria-hidden="true" />
+                            <p class="mt-3 text-sm font-medium text-content">{{ $status !== '' || $category !== '' ? __('app.f24.empty_filtered') : __('app.f24.empty_title') }}</p>
+                            @if($status !== '' || $category !== '')
+                                <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.reset') }}</button>
+                            @else
+                                <p class="mt-1 text-sm text-content-muted">{{ __('app.f24.empty_body') }}</p>
+                                <div class="mt-4 flex flex-wrap justify-center gap-2">
+                                    <x-app-link :href="route('f24.create')" class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition hover:bg-primary-hover">{{ __('app.f24.new') }}</x-app-link>
+                                    <x-app-link :href="route('f24.import')" class="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-3 text-sm font-medium text-content transition hover:bg-surface-muted">{{ __('app.f24.import_pdf') }}</x-app-link>
+                                </div>
+                            @endif
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="divide-y divide-border border-y border-border bg-white lg:hidden">
+        @forelse($payments as $payment)
+            <article wire:key="f24-mobile-{{ $payment->id }}" class="p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <x-app-link :href="route('f24.edit', $payment)" class="block truncate rounded text-sm font-semibold text-content transition hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            {{ $payment->primaryLabel() }}
+                        </x-app-link>
+                        <p class="mt-1 truncate text-sm text-content-muted">
+                            {{ $payment->lines->count() }} {{ $payment->lines->count() === 1 ? __('app.f24.one_line') : __('app.f24.many_lines') }}
+                            @if($payment->protocol_number)
+                                · {{ $payment->protocol_number }}
+                            @endif
+                        </p>
+                    </div>
+                    <div class="flex shrink-0 items-start gap-1">
+                        <x-badge :value="$this->statusLabel($payment)" :variant="$this->statusTone($payment)" />
+                        <x-f24.f24-actions :payment="$payment" />
+                    </div>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    <div>
+                        <p class="text-xs text-content-muted">{{ __('app.f24.col_due') }}</p>
+                        <p class="mt-1 text-content">{{ $payment->due_date?->format('d/m/Y') ?? '—' }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-content-muted">{{ __('app.f24.col_amount') }}</p>
+                        <p class="mt-1 font-semibold tabular-nums text-content">{{ $this->currency((int) $payment->balance_cents) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-content-muted">{{ __('app.f24.col_paid') }}</p>
+                        <p class="mt-1 text-content">{{ $payment->paid_at?->format('d/m/Y') ?? '—' }}</p>
+                    </div>
+                </div>
+            </article>
+        @empty
+            <div class="px-5 py-14 text-center">
+                <x-icon name="o-inbox" class="mx-auto size-8 text-content-muted" aria-hidden="true" />
+                <p class="mt-3 text-sm font-medium text-content">{{ $status !== '' || $category !== '' ? __('app.f24.empty_filtered') : __('app.f24.empty_title') }}</p>
+                @if($status !== '' || $category !== '')
+                    <button wire:click="resetFilters" type="button" class="mt-3 text-sm font-medium text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary/20">{{ __('app.common.reset') }}</button>
+                @else
+                    <p class="mt-1 text-sm text-content-muted">{{ __('app.f24.empty_body') }}</p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <x-app-link :href="route('f24.create')" class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition hover:bg-primary-hover">{{ __('app.f24.new') }}</x-app-link>
+                        <x-app-link :href="route('f24.import')" class="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-3 text-sm font-medium text-content transition hover:bg-surface-muted">{{ __('app.f24.import_pdf') }}</x-app-link>
+                    </div>
+                @endif
+            </div>
+        @endforelse
+    </div>
+
+    @if($payments->hasPages())
+        <div class="pt-1">{{ $payments->links() }}</div>
+    @endif
 </section>
