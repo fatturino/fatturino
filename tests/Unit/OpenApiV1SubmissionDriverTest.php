@@ -69,22 +69,55 @@ foreach ([
 }
 
 foreach ([
-    'bad request' => [400, 'rejection_400'],
-    'payment required' => [402, 'rejection_402'],
-    'unprocessable entity' => [422, 'rejection_422'],
-] as $case => [$status, $fixture]) {
-    test("V1 driver rejects only documented complete rejection envelopes: {$case}", function () use ($status, $fixture) {
+    'bad request' => [
+        400,
+        'rejection_400',
+        '230',
+        'Il documento non supera i controlli del provider. Controlla i dati obbligatori e correggi il documento.',
+    ],
+    'payment required' => [
+        402,
+        'rejection_402',
+        '611',
+        'Credito insufficiente sul servizio SDI. Verifica il piano o il wallet del provider, poi riprova.',
+    ],
+    'unprocessable entity' => [
+        422,
+        'rejection_422',
+        '802',
+        'XML non valido o malformato. Rigenera il documento e riprova l’invio.',
+    ],
+] as $case => [$status, $fixture, $errorCode, $message]) {
+    test("V1 driver rejects only documented complete rejection envelopes: {$case}", function () use ($status, $fixture, $errorCode, $message) {
         Http::fake([nativeSubmitUrl() => Http::response(nativeFixture($fixture), $status)]);
 
         $result = v1Driver()->submit(submissionCommand());
 
         expect($result->definitivelyRejected)->toBeTrue()
             ->and($result->accepted)->toBeFalse()
-            ->and($result->errorCode)->toBeNull()
+            ->and($result->errorCode)->toBe($errorCode)
             ->and($result->httpStatus)->toBe($status)
-            ->and($result->message)->toBe('Il provider ha rifiutato il documento prima dell’accettazione.');
+            ->and($result->message)->toBe($message);
     });
 }
+
+test('V1 driver appends a sanitized validation detail for useful provider messages', function () {
+    Http::fake([
+        nativeSubmitUrl() => Http::response([
+            'success' => false,
+            'message' => 'An error occurred: fattura_elettronica_header.dati_trasmissione.codice_destinatario: This value should not be blank.',
+            'error' => 230,
+            'data' => null,
+        ], 400),
+    ]);
+
+    $result = v1Driver()->submit(submissionCommand());
+
+    expect($result->definitivelyRejected)->toBeTrue()
+        ->and($result->errorCode)->toBe('230')
+        ->and($result->message)->toContain('codice_destinatario')
+        ->and($result->message)->not->toContain('An error occurred:');
+});
 
 foreach ([
     'missing error' => [422, nativeFixture('incomplete_rejection')],

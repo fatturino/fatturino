@@ -324,7 +324,7 @@ new #[Layout('layouts::app')] class extends Component {
 
                 <section id="sales-panel-notes" role="tabpanel" aria-labelledby="sales-tab-notes" x-show="tab === 'notes'" x-cloak class="pt-5"><label class="text-sm font-semibold">Note<textarea wire:model="notes" @disabled($this->readOnly) rows="5" class="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"></textarea></label></section>
 
-                @if($invoice)<section id="sales-panel-history" role="tabpanel" aria-labelledby="sales-tab-history" x-show="tab === 'history'" x-cloak class="space-y-3 pt-5">@forelse($invoice->events as $event)<div class="border-l-2 border-primary pl-3"><p class="text-sm font-semibold">{{ $event->title }}</p><p class="text-xs text-content-muted">{{ $event->occurred_at?->format('d/m/Y H:i') }} {{ $event->message }}</p></div>@empty<p class="text-sm text-content-muted">Nessun evento registrato.</p>@endforelse</section>@endif
+                @if($invoice)<section id="sales-panel-history" role="tabpanel" aria-labelledby="sales-tab-history" x-show="tab === 'history'" x-cloak class="pt-5"><x-documents.document-history :events="$invoice->events" /></section>@endif
             </article>
 
             <x-documents.invoice-form.lines title="Righe fattura" :read-only="$this->readOnly">

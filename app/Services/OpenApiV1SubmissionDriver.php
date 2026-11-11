@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\SdiSubmissionDriver;
+use App\Sdi\OpenApiRejectionPresenter;
 use App\Sdi\SdiSubmissionCommand;
 use App\Sdi\SdiSubmissionResult;
 use App\Settings\OpenApiSettings;
@@ -16,7 +17,10 @@ class OpenApiV1SubmissionDriver implements SdiSubmissionDriver
 
     private const REQUEST_TIMEOUT_SECONDS = 20;
 
-    public function __construct(private readonly OpenApiSettings $settings) {}
+    public function __construct(
+        private readonly OpenApiSettings $settings,
+        private readonly OpenApiRejectionPresenter $rejectionPresenter = new OpenApiRejectionPresenter,
+    ) {}
 
     public function key(): string
     {
@@ -59,9 +63,11 @@ class OpenApiV1SubmissionDriver implements SdiSubmissionDriver
         }
 
         if (in_array($response->status(), [400, 402, 422], true) && $this->isDocumentedRejectionEnvelope($body)) {
+            $presented = $this->rejectionPresenter->present($response->status(), $body);
+
             return SdiSubmissionResult::rejected(
-                'Il provider ha rifiutato il documento prima dell’accettazione.',
-                null,
+                $presented['message'],
+                $presented['error_code'],
                 $response->status(),
             );
         }

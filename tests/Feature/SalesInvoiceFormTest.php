@@ -3,6 +3,7 @@
 use App\Enums\InvoiceStatus;
 use App\Enums\VatRate;
 use App\Models\Contact;
+use App\Models\DocumentEvent;
 use App\Models\SalesInvoice;
 use App\Models\SdiOutboundSubmission;
 use App\Models\Sequence;
@@ -68,6 +69,32 @@ it('renders the sales invoice as a tabbed form with invoice lines and a fiscal s
         ->assertSee('aria-label="Sezioni fattura"', escape: false)
         ->assertSee('role="tablist"', escape: false)
         ->assertSee('sales-panel-payment', escape: false);
+});
+
+it('shows document history rows that open an event detail modal', function () {
+    $user = User::factory()->create();
+    $invoice = SalesInvoice::factory()->create(['status' => InvoiceStatus::XmlValidated]);
+    DocumentEvent::query()->create([
+        'fiscal_document_id' => $invoice->id,
+        'event_type' => 'sdi_sent',
+        'channel' => 'sdi',
+        'status' => 'failed',
+        'title' => 'Invio SDI fallito',
+        'message' => 'Il documento non supera i controlli del provider. Controlla i dati obbligatori e correggi il documento. Dettaglio: codice_destinatario blank.',
+        'error_message' => '230',
+        'occurred_at' => now(),
+    ]);
+    $invoice = SalesInvoice::query()->findOrFail($invoice->id);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::documents.sales.form', ['invoice' => $invoice])
+        ->set('tab', 'history')
+        ->assertSee('Invio SDI fallito')
+        ->assertSee('controlli del provider')
+        ->assertSee('document-history-title', escape: false)
+        ->assertSee('errorLabel(', escape: false)
+        ->assertSee('openEvent(', escape: false);
 });
 
 it('shows a persistent warning when an SDI submission needs verification', function () {

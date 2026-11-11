@@ -200,17 +200,20 @@ class SendDocumentToSdiJob implements ShouldQueue
                 'raw_payload' => array_filter([
                     'submission_id' => $submission->id,
                     'submission_status' => $submission->status?->value,
-                ]),
+                    'provider_error_code' => $submission->provider_error_code,
+                    'provider_http_status' => $submission->provider_http_status,
+                ], static fn (mixed $value): bool => $value !== null && $value !== ''),
             ]);
         }, $document);
 
-        $this->runSideEffect('record failed document event', function () use ($events, $document, $outboundLog, $errorMessage) {
+        $this->runSideEffect('record failed document event', function () use ($events, $document, $outboundLog, $errorMessage, $submission, $uncertain) {
             $events->record($document, [
                 'event_type' => 'sdi_sent',
                 'channel' => 'sdi',
                 'status' => 'failed',
-                'title' => 'Invio SDI fallito',
+                'title' => $uncertain ? 'Invio SDI da verificare' : 'Invio SDI fallito',
                 'message' => $errorMessage,
+                'error_message' => $submission->provider_error_code,
                 'technical_reference_type' => 'ei_outbound_log',
                 'technical_reference_id' => $outboundLog?->id,
             ]);

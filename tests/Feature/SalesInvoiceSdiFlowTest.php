@@ -7,6 +7,7 @@ use App\Enums\SdiSubmissionStatus;
 use App\Enums\VatRate;
 use App\Jobs\SendDocumentToSdiJob;
 use App\Models\Contact;
+use App\Models\DocumentEvent;
 use App\Models\EiOutboundLog;
 use App\Models\FiscalDocument;
 use App\Models\InAppNotification;
@@ -15,7 +16,9 @@ use App\Models\Sequence;
 use App\Models\User;
 use App\Services\DocumentEventRecorder;
 use App\Settings\CompanySettings;
+use App\Settings\OpenApiSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
@@ -341,6 +344,73 @@ test('queued sdi job logs send_failed and notifies on provider failure', functio
         'fiscal_document_id' => $invoice->id,
         'status' => SdiSubmissionStatus::ProviderRejected->value,
         'active_document_lock' => null,
+    ]);
+});
+
+test('openapi v1 provider rejection stores an operational message and error code on the document event', function () {
+    config()->set('sdi.driver', 'openapi_v1');
+    config()->set('fe-openapi.sandbox_url', 'https://test.sdi.openapi.it');
+
+    $settings = app(OpenApiSettings::class);
+    $settings->api_token = 'test-token';
+    $settings->sandbox = true;
+    $settings->save();
+
+    Http::fake([
+        'https://test.sdi.openapi.it/invoices' => Http::response([
+            'success' => false,
+            'message' => 'An error occurred: fattura_elettronica_header.dati_trasmissione.codice_destinatario: This value should not be blank.',
+            'error' => 230,
+            'data' => null,
+        ], 400),
+    ]);
+
+    $user = User::factory()->create(['is_admin' => true]);
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::XmlValidated,
+    ]);
+    $invoice->lines()->create([
+        'description' => 'Servizio',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+    $invoice->calculateTotals();
+
+    $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/send-sdi")
+        ->assertOk()
+        ->assertJsonPath('success', true);
+
+    $event = DocumentEvent::query()
+        ->where('fiscal_document_id', $invoice->id)
+        ->where('event_type', 'sdi_sent')
+        ->where('status', 'failed')
+        ->sole();
+
+    expect($event->title)->toBe('Invio SDI fallito')
+        ->and($event->message)->toContain('controlli del provider')
+        ->and($event->message)->toContain('codice_destinatario')
+        ->and($event->error_message)->toBe('230');
+
+    $log = EiOutboundLog::query()
+        ->where('fiscal_document_id', $invoice->id)
+        ->where('event_type', 'send_failed')
+        ->sole();
+
+    expect($log->raw_payload)->toMatchArray([
+        'provider_error_code' => '230',
+        'provider_http_status' => 400,
+    ]);
+
+    $this->assertDatabaseHas('sdi_outbound_submissions', [
+        'fiscal_document_id' => $invoice->id,
+        'provider' => 'openapi_v1',
+        'status' => SdiSubmissionStatus::ProviderRejected->value,
+        'provider_error_code' => '230',
+        'provider_http_status' => 400,
     ]);
 });
 
