@@ -8,6 +8,7 @@ use App\Models\Contact;
 use App\Models\CreditNote;
 use App\Models\SelfInvoice;
 use App\Models\User;
+use App\Services\DocumentStorageService;
 use App\Settings\CompanySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -87,6 +88,66 @@ test('self invoice send stops before the provider when a historical equivalent e
     $this->actingAs($user)->postJson("/self-invoices/{$invoice->id}/send-sdi")
         ->assertUnprocessable()
         ->assertJsonPath('errors.invoice.0', 'La fattura del fornitore 3803690D-0033 del 2026-10-09 risulta già associata a un\'altra autofattura.');
+});
+
+test('self invoice validate xml regenerates snapshot with updated supplier data', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create([
+        'name' => 'Fornitore Originale GmbH',
+        'country' => 'DE',
+        'vat_number' => 'DE123456789',
+    ]);
+
+    $invoice = SelfInvoice::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::Draft,
+        'document_type' => 'TD17',
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Servizio estero',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+    $invoice->calculateTotals();
+
+    $provider = Mockery::mock(SdiProvider::class);
+    $provider->shouldReceive('validateXml')
+        ->twice()
+        ->andReturn(['valid' => true]);
+    app()->instance(SdiProvider::class, $provider);
+
+    $this->actingAs($user)->postJson("/self-invoices/{$invoice->id}/validate-xml")->assertOk();
+
+    $invoice->refresh();
+    $originalPath = $invoice->xml_path;
+    $originalXml = app(DocumentStorageService::class)->getXml($originalPath);
+
+    expect($originalXml)->toContain('Fornitore Originale GmbH')
+        ->and($invoice->status)->toBe(InvoiceStatus::XmlValidated);
+
+    $contact->update(['name' => 'Fornitore Aggiornato GmbH']);
+
+    $response = $this->actingAs($user)->postJson("/self-invoices/{$invoice->id}/validate-xml");
+
+    $response->assertOk()->assertJson([
+        'success' => true,
+        'message' => 'XML rigenerato e validato con successo.',
+        'document' => [
+            'status' => InvoiceStatus::XmlValidated->value,
+            'is_sdi_editable' => true,
+        ],
+    ]);
+
+    $invoice->refresh();
+    $regeneratedXml = app(DocumentStorageService::class)->getXml($invoice->xml_path);
+
+    expect($invoice->status)->toBe(InvoiceStatus::XmlValidated)
+        ->and($invoice->xml_path)->toBe($originalPath)
+        ->and($regeneratedXml)->toContain('Fornitore Aggiornato GmbH')
+        ->and($regeneratedXml)->not->toContain('Fornitore Originale GmbH');
 });
 
 test('credit note validate xml sets status to xml_validated', function () {

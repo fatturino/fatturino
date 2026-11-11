@@ -26,6 +26,27 @@ it('stores immutable XML snapshots on the dedicated document disk', function () 
         ->toThrow(RuntimeException::class, 'Refusing to overwrite immutable document snapshot');
 });
 
+it('replaces an existing XML snapshot for pre-send regeneration', function () {
+    $storage = app(DocumentStorageService::class);
+
+    $path = $storage->storeXml('<Invoice/>', 'sales', 2026, '01M3VVDHF70NR8S6HFCZYTPY6C', 'IT01234567890_00001.xml');
+
+    $replaced = $storage->replaceXml(
+        '<InvoiceChanged/>',
+        'sales',
+        2026,
+        '01M3VVDHF70NR8S6HFCZYTPY6C',
+        'IT01234567890_00001.xml',
+        $path,
+    );
+
+    expect($replaced)->toBe($path)
+        ->and($storage->getXml($path))->toBe('<InvoiceChanged/>');
+
+    expect(fn () => $storage->storeXml('<StillImmutable/>', 'sales', 2026, '01M3VVDHF70NR8S6HFCZYTPY6C', 'IT01234567890_00001.xml'))
+        ->toThrow(RuntimeException::class, 'Refusing to overwrite immutable document snapshot');
+});
+
 it('stores and reads PDFs from the dedicated document disk', function () {
     $storage = app(DocumentStorageService::class);
 

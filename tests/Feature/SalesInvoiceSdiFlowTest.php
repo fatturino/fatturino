@@ -15,6 +15,7 @@ use App\Models\SdiOutboundSubmission;
 use App\Models\Sequence;
 use App\Models\User;
 use App\Services\DocumentEventRecorder;
+use App\Services\DocumentStorageService;
 use App\Settings\CompanySettings;
 use App\Settings\OpenApiSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -288,6 +289,88 @@ test('validate xml endpoint returns uniform json when document is not editable',
         'success' => false,
         'document' => [
             'status' => InvoiceStatus::Draft->value,
+            'sdi_status' => SdiStatus::Delivered->value,
+            'is_sdi_editable' => false,
+        ],
+    ]);
+});
+
+test('validate xml regenerates snapshot for xml_validated invoices with updated contact data', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create([
+        'name' => 'Cliente Originale SRL',
+        'country' => 'IT',
+        'sdi_code' => '1234567',
+    ]);
+
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::Draft,
+    ]);
+
+    $invoice->lines()->create([
+        'description' => 'Servizio',
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'vat_rate' => VatRate::R22->value,
+        'total' => 10000,
+    ]);
+    $invoice->calculateTotals();
+
+    $provider = Mockery::mock(SdiProvider::class);
+    $provider->shouldReceive('validateXml')
+        ->twice()
+        ->andReturn(['valid' => true, 'message' => 'ok']);
+    app()->instance(SdiProvider::class, $provider);
+
+    $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/validate-xml")->assertOk();
+
+    $invoice->refresh();
+    $originalPath = $invoice->xml_path;
+    $originalXml = app(DocumentStorageService::class)->getXml($originalPath);
+
+    expect($originalXml)->toContain('Cliente Originale SRL')
+        ->and($invoice->fresh()->status)->toBe(InvoiceStatus::XmlValidated);
+
+    $contact->update(['name' => 'Cliente Aggiornato SPA']);
+
+    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/validate-xml");
+
+    $response->assertOk()->assertJson([
+        'success' => true,
+        'message' => 'XML rigenerato e validato con successo.',
+        'document' => [
+            'status' => InvoiceStatus::XmlValidated->value,
+            'sdi_status' => null,
+            'is_sdi_editable' => true,
+        ],
+    ]);
+
+    $invoice->refresh();
+    $regeneratedXml = app(DocumentStorageService::class)->getXml($invoice->xml_path);
+
+    expect($invoice->fresh()->status)->toBe(InvoiceStatus::XmlValidated)
+        ->and($invoice->xml_path)->toBe($originalPath)
+        ->and($regeneratedXml)->toContain('Cliente Aggiornato SPA')
+        ->and($regeneratedXml)->not->toContain('Cliente Originale SRL');
+});
+
+test('validate xml refuses regeneration when invoice was already sent', function () {
+    $user = User::factory()->create();
+    $contact = Contact::factory()->create(['country' => 'IT', 'sdi_code' => '1234567']);
+
+    $invoice = FiscalDocument::factory()->create([
+        'contact_id' => $contact->id,
+        'status' => InvoiceStatus::Sent,
+        'sdi_status' => SdiStatus::Delivered,
+    ]);
+
+    $response = $this->actingAs($user)->postJson("/sell-invoices/{$invoice->id}/validate-xml");
+
+    $response->assertStatus(422)->assertJson([
+        'success' => false,
+        'document' => [
+            'status' => InvoiceStatus::Sent->value,
             'sdi_status' => SdiStatus::Delivered->value,
             'is_sdi_editable' => false,
         ],

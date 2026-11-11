@@ -24,6 +24,40 @@ class DocumentStorageService
     }
 
     /**
+     * Replace an XML snapshot used for pre-send revalidation.
+     *
+     * Deletes any existing file at the destination path first so a regenerated
+     * document can overwrite the previous validated snapshot. Regular storeXml
+     * remains immutable for all other writers.
+     *
+     * @param  string  $category  e.g. 'sales', 'purchase', 'credit-notes', 'self-invoices'
+     */
+    public function replaceXml(string $xmlContent, string $category, int $year, string $publicId, string $filename, ?string $previousPath = null): string
+    {
+        $path = $this->snapshotPath('xml', $category, $year, $publicId, $filename);
+        $disk = Storage::disk(self::DISK);
+
+        if ($previousPath !== null && $previousPath !== $path && $disk->exists($previousPath)) {
+            $disk->delete($previousPath);
+        }
+
+        if ($disk->exists($path)) {
+            $disk->delete($path);
+        }
+
+        if ($disk->put($path, $xmlContent) !== true || ! $disk->exists($path)) {
+            throw new RuntimeException("Unable to persist document snapshot: {$path}");
+        }
+
+        $persisted = $disk->get($path);
+        if (! hash_equals(hash('sha256', $xmlContent), hash('sha256', $persisted))) {
+            throw new RuntimeException("Document snapshot integrity check failed: {$path}");
+        }
+
+        return $path;
+    }
+
+    /**
      * Store raw PDF binary content and return the relative path.
      *
      * @param  string  $category  e.g. 'sales', 'credit-notes'

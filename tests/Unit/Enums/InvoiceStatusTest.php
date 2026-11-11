@@ -24,10 +24,10 @@ test('each case has a non-empty icon', function () {
     }
 });
 
-test('canValidateXml returns true only for Draft', function () {
+test('canValidateXml returns true for Draft and XmlValidated', function () {
     expect(InvoiceStatus::Draft->canValidateXml())->toBeTrue();
+    expect(InvoiceStatus::XmlValidated->canValidateXml())->toBeTrue();
     expect(InvoiceStatus::Generated->canValidateXml())->toBeFalse();
-    expect(InvoiceStatus::XmlValidated->canValidateXml())->toBeFalse();
     expect(InvoiceStatus::Sent->canValidateXml())->toBeFalse();
 });
 

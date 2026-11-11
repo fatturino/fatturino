@@ -69,8 +69,16 @@ trait HandlesXmlSdiWorkflow
             return $this->workflowErrorResponse($document, 'Validazione XML fallita.', $errors);
         }
 
+        $wasRegeneration = $document->status === InvoiceStatus::XmlValidated
+            || filled($document->xml_path);
+
         try {
-            $xmlPath = $this->storeXmlSnapshot($document, $xml, $xmlService->generateFileName($document));
+            $xmlPath = $this->storeXmlSnapshot(
+                $document,
+                $xml,
+                $xmlService->generateFileName($document),
+                replace: $wasRegeneration,
+            );
         } catch (Throwable $exception) {
             $message = 'XML valido ma non archiviabile: invio SDI bloccato finché lo storage documentale non è disponibile.';
             Log::error('Unable to persist validated XML snapshot', [
@@ -87,18 +95,21 @@ trait HandlesXmlSdiWorkflow
 
         $document->update(['status' => InvoiceStatus::XmlValidated, 'xml_path' => $xmlPath]);
         $document->refresh();
-        app(DocumentEventRecorder::class)->xmlValidated($document, true, 'XML validato con successo.');
+        $successMessage = $wasRegeneration
+            ? 'XML rigenerato e validato con successo.'
+            : 'XML validato con successo.';
+        app(DocumentEventRecorder::class)->xmlValidated($document, true, $successMessage);
 
         if (! request()->expectsJson()) {
             return back()->with('toast', [
                 'type' => 'success',
                 'title' => 'Operazione completata',
-                'message' => 'XML validato con successo.',
+                'message' => $successMessage,
                 'duration' => 4500,
             ]);
         }
 
-        return $this->workflowSuccessResponse($document, 'XML validato con successo.');
+        return $this->workflowSuccessResponse($document, $successMessage);
     }
 
     protected function sendXmlDocumentToSdi(
@@ -195,13 +206,29 @@ trait HandlesXmlSdiWorkflow
         return $this->workflowSuccessResponse($document, $queuedMessage);
     }
 
-    private function storeXmlSnapshot(object $document, string $xml, string $filename): string
+    private function storeXmlSnapshot(object $document, string $xml, string $filename, bool $replace = false): string
     {
-        return app(DocumentStorageService::class)->storeXml(
+        $storage = app(DocumentStorageService::class);
+        $category = $this->documentStorageCategory($document);
+        $year = (int) $document->date->year;
+        $publicId = $document->public_id;
+
+        if ($replace) {
+            return $storage->replaceXml(
+                $xml,
+                $category,
+                $year,
+                $publicId,
+                $filename,
+                $document->xml_path,
+            );
+        }
+
+        return $storage->storeXml(
             $xml,
-            $this->documentStorageCategory($document),
-            (int) $document->date->year,
-            $document->public_id,
+            $category,
+            $year,
+            $publicId,
             $filename,
         );
     }

@@ -11,6 +11,7 @@
     $canValidateXml = in_array($type, ['sales', 'self', 'credit'], true)
         && $document->isSdiEditable()
         && $document->status->canValidateXml();
+    $isXmlRegeneration = $canValidateXml && $document->status->value === 'xml_validated';
     $canSendToSdi = in_array($type, ['sales', 'self', 'credit'], true)
         && $document->isSdiEditable()
         && $document->status->canSendToSdi()
@@ -146,8 +147,8 @@
 
         @if($canValidateXml)
             <button type="button" role="menuitem" @click="open = false; $dispatch('{{ $event }}', { action: 'validate-xml', id: {{ $document->id }} })" :disabled="busy" class="group flex w-full items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left text-sm font-medium text-content-muted hover:bg-primary-subtle hover:text-primary disabled:cursor-not-allowed disabled:opacity-50">
-                <x-icon name="o-shield-check" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
-                <span class="flex-1">Verifica XML</span>
+                <x-icon name="{{ $isXmlRegeneration ? 'o-arrow-path' : 'o-shield-check' }}" class="size-5 shrink-0 opacity-40 group-hover:opacity-70" />
+                <span class="flex-1">{{ $isXmlRegeneration ? 'Rigenera XML' : 'Verifica XML' }}</span>
             </button>
         @endif
 

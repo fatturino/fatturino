@@ -265,7 +265,34 @@
                 const sending = action === 'send-sdi';
                 const deleting = action === 'delete';
                 const reversing = action === 'reverse-self-invoice';
-                this.confirm = { action, title: sending ? 'Conferma invio SDI' : (deleting ? 'Elimina proforma' : (reversing ? 'Crea bozza di storno' : 'Conferma validazione XML')), submit: sending ? 'Invia a SDI' : (deleting ? 'Elimina proforma' : (reversing ? 'Crea bozza di storno' : 'Verifica XML')), danger: sending || deleting, message: sending ? `Stai per inviare allo SDI ${this.documentLabel()}.\n\nQuesta azione è irreversibile. Dopo l'invio non potrai più modificarla.\n\nControlla prima di confermare:\n- Anagrafica cliente\n- Importi e aliquote IVA\n- Codice destinatario o PEC` : (deleting ? `Confermi l'eliminazione della proforma ${this.documentLabel()}?\n\nL'operazione è irreversibile.` : (reversing ? `Creerai una bozza con lo stesso tipo documento e importi negativi, collegata all’autofattura ${this.documentLabel()}.\n\nLa bozza non verrà inviata automaticamente. Dopo il controllo dovrai validarla e inviarla allo SDI.` : `Confermi la validazione XML di ${this.documentLabel()}?`)) };
+                const regenerating = action === 'validate-xml' && this.selectedDocument?.status === 'xml_validated';
+                this.confirm = {
+                    action,
+                    title: sending
+                        ? 'Conferma invio SDI'
+                        : (deleting
+                            ? 'Elimina proforma'
+                            : (reversing
+                                ? 'Crea bozza di storno'
+                                : (regenerating ? 'Conferma rigenerazione XML' : 'Conferma validazione XML'))),
+                    submit: sending
+                        ? 'Invia a SDI'
+                        : (deleting
+                            ? 'Elimina proforma'
+                            : (reversing
+                                ? 'Crea bozza di storno'
+                                : (regenerating ? 'Rigenera XML' : 'Verifica XML'))),
+                    danger: sending || deleting,
+                    message: sending
+                        ? `Stai per inviare allo SDI ${this.documentLabel()}.\n\nQuesta azione è irreversibile. Dopo l'invio non potrai più modificarla.\n\nControlla prima di confermare:\n- Anagrafica cliente\n- Importi e aliquote IVA\n- Codice destinatario o PEC`
+                        : (deleting
+                            ? `Confermi l'eliminazione della proforma ${this.documentLabel()}?\n\nL'operazione è irreversibile.`
+                            : (reversing
+                                ? `Creerai una bozza con lo stesso tipo documento e importi negativi, collegata all’autofattura ${this.documentLabel()}.\n\nLa bozza non verrà inviata automaticamente. Dopo il controllo dovrai validarla e inviarla allo SDI.`
+                                : (regenerating
+                                    ? `Rigenererai l’XML di ${this.documentLabel()} da zero con i dati aggiornati di anagrafica e azienda.\n\nLo snapshot precedente verrà sostituito. Il documento resterà validato e pronto per l’invio SDI.`
+                                    : `Confermi la validazione XML di ${this.documentLabel()}?`))),
+                };
                 this.confirmOpen = true;
             },
             closeConfirm() { if (!this.busy) { this.confirmOpen = false; this.error = ''; } },

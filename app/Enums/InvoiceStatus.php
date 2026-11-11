@@ -62,11 +62,11 @@ enum InvoiceStatus: string
     }
 
     /**
-     * Whether XML validation can be triggered from this status
+     * Whether XML validation (or pre-send regeneration) can be triggered from this status
      */
     public function canValidateXml(): bool
     {
-        return $this === self::Draft;
+        return $this === self::Draft || $this === self::XmlValidated;
     }
 
     /**
