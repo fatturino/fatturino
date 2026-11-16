@@ -59,6 +59,7 @@ return [
         'company_details' => 'Dati azienda',
         'invoice_settings' => 'Impostazioni fatture',
         'electronic_invoicing' => 'Fatturazione elettronica',
+        'mcp_connections' => 'Connessioni MCP',
         'email_templates' => 'Modelli email',
         'company_settings' => 'Impostazioni Azienda',
         'electronic_invoice_settings' => 'Impostazioni FE',

@@ -19,11 +19,15 @@ use App\Services\SdiSubmissionDriverSelector;
 use App\Services\UnrestrictedCapabilities;
 use App\Settings\BackupSettings;
 use App\Settings\OpenApiSettings;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 use Livewire\Blaze\Blaze;
 use PostHog\PostHog;
 
@@ -67,6 +71,17 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Blade::if('allowed', fn (string $action = '') => $action !== '' && app(EnvironmentCapabilities::class)->can($action));
+
+        Passport::authorizationView(fn (array $parameters) => view('mcp.authorize', $parameters));
+
+        RateLimiter::for('mcp', function (Request $request) {
+            $token = $request->user()?->currentAccessToken();
+            $tokenId = $token?->oauth_access_token_id ?? $token?->id ?? null;
+
+            return $tokenId
+                ? Limit::perMinute(60)->by('mcp_token:'.$tokenId)
+                : Limit::perMinute(10)->by($request->ip());
+        });
 
         $this->applyBackupCredentials();
         $this->initializePostHog();

@@ -181,6 +181,7 @@ Route::middleware('auth')->group(function () {
 
     // Electronic Invoice
     Route::livewire('/electronic-invoice-settings', 'pages::settings.openapi')->name('settings.openapi')->defaults('title', 'Fatturazione Elettronica');
+    Route::livewire('/mcp-connections', 'pages::settings.mcp')->name('settings.mcp')->defaults('title', 'Connessioni MCP');
 
     // Logout
     Route::post('/logout', function () {

@@ -13,14 +13,13 @@ it('rejects sales invoice api create without sanctum authentication', function (
     $response->assertUnauthorized();
 });
 
-it('supports sales invoice api create with sanctum bearer token', function () {
+it('supports sales invoice api create with sanctum session authentication', function () {
     $user = User::factory()->create();
     $contact = Contact::factory()->create();
     $sequence = Sequence::factory()->create();
-    $token = $user->createToken('sales-invoice-api-test-token')->plainTextToken;
 
     $response = $this
-        ->withHeader('Authorization', 'Bearer '.$token)
+        ->actingAs($user)
         ->postJson('/api/v1/sales-invoices', salesInvoiceApiPayload($contact->id, $sequence->id));
 
     $response->assertOk();

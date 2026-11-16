@@ -59,6 +59,7 @@ return [
         'company_details' => 'Company details',
         'invoice_settings' => 'Invoice settings',
         'electronic_invoicing' => 'E-invoicing',
+        'mcp_connections' => 'MCP connections',
         'email_templates' => 'Email templates',
         'company_settings' => 'Company Settings',
         'electronic_invoice_settings' => 'E-Invoice Settings',
