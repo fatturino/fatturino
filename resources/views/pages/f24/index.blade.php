@@ -40,7 +40,6 @@ new #[Layout('layouts::app')] class extends Component {
         if ($payment->status !== F24PaymentStatus::Planned) {
             return;
         }
-
         app(F24PaymentWriter::class)->markPaid($payment);
         session()->flash('success', __('app.f24.marked_paid'));
     }
@@ -67,7 +66,7 @@ new #[Layout('layouts::app')] class extends Component {
     {
         return $payment->isOverdue()
             ? __('app.f24.status_overdue')
-            : $payment->status->label();
+                : $payment->status->label();
     }
 
     public function statusTone(F24Payment $payment): string
@@ -75,11 +74,9 @@ new #[Layout('layouts::app')] class extends Component {
         if ($payment->status === F24PaymentStatus::Paid) {
             return 'success';
         }
-
         if ($payment->status === F24PaymentStatus::Planned && $payment->isOverdue()) {
             return 'danger';
         }
-
         if ($payment->status === F24PaymentStatus::Planned) {
             return 'warning';
         }
@@ -104,7 +101,6 @@ new #[Layout('layouts::app')] class extends Component {
             ->orderByDesc('due_date')
             ->orderByDesc('id')
             ->paginate(15);
-
         $summary = app(ReportService::class)->f24Summary($this->fiscalYear);
 
         return view('pages::f24.index', [
@@ -123,11 +119,14 @@ new #[Layout('layouts::app')] class extends Component {
                 $query->whereYear('paid_at', $this->fiscalYear)
                     ->orWhere(function (Builder $query) {
                         $query->whereNull('paid_at')->whereYear('due_date', $this->fiscalYear);
-                    })
+                    }
+                    )
                     ->orWhere(function (Builder $query) {
                         $query->whereNull('paid_at')->whereNull('due_date')->whereYear('created_at', $this->fiscalYear);
-                    });
-            })
+                    }
+                    );
+            }
+            )
             ->when($this->status !== '', fn (Builder $query) => $query->where('status', $this->status))
             ->when($this->category !== '', fn (Builder $query) => $query->whereHas(
                 'lines',

@@ -134,8 +134,7 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function showsPaymentStatus(mixed $document): bool
     {
-        return $this->hasPayments()
-            && ! ($this->type === 'self' && $document->reversal_of_id !== null);
+        return $this->hasPayments() && ! ($this->type === 'self' && $document->reversal_of_id !== null);
     }
 
     public function isActive(string $value): bool
@@ -234,7 +233,6 @@ new #[Layout('layouts::app')] class extends Component {
             if ($this->type === 'self') {
                 $query->whereNull('reversal_of_id');
             }
-
             $this->payment === 'open'
                 ? $query->whereIn('payment_status', ['unpaid', 'partial', 'overdue'])
                     : $query->where('payment_status', $this->payment);

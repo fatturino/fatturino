@@ -116,12 +116,13 @@ new #[Layout('layouts::app')] #[Title('Oggi')] class extends Component {
                     'is_urgent' => $isUrgent,
                     'href' => route('f24.edit', $payment),
                 ];
-            })
+            }
+            )
             ->sortBy([
-                ['is_urgent', 'desc'],
-                ['days_until_due', 'asc'],
-                ['id', 'asc'],
-            ])
+                    ['is_urgent', 'desc'],
+                    ['days_until_due', 'asc'],
+                    ['id', 'asc'],
+                ])
             ->values()
             ->all();
         $this->stats = $stats;

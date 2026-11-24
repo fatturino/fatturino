@@ -88,7 +88,6 @@ new #[Layout('layouts::app')] class extends Component {
             $this->ocr_warning = $draft['ocr_warning'] ?? null;
             $this->lines = $draft['lines'] ?? [];
         }
-
         if ($this->lines === []) {
             $this->addLine(F24Section::Erario->value);
         }
@@ -123,11 +122,9 @@ new #[Layout('layouts::app')] class extends Component {
         if ($entry === null || ! isset($this->lines[$index])) {
             return;
         }
-
         $this->lines[$index]['section'] = $entry['section'];
         $this->lines[$index]['category'] = $entry['category'];
         $this->lines[$index]['label'] = $entry['label'];
-
         if ($entry['section'] === 'inps') {
             $this->lines[$index]['inps_causal'] = $entry['code'];
             $this->lines[$index]['tribute_code'] = '';
@@ -135,7 +132,6 @@ new #[Layout('layouts::app')] class extends Component {
             $this->lines[$index]['tribute_code'] = $entry['code'];
             $this->lines[$index]['inps_causal'] = '';
         }
-
         $this->codeSearch = '';
         $this->catalogTargetIndex = null;
     }
@@ -143,11 +139,9 @@ new #[Layout('layouts::app')] class extends Component {
     public function save(F24PaymentWriter $writer): mixed
     {
         $validated = $this->validate($this->rules());
-
         if ($validated['status'] === F24PaymentStatus::Paid->value && blank($validated['paid_at'])) {
             $validated['paid_at'] = now()->toDateString();
         }
-
         $payload = [
             'public_id' => $this->publicId,
             'source' => $this->source,
@@ -176,11 +170,9 @@ new #[Layout('layouts::app')] class extends Component {
                 ];
             }, $validated['lines']),
         ];
-
         $payment = $this->paymentId
             ? F24Payment::query()->findOrFail($this->paymentId)
-            : null;
-
+                : null;
         $writer->save($payment, $payload);
         session()->flash('success', __('app.f24.saved'));
 
@@ -191,7 +183,6 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $regime = app(CompanySettings::class)->company_fiscal_regime;
         $options = F24TributeCode::options($this->codeSearch !== '' ? $this->codeSearch : null, regime: $regime);
-
         if ($section !== null && $section !== '') {
             $options = array_values(array_filter(
                 $options,
@@ -214,7 +205,6 @@ new #[Layout('layouts::app')] class extends Component {
             F24Section::Imu->value => [],
             F24Section::Other->value => [],
         ];
-
         foreach ($this->lines as $index => $line) {
             $section = $line['section'] ?? F24Section::Other->value;
             if (! array_key_exists($section, $grouped)) {
@@ -255,7 +245,6 @@ new #[Layout('layouts::app')] class extends Component {
             'inps' => F24Category::Inps->value,
             default => F24Category::Other->value,
         };
-
         $withInstallment = in_array($section, ['erario', 'regioni', 'imu'], true);
 
         return [

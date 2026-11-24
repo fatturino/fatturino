@@ -26,7 +26,6 @@ new #[Layout('layouts::app')] class extends Component {
         $this->validate([
             'upload' => ['required', 'file', 'max:10240', 'mimetypes:application/pdf,image/png,image/jpeg,image/webp'],
         ]);
-
         /** @var TemporaryUploadedFile $file */
         $file = $this->upload;
         $contents = $file->get();
@@ -37,9 +36,7 @@ new #[Layout('layouts::app')] class extends Component {
         $safeName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) ?: 'f24';
         $extension = strtolower($file->getClientOriginalExtension() ?: 'pdf');
         $filename = $safeName.'.'.$extension;
-
         $path = $storage->storeF24Attachment($contents, $year, $publicId, $filename);
-
         $extracted = $storage->withLocalPath(
             $path,
             fn (string $absolute) => $extractor->extract($absolute, $mime),
@@ -49,9 +46,7 @@ new #[Layout('layouts::app')] class extends Component {
             'warning' => __('app.f24.ocr_tools_missing'),
             'raw' => [],
         ];
-
         $parsed = $parser->parse($extracted['text'] ?? '');
-
         $lines = [];
         foreach ($parsed['lines'] as $line) {
             $lines[] = [
@@ -68,17 +63,14 @@ new #[Layout('layouts::app')] class extends Component {
                 'label' => (string) ($line['label'] ?? ''),
             ];
         }
-
         $guessedDate = $parsed['paid_at']
             ?? $parser->guessDateFromFilename($originalName)
-            ?? $parser->guessDueDateFromIvaLines($parsed['lines']);
-
+                ?? $parser->guessDueDateFromIvaLines($parsed['lines']);
         $warning = $extracted['warning']
             ?? ($parsed['matched'] ? null : __('app.f24.ocr_partial'));
         if ($parsed['paid_at'] === null && $guessedDate !== null) {
             $warning = $warning ?? __('app.f24.date_from_filename');
         }
-
         session()->put('f24_import_draft', [
             'public_id' => $publicId,
             'paid_at' => $guessedDate,

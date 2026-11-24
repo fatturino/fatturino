@@ -182,6 +182,7 @@ function expandStatements(string $source): string
 {
     $output = '';
     $parenthesisDepth = 0;
+    $interpolationDepth = 0;
     $previousToken = null;
     $skipWhitespace = false;
     $braceStack = [];
@@ -204,6 +205,15 @@ function expandStatements(string $source): string
             $parenthesisDepth--;
         }
 
+        // "{$var}" / "${var}" interpolation braces are not statement blocks.
+        if ($tokenId === T_CURLY_OPEN || $tokenId === T_DOLLAR_OPEN_CURLY_BRACES) {
+            $interpolationDepth++;
+            $output .= $text;
+            $previousToken = $tokenId;
+
+            continue;
+        }
+
         $isDynamicProperty = $text === '{' && $previousToken === T_OBJECT_OPERATOR;
 
         if ($text === '{') {
@@ -224,6 +234,14 @@ function expandStatements(string $source): string
         }
 
         if ($text === '}') {
+            if ($interpolationDepth > 0) {
+                $interpolationDepth--;
+                $output .= $text;
+                $previousToken = $tokenId;
+
+                continue;
+            }
+
             $isDynamicProperty = array_pop($braceStack) === true;
 
             if ($isDynamicProperty) {

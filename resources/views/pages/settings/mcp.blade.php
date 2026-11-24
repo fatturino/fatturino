@@ -11,16 +11,13 @@ new #[Layout('layouts::app')] class extends Component {
     public function revoke(string $tokenId): void
     {
         $token = Auth::user()?->tokens()->whereKey($tokenId)->first();
-
         if ($token === null) {
             $this->error('Connessione non trovata.');
 
             return;
         }
-
         $token->revoke();
         $token->refreshToken?->revoke();
-
         $this->success('Accesso MCP revocato.');
     }
 
