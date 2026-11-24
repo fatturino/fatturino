@@ -10,8 +10,10 @@ This directory is the canonical, versioned location for Fatturino Architecture D
 | [2026-10-02](2026-10-02-manual-payment-reminders.md)        | Accepted | Manual, scenario-bound payment reminders                         |
 | [2026-10-04](2026-10-04-open-source-release-baseline.md)    | Accepted | Bun lockfile, CI release baseline, and public-repository hygiene |
 | [2026-10-14](2026-10-14-sdi-outbound-driver-neutrality.md)  | Accepted | Provider-neutral, fail-closed outbound SDI submission            |
+| [2026-10-22](2026-10-22-cloud-tenancy-activation.md)        | Superseded | In-app cloud tenancy (replaced by self-hosted-only)            |
 | [2026-11-05](2026-11-05-company-logo-durable-storage.md)    | Accepted | Company logo on durable logos disk (DOCUMENTS_DISK)              |
 | [2026-11-05](2026-11-05-sdi-outbound-enqueue.md)            | Accepted | Queue outbound SDI send; notify provider results in-app          |
-| [2026-11-16](2026-11-16-mcp-oauth-passport.md)              | Accepted | Product MCP server with Passport OAuth (self-hosted + cloud)     |
+| [2026-11-16](2026-11-16-mcp-oauth-passport.md)              | Accepted | Product MCP server with Passport OAuth                           |
+| [2026-11-24](2026-11-24-remove-in-app-cloud-tenancy.md)     | Accepted | Remove in-app cloud tenancy; self-hosted-only image              |
 
 Do not edit or add decision records outside this directory. When a decision changes, create a new ADR that references the prior record and marks it superseded; do not rewrite historical rationale.

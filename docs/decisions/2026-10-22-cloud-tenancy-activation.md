@@ -1,6 +1,6 @@
 # Cloud tenancy activation and self-hosted isolation
 
-**Status:** Accepted
+**Status:** Superseded by [2026-11-24-remove-in-app-cloud-tenancy.md](2026-11-24-remove-in-app-cloud-tenancy.md)
 
 ## Context
 
