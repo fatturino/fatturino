@@ -28,9 +28,15 @@
                 <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Chi chiede l’accesso</p>
                 <p class="mt-2 text-base font-semibold text-content">{{ $client->name }}</p>
                 @if ($client->client_uri ?? null)
-                    <a href="{{ $client->client_uri }}" target="_blank" rel="noopener noreferrer" class="mt-1 block text-sm text-primary underline break-all">
+                    <x-app-link
+                        :href="$client->client_uri"
+                        external
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="mt-1 block text-sm text-primary underline break-all"
+                    >
                         {{ $client->client_uri }}
-                    </a>
+                    </x-app-link>
                 @endif
                 @if ($redirectUri)
                     <p class="mt-3 text-xs leading-5 text-content-muted break-all">

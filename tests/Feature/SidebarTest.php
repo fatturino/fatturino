@@ -16,12 +16,14 @@ it('renders every destination in a task-oriented sidebar hierarchy', function ()
         ->toContain('>Clienti e fornitori</span>')
         ->toContain('>Dati azienda</span>')
         ->toContain('>Diagnostica</span>')
+        ->toContain('>Connessioni MCP</span>')
         ->toContain('href="'.route('dashboard').'"')
         ->toContain('href="'.route('f24.index').'"')
         ->toContain('href="'.route('contacts.index').'"')
+        ->toContain('href="'.route('settings.mcp').'"')
         ->toContain('href="'.route('settings.advanced').'"');
 
-    expect(substr_count($html, '<svg'))->toBe(16);
+    expect(substr_count($html, '<svg'))->toBe(17);
     expect(strpos($html, '>Documenti</p>'))
         ->toBeLessThan(strpos($html, '>Fisco</p>'))
         ->toBeLessThan(strpos($html, '>Dati</p>'))
@@ -58,6 +60,7 @@ it('renders every sidebar label from the active locale', function () {
         ->toContain('>F24 payments</span>')
         ->toContain('>Customers &amp; suppliers</span>')
         ->toContain('>E-invoicing</span>')
+        ->toContain('>MCP connections</span>')
         ->toContain('>Diagnostics</span>')
         ->not->toContain('app.nav.');
 });
