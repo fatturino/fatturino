@@ -47,7 +47,7 @@ FROM serversideup/php:8.4-fpm-nginx AS production
 ARG TARGETPLATFORM
 
 LABEL maintainer="Fatturino <info@fatturino.com>"
-LABEL org.opencontainers.image.source="https://codeberg.org/fatturino/fatturino"
+LABEL org.opencontainers.image.source="https://github.com/fatturino/fatturino"
 LABEL org.opencontainers.image.description="Fatturino - Open Source Italian Electronic Invoicing"
 
 USER root
