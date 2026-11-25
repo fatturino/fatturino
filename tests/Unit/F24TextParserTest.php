@@ -34,7 +34,7 @@ it('returns unmatched empty lines when text has no codes', function () {
 });
 
 it('parses Zucchetti layout July F24 with credit, multi-PXX and local tributes', function () {
-    $text = file_get_contents(base_path('tests/Fixtures/f24/july.txt'));
+    $text = file_get_contents(base_path('tests/fixtures/f24/july.txt'));
     $parsed = app(F24TextParser::class)->parse($text);
 
     expect($parsed['matched'])->toBeTrue()
@@ -69,7 +69,7 @@ it('parses Zucchetti layout July F24 with credit, multi-PXX and local tributes',
 });
 
 it('parses Zucchetti layout November F24 with single INPS row', function () {
-    $text = file_get_contents(base_path('tests/Fixtures/f24/nov.txt'));
+    $text = file_get_contents(base_path('tests/fixtures/f24/nov.txt'));
     $parsed = app(F24TextParser::class)->parse($text);
 
     expect($parsed['matched'])->toBeTrue()
@@ -84,7 +84,7 @@ it('parses Zucchetti layout November F24 with single INPS row', function () {
 });
 
 it('parses quarterly IVA F24 without rateazione and prefers estremi date over decree footer', function () {
-    $text = file_get_contents(base_path('tests/Fixtures/f24/iva-q3-2026.txt'));
+    $text = file_get_contents(base_path('tests/fixtures/f24/iva-q3-2026.txt'));
     $parsed = app(F24TextParser::class)->parse($text);
 
     expect($parsed['matched'])->toBeTrue()
@@ -103,7 +103,7 @@ it('parses quarterly IVA F24 without rateazione and prefers estremi date over de
 
 it('parses Q2 IVA F24 with empty estremi date fields', function () {
     $parser = app(F24TextParser::class);
-    $text = file_get_contents(base_path('tests/Fixtures/f24/iva-q2-2026.txt'));
+    $text = file_get_contents(base_path('tests/fixtures/f24/iva-q2-2026.txt'));
     $parsed = $parser->parse($text);
 
     expect($parsed['matched'])->toBeTrue()
